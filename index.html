@@ -1,0 +1,151 @@
+
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101828">
+  <title>فرناز | Farnaz</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #101828;
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    .app { max-width: 520px; margin: auto; padding: 24px 18px; }
+    header { display: flex; align-items: center; gap: 12px; margin: 12px 0 34px; }
+    .logo {
+      width: 48px; height: 48px; border-radius: 16px;
+      display: grid; place-items: center; background: #50e3c2;
+      color: #101828; font-size: 27px; font-weight: 800;
+    }
+    h1 { margin: 0; font-size: 25px; }
+    .sub { color: #aab5c7; font-size: 13px; margin-top: 4px; }
+    .hero {
+      background: linear-gradient(145deg, #1c2b43, #172237);
+      border: 1px solid #2b3a50; border-radius: 25px;
+      padding: 24px 20px; margin-bottom: 25px;
+    }
+    .tag { color: #50e3c2; font-size: 12px; font-weight: 700; }
+    h2 { font-size: 25px; line-height: 1.7; margin: 12px 0 8px; }
+    p { color: #b6c1d1; line-height: 1.9; font-size: 14px; }
+    .primary {
+      width: 100%; border: 0; border-radius: 14px; padding: 15px;
+      background: #50e3c2; color: #101828; font-size: 16px;
+      font-weight: 700; margin-top: 12px;
+    }
+    .section-title { font-size: 17px; margin: 26px 2px 14px; }
+    .features { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .feature {
+      border: 1px solid #2b3a50; border-radius: 18px;
+      background: #172237; padding: 18px 14px; min-height: 115px;
+    }
+    .emoji { font-size: 25px; }
+    .feature h3 { font-size: 14px; margin: 12px 0 5px; }
+    .feature p { font-size: 12px; margin: 0; }
+    .language {
+      display: block; margin: 24px auto 0; background: transparent;
+      color: #aab5c7; border: 1px solid #35445a;
+      border-radius: 12px; padding: 10px 16px;
+    }
+    footer { text-align: center; color: #718096; font-size: 12px; padding: 28px 0 10px; }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <div class="logo">F</div>
+      <div>
+        <h1 id="brand">فرناز</h1>
+        <div class="sub" id="subtitle">ارتباطی نزدیک‌تر، در هر کجا</div>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div class="tag" id="welcome">خوش آمدی به فرناز</div>
+      <h2 id="headline">آدم‌های مهم زندگی‌ات، همیشه نزدیک تو</h2>
+      <p id="description">یک فضای ساده برای گفتگو، اشتراک‌گذاری و هماهنگی با کسانی که برایت مهم‌اند.</p>
+      <button class="primary" id="start" onclick="alert(document.documentElement.lang==='fa'?'ثبت‌نام را در مرحله بعد اضافه می‌کنیم.':'Sign-up will be added next.')">شروع کنیم ←</button>
+    </section>
+
+    <h2 class="section-title" id="toolsTitle">همه‌چیز در یک جا</h2>
+    <section class="features">
+      <article class="feature">
+        <div class="emoji">💬</div>
+        <h3 id="chatTitle">گفتگوی خصوصی</h3>
+        <p id="chatDesc">پیام‌هایت را در یک فضای مرتب دنبال کن.</p>
+      </article>
+      <article class="feature">
+        <div class="emoji">📷</div>
+        <h3 id="mediaTitle">عکس و فایل</h3>
+        <p id="mediaDesc">لحظه‌ها و فایل‌ها را به اشتراک بگذار.</p>
+      </article>
+      <article class="feature">
+        <div class="emoji">🔔</div>
+        <h3 id="notifyTitle">یادآوری‌ها</h3>
+        <p id="notifyDesc">کارهای مهم را فراموش نکن.</p>
+      </article>
+      <article class="feature">
+        <div class="emoji">📞</div>
+        <h3 id="callTitle">تماس صوتی و تصویری</h3>
+        <p id="callDesc">ارتباطی فراتر از پیام متنی.</p>
+      </article>
+    </section>
+
+    <button class="language" id="language" onclick="toggleLanguage()">English</button>
+    <footer>Farnaz · Closer, wherever you are.</footer>
+  </main>
+
+  <script>
+    let english = false;
+
+    function toggleLanguage() {
+      english = !english;
+      document.documentElement.lang = english ? 'en' : 'fa';
+      document.documentElement.dir = english ? 'ltr' : 'rtl';
+
+      const values = english ? {
+        brand:'Farnaz',
+        subtitle:'Closer, wherever you are',
+        welcome:'WELCOME TO FARNAZ',
+        headline:'The people who matter, closer to you',
+        description:'A simple space to chat, share and stay connected.',
+        start:'Let’s begin →',
+        toolsTitle:'Everything in one place',
+        chatTitle:'Private chat',
+        chatDesc:'Keep your conversations organized.',
+        mediaTitle:'Photos & files',
+        mediaDesc:'Share moments and files.',
+        notifyTitle:'Reminders',
+        notifyDesc:'Remember what matters.',
+        callTitle:'Voice & video calls',
+        callDesc:'Connect beyond text messages.',
+        language:'فارسی'
+      } : {
+        brand:'فرناز',
+        subtitle:'ارتباطی نزدیک‌تر، در هر کجا',
+        welcome:'خوش آمدی به فرناز',
+        headline:'آدم‌های مهم زندگی‌ات، همیشه نزدیک تو',
+        description:'یک فضای ساده برای گفتگو، اشتراک‌گذاری و هماهنگی با کسانی که برایت مهم‌اند.',
+        start:'شروع کنیم ←',
+        toolsTitle:'همه‌چیز در یک جا',
+        chatTitle:'گفتگوی خصوصی',
+        chatDesc:'پیام‌هایت را در یک فضای مرتب دنبال کن.',
+        mediaTitle:'عکس و فایل',
+        mediaDesc:'لحظه‌ها و فایل‌ها را به اشتراک بگذار.',
+        notifyTitle:'یادآوری‌ها',
+        notifyDesc:'کارهای مهم را فراموش نکن.',
+        callTitle:'تماس صوتی و تصویری',
+        callDesc:'ارتباطی فراتر از پیام متنی.',
+        language:'English'
+      };
+
+      Object.keys(values).forEach(id => {
+        document.getElementById(id).textContent = values[id];
+      });
+    }
+  </script>
+</body>
+</html>

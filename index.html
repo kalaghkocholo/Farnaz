@@ -14,6 +14,8 @@
       color: #f8fafc;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
     .app { max-width: 520px; margin: auto; padding: 24px 18px; }
     header { display: flex; align-items: center; gap: 12px; margin: 12px 0 34px; }
     .logo {
@@ -51,6 +53,40 @@
       border-radius: 12px; padding: 10px 16px;
     }
     footer { text-align: center; color: #718096; font-size: 12px; padding: 28px 0 10px; }
+
+    #authBox {
+      display: none; position: fixed; inset: 0;
+      background: #101828ee; z-index: 9999;
+      align-items: center; justify-content: center; padding: 20px;
+      overflow-y: auto;
+    }
+    .auth-card {
+      background: #182437; color: white; padding: 25px;
+      border: 1px solid #35445a; border-radius: 18px;
+      width: 100%; max-width: 380px; margin: auto;
+    }
+    .auth-card h2 { font-size: 22px; }
+    .auth-card label { display: block; margin-top: 12px; font-size: 14px; }
+    .auth-card input {
+      display: block; width: 100%; padding: 12px;
+      margin-top: 7px; border-radius: 8px; border: 1px solid #526078;
+      background: #101828; color: white;
+    }
+    .close-button {
+      float: left; background: none; color: white;
+      border: 0; font-size: 25px;
+    }
+    .auth-submit {
+      width: 100%; padding: 13px; margin-top: 20px;
+      background: #50e3c2; color: #101828;
+      border: 0; border-radius: 9px; font-weight: bold;
+    }
+    .auth-submit:disabled { opacity: .6; cursor: wait; }
+    .auth-link {
+      background: none; color: #50e3c2;
+      border: 0; padding: 12px 0;
+    }
+    #authStatus { overflow-wrap: anywhere; }
   </style>
 </head>
 <body>
@@ -67,7 +103,7 @@
       <div class="tag" id="welcome">خوش آمدی به فرناز</div>
       <h2 id="headline">آدم‌های مهم زندگی‌ات، همیشه نزدیک تو</h2>
       <p id="description">یک فضای ساده برای گفتگو، اشتراک‌گذاری و هماهنگی با کسانی که برایت مهم‌اند.</p>
-<button class="primary" id="start" onclick="openAuth()">شروع کنیم ←</button>
+      <button class="primary" id="start" onclick="openAuth()">شروع کنیم ←</button>
     </section>
 
     <h2 class="section-title" id="toolsTitle">همه‌چیز در یک جا</h2>
@@ -98,191 +134,193 @@
     <footer>Farnaz · Closer, wherever you are.</footer>
   </main>
 
+  <div id="authBox" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+    <div class="auth-card">
+      <button type="button" class="close-button" onclick="closeAuth()" aria-label="بستن">×</button>
+      <h2 id="authTitle">ثبت‌نام در فرناز</h2>
+      <p id="authMessage">برای ارتباط نزدیک‌تر، حساب خودت را بساز.</p>
+
+      <form id="authForm">
+        <div id="nameField">
+          <label for="authName">نام نمایشی</label>
+          <input id="authName" type="text" autocomplete="name" placeholder="نام شما" required>
+        </div>
+
+        <label for="authEmail">ایمیل</label>
+        <input id="authEmail" type="email" autocomplete="email" required placeholder="you@example.com">
+
+        <label for="authPassword">رمز عبور (حداقل ۸ کاراکتر)</label>
+        <input id="authPassword" type="password" autocomplete="new-password" minlength="8" required placeholder="رمز عبور">
+
+        <button id="authSubmit" class="auth-submit" type="submit">ثبت‌نام</button>
+      </form>
+
+      <p id="authStatus" role="status" aria-live="polite"></p>
+      <button id="authSwitch" class="auth-link" type="button" onclick="switchAuthMode()">قبلاً حساب ساخته‌ام؛ ورود</button>
+    </div>
+  </div>
+
   <script>
+    // تنظیمات عمومی پروژه Supabase
+    window.FARNAZ_CONFIG = {
+      supabaseUrl: "https://iemykhluluoymsbqpjsn.supabase.co",
+      supabasePublishableKey: "sb_publishable_LhUmVjXJlazgYRtEvXna6g_GGKxi_kC"
+    };
+
     let english = false;
+    let authMode = "signup";
+    let farnazClient = null;
 
     function toggleLanguage() {
       english = !english;
-      document.documentElement.lang = english ? 'en' : 'fa';
-      document.documentElement.dir = english ? 'ltr' : 'rtl';
+      document.documentElement.lang = english ? "en" : "fa";
+      document.documentElement.dir = english ? "ltr" : "rtl";
 
       const values = english ? {
-        brand:'Farnaz',
-        subtitle:'Closer, wherever you are',
-        welcome:'WELCOME TO FARNAZ',
-        headline:'The people who matter, closer to you',
-        description:'A simple space to chat, share and stay connected.',
-        start:'Let’s begin →',
-        toolsTitle:'Everything in one place',
-        chatTitle:'Private chat',
-        chatDesc:'Keep your conversations organized.',
-        mediaTitle:'Photos & files',
-        mediaDesc:'Share moments and files.',
-        notifyTitle:'Reminders',
-        notifyDesc:'Remember what matters.',
-        callTitle:'Voice & video calls',
-        callDesc:'Connect beyond text messages.',
-        language:'فارسی'
+        brand:"Farnaz",
+        subtitle:"Closer, wherever you are",
+        welcome:"WELCOME TO FARNAZ",
+        headline:"The people who matter, closer to you",
+        description:"A simple space to chat, share and stay connected.",
+        start:"Let's begin →",
+        toolsTitle:"Everything in one place",
+        chatTitle:"Private chat",
+        chatDesc:"Keep your conversations organized.",
+        mediaTitle:"Photos & files",
+        mediaDesc:"Share moments and files.",
+        notifyTitle:"Reminders",
+        notifyDesc:"Remember what matters.",
+        callTitle:"Voice & video calls",
+        callDesc:"Connect beyond text messages.",
+        language:"فارسی"
       } : {
-        brand:'فرناز',
-        subtitle:'ارتباطی نزدیک‌تر، در هر کجا',
-        welcome:'خوش آمدی به فرناز',
-        headline:'آدم‌های مهم زندگی‌ات، همیشه نزدیک تو',
-        description:'یک فضای ساده برای گفتگو، اشتراک‌گذاری و هماهنگی با کسانی که برایت مهم‌اند.',
-        start:'شروع کنیم ←',
-        toolsTitle:'همه‌چیز در یک جا',
-        chatTitle:'گفتگوی خصوصی',
-        chatDesc:'پیام‌هایت را در یک فضای مرتب دنبال کن.',
-        mediaTitle:'عکس و فایل',
-        mediaDesc:'لحظه‌ها و فایل‌ها را به اشتراک بگذار.',
-        notifyTitle:'یادآوری‌ها',
-        notifyDesc:'کارهای مهم را فراموش نکن.',
-        callTitle:'تماس صوتی و تصویری',
-        callDesc:'ارتباطی فراتر از پیام متنی.',
-        language:'English'
+        brand:"فرناز",
+        subtitle:"ارتباطی نزدیک‌تر، در هر کجا",
+        welcome:"خوش آمدی به فرناز",
+        headline:"آدم‌های مهم زندگی‌ات، همیشه نزدیک تو",
+        description:"یک فضای ساده برای گفتگو، اشتراک‌گذاری و هماهنگی با کسانی که برایت مهم‌اند.",
+        start:"شروع کنیم ←",
+        toolsTitle:"همه‌چیز در یک جا",
+        chatTitle:"گفتگوی خصوصی",
+        chatDesc:"پیام‌هایت را در یک فضای مرتب دنبال کن.",
+        mediaTitle:"عکس و فایل",
+        mediaDesc:"لحظه‌ها و فایل‌ها را به اشتراک بگذار.",
+        notifyTitle:"یادآوری‌ها",
+        notifyDesc:"کارهای مهم را فراموش نکن.",
+        callTitle:"تماس صوتی و تصویری",
+        callDesc:"ارتباطی فراتر از پیام متنی.",
+        language:"English"
       };
 
       Object.keys(values).forEach(id => {
-        document.getElementById(id).textContent = values[id];
+        const element = document.getElementById(id);
+        if (element) element.textContent = values[id];
       });
     }
+
+    function openAuth() {
+      document.getElementById("authBox").style.display = "flex";
+      document.getElementById("authStatus").textContent = "";
+    }
+
+    function closeAuth() {
+      document.getElementById("authBox").style.display = "none";
+    }
+
+    function switchAuthMode() {
+      authMode = authMode === "signup" ? "login" : "signup";
+      const isSignup = authMode === "signup";
+
+      document.getElementById("authTitle").textContent =
+        isSignup ? "ثبت‌نام در فرناز" : "ورود به فرناز";
+      document.getElementById("authMessage").textContent =
+        isSignup ? "برای ارتباط نزدیک‌تر، حساب خودت را بساز." : "با ایمیل و رمز عبورت وارد شو.";
+      document.getElementById("nameField").style.display =
+        isSignup ? "block" : "none";
+      document.getElementById("authName").required = isSignup;
+      document.getElementById("authPassword").autocomplete =
+        isSignup ? "new-password" : "current-password";
+      document.getElementById("authSubmit").textContent =
+        isSignup ? "ثبت‌نام" : "ورود";
+      document.getElementById("authSwitch").textContent =
+        isSignup ? "قبلاً حساب ساخته‌ام؛ ورود" : "حساب ندارم؛ ثبت‌نام";
+      document.getElementById("authStatus").textContent = "";
+    }
+
+    async function getSupabaseClient() {
+      const config = window.FARNAZ_CONFIG;
+
+      if (!config || !config.supabaseUrl || !config.supabasePublishableKey) {
+        throw new Error("تنظیمات پروژه پیدا نشد.");
+      }
+
+      if (!window.supabase || typeof window.supabase.createClient !== "function") {
+        throw new Error("کتابخانه اتصال بارگذاری نشد. صفحه را دوباره بارگذاری کن.");
+      }
+
+      if (!farnazClient) {
+        farnazClient = window.supabase.createClient(
+          config.supabaseUrl,
+          config.supabasePublishableKey
+        );
+      }
+
+      return farnazClient;
+    }
+
+    document.getElementById("authForm").addEventListener("submit", async function(event) {
+      event.preventDefault();
+
+      const status = document.getElementById("authStatus");
+      const submit = document.getElementById("authSubmit");
+      const email = document.getElementById("authEmail").value.trim();
+      const password = document.getElementById("authPassword").value;
+      const displayName = document.getElementById("authName").value.trim();
+
+      submit.disabled = true;
+      status.textContent = "در حال اتصال...";
+
+      try {
+        const client = await getSupabaseClient();
+        let result;
+
+        if (authMode === "signup") {
+          result = await client.auth.signUp({
+            email,
+            password,
+            options: {
+              data: { display_name: displayName }
+            }
+          });
+        } else {
+          result = await client.auth.signInWithPassword({
+            email,
+            password
+          });
+        }
+
+        if (result.error) throw result.error;
+
+        if (authMode === "signup" && !result.data.session) {
+          status.textContent = "درخواست ثبت‌نام ارسال شد. ایمیلت را بررسی کن و لینک تأیید را بزن.";
+        } else if (authMode === "signup") {
+          status.textContent = "ثبت‌نام موفق بود و وارد حساب شدی.";
+        } else {
+          status.textContent = "ورود موفق بود!";
+        }
+      } catch (error) {
+        console.error("Farnaz auth error:", error);
+        status.textContent = "خطا: " + (error.message || "اتصال برقرار نشد.");
+      } finally {
+        submit.disabled = false;
+      }
+    });
+
+    document.getElementById("authBox").addEventListener("click", function(event) {
+      if (event.target === this) closeAuth();
+    });
   </script>
-  <script>
-  const FARNAZ_CONFIG = {
-    supabaseUrl: "https://iemykhluluoymsbqpjsn.supabase.co",
-    supabasePublishableKey: "sb_publishable_LhUmVjXJlazgYRtEvXna6g_GGKxi_kC"
-  };
-</script>
 
-<div id="authBox" style="display:none;position:fixed;inset:0;background:#101828ee;z-index:9999;align-items:center;justify-content:center;padding:20px">
-  <div style="background:#182437;color:white;padding:25px;border-radius:18px;width:100%;max-width:380px;box-sizing:border-box;font-family:Arial,sans-serif">
-    <button type="button" onclick="closeAuth()" style="float:right;background:none;color:white;border:0;font-size:24px">×</button>
-    <h2 id="authTitle">ثبت‌نام در فرناز</h2>
-    <p id="authMessage">برای ارتباط نزدیک‌تر، حساب خودت را بساز.</p>
-
-    <form id="authForm">
-      <label for="authName">نام نمایشی</label>
-      <input id="authName" type="text" autocomplete="name" placeholder="نام شما" style="display:block;width:100%;box-sizing:border-box;padding:12px;margin:8px 0 14px;border-radius:8px" />
-
-      <label for="authEmail">ایمیل</label>
-      <input id="authEmail" type="email" autocomplete="email" required placeholder="you@example.com" style="display:block;width:100%;box-sizing:border-box;padding:12px;margin:8px 0 14px;border-radius:8px" />
-
-      <label for="authPassword">رمز عبور (حداقل ۸ کاراکتر)</label>
-      <input id="authPassword" type="password" autocomplete="new-password" minlength="8" required placeholder="رمز عبور" style="display:block;width:100%;box-sizing:border-box;padding:12px;margin:8px 0 16px;border-radius:8px" />
-
-      <button id="authSubmit" type="submit" style="width:100%;padding:13px;background:#50E3C2;color:#101828;border:0;border-radius:9px;font-weight:bold">ثبت‌نام</button>
-    </form>
-
-    <p id="authStatus" role="status" style="overflow-wrap:anywhere"></p>
-
-    <button id="authSwitch" type="button" onclick="switchAuthMode()" style="background:none;color:#50E3C2;border:0;padding:8px 0">قبلاً حساب ساخته‌ام؛ ورود</button>
-  </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-  let authMode = "signup";
-
-  function openAuth() {
-    document.getElementById("authBox").style.display = "flex";
-    document.getElementById("authStatus").textContent = "";
-  }
-
-  function closeAuth() {
-    document.getElementById("authBox").style.display = "none";
-  }
-
-  function switchAuthMode() {
-    authMode = authMode === "signup" ? "login" : "signup";
-
-    const isSignup = authMode === "signup";
-
-    document.getElementById("authTitle").textContent =
-      isSignup ? "ثبت‌نام در فرناز" : "ورود به فرناز";
-
-    document.getElementById("authName").parentElement.style.display = "block";
-    document.getElementById("authName").style.display =
-      isSignup ? "block" : "none";
-
-    document.querySelector('label[for="authName"]').style.display =
-      isSignup ? "block" : "none";
-
-    document.getElementById("authName").required = isSignup;
-    document.getElementById("authPassword").autocomplete =
-      isSignup ? "new-password" : "current-password";
-
-    document.getElementById("authSubmit").textContent =
-      isSignup ? "ثبت‌نام" : "ورود";
-
-    document.getElementById("authSwitch").textContent =
-      isSignup ? "قبلاً حساب ساخته‌ام؛ ورود" : "حساب ندارم؛ ثبت‌نام";
-
-    document.getElementById("authStatus").textContent = "";
-  }
-
-  document.getElementById("authForm").addEventListener("submit", async function(event) {
-    event.preventDefault();
-
-    const status = document.getElementById("authStatus");
-    const submit = document.getElementById("authSubmit");
-    const email = document.getElementById("authEmail").value.trim();
-    const password = document.getElementById("authPassword").value;
-    const displayName = document.getElementById("authName").value.trim();
-
-  if (typeof FARNAZ_CONFIG === "undefined" ||
-        !FARNAZ_CONFIG.supabaseUrl ||
-        !FARNAZ_CONFIG.supabasePublishableKey ||
-        FARNAZ_CONFIG.supabaseUrl.includes("HERE") ||
-        FARNAZ_CONFIG.supabasePublishableKey.includes("HERE")) {
-      status.textContent = "تنظیمات اتصال Supabase را بررسی کن.";
-      return;
-    }
-
-    submit.disabled = true;
-    status.textContent = "لطفاً صبر کن...";
-
-    try {
-      const client = window.farnazSupabase ||
-        (window.farnazSupabase = window.supabase.createClient(
-          FARNAZ_CONFIG.supabaseUrl,
-          FARNAZ_CONFIG.supabasePublishableKey
-        ));
-
-      let result;
-
-      if (authMode === "signup") {
-        result = await client.auth.signUp({
-          email,
-          password,
-          options: {
-            data: { display_name: displayName }
-          }
-        });
-      } else {
-        result = await client.auth.signInWithPassword({
-          email,
-          password
-        });
-      }
-
-      if (result.error) throw result.error;
-
-      if (authMode === "signup" && !result.data.session) {
-        status.textContent =
-          "ثبت‌نام انجام شد. ایمیلت را بررسی کن و لینک تأیید را بزن.";
-      } else {
-        status.textContent =
-          "ورود موفق بود! حساب تو به فرناز متصل شد.";
-      }
-    } catch (error) {
-      console.error("Farnaz authentication error:", error);
-      status.textContent =
-        "خطا: " + (error.message || "اتصال برقرار نشد.");
-    } finally {
-      submit.disabled = false;
-    }
-  });
-</script>
-</body>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </body>
 </html>

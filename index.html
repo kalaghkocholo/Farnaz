@@ -6,89 +6,233 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#101828">
   <title>فرناز | Farnaz</title>
+
   <style>
     * { box-sizing: border-box; }
+
     body {
       margin: 0;
       background: #101828;
       color: #f8fafc;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
+
     button, input { font: inherit; }
     button { cursor: pointer; }
-    .app { max-width: 520px; margin: auto; padding: 24px 18px; }
-    header { display: flex; align-items: center; gap: 12px; margin: 12px 0 34px; }
-    .logo {
-      width: 48px; height: 48px; border-radius: 16px;
-      display: grid; place-items: center; background: #50e3c2;
-      color: #101828; font-size: 27px; font-weight: 800;
+
+    .app {
+      max-width: 520px;
+      margin: auto;
+      padding: 24px 18px;
     }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 12px 0 34px;
+    }
+
+    .logo {
+      width: 48px;
+      height: 48px;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      background: #50e3c2;
+      color: #101828;
+      font-size: 27px;
+      font-weight: 800;
+    }
+
     h1 { margin: 0; font-size: 25px; }
     .sub { color: #aab5c7; font-size: 13px; margin-top: 4px; }
+
     .hero {
       background: linear-gradient(145deg, #1c2b43, #172237);
-      border: 1px solid #2b3a50; border-radius: 25px;
-      padding: 24px 20px; margin-bottom: 25px;
+      border: 1px solid #2b3a50;
+      border-radius: 25px;
+      padding: 24px 20px;
+      margin-bottom: 25px;
     }
+
     .tag { color: #50e3c2; font-size: 12px; font-weight: 700; }
+
     h2 { font-size: 25px; line-height: 1.7; margin: 12px 0 8px; }
+
     p { color: #b6c1d1; line-height: 1.9; font-size: 14px; }
+
     .primary {
-      width: 100%; border: 0; border-radius: 14px; padding: 15px;
-      background: #50e3c2; color: #101828; font-size: 16px;
-      font-weight: 700; margin-top: 12px;
+      width: 100%;
+      border: 0;
+      border-radius: 14px;
+      padding: 15px;
+      background: #50e3c2;
+      color: #101828;
+      font-size: 16px;
+      font-weight: 700;
+      margin-top: 12px;
     }
+
     .section-title { font-size: 17px; margin: 26px 2px 14px; }
-    .features { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .feature {
-      border: 1px solid #2b3a50; border-radius: 18px;
-      background: #172237; padding: 18px 14px; min-height: 115px;
+
+    .features {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
     }
+
+    .feature {
+      border: 1px solid #2b3a50;
+      border-radius: 18px;
+      background: #172237;
+      padding: 18px 14px;
+      min-height: 115px;
+    }
+
     .emoji { font-size: 25px; }
     .feature h3 { font-size: 14px; margin: 12px 0 5px; }
     .feature p { font-size: 12px; margin: 0; }
+
     .language {
-      display: block; margin: 24px auto 0; background: transparent;
-      color: #aab5c7; border: 1px solid #35445a;
-      border-radius: 12px; padding: 10px 16px;
+      display: block;
+      margin: 24px auto 0;
+      background: transparent;
+      color: #aab5c7;
+      border: 1px solid #35445a;
+      border-radius: 12px;
+      padding: 10px 16px;
     }
-    footer { text-align: center; color: #718096; font-size: 12px; padding: 28px 0 10px; }
+
+    footer {
+      text-align: center;
+      color: #718096;
+      font-size: 12px;
+      padding: 28px 0 10px;
+    }
 
     #authBox {
-      display: none; position: fixed; inset: 0;
-      background: #101828ee; z-index: 9999;
-      align-items: center; justify-content: center; padding: 20px;
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #101828ee;
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
       overflow-y: auto;
     }
+
     .auth-card {
-      background: #182437; color: white; padding: 25px;
-      border: 1px solid #35445a; border-radius: 18px;
-      width: 100%; max-width: 380px; margin: auto;
+      background: #182437;
+      color: white;
+      padding: 25px;
+      border: 1px solid #35445a;
+      border-radius: 18px;
+      width: 100%;
+      max-width: 380px;
+      margin: auto;
     }
+
     .auth-card h2 { font-size: 22px; }
     .auth-card label { display: block; margin-top: 12px; font-size: 14px; }
+
     .auth-card input {
-      display: block; width: 100%; padding: 12px;
-      margin-top: 7px; border-radius: 8px; border: 1px solid #526078;
-      background: #101828; color: white;
+      display: block;
+      width: 100%;
+      padding: 12px;
+      margin-top: 7px;
+      border-radius: 8px;
+      border: 1px solid #526078;
+      background: #101828;
+      color: white;
     }
+
     .close-button {
-      float: left; background: none; color: white;
-      border: 0; font-size: 25px;
+      float: left;
+      background: none;
+      color: white;
+      border: 0;
+      font-size: 25px;
     }
+
     .auth-submit {
-      width: 100%; padding: 13px; margin-top: 20px;
-      background: #50e3c2; color: #101828;
-      border: 0; border-radius: 9px; font-weight: bold;
+      width: 100%;
+      padding: 13px;
+      margin-top: 20px;
+      background: #50e3c2;
+      color: #101828;
+      border: 0;
+      border-radius: 9px;
+      font-weight: bold;
     }
+
     .auth-submit:disabled { opacity: .6; cursor: wait; }
+
     .auth-link {
-      background: none; color: #50e3c2;
-      border: 0; padding: 12px 0;
+      background: none;
+      color: #50e3c2;
+      border: 0;
+      padding: 12px 0;
     }
-    #authStatus { overflow-wrap: anywhere; }
+
+    #authStatus, #profileStatus { overflow-wrap: anywhere; }
+
+    /* پنل کاربری */
+    #userPanel {
+      display: none;
+      background: #172237;
+      border: 1px solid #2b3a50;
+      border-radius: 22px;
+      padding: 22px 18px;
+      margin: 20px 0 26px;
+    }
+
+    .user-avatar {
+      width: 64px;
+      height: 64px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: #50e3c2;
+      color: #101828;
+      font-size: 28px;
+      font-weight: 800;
+      margin-bottom: 16px;
+    }
+
+    #userName {
+      color: #f8fafc;
+      font-size: 21px;
+      margin: 0 0 8px;
+    }
+
+    #userEmail {
+      color: #aab5c7;
+      font-size: 14px;
+      overflow-wrap: anywhere;
+      direction: ltr;
+      text-align: right;
+    }
+
+    .logout-button {
+      width: 100%;
+      margin-top: 22px;
+      padding: 13px;
+      border: 1px solid #526078;
+      border-radius: 12px;
+      background: transparent;
+      color: #f8fafc;
+      font-weight: 700;
+    }
+
+    #profileStatus {
+      color: #50e3c2;
+      font-size: 13px;
+    }
   </style>
 </head>
+
 <body>
   <main class="app">
     <header>
@@ -99,30 +243,43 @@
       </div>
     </header>
 
-    <section class="hero">
+    <section class="hero" id="hero">
       <div class="tag" id="welcome">خوش آمدی به فرناز</div>
       <h2 id="headline">آدم‌های مهم زندگی‌ات، همیشه نزدیک تو</h2>
       <p id="description">یک فضای ساده برای گفتگو، اشتراک‌گذاری و هماهنگی با کسانی که برایت مهم‌اند.</p>
       <button class="primary" id="start" onclick="openAuth()">شروع کنیم ←</button>
     </section>
 
+    <!-- پنل اختصاصی کاربر -->
+    <section id="userPanel" aria-live="polite">
+      <div class="user-avatar" id="userAvatar">F</div>
+      <h2 id="userName">حساب کاربری</h2>
+      <div id="userEmail"></div>
+      <p id="profileStatus"></p>
+      <button class="logout-button" id="logoutButton" type="button" onclick="logout()">خروج از حساب</button>
+    </section>
+
     <h2 class="section-title" id="toolsTitle">همه‌چیز در یک جا</h2>
+
     <section class="features">
       <article class="feature">
         <div class="emoji">💬</div>
         <h3 id="chatTitle">گفتگوی خصوصی</h3>
         <p id="chatDesc">پیام‌هایت را در یک فضای مرتب دنبال کن.</p>
       </article>
+
       <article class="feature">
         <div class="emoji">📷</div>
         <h3 id="mediaTitle">عکس و فایل</h3>
         <p id="mediaDesc">لحظه‌ها و فایل‌ها را به اشتراک بگذار.</p>
       </article>
+
       <article class="feature">
         <div class="emoji">🔔</div>
         <h3 id="notifyTitle">یادآوری‌ها</h3>
         <p id="notifyDesc">کارهای مهم را فراموش نکن.</p>
       </article>
+
       <article class="feature">
         <div class="emoji">📞</div>
         <h3 id="callTitle">تماس صوتی و تصویری</h3>
@@ -137,6 +294,7 @@
   <div id="authBox" role="dialog" aria-modal="true" aria-labelledby="authTitle">
     <div class="auth-card">
       <button type="button" class="close-button" onclick="closeAuth()" aria-label="بستن">×</button>
+
       <h2 id="authTitle">ثبت‌نام در فرناز</h2>
       <p id="authMessage">برای ارتباط نزدیک‌تر، حساب خودت را بساز.</p>
 
@@ -160,8 +318,10 @@
     </div>
   </div>
 
+  <!-- ابتدا کتابخانه بارگذاری می‌شود، سپس کد اصلی -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <script>
-    // تنظیمات عمومی پروژه Supabase
     window.FARNAZ_CONFIG = {
       supabaseUrl: "https://iemykhluluoymsbqpjsn.supabase.co",
       supabasePublishableKey: "sb_publishable_LhUmVjXJlazgYRtEvXna6g_GGKxi_kC"
@@ -171,51 +331,75 @@
     let authMode = "signup";
     let farnazClient = null;
 
+    function getClient() {
+      if (farnazClient) return farnazClient;
+
+      const config = window.FARNAZ_CONFIG;
+
+      if (!config || !config.supabaseUrl || !config.supabasePublishableKey) {
+        throw new Error("تنظیمات اتصال پیدا نشد.");
+      }
+
+      if (!window.supabase || !window.supabase.createClient) {
+        throw new Error("کتابخانه اتصال بارگذاری نشده است. صفحه را دوباره باز کن.");
+      }
+
+      farnazClient = window.supabase.createClient(
+        config.supabaseUrl,
+        config.supabasePublishableKey
+      );
+
+      return farnazClient;
+    }
+
     function toggleLanguage() {
       english = !english;
       document.documentElement.lang = english ? "en" : "fa";
       document.documentElement.dir = english ? "ltr" : "rtl";
 
       const values = english ? {
-        brand:"Farnaz",
-        subtitle:"Closer, wherever you are",
-        welcome:"WELCOME TO FARNAZ",
-        headline:"The people who matter, closer to you",
-        description:"A simple space to chat, share and stay connected.",
-        start:"Let's begin →",
-        toolsTitle:"Everything in one place",
-        chatTitle:"Private chat",
-        chatDesc:"Keep your conversations organized.",
-        mediaTitle:"Photos & files",
-        mediaDesc:"Share moments and files.",
-        notifyTitle:"Reminders",
-        notifyDesc:"Remember what matters.",
-        callTitle:"Voice & video calls",
-        callDesc:"Connect beyond text messages.",
-        language:"فارسی"
+        brand: "Farnaz",
+        subtitle: "Closer, wherever you are",
+        welcome: "WELCOME TO FARNAZ",
+        headline: "The people who matter, closer to you",
+        description: "A simple space to chat, share and stay connected.",
+        start: "Let's begin →",
+        toolsTitle: "Everything in one place",
+        chatTitle: "Private chat",
+        chatDesc: "Keep your conversations organized.",
+        mediaTitle: "Photos & files",
+        mediaDesc: "Share moments and files.",
+        notifyTitle: "Reminders",
+        notifyDesc: "Remember what matters.",
+        callTitle: "Voice & video calls",
+        callDesc: "Connect beyond text messages.",
+        language: "فارسی"
       } : {
-        brand:"فرناز",
-        subtitle:"ارتباطی نزدیک‌تر، در هر کجا",
-        welcome:"خوش آمدی به فرناز",
-        headline:"آدم‌های مهم زندگی‌ات، همیشه نزدیک تو",
-        description:"یک فضای ساده برای گفتگو، اشتراک‌گذاری و هماهنگی با کسانی که برایت مهم‌اند.",
-        start:"شروع کنیم ←",
-        toolsTitle:"همه‌چیز در یک جا",
-        chatTitle:"گفتگوی خصوصی",
-        chatDesc:"پیام‌هایت را در یک فضای مرتب دنبال کن.",
-        mediaTitle:"عکس و فایل",
-        mediaDesc:"لحظه‌ها و فایل‌ها را به اشتراک بگذار.",
-        notifyTitle:"یادآوری‌ها",
-        notifyDesc:"کارهای مهم را فراموش نکن.",
-        callTitle:"تماس صوتی و تصویری",
-        callDesc:"ارتباطی فراتر از پیام متنی.",
-        language:"English"
+        brand: "فرناز",
+        subtitle: "ارتباطی نزدیک‌تر، در هر کجا",
+        welcome: "خوش آمدی به فرناز",
+        headline: "آدم‌های مهم زندگی‌ات، همیشه نزدیک تو",
+        description: "یک فضای ساده برای گفتگو، اشتراک‌گذاری و هماهنگی با کسانی که برایت مهم‌اند.",
+        start: "شروع کنیم ←",
+        toolsTitle: "همه‌چیز در یک جا",
+        chatTitle: "گفتگوی خصوصی",
+        chatDesc: "پیام‌هایت را در یک فضای مرتب دنبال کن.",
+        mediaTitle: "عکس و فایل",
+        mediaDesc: "لحظه‌ها و فایل‌ها را به اشتراک بگذار.",
+        notifyTitle: "یادآوری‌ها",
+        notifyDesc: "کارهای مهم را فراموش نکن.",
+        callTitle: "تماس صوتی و تصویری",
+        callDesc: "ارتباطی فراتر از پیام متنی.",
+        language: "English"
       };
 
       Object.keys(values).forEach(id => {
         const element = document.getElementById(id);
         if (element) element.textContent = values[id];
       });
+
+      document.getElementById("logoutButton").textContent =
+        english ? "Sign out" : "خروج از حساب";
     }
 
     function openAuth() {
@@ -233,39 +417,71 @@
 
       document.getElementById("authTitle").textContent =
         isSignup ? "ثبت‌نام در فرناز" : "ورود به فرناز";
+
       document.getElementById("authMessage").textContent =
         isSignup ? "برای ارتباط نزدیک‌تر، حساب خودت را بساز." : "با ایمیل و رمز عبورت وارد شو.";
+
       document.getElementById("nameField").style.display =
         isSignup ? "block" : "none";
+
       document.getElementById("authName").required = isSignup;
+
       document.getElementById("authPassword").autocomplete =
         isSignup ? "new-password" : "current-password";
+
       document.getElementById("authSubmit").textContent =
         isSignup ? "ثبت‌نام" : "ورود";
+
       document.getElementById("authSwitch").textContent =
         isSignup ? "قبلاً حساب ساخته‌ام؛ ورود" : "حساب ندارم؛ ثبت‌نام";
+
       document.getElementById("authStatus").textContent = "";
     }
 
-    async function getSupabaseClient() {
-      const config = window.FARNAZ_CONFIG;
+    function showUser(user) {
+      const panel = document.getElementById("userPanel");
+      const name = user.user_metadata?.display_name || "کاربر فرناز";
+      const email = user.email || "";
 
-      if (!config || !config.supabaseUrl || !config.supabasePublishableKey) {
-        throw new Error("تنظیمات پروژه پیدا نشد.");
+      document.getElementById("userName").textContent = name;
+      document.getElementById("userEmail").textContent = email;
+      document.getElementById("userAvatar").textContent =
+        name.trim().charAt(0).toUpperCase() || "F";
+
+      document.getElementById("hero").style.display = "none";
+      panel.style.display = "block";
+      document.getElementById("start").textContent =
+        english ? "Account" : "حساب کاربری";
+      document.getElementById("profileStatus").textContent =
+        english ? "You are signed in." : "با موفقیت وارد حساب شده‌ای.";
+    }
+
+    function showGuest() {
+      document.getElementById("userPanel").style.display = "none";
+      document.getElementById("hero").style.display = "block";
+      document.getElementById("start").textContent =
+        english ? "Let's begin →" : "شروع کنیم ←";
+    }
+
+    async function logout() {
+      const button = document.getElementById("logoutButton");
+      button.disabled = true;
+
+      try {
+        const client = getClient();
+        const { error } = await client.auth.signOut();
+
+        if (error) throw error;
+
+        showGuest();
+        document.getElementById("authStatus").textContent = "";
+        document.getElementById("profileStatus").textContent = "";
+      } catch (error) {
+        document.getElementById("profileStatus").textContent =
+          "خطا در خروج: " + (error.message || "دوباره تلاش کن.");
+      } finally {
+        button.disabled = false;
       }
-
-      if (!window.supabase || typeof window.supabase.createClient !== "function") {
-        throw new Error("کتابخانه اتصال بارگذاری نشد. صفحه را دوباره بارگذاری کن.");
-      }
-
-      if (!farnazClient) {
-        farnazClient = window.supabase.createClient(
-          config.supabaseUrl,
-          config.supabasePublishableKey
-        );
-      }
-
-      return farnazClient;
     }
 
     document.getElementById("authForm").addEventListener("submit", async function(event) {
@@ -281,7 +497,7 @@
       status.textContent = "در حال اتصال...";
 
       try {
-        const client = await getSupabaseClient();
+        const client = getClient();
         let result;
 
         if (authMode === "signup") {
@@ -289,25 +505,26 @@
             email,
             password,
             options: {
+              emailRedirectTo: "https://kalaghkocholo.github.io/Farnaz/",
               data: { display_name: displayName }
             }
           });
+
+          if (result.error) throw result.error;
+
+          if (!result.data.session) {
+            status.textContent = "ثبت‌نام انجام شد. ایمیلت را بررسی کن؛ سپس از بخش ورود وارد شو.";
+            return;
+          }
         } else {
-          result = await client.auth.signInWithPassword({
-            email,
-            password
-          });
+          result = await client.auth.signInWithPassword({ email, password });
+          if (result.error) throw result.error;
         }
 
-        if (result.error) throw result.error;
+        if (!result.data.user) throw new Error("اطلاعات حساب دریافت نشد.");
 
-        if (authMode === "signup" && !result.data.session) {
-          status.textContent = "درخواست ثبت‌نام ارسال شد. ایمیلت را بررسی کن و لینک تأیید را بزن.";
-        } else if (authMode === "signup") {
-          status.textContent = "ثبت‌نام موفق بود و وارد حساب شدی.";
-        } else {
-          status.textContent = "ورود موفق بود!";
-        }
+        showUser(result.data.user);
+        closeAuth();
       } catch (error) {
         console.error("Farnaz auth error:", error);
         status.textContent = "خطا: " + (error.message || "اتصال برقرار نشد.");
@@ -319,8 +536,36 @@
     document.getElementById("authBox").addEventListener("click", function(event) {
       if (event.target === this) closeAuth();
     });
-  </script>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    // بازیابی نشست موجود هنگام بازشدن صفحه
+    async function initializeApp() {
+      try {
+        const client = getClient();
+
+        const { data, error } = await client.auth.getSession();
+        if (error) throw error;
+
+        if (data.session?.user) {
+          showUser(data.session.user);
+        } else {
+          showGuest();
+        }
+
+        client.auth.onAuthStateChange((event, session) => {
+          if (session?.user) {
+            showUser(session.user);
+          } else if (event === "SIGNED_OUT") {
+            showGuest();
+          }
+        });
+      } catch (error) {
+        console.error("Farnaz initialization error:", error);
+        document.getElementById("profileStatus").textContent =
+          "بارگذاری حساب با مشکل روبه‌رو شد. صفحه را دوباره باز کن.";
+      }
+    }
+
+    initializeApp();
+  </script>
 </body>
 </html>

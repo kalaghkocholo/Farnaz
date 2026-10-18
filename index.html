@@ -229,7 +229,7 @@
     const password = document.getElementById("authPassword").value;
     const displayName = document.getElementById("authName").value.trim();
 
-    if (!window.FARNAZ_CONFIG ||
+  if (typeof FARNAZ_CONFIG === "undefined" ||
         !FARNAZ_CONFIG.supabaseUrl ||
         !FARNAZ_CONFIG.supabasePublishableKey ||
         FARNAZ_CONFIG.supabaseUrl.includes("HERE") ||

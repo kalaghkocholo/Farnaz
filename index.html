@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#101828">
+  <meta name="description" content="فرناز؛ ارتباطی نزدیک‌تر، در هر کجا.">
   <title>فرناز | Farnaz</title>
 
   <style>
@@ -19,6 +20,7 @@
 
     button, input { font: inherit; }
     button { cursor: pointer; }
+    button:disabled { opacity: .6; cursor: wait; }
 
     .app {
       max-width: 520px;
@@ -57,9 +59,7 @@
     }
 
     .tag { color: #50e3c2; font-size: 12px; font-weight: 700; }
-
     h2 { font-size: 25px; line-height: 1.7; margin: 12px 0 8px; }
-
     p { color: #b6c1d1; line-height: 1.9; font-size: 14px; }
 
     .primary {
@@ -135,9 +135,13 @@
     }
 
     .auth-card h2 { font-size: 22px; }
-    .auth-card label { display: block; margin-top: 12px; font-size: 14px; }
+    .auth-card label, .profile-form label {
+      display: block;
+      margin-top: 12px;
+      font-size: 14px;
+    }
 
-    .auth-card input {
+    .auth-card input, .profile-form input {
       display: block;
       width: 100%;
       padding: 12px;
@@ -167,8 +171,6 @@
       font-weight: bold;
     }
 
-    .auth-submit:disabled { opacity: .6; cursor: wait; }
-
     .auth-link {
       background: none;
       color: #50e3c2;
@@ -176,9 +178,10 @@
       padding: 12px 0;
     }
 
-    #authStatus, #profileStatus { overflow-wrap: anywhere; }
+    #authStatus, #profileStatus {
+      overflow-wrap: anywhere;
+    }
 
-    /* پنل کاربری */
     #userPanel {
       display: none;
       background: #172237;
@@ -199,12 +202,20 @@
       font-size: 28px;
       font-weight: 800;
       margin-bottom: 16px;
+      overflow: hidden;
+    }
+
+    .user-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
 
     #userName {
       color: #f8fafc;
       font-size: 21px;
       margin: 0 0 8px;
+      overflow-wrap: anywhere;
     }
 
     #userEmail {
@@ -215,9 +226,9 @@
       text-align: right;
     }
 
-    .logout-button {
+    .logout-button, .secondary-button {
       width: 100%;
-      margin-top: 22px;
+      margin-top: 12px;
       padding: 13px;
       border: 1px solid #526078;
       border-radius: 12px;
@@ -226,9 +237,38 @@
       font-weight: 700;
     }
 
+    .edit-button {
+      width: 100%;
+      margin-top: 18px;
+      padding: 13px;
+      border: 0;
+      border-radius: 12px;
+      background: #50e3c2;
+      color: #101828;
+      font-weight: 700;
+    }
+
+    #profileEditor {
+      display: none;
+      margin-top: 18px;
+      padding-top: 16px;
+      border-top: 1px solid #35445a;
+    }
+
+    .profile-form button { width: 100%; }
+
     #profileStatus {
       color: #50e3c2;
       font-size: 13px;
+      min-height: 20px;
+    }
+
+    .error-text { color: #ffaaa9 !important; }
+
+    @media (max-width: 360px) {
+      .app { padding: 18px 12px; }
+      .features { gap: 8px; }
+      .feature { padding: 14px 10px; }
     }
   </style>
 </head>
@@ -250,13 +290,37 @@
       <button class="primary" id="start" onclick="openAuth()">شروع کنیم ←</button>
     </section>
 
-    <!-- پنل اختصاصی کاربر -->
     <section id="userPanel" aria-live="polite">
       <div class="user-avatar" id="userAvatar">F</div>
       <h2 id="userName">حساب کاربری</h2>
       <div id="userEmail"></div>
-      <p id="profileStatus"></p>
-      <button class="logout-button" id="logoutButton" type="button" onclick="logout()">خروج از حساب</button>
+
+      <button class="edit-button" id="editProfileButton"
+        type="button" onclick="toggleProfileEditor()">
+        ویرایش پروفایل
+      </button>
+
+      <div id="profileEditor">
+        <form class="profile-form" id="profileForm">
+          <label for="profileNameInput" id="profileNameLabel">نام نمایشی</label>
+          <input id="profileNameInput" type="text" maxlength="60"
+            required autocomplete="nickname" placeholder="نام نمایشی شما">
+
+          <button class="edit-button" id="saveProfileButton" type="submit">
+            ذخیره تغییرات
+          </button>
+
+          <button class="secondary-button" id="cancelProfileButton"
+            type="button" onclick="toggleProfileEditor(false)">
+            انصراف
+          </button>
+        </form>
+      </div>
+
+      <p id="profileStatus" role="status" aria-live="polite"></p>
+
+      <button class="logout-button" id="logoutButton"
+        type="button" onclick="logout()">خروج از حساب</button>
     </section>
 
     <h2 class="section-title" id="toolsTitle">همه‌چیز در یک جا</h2>
@@ -267,19 +331,16 @@
         <h3 id="chatTitle">گفتگوی خصوصی</h3>
         <p id="chatDesc">پیام‌هایت را در یک فضای مرتب دنبال کن.</p>
       </article>
-
       <article class="feature">
         <div class="emoji">📷</div>
         <h3 id="mediaTitle">عکس و فایل</h3>
         <p id="mediaDesc">لحظه‌ها و فایل‌ها را به اشتراک بگذار.</p>
       </article>
-
       <article class="feature">
         <div class="emoji">🔔</div>
         <h3 id="notifyTitle">یادآوری‌ها</h3>
         <p id="notifyDesc">کارهای مهم را فراموش نکن.</p>
       </article>
-
       <article class="feature">
         <div class="emoji">📞</div>
         <h3 id="callTitle">تماس صوتی و تصویری</h3>
@@ -293,7 +354,8 @@
 
   <div id="authBox" role="dialog" aria-modal="true" aria-labelledby="authTitle">
     <div class="auth-card">
-      <button type="button" class="close-button" onclick="closeAuth()" aria-label="بستن">×</button>
+      <button type="button" class="close-button"
+        onclick="closeAuth()" aria-label="بستن">×</button>
 
       <h2 id="authTitle">ثبت‌نام در فرناز</h2>
       <p id="authMessage">برای ارتباط نزدیک‌تر، حساب خودت را بساز.</p>
@@ -301,46 +363,52 @@
       <form id="authForm">
         <div id="nameField">
           <label for="authName">نام نمایشی</label>
-          <input id="authName" type="text" autocomplete="name" placeholder="نام شما" required>
+          <input id="authName" type="text" autocomplete="name"
+            placeholder="نام شما" required maxlength="60">
         </div>
 
         <label for="authEmail">ایمیل</label>
-        <input id="authEmail" type="email" autocomplete="email" required placeholder="you@example.com">
+        <input id="authEmail" type="email" autocomplete="email"
+          required placeholder="you@example.com">
 
         <label for="authPassword">رمز عبور (حداقل ۸ کاراکتر)</label>
-        <input id="authPassword" type="password" autocomplete="new-password" minlength="8" required placeholder="رمز عبور">
+        <input id="authPassword" type="password" autocomplete="new-password"
+          minlength="8" required placeholder="رمز عبور">
 
         <button id="authSubmit" class="auth-submit" type="submit">ثبت‌نام</button>
       </form>
 
       <p id="authStatus" role="status" aria-live="polite"></p>
-      <button id="authSwitch" class="auth-link" type="button" onclick="switchAuthMode()">قبلاً حساب ساخته‌ام؛ ورود</button>
+      <button id="authSwitch" class="auth-link" type="button"
+        onclick="switchAuthMode()">قبلاً حساب ساخته‌ام؛ ورود</button>
     </div>
   </div>
 
-  <!-- ابتدا کتابخانه بارگذاری می‌شود، سپس کد اصلی -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script>
     window.FARNAZ_CONFIG = {
       supabaseUrl: "https://iemykhluluoymsbqpjsn.supabase.co",
-      supabasePublishableKey: "sb_publishable_LhUmVjXJlazgYRtEvXna6g_GGKxi_kC"
+      supabasePublishableKey: "sb_publishable_LhUmVjXJlazgYRtEvXna6g_GGKxi_k"
     };
 
     let english = false;
     let authMode = "signup";
     let farnazClient = null;
+    let currentUser = null;
+    let currentProfileName = "";
+    let profileRequestNumber = 0;
 
     function getClient() {
       if (farnazClient) return farnazClient;
 
       const config = window.FARNAZ_CONFIG;
 
-      if (!config || !config.supabaseUrl || !config.supabasePublishableKey) {
+      if (!config?.supabaseUrl || !config?.supabasePublishableKey) {
         throw new Error("تنظیمات اتصال پیدا نشد.");
       }
 
-      if (!window.supabase || !window.supabase.createClient) {
+      if (!window.supabase?.createClient) {
         throw new Error("کتابخانه اتصال بارگذاری نشده است. صفحه را دوباره باز کن.");
       }
 
@@ -350,6 +418,11 @@
       );
 
       return farnazClient;
+    }
+
+    function text(id, fa, en) {
+      const element = document.getElementById(id);
+      if (element) element.textContent = english ? en : fa;
     }
 
     function toggleLanguage() {
@@ -393,18 +466,37 @@
         language: "English"
       };
 
-      Object.keys(values).forEach(id => {
+      Object.entries(values).forEach(([id, value]) => {
         const element = document.getElementById(id);
-        if (element) element.textContent = values[id];
+        if (element) element.textContent = value;
       });
 
-      document.getElementById("logoutButton").textContent =
-        english ? "Sign out" : "خروج از حساب";
+      text("editProfileButton", "ویرایش پروفایل", "Edit profile");
+      text("profileNameLabel", "نام نمایشی", "Display name");
+      text("saveProfileButton", "ذخیره تغییرات", "Save changes");
+      text("cancelProfileButton", "انصراف", "Cancel");
+      text("logoutButton", "خروج از حساب", "Sign out");
+      text("authTitle",
+        authMode === "signup" ? "ثبت‌نام در فرناز" : "ورود به فرناز",
+        authMode === "signup" ? "Create your Farnaz account" : "Sign in to Farnaz");
+      text("authMessage",
+        authMode === "signup" ? "برای ارتباط نزدیک‌تر، حساب خودت را بساز." : "با ایمیل و رمز عبورت وارد شو.",
+        authMode === "signup" ? "Create an account to stay connected." : "Sign in with your email and password.");
+      text("authSubmit", authMode === "signup" ? "ثبت‌نام" : "ورود",
+        authMode === "signup" ? "Sign up" : "Sign in");
+      text("authSwitch",
+        authMode === "signup" ? "قبلاً حساب ساخته‌ام؛ ورود" : "حساب ندارم؛ ثبت‌نام",
+        authMode === "signup" ? "Already have an account? Sign in" : "Need an account? Sign up");
+
+      if (!currentUser) {
+        text("start", "شروع کنیم ←", "Let's begin →");
+      }
     }
 
     function openAuth() {
       document.getElementById("authBox").style.display = "flex";
       document.getElementById("authStatus").textContent = "";
+      document.getElementById("authStatus").classList.remove("error-text");
     }
 
     function closeAuth() {
@@ -415,52 +507,211 @@
       authMode = authMode === "signup" ? "login" : "signup";
       const isSignup = authMode === "signup";
 
-      document.getElementById("authTitle").textContent =
-        isSignup ? "ثبت‌نام در فرناز" : "ورود به فرناز";
+      text("authTitle",
+        isSignup ? "ثبت‌نام در فرناز" : "ورود به فرناز",
+        isSignup ? "Create your Farnaz account" : "Sign in to Farnaz");
 
-      document.getElementById("authMessage").textContent =
-        isSignup ? "برای ارتباط نزدیک‌تر، حساب خودت را بساز." : "با ایمیل و رمز عبورت وارد شو.";
+      text("authMessage",
+        isSignup ? "برای ارتباط نزدیک‌تر، حساب خودت را بساز." : "با ایمیل و رمز عبورت وارد شو.",
+        isSignup ? "Create an account to stay connected." : "Sign in with your email and password.");
 
-      document.getElementById("nameField").style.display =
-        isSignup ? "block" : "none";
-
+      document.getElementById("nameField").style.display = isSignup ? "block" : "none";
       document.getElementById("authName").required = isSignup;
-
       document.getElementById("authPassword").autocomplete =
         isSignup ? "new-password" : "current-password";
 
-      document.getElementById("authSubmit").textContent =
-        isSignup ? "ثبت‌نام" : "ورود";
-
-      document.getElementById("authSwitch").textContent =
-        isSignup ? "قبلاً حساب ساخته‌ام؛ ورود" : "حساب ندارم؛ ثبت‌نام";
+      text("authSubmit", isSignup ? "ثبت‌نام" : "ورود",
+        isSignup ? "Sign up" : "Sign in");
+      text("authSwitch",
+        isSignup ? "قبلاً حساب ساخته‌ام؛ ورود" : "حساب ندارم؛ ثبت‌نام",
+        isSignup ? "Already have an account? Sign in" : "Need an account? Sign up");
 
       document.getElementById("authStatus").textContent = "";
+      document.getElementById("authStatus").classList.remove("error-text");
     }
 
-    function showUser(user) {
-      const panel = document.getElementById("userPanel");
-      const name = user.user_metadata?.display_name || "کاربر فرناز";
-      const email = user.email || "";
+    function setProfileStatus(message, isError = false) {
+      const status = document.getElementById("profileStatus");
+      status.textContent = message;
+      status.classList.toggle("error-text", isError);
+    }
+
+    function renderUser(user, displayName) {
+      currentUser = user;
+      currentProfileName = displayName || "";
+
+      const name = currentProfileName.trim() ||
+        (english ? "Farnaz user" : "کاربر فرناز");
 
       document.getElementById("userName").textContent = name;
-      document.getElementById("userEmail").textContent = email;
-      document.getElementById("userAvatar").textContent =
-        name.trim().charAt(0).toUpperCase() || "F";
+      document.getElementById("userEmail").textContent = user.email || "";
+
+      const avatar = document.getElementById("userAvatar");
+      avatar.replaceChildren();
+
+      const initial = name.charAt(0).toLocaleUpperCase();
+      avatar.textContent = initial || "F";
 
       document.getElementById("hero").style.display = "none";
-      panel.style.display = "block";
+      document.getElementById("userPanel").style.display = "block";
       document.getElementById("start").textContent =
         english ? "Account" : "حساب کاربری";
-      document.getElementById("profileStatus").textContent =
-        english ? "You are signed in." : "با موفقیت وارد حساب شده‌ای.";
+    }
+
+    async function showUser(user) {
+      const requestNumber = ++profileRequestNumber;
+      currentUser = user;
+
+      renderUser(
+        user,
+        user.user_metadata?.display_name ||
+        (english ? "Farnaz user" : "کاربر فرناز")
+      );
+
+      setProfileStatus(english ? "Loading profile..." : "در حال بارگذاری پروفایل...");
+
+      try {
+        const client = getClient();
+        const { data, error } = await client
+          .from("profiles")
+          .select("id, display_name, avatar_url")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if (requestNumber !== profileRequestNumber || currentUser?.id !== user.id) return;
+        if (error) throw error;
+
+        if (data) {
+          const savedName = data.display_name || user.user_metadata?.display_name || "";
+          renderUser(user, savedName);
+          document.getElementById("profileNameInput").value = savedName;
+          setProfileStatus(english ? "Profile loaded." : "پروفایل از دیتابیس بارگذاری شد.");
+        } else {
+          setProfileStatus(
+            english
+              ? "No database profile was found yet. You can still edit and save your name."
+              : "پروفایل دیتابیس پیدا نشد؛ می‌توانی نامت را ویرایش و ذخیره کنی.",
+            true
+          );
+          document.getElementById("profileNameInput").value =
+            user.user_metadata?.display_name || "";
+        }
+      } catch (error) {
+        console.error("Farnaz profile read error:", error);
+        if (requestNumber !== profileRequestNumber) return;
+
+        setProfileStatus(
+          (english ? "Could not load profile: " : "بارگذاری پروفایل ناموفق بود: ") +
+          (error.message || "Unknown error"),
+          true
+        );
+      }
     }
 
     function showGuest() {
+      profileRequestNumber++;
+      currentUser = null;
+      currentProfileName = "";
       document.getElementById("userPanel").style.display = "none";
       document.getElementById("hero").style.display = "block";
+      document.getElementById("profileEditor").style.display = "none";
       document.getElementById("start").textContent =
         english ? "Let's begin →" : "شروع کنیم ←";
+    }
+
+    function toggleProfileEditor(forceOpen) {
+      const editor = document.getElementById("profileEditor");
+      const shouldOpen = typeof forceOpen === "boolean"
+        ? forceOpen
+        : editor.style.display !== "block";
+
+      editor.style.display = shouldOpen ? "block" : "none";
+
+      if (shouldOpen) {
+        document.getElementById("profileNameInput").value = currentProfileName;
+        document.getElementById("profileStatus").textContent = "";
+        document.getElementById("profileNameInput").focus();
+      }
+    }
+
+    async function saveProfile(event) {
+      event.preventDefault();
+
+      const user = currentUser;
+      if (!user) {
+        setProfileStatus(english ? "Please sign in again." : "لطفاً دوباره وارد حساب شو.", true);
+        return;
+      }
+
+      const input = document.getElementById("profileNameInput");
+      const newName = input.value.trim();
+      const button = document.getElementById("saveProfileButton");
+
+      if (!newName) {
+        setProfileStatus(english ? "Enter a display name." : "نام نمایشی را وارد کن.", true);
+        input.focus();
+        return;
+      }
+
+      if (newName.length > 60) {
+        setProfileStatus(english ? "Name must be 60 characters or less." : "نام باید حداکثر ۶۰ نویسه باشد.", true);
+        return;
+      }
+
+      button.disabled = true;
+      setProfileStatus(english ? "Saving..." : "در حال ذخیره...");
+
+      try {
+        const client = getClient();
+
+        // به‌روزرسانی رکورد پروفایل برای همین کاربر
+        const { data: savedProfile, error: profileError } = await client
+          .from("profiles")
+          .update({ display_name: newName })
+          .eq("id", user.id)
+          .select("id, display_name")
+          .maybeSingle();
+
+        if (profileError) throw profileError;
+
+        if (!savedProfile) {
+          throw new Error(
+            english
+              ? "No profile row was updated. Check the profile record and database policies."
+              : "هیچ رکوردی تغییر نکرد. وجود پروفایل و سیاست‌های امنیتی دیتابیس را بررسی کن."
+          );
+        }
+
+        // هماهنگ‌سازی نام در اطلاعات حساب کاربری
+        const { error: authError } = await client.auth.updateUser({
+          data: { display_name: newName }
+        });
+
+        currentProfileName = savedProfile.display_name || newName;
+        renderUser(user, currentProfileName);
+        toggleProfileEditor(false);
+
+        if (authError) {
+          console.error("Farnaz auth metadata update error:", authError);
+          setProfileStatus(
+            english
+              ? "Profile saved. Account metadata could not be synchronized."
+              : "نام پروفایل ذخیره شد، اما همگام‌سازی اطلاعات حساب کامل نشد.",
+            true
+          );
+        } else {
+          setProfileStatus(english ? "Profile updated successfully." : "نام پروفایل با موفقیت ذخیره شد.");
+        }
+      } catch (error) {
+        console.error("Farnaz profile save error:", error);
+        setProfileStatus(
+          (english ? "Could not save profile: " : "ذخیره پروفایل ناموفق بود: ") +
+          (error.message || "Unknown error"),
+          true
+        );
+      } finally {
+        button.disabled = false;
+      }
     }
 
     async function logout() {
@@ -470,15 +721,16 @@
       try {
         const client = getClient();
         const { error } = await client.auth.signOut();
-
         if (error) throw error;
 
         showGuest();
         document.getElementById("authStatus").textContent = "";
-        document.getElementById("profileStatus").textContent = "";
       } catch (error) {
-        document.getElementById("profileStatus").textContent =
-          "خطا در خروج: " + (error.message || "دوباره تلاش کن.");
+        setProfileStatus(
+          (english ? "Sign out failed: " : "خطا در خروج: ") +
+          (error.message || "دوباره تلاش کن."),
+          true
+        );
       } finally {
         button.disabled = false;
       }
@@ -494,7 +746,8 @@
       const displayName = document.getElementById("authName").value.trim();
 
       submit.disabled = true;
-      status.textContent = "در حال اتصال...";
+      status.classList.remove("error-text");
+      status.textContent = english ? "Connecting..." : "در حال اتصال...";
 
       try {
         const client = getClient();
@@ -513,7 +766,9 @@
           if (result.error) throw result.error;
 
           if (!result.data.session) {
-            status.textContent = "ثبت‌نام انجام شد. ایمیلت را بررسی کن؛ سپس از بخش ورود وارد شو.";
+            status.textContent = english
+              ? "Sign-up submitted. Check your email, confirm your address, then sign in."
+              : "ثبت‌نام انجام شد. ایمیلت را تأیید کن و سپس وارد حساب شو.";
             return;
           }
         } else {
@@ -523,45 +778,54 @@
 
         if (!result.data.user) throw new Error("اطلاعات حساب دریافت نشد.");
 
-        showUser(result.data.user);
         closeAuth();
+        await showUser(result.data.user);
       } catch (error) {
         console.error("Farnaz auth error:", error);
-        status.textContent = "خطا: " + (error.message || "اتصال برقرار نشد.");
+        status.classList.add("error-text");
+        status.textContent =
+          (english ? "Error: " : "خطا: ") +
+          (error.message || "اتصال برقرار نشد.");
       } finally {
         submit.disabled = false;
       }
     });
 
+    document.getElementById("profileForm").addEventListener("submit", saveProfile);
+
     document.getElementById("authBox").addEventListener("click", function(event) {
       if (event.target === this) closeAuth();
     });
 
-    // بازیابی نشست موجود هنگام بازشدن صفحه
     async function initializeApp() {
       try {
         const client = getClient();
-
         const { data, error } = await client.auth.getSession();
         if (error) throw error;
 
         if (data.session?.user) {
-          showUser(data.session.user);
+          await showUser(data.session.user);
         } else {
           showGuest();
         }
 
         client.auth.onAuthStateChange((event, session) => {
-          if (session?.user) {
-            showUser(session.user);
-          } else if (event === "SIGNED_OUT") {
-            showGuest();
-          }
+          // کارهای async را خارج از callback رویداد احراز هویت اجرا می‌کنیم.
+          setTimeout(() => {
+            if (session?.user) {
+              showUser(session.user);
+            } else if (event === "SIGNED_OUT") {
+              showGuest();
+            }
+          }, 0);
         });
       } catch (error) {
         console.error("Farnaz initialization error:", error);
-        document.getElementById("profileStatus").textContent =
-          "بارگذاری حساب با مشکل روبه‌رو شد. صفحه را دوباره باز کن.";
+        setProfileStatus(
+          (english ? "Account loading failed: " : "بارگذاری حساب با مشکل روبه‌رو شد: ") +
+          (error.message || "صفحه را دوباره باز کن."),
+          true
+        );
       }
     }
 

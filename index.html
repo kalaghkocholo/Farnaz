@@ -178,5 +178,111 @@
     <button id="authSwitch" type="button" onclick="switchAuthMode()" style="background:none;color:#50E3C2;border:0;padding:8px 0">قبلاً حساب ساخته‌ام؛ ورود</button>
   </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  let authMode = "signup";
+
+  function openAuth() {
+    document.getElementById("authBox").style.display = "flex";
+    document.getElementById("authStatus").textContent = "";
+  }
+
+  function closeAuth() {
+    document.getElementById("authBox").style.display = "none";
+  }
+
+  function switchAuthMode() {
+    authMode = authMode === "signup" ? "login" : "signup";
+
+    const isSignup = authMode === "signup";
+
+    document.getElementById("authTitle").textContent =
+      isSignup ? "ثبت‌نام در فرناز" : "ورود به فرناز";
+
+    document.getElementById("authName").parentElement.style.display = "block";
+    document.getElementById("authName").style.display =
+      isSignup ? "block" : "none";
+
+    document.querySelector('label[for="authName"]').style.display =
+      isSignup ? "block" : "none";
+
+    document.getElementById("authName").required = isSignup;
+    document.getElementById("authPassword").autocomplete =
+      isSignup ? "new-password" : "current-password";
+
+    document.getElementById("authSubmit").textContent =
+      isSignup ? "ثبت‌نام" : "ورود";
+
+    document.getElementById("authSwitch").textContent =
+      isSignup ? "قبلاً حساب ساخته‌ام؛ ورود" : "حساب ندارم؛ ثبت‌نام";
+
+    document.getElementById("authStatus").textContent = "";
+  }
+
+  document.getElementById("authForm").addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    const status = document.getElementById("authStatus");
+    const submit = document.getElementById("authSubmit");
+    const email = document.getElementById("authEmail").value.trim();
+    const password = document.getElementById("authPassword").value;
+    const displayName = document.getElementById("authName").value.trim();
+
+    if (!window.FARNAZ_CONFIG ||
+        !FARNAZ_CONFIG.supabaseUrl ||
+        !FARNAZ_CONFIG.supabasePublishableKey ||
+        FARNAZ_CONFIG.supabaseUrl.includes("HERE") ||
+        FARNAZ_CONFIG.supabasePublishableKey.includes("HERE")) {
+      status.textContent = "تنظیمات اتصال Supabase را بررسی کن.";
+      return;
+    }
+
+    submit.disabled = true;
+    status.textContent = "لطفاً صبر کن...";
+
+    try {
+      const client = window.farnazSupabase ||
+        (window.farnazSupabase = window.supabase.createClient(
+          FARNAZ_CONFIG.supabaseUrl,
+          FARNAZ_CONFIG.supabasePublishableKey
+        ));
+
+      let result;
+
+      if (authMode === "signup") {
+        result = await client.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { display_name: displayName }
+          }
+        });
+      } else {
+        result = await client.auth.signInWithPassword({
+          email,
+          password
+        });
+      }
+
+      if (result.error) throw result.error;
+
+      if (authMode === "signup" && !result.data.session) {
+        status.textContent =
+          "ثبت‌نام انجام شد. ایمیلت را بررسی کن و لینک تأیید را بزن.";
+      } else {
+        status.textContent =
+          "ورود موفق بود! حساب تو به فرناز متصل شد.";
+      }
+    } catch (error) {
+      console.error("Farnaz authentication error:", error);
+      status.textContent =
+        "خطا: " + (error.message || "اتصال برقرار نشد.");
+    } finally {
+      submit.disabled = false;
+    }
+  });
+</script>
+</body>
 </body>
 </html>

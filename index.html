@@ -153,5 +153,30 @@
     supabasePublishableKey: "sb_publishable_LhUmVjXJlazgYRtEvXna6g_GGKxi_kC"
   };
 </script>
+
+<div id="authBox" style="display:none;position:fixed;inset:0;background:#101828ee;z-index:9999;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#182437;color:white;padding:25px;border-radius:18px;width:100%;max-width:380px;box-sizing:border-box;font-family:Arial,sans-serif">
+    <button type="button" onclick="closeAuth()" style="float:right;background:none;color:white;border:0;font-size:24px">×</button>
+    <h2 id="authTitle">ثبت‌نام در فرناز</h2>
+    <p id="authMessage">برای ارتباط نزدیک‌تر، حساب خودت را بساز.</p>
+
+    <form id="authForm">
+      <label for="authName">نام نمایشی</label>
+      <input id="authName" type="text" autocomplete="name" placeholder="نام شما" style="display:block;width:100%;box-sizing:border-box;padding:12px;margin:8px 0 14px;border-radius:8px" />
+
+      <label for="authEmail">ایمیل</label>
+      <input id="authEmail" type="email" autocomplete="email" required placeholder="you@example.com" style="display:block;width:100%;box-sizing:border-box;padding:12px;margin:8px 0 14px;border-radius:8px" />
+
+      <label for="authPassword">رمز عبور (حداقل ۸ کاراکتر)</label>
+      <input id="authPassword" type="password" autocomplete="new-password" minlength="8" required placeholder="رمز عبور" style="display:block;width:100%;box-sizing:border-box;padding:12px;margin:8px 0 16px;border-radius:8px" />
+
+      <button id="authSubmit" type="submit" style="width:100%;padding:13px;background:#50E3C2;color:#101828;border:0;border-radius:9px;font-weight:bold">ثبت‌نام</button>
+    </form>
+
+    <p id="authStatus" role="status" style="overflow-wrap:anywhere"></p>
+
+    <button id="authSwitch" type="button" onclick="switchAuthMode()" style="background:none;color:#50E3C2;border:0;padding:8px 0">قبلاً حساب ساخته‌ام؛ ورود</button>
+  </div>
+</div>
 </body>
 </html>

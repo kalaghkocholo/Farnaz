@@ -1095,38 +1095,62 @@ async function refreshConversationList() {
       list.scrollTop = list.scrollHeight;
     }
 
-    async function subscribeToMessages() {
-      await stopMessageSubscription();
+    
 
-      if (!currentUser || !currentChatUser) return;
+async function subscribeToMessages() {
+  await stopMessageSubscription();
 
-      const myId = currentUser.id;
-      const contactId = currentChatUser.user_id;
+  if (!currentUser) return;
 
-      messageSubscription = getClient()
-        .channel("farnaz-chat-" + myId + "-" + contactId)
-        .on(
-          "postgres_changes",
-          { event: "INSERT", schema: "public", table: "messages" },
-          payload => {
-            const message = payload.new;
-            const isThisConversation =
-              (message.sender_id === myId && message.receiver_id === contactId) ||
-              (message.sender_id === contactId && message.receiver_id === myId);
+  const myId = currentUser.id;
+  const client = getClient();
 
-            if (isThisConversation) loadMessages();
-          }
-        )
-        .subscribe(status => {
-          if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-            console.warn("Realtime subscription status:", status);
-            setStatus("sendMessageStatus",
-              english
-                ? "Live updates are unavailable; messages can still be refreshed."
-                : "دریافت زنده در دسترس نیست؛ می‌توانی پیام‌ها را دوباره بارگذاری کنی.");
-          }
-        });
-    }
+  messageSubscription = client
+    .channel("farnaz-inbox-" + myId)
+    .on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "messages"
+      },
+      payload => {
+        if (currentUser?.id !== myId) return;
+
+        const message = payload.new;
+
+        if (
+          message.sender_id !== myId &&
+          message.receiver_id !== myId
+        ) return;
+
+        refreshConversationList();
+
+        if (
+          currentChatUser &&
+          (
+            (message.sender_id === myId &&
+              message.receiver_id === currentChatUser.user_id) ||
+            (message.sender_id === currentChatUser.user_id &&
+              message.receiver_id === myId)
+          )
+        ) {
+          loadMessages();
+        }
+      }
+    )
+    .subscribe(status => {
+      if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+        console.warn("Realtime subscription status:", status);
+        setStatus(
+          "inboxStatus",
+          english
+            ? "Live updates are unavailable."
+            : "دریافت زنده پیام‌ها در دسترس نیست."
+        );
+      }
+    });
+}
 
     
 async function sendMessage(event) {

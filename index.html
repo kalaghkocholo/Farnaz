@@ -1033,7 +1033,7 @@ async function refreshConversationList() {
         setStatus("recipientStatus",
           english ? "Contact found." : "مخاطب پیدا شد.");
         await loadMessages();
-        await subscribeToMessages();
+     await refreshConversationList();
       } catch (error) {
         console.error("Find recipient error:", error);
         setStatus("recipientStatus",

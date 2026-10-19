@@ -730,11 +730,17 @@
       showMessagesSection(null);
     }
 
-    function showMessagesSection(user) {
-      const section = document.getElementById("messagesSection");
-      if (section) section.style.display = user ? "block" : "none";
-      if (!user) resetChat();
-    }
+function showMessagesSection(user) {
+  const section = document.getElementById("messagesSection");
+  if (section) section.style.display = user ? "block" : "none";
+
+  if (!user) {
+    resetChat();
+    const list = document.getElementById("conversationList");
+    if (list) list.replaceChildren();
+  }
+}
+
 
     function toggleProfileEditor(forceOpen) {
       const editor = document.getElementById("profileEditor");

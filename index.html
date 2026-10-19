@@ -848,6 +848,128 @@
       }
     }
 
+
+async function refreshConversationList() {
+  const list = document.getElementById("conversationList");
+  if (!list || !currentUser) return;
+
+  const myId = currentUser.id;
+  setStatus(
+    "inboxStatus",
+    english ? "Loading conversations..." : "در حال بارگذاری گفتگوها..."
+  );
+
+  try {
+    const { data, error } = await getClient()
+      .from("messages")
+      .select("id, sender_id, receiver_id, body, created_at")
+      .or(`sender_id.eq.${myId},receiver_id.eq.${myId}`)
+      .order("created_at", { ascending: false })
+      .limit(1000);
+
+    if (error) throw error;
+    if (currentUser?.id !== myId) return;
+
+    const conversations = new Map();
+
+    for (const message of data || []) {
+      const otherId = message.sender_id === myId
+        ? message.receiver_id
+        : message.sender_id;
+
+      if (!otherId || otherId === myId) continue;
+
+      if (!conversations.has(otherId)) {
+        conversations.set(otherId, {
+          user_id: otherId,
+          lastMessage: message.body || "",
+          created_at: message.created_at,
+          unreadIncoming: message.receiver_id === myId,
+          lastSender: message.sender_id
+        });
+      }
+    }
+
+    list.replaceChildren();
+
+    if (conversations.size === 0) {
+      setStatus(
+        "inboxStatus",
+        english
+          ? "No conversations yet. When someone messages you, they will appear here."
+          : "هنوز گفت‌وگویی نداری. هرکس به تو پیام بدهد، اینجا نمایش داده می‌شود."
+      );
+      return;
+    }
+
+    setStatus(
+      "inboxStatus",
+      english ? "Your conversations" : "گفتگوهای شما"
+    );
+
+    for (const conversation of conversations.values()) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "conversation-item";
+
+      const name = document.createElement("span");
+      name.className = "conversation-name";
+      name.textContent =
+        conversation.user_id === currentChatUser?.user_id
+          ? currentChatUser.display_name
+          : (english ? "Farnaz user" : "مخاطب جدید");
+
+      const preview = document.createElement("span");
+      preview.className = "conversation-preview";
+      preview.textContent =
+        (conversation.lastSender === myId
+          ? (english ? "You: " : "شما: ")
+          : "") + conversation.lastMessage;
+
+      const time = document.createElement("span");
+      time.className = "conversation-time";
+      time.textContent = new Date(
+        conversation.created_at
+      ).toLocaleString(english ? "en" : "fa-IR");
+
+      button.append(name, preview, time);
+
+      button.addEventListener("click", async () => {
+        currentChatUser = {
+          user_id: conversation.user_id,
+          display_name:
+            conversation.user_id === currentChatUser?.user_id
+              ? currentChatUser.display_name
+              : (english ? "New contact" : "مخاطب جدید")
+        };
+
+        document.getElementById("conversationTitle").textContent =
+          currentChatUser.display_name;
+
+        document.getElementById("chatPanel").hidden = false;
+
+        await loadMessages();
+
+        document.getElementById("chatPanel").scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
+      });
+
+      list.appendChild(button);
+    }
+  } catch (error) {
+    console.error("Inbox load error:", error);
+    setStatus(
+      "inboxStatus",
+      (english
+        ? "Could not load conversations: "
+        : "بارگذاری گفتگوها ناموفق بود: ") + error.message,
+      true
+    );
+  }
+}
+
     async function findRecipient(event) {
       if (event) event.preventDefault();
 

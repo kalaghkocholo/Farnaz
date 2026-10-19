@@ -879,5 +879,30 @@ function showMessagesSection(user) {
     <p id="sendMessageStatus" role="status"></p>
   </div>
 </section>
+
+<script>
+document.getElementById("findRecipientBtn")
+  ?.addEventListener("click", () => {
+    if (typeof findRecipient === "function") {
+      findRecipient();
+    } else {
+      document.getElementById("recipientStatus").textContent =
+        "تابع جست‌وجوی مخاطب بارگذاری نشده است.";
+    }
+  });
+
+document.getElementById("sendMessageForm")
+  ?.addEventListener("submit", event => {
+    event.preventDefault();
+
+    if (typeof sendMessage === "function") {
+      sendMessage(event);
+    } else {
+      document.getElementById("sendMessageStatus").textContent =
+        "تابع ارسال پیام بارگذاری نشده است.";
+    }
+  });
+</script>
+
 </body>
 </html>

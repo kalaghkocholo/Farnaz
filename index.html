@@ -840,7 +840,6 @@ function showMessagesSection(user) {
       document.getElementById("messageList").replaceChildren();
       setStatus("recipientStatus", "");
       setStatus("sendMessageStatus", "");
-      stopMessageSubscription();
     }
 
     async function stopMessageSubscription() {

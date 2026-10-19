@@ -736,6 +736,12 @@ document.getElementById("authStatus").textContent = "";
         button.disabled = false;
       }
     }
+function showMessagesSection(user) {
+  const section = document.getElementById("messagesSection");
+  if (section) {
+    section.hidden = !user;
+  }
+}
 
     document.getElementById("authForm").addEventListener("submit", async function(event) {
       event.preventDefault();

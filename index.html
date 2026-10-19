@@ -831,5 +831,45 @@
 
     initializeApp();
   </script>
+<section id="messagesSection" class="messages-section" hidden>
+  <h2>پیام‌های خصوصی</h2>
+  <p>برای شروع گفت‌وگو، ایمیل حساب فرناز مخاطبت را وارد کن.</p>
+
+  <div class="message-search">
+    <input
+      id="recipientEmail"
+      type="email"
+      placeholder="ایمیل مخاطب"
+      autocomplete="email"
+    />
+    <button id="findRecipientBtn" type="button">
+      پیدا کردن مخاطب
+    </button>
+  </div>
+
+  <p id="recipientStatus" role="status"></p>
+
+  <div id="chatPanel" hidden>
+    <h3 id="chatTitle">گفت‌وگو</h3>
+    <div
+      id="messageList"
+      role="log"
+      aria-live="polite"
+      aria-label="پیام‌های گفت‌وگو"
+    ></div>
+
+    <form id="sendMessageForm">
+      <textarea
+        id="messageText"
+        maxlength="5000"
+        placeholder="پیامت را بنویس..."
+        required
+      ></textarea>
+      <button type="submit">ارسال پیام</button>
+    </form>
+
+    <p id="sendMessageStatus" role="status"></p>
+  </div>
+</section>
 </body>
 </html>

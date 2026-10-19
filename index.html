@@ -997,52 +997,100 @@
         });
     }
 
-    async function sendMessage(event) {
-      event.preventDefault();
+    
+async function sendMessage(event) {
+  event.preventDefault();
 
-      if (!currentUser || !currentChatUser) {
-        setStatus("sendMessageStatus",
-          english ? "Find a contact first." : "ابتدا مخاطب را پیدا کن.", true);
-        return;
-      }
+  if (!currentUser || !currentChatUser) {
+    setStatus(
+      "sendMessageStatus",
+      english ? "Find a contact first." : "ابتدا مخاطب را پیدا کن.",
+      true
+    );
+    return;
+  }
 
-      const input = document.getElementById("messageText");
-      const body = input.value.trim();
+  const input = document.getElementById("messageText");
+  const body = input.value.trim();
 
-      if (!body) return;
-      if (body.length > 5000) {
-        setStatus("sendMessageStatus",
-          english ? "Message is too long." : "پیام بیش از حد طولانی است.", true);
-        return;
-      }
+  if (!body) return;
 
-      const button = document.getElementById("sendMessageButton");
-      button.disabled = true;
-      setStatus("sendMessageStatus",
-        english ? "Sending..." : "در حال ارسال...");
+  if (body.length > 5000) {
+    setStatus(
+      "sendMessageStatus",
+      english ? "Message is too long." : "پیام بیش از حد طولانی است.",
+      true
+    );
+    return;
+  }
 
-      try {
-        const { error } = await getClient().from("messages").insert({
-          sender_id: currentUser.id,
-          receiver_id: currentChatUser.user_id,
-          body
-        });
+  const button = document.getElementById("sendMessageButton");
+  button.disabled = true;
 
-        if (error) throw error;
+  setStatus(
+    "sendMessageStatus",
+    english ? "Sending..." : "در حال ارسال..."
+  );
 
-        input.value = "";
-        setStatus("sendMessageStatus",
-          english ? "Message sent." : "پیام ارسال شد.");
-        await loadMessages();
-      } catch (error) {
-        console.error("Send message error:", error);
-        setStatus("sendMessageStatus",
-          (english ? "Message could not be sent: " : "ارسال پیام ناموفق بود: ") +
-          (error.message || "Unknown error"), true);
-      } finally {
-        button.disabled = false;
-      }
+  try {
+    const client = getClient();
+
+    const { data: sessionData, error: sessionError } =
+      await client.auth.getSession();
+
+    if (sessionError) throw sessionError;
+
+    const session = sessionData.session;
+
+    if (!session) {
+      throw new Error(
+        english
+          ? "Your session has expired. Sign in again."
+          : "نشست شما منقضی شده است؛ دوباره وارد حساب شوید."
+      );
     }
+
+    if (session.user.id !== currentUser.id) {
+      throw new Error(
+        english
+          ? "The active account does not match the sender."
+          : "حساب فعال با فرستنده پیام مطابقت ندارد."
+      );
+    }
+
+    const { error } = await client
+      .from("messages")
+      .insert({
+        sender_id: session.user.id,
+        receiver_id: currentChatUser.user_id,
+        body: body
+      });
+
+    if (error) throw error;
+
+    input.value = "";
+
+    setStatus(
+      "sendMessageStatus",
+      english ? "Message sent." : "پیام ارسال شد."
+    );
+
+    await loadMessages();
+
+  } catch (error) {
+    console.error("Send message error:", error);
+
+    setStatus(
+      "sendMessageStatus",
+      (english ? "Message could not be sent: " : "ارسال پیام ناموفق بود: ") +
+      (error.message || "Unknown error"),
+      true
+    );
+  } finally {
+    button.disabled = false;
+  }
+}
+
 
     document.getElementById("authForm").addEventListener("submit", async event => {
       event.preventDefault();

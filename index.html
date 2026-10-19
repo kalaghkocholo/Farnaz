@@ -369,14 +369,35 @@ let profileRequestNumber=0,chatRequestNumber=0,previousPage="chatsPage";
 
 const $=id=>document.getElementById(id);
 
+
 function getClient(){
   if(farnazClient)return farnazClient;
+
   const c=window.FARNAZ_CONFIG;
-  if(!c?.supabaseUrl||!c?.supabasePublishableKey)throw new Error("تنظیمات Supabase ناقص است.");
-  if(!window.supabase?.createClient)throw new Error("کتابخانه Supabase بارگذاری نشده؛ صفحه را تازه‌سازی کن.");
-  farnazClient=window.supabase.createClient(c.supabaseUrl,c.supabasePublishableKey);
+
+  if(!c?.supabaseUrl||!c?.supabasePublishableKey){
+    throw new Error("تنظیمات Supabase ناقص است.");
+  }
+
+  if(!window.supabase?.createClient){
+    throw new Error("کتابخانه Supabase بارگذاری نشده؛ صفحه را تازه‌سازی کن.");
+  }
+
+  farnazClient=window.supabase.createClient(
+    c.supabaseUrl,
+    c.supabasePublishableKey,
+    {
+      auth:{
+        persistSession:true,
+        autoRefreshToken:true,
+        detectSessionInUrl:true
+      }
+    }
+  );
+
   return farnazClient;
 }
+
 function setStatus(id,msg,isError=false){
   const e=$(id);if(!e)return;
   e.textContent=msg;e.classList.toggle("error-text",isError);

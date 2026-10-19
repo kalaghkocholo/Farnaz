@@ -1290,6 +1290,8 @@ async function sendMessage(event) {
         closeAuth();
         await showUser(result.data.user);
         showMessagesSection(result.data.user);
+        await subscribeToMessages();
+await refreshConversationList();
       } catch (error) {
         console.error("Auth error:", error);
         status.classList.add("error-text");

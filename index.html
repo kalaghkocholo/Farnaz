@@ -1322,6 +1322,8 @@ async function sendMessage(event) {
         if (data.session?.user) {
           await showUser(data.session.user);
           showMessagesSection(data.session.user);
+          await subscribeToMessages();
+await refreshConversationList();
         } else {
           showGuest();
         }

@@ -400,6 +400,15 @@
       </form>
 
       <p id="recipientStatus" role="status" aria-live="polite"></p>
+      
+
+<section id="inboxSection">
+  <h3 id="inboxHeading">گفتگوها و پیام‌های دریافتی</h3>
+  <p id="inboxStatus" class="muted-note" aria-live="polite">
+    در حال بارگذاری گفتگوها...
+  </p>
+  <div id="conversationList"></div>
+</section>
 
       <div id="chatPanel" hidden>
         <h3 id="conversationTitle">گفت‌وگو</h3>
@@ -1192,6 +1201,54 @@ async function sendMessage(event) {
     }
 
     initializeApp();
+    
+#inboxSection {
+  margin: 18px 0;
+  padding: 14px 0;
+  border-top: 1px solid #35445a;
+}
+
+#inboxHeading {
+  font-size: 17px;
+  margin: 8px 0 12px;
+}
+
+.conversation-item {
+  display: block;
+  width: 100%;
+  text-align: start;
+  margin: 8px 0;
+  padding: 13px;
+  border: 1px solid #35445a;
+  border-radius: 13px;
+  background: #101828;
+  color: #f8fafc;
+}
+
+.conversation-item:active {
+  background: #27364b;
+}
+
+.conversation-name {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+
+.conversation-preview {
+  display: block;
+  color: #aab5c7;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.conversation-time {
+  display: block;
+  color: #718096;
+  font-size: 10px;
+  margin-top: 6px;
+}
+
   </script>
 </body>
 </html>

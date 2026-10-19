@@ -804,11 +804,12 @@
         if (error) throw error;
 
         if (data.session?.user) {
-          await showUser(data.session.user);
-        } else {
-          showGuest();
-        }
-
+  await showUser(data.session.user);
+  showMessagesSection(data.session.user);
+} else {
+  showGuest();
+  showMessagesSection(null);
+}
         client.auth.onAuthStateChange((event, session) => {
           // کارهای async را خارج از callback رویداد احراز هویت اجرا می‌کنیم.
           setTimeout(() => {

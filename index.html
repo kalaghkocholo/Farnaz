@@ -702,7 +702,7 @@ function makeContactButton(contact,preview="",timeText="",fromPage="chatsPage"){
   desc.textContent=preview;
   details.append(name,desc);button.append(avatar,details);
   if(timeText){const time=document.createElement("span");time.className="list-time";time.textContent=timeText;details.appendChild(time);}
-  button.addEventListener("click",()=>openChat(contact,fromPage));
+  button.addEventListener("click",()=>{if(button.dataset.suppressOpen==="1"){button.dataset.suppressOpen="0";return;}openChat(contact,fromPage);});
   return button;
 }
 async function refreshSavedContacts(){
@@ -748,7 +748,7 @@ async function refreshConversationList(){
   setStatus("inboxStatus",english?"Loading conversations...":"در حال بارگذاری گفتگوها...");
   try{
     const {data,error}=await getClient().from("messages")
-      .select("id,sender_id,receiver_id,body,created_at")
+      .select("id,sender_id,receiver_id,body,created_at,message_type,attachment_name")
       .or("sender_id.eq."+myId+",receiver_id.eq."+myId)
       .order("created_at",{ascending:false}).limit(1000);
     if(error)throw error;
@@ -779,10 +779,10 @@ async function refreshConversationList(){
       const card=document.createElement("div");card.className="conversation-card"+(pref.pinned?" pinned":"")+(pref.archived?" archived":"");
       const btn=makeContactButton(contact,preview,new Date(c.created_at).toLocaleString(english?"en":"fa-IR"));
       btn.addEventListener("contextmenu",e=>{e.preventDefault();showConversationActions(card,c.user_id);});
-      let hold;btn.addEventListener("pointerdown",()=>{hold=setTimeout(()=>showConversationActions(card,c.user_id),550);});
+      let hold;btn.addEventListener("pointerdown",()=>{hold=setTimeout(()=>{btn.dataset.suppressOpen="1";showConversationActions(card,c.user_id);},550);});
       ["pointerup","pointercancel","pointerleave"].forEach(ev=>btn.addEventListener(ev,()=>clearTimeout(hold)));
       let sx=0;btn.addEventListener("touchstart",e=>{sx=e.changedTouches[0].clientX;},{passive:true});
-      btn.addEventListener("touchend",e=>{if(Math.abs(e.changedTouches[0].clientX-sx)>65)showConversationActions(card,c.user_id);},{passive:true});
+      btn.addEventListener("touchend",e=>{if(Math.abs(e.changedTouches[0].clientX-sx)>65){btn.dataset.suppressOpen="1";showConversationActions(card,c.user_id);}},{passive:true});
       card.appendChild(btn);list.appendChild(card);
     });
   }catch(e){
@@ -906,7 +906,8 @@ function showMessageActions(m,item){
   const add=(label,fn,cls="mini-button")=>{const b=document.createElement("button");b.type="button";b.className=cls;b.textContent=label;b.onclick=fn;menu.appendChild(b);};
   add(english?"Reply":"پاسخ",()=>setReplyTarget(m));
   add(english?"Select":"انتخاب",()=>{messageSelectionMode=true;toggleMessageSelection(m.id,item);updateSelectionToolbar();});
-  if(m.sender_id===currentUser.id){add(english?"Edit":"ویرایش",()=>editMessage(m));add(english?"Delete":"حذف",()=>deleteMessage(m),"mini-button danger");}
+  if(m.sender_id===currentUser.id)add(english?"Edit":"ویرایش",()=>editMessage(m));
+  add(english?"Delete":"حذف",()=>deleteMessage(m),"mini-button danger");
   item.appendChild(menu);
 }
 function setReplyTarget(m){replyTarget=m;$("replyPreview").hidden=false;$("replyPreview").textContent=(english?"Replying to: ":"در پاسخ به: ")+(m.body||m.attachment_name||(english?"Photo":"عکس"));$("messageText").focus();}

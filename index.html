@@ -324,14 +324,15 @@ footer{text-align:center;color:#718096;font-size:10px;padding:17px 0 7px}
 .app.chat-mode>header{display:none!important}
 .app.chat-mode>#chatPage{padding-top:2px}
 .app.chat-mode>#chatPage .chat-header{min-height:52px;padding:4px 0 7px;gap:10px}
+.app.chat-mode>#chatPage .back-button span{display:none!important}
 .app.chat-mode>#chatPage #chatAvatar{width:44px;height:44px;flex:0 0 44px;font-size:17px}
 .app.chat-mode>#chatPage .chat-person strong{font-size:15px;line-height:1.25}
 .app.chat-mode>#chatPage .chat-person small{font-size:10px;margin-top:2px}
 .app.chat-mode>#chatPage #sendMessageForm{margin:0;padding:0;flex:0 0 auto}
-.app.chat-mode>#chatPage .composer-shell{position:relative;display:grid;grid-template-columns:40px minmax(0,1fr) auto;grid-template-rows:auto auto;align-items:center;column-gap:5px;row-gap:4px;padding:5px 6px;border:1px solid var(--border);border-radius:24px;background:var(--panel)}
+.app.chat-mode>#chatPage .composer-shell{position:relative;display:grid;direction:ltr;grid-template-columns:40px minmax(0,1fr) auto;grid-template-rows:auto auto;align-items:center;column-gap:5px;row-gap:4px;padding:5px 6px;border:1px solid var(--border);border-radius:24px;background:var(--panel)}
 .app.chat-mode>#chatPage .voice-preview{grid-column:1/-1;grid-row:1;min-width:0}
 .app.chat-mode>#chatPage .send-row{grid-column:2;grid-row:2;min-width:0;display:flex;align-items:center;gap:0}
-.app.chat-mode>#chatPage .send-row textarea{display:block;width:100%;min-width:0;min-height:38px;max-height:112px;padding:9px 5px;line-height:1.4;border:0;border-radius:0;background:transparent}
+.app.chat-mode>#chatPage .send-row textarea{display:block;direction:rtl;text-align:right;width:100%;min-width:0;min-height:38px;max-height:112px;padding:9px 5px;line-height:1.4;border:0;border-radius:0;background:transparent}
 .app.chat-mode>#chatPage .composer-actions{display:contents}
 .app.chat-mode>#chatPage .composer-left{grid-column:1;grid-row:2;display:flex;align-items:center;justify-content:center;min-width:0}
 .app.chat-mode>#chatPage .composer-right{grid-column:3;grid-row:2;display:flex;align-items:center;justify-content:flex-end;gap:5px;direction:ltr;min-width:0}

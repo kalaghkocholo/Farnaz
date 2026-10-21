@@ -366,6 +366,40 @@ footer{text-align:center;color:#718096;font-size:10px;padding:17px 0 7px}
 
 .app>header[hidden]{display:none!important}
 
+/* Complete light theme coverage, including fixed bottom navigation and all app surfaces. */
+body[data-theme="light"]{background:var(--bg)!important;color:var(--white)!important}
+body[data-theme="light"] .app,
+body[data-theme="light"] .app>header,
+body[data-theme="light"] .bottom-nav,
+body[data-theme="light"] .bottom-nav .nav-inner,
+body[data-theme="light"] .page,
+body[data-theme="light"] .list-item,
+body[data-theme="light"] .conversation-item,
+body[data-theme="light"] .contact-item,
+body[data-theme="light"] .profile-card,
+body[data-theme="light"] .settings-card,
+body[data-theme="light"] .new-chat-popover,
+body[data-theme="light"] .contact-search-popover,
+body[data-theme="light"] .chat-header,
+body[data-theme="light"] #sendMessageForm,
+body[data-theme="light"] .message-composer,
+body[data-theme="light"] footer{background-color:var(--bg)!important;color:var(--white)!important}
+body[data-theme="light"] .bottom-nav{border-top:1px solid var(--border)!important;background:var(--panel)!important;box-shadow:0 -4px 18px rgba(20,35,60,.08)!important}
+body[data-theme="light"] .bottom-nav .nav-inner{background:var(--panel)!important}
+body[data-theme="light"] .nav-button{color:var(--muted)!important;background:transparent!important}
+body[data-theme="light"] .nav-button.active{color:var(--accent)!important;background:var(--panel2)!important}
+body[data-theme="light"] .app>header{border-color:var(--border)!important}
+body[data-theme="light"] .page h1,body[data-theme="light"] .page h2,body[data-theme="light"] .page h3,
+body[data-theme="light"] .setting-copy strong,body[data-theme="light"] .chat-person strong,
+body[data-theme="light"] .conversation-title,body[data-theme="light"] .contact-name{color:var(--white)}
+body[data-theme="light"] .page p,body[data-theme="light"] .setting-copy small{color:var(--muted)}
+body[data-theme="light"] .setting-control,body[data-theme="light"] input,body[data-theme="light"] textarea,body[data-theme="light"] select{background:var(--panel)!important;border-color:var(--border)!important;color:var(--white)!important}
+body[data-theme="light"] .bubble{color:var(--white)}
+body[data-theme="light"] .bubble.outgoing{background:#d9f8ee!important;color:#15372f!important}
+body[data-theme="light"] .bubble.incoming{background:#e7edf5!important;color:#172237!important}
+body[data-theme="light"] .icon-button,body[data-theme="light"] .mini-button,body[data-theme="light"] .call-button{color:var(--white)!important}
+body[data-theme="light"] .bottom-nav *{text-shadow:none}
+
 /* Farnaz settings and personal appearance preferences */
 :root{--accent:var(--mint);--font-scale:1}
 body{font-size:calc(14px * var(--font-scale))}

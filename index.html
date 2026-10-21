@@ -563,6 +563,9 @@ function toggleLanguage(){
   $("showActiveChats").textContent=english?"Chats":"گفتگوها";$("showArchivedChats").textContent=english?"Archive":"آرشیو";
   $("attachImageButton").textContent=english?"📷 Photo":"📷 عکس";$("attachmentHint").textContent=english?"Up to 10 MB":"حداکثر ۱۰ مگابایت";
   $("loadOlderButton").textContent=english?"Load older messages":"پیام‌های قدیمی‌تر";$("cancelEditButton").textContent=english?"Cancel edit":"لغو ویرایش";
+  const selectionButtons=$("selectionToolbar").querySelectorAll("button");
+  if(selectionButtons.length===4){selectionButtons[0].textContent=english?"Reply":"پاسخ";selectionButtons[1].textContent=english?"Forward":"فوروارد";selectionButtons[2].textContent=english?"Delete":"حذف";selectionButtons[3].textContent=english?"Cancel":"لغو";}
+
   $("authNameLabel").textContent=english?"Display name":"نام نمایشی";
   $("authEmailLabel").textContent=english?"Email":"ایمیل";
   $("authPasswordLabel").textContent=english?"Password (at least 8 characters)":"رمز عبور (حداقل ۸ کاراکتر)";

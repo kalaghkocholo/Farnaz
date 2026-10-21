@@ -422,7 +422,7 @@ function normalizePhone(v,countryCode="98"){
   const raw=normalizeDigits(v).trim();
   if(!raw)return "";
   const hasPlus=raw.startsWith("+");
-  let digits=raw.replace(/\\D/g,"");
+  let digits=raw.replace(/\D/g,"");
   if(!digits)return "";
   if(raw.startsWith("00"))digits=digits.slice(2);
   else if(!hasPlus&&digits.startsWith("0"))digits=String(countryCode)+digits.replace(/^0+/,"");
@@ -431,7 +431,7 @@ function normalizePhone(v,countryCode="98"){
   return "+"+digits;
 }
 function setPhoneCountry(selectId,phone){
-  const digits=normalizeDigits(phone).replace(/\\D/g,"");
+  const digits=normalizeDigits(phone).replace(/\D/g,"");
   const select=$(selectId);if(!select)return;
   const match=["98","49","1","44","90"].find(code=>digits.startsWith(code));
   if(match)select.value=match;

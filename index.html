@@ -590,6 +590,21 @@ body[data-font-color="white"][data-theme] .bottom-nav .nav-button { color:#fffff
 }
 .call-button { color:var(--accent)!important; }
 
+/* Chat message bubbles follow the selected accent color with readable contrast. */
+.message{color:var(--white)}
+.my-message{
+  background:var(--accent)!important;
+  color:var(--accent-ink,#101828)!important;
+}
+.their-message{
+  background:color-mix(in srgb,var(--accent) 15%,var(--panel2))!important;
+  color:var(--white)!important;
+}
+.message p{color:inherit!important}
+.message time{color:inherit!important;opacity:.72}
+.message .message-quote{color:inherit!important;opacity:.82}
+
+
 </style>
 </head>
 <body>

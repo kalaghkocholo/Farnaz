@@ -560,6 +560,9 @@ function toggleLanguage(){
   $("footerText").textContent="Farnaz · Closer, wherever you are.";
   $("recipientValue").placeholder=english?"email@example.com or +98912...":"email@example.com یا +98912...";
   $("messageText").placeholder=english?"Write a message...":"پیامت را بنویس...";
+  $("showActiveChats").textContent=english?"Chats":"گفتگوها";$("showArchivedChats").textContent=english?"Archive":"آرشیو";
+  $("attachImageButton").textContent=english?"📷 Photo":"📷 عکس";$("attachmentHint").textContent=english?"Up to 10 MB":"حداکثر ۱۰ مگابایت";
+  $("loadOlderButton").textContent=english?"Load older messages":"پیام‌های قدیمی‌تر";$("cancelEditButton").textContent=english?"Cancel edit":"لغو ویرایش";
   $("authNameLabel").textContent=english?"Display name":"نام نمایشی";
   $("authEmailLabel").textContent=english?"Email":"ایمیل";
   $("authPasswordLabel").textContent=english?"Password (at least 8 characters)":"رمز عبور (حداقل ۸ کاراکتر)";
@@ -969,27 +972,39 @@ async function subscribeToMessages(){
 }
 async function sendMessage(event){
   event.preventDefault();
-  if(!currentUser||!currentChatUser){
-    setStatus("sendMessageStatus",english?"Choose a contact first.":"ابتدا مخاطب را انتخاب کن.",true);return;
+  if(!currentUser||!currentChatUser){setStatus("sendMessageStatus",english?"Choose a contact first.":"ابتدا مخاطب را انتخاب کن.",true);return;}
+  const input=$("messageText"),body=input.value.trim(),file=$("attachmentFile").files[0];
+  if(!body&&!file&&!editingMessageId)return;
+  if(file&&(!["image/jpeg","image/png","image/webp","image/gif"].includes(file.type)||file.size>10*1024*1024)){
+    setStatus("sendMessageStatus",english?"Choose JPG, PNG, WebP or GIF up to 10 MB.":"عکس JPG، PNG، WebP یا GIF با حجم حداکثر ۱۰ مگابایت انتخاب کن.",true);return;
   }
-  const input=$("messageText"),body=input.value.trim();if(!body)return;
-  const button=$("sendMessageButton");button.disabled=true;
-  setStatus("sendMessageStatus",english?"Sending...":"در حال ارسال...");
+  const button=$("sendMessageButton");button.disabled=true;setStatus("sendMessageStatus",english?"Sending...":"در حال ارسال...");
   try{
     const {data:s,error:se}=await getClient().auth.getSession();if(se)throw se;
-    if(!s.session||s.session.user.id!==currentUser.id)
-      throw new Error(english?"Session expired. Sign in again.":"نشست منقضی شده؛ دوباره وارد شو.");
-    const receiverId=currentChatUser.user_id;
-    const {error}=await getClient().from("messages").insert({
-      sender_id:currentUser.id,receiver_id:receiverId,body
-    });
-    if(error)throw error;
-    input.value="";setStatus("sendMessageStatus",english?"Message sent.":"پیام ارسال شد.");
-    await loadMessages();await refreshConversationList();
-  }catch(e){
-    console.error("Send message:",e);
-    setStatus("sendMessageStatus",(english?"Could not send: ":"ارسال پیام ناموفق بود: ")+e.message,true);
-  }finally{button.disabled=false;}
+    if(!s.session||s.session.user.id!==currentUser.id)throw new Error(english?"Session expired. Sign in again.":"نشست منقضی شده؛ دوباره وارد شو.");
+    const client=getClient(),receiverId=currentChatUser.user_id;
+    if(editingMessageId){
+      if(file)throw new Error(english?"Remove the attachment before editing a message.":"برای ویرایش پیام، ابتدا پیوست را بردار.");
+      const {error}=await client.from("messages").update({body,edited_at:new Date().toISOString()}).eq("id",editingMessageId).eq("sender_id",currentUser.id);
+      if(error)throw error;cancelMessageEdit();
+    }else{
+      let attachmentPath=null,attachmentName=null,attachmentMime=null,attachmentSize=null;
+      if(file){
+        attachmentPath=currentUser.id+"/"+crypto.randomUUID()+"."+((file.name.split(".").pop()||"img").toLowerCase().replace(/[^a-z0-9]/g,""));
+        const {error:uploadError}=await client.storage.from("chat-attachments").upload(attachmentPath,file,{contentType:file.type,upsert:false});
+        if(uploadError)throw uploadError;
+        attachmentName=file.name;attachmentMime=file.type;attachmentSize=file.size;
+      }
+      const row={sender_id:currentUser.id,receiver_id:receiverId,body:body||null,message_type:file?"image":"text",
+        attachment_path:attachmentPath,attachment_name:attachmentName,attachment_mime:attachmentMime,attachment_size:attachmentSize,reply_to_id:replyTarget?.id||null};
+      const {error}=await client.from("messages").insert(row);
+      if(error){if(attachmentPath)await client.storage.from("chat-attachments").remove([attachmentPath]);throw error;}
+      cancelReply();
+    }
+    input.value="";$("attachmentFile").value="";setStatus("sendMessageStatus",english?"Message sent.":"پیام ارسال شد.");
+    await loadMessages(false);await refreshConversationList();
+  }catch(e){console.error("Send message:",e);setStatus("sendMessageStatus",(english?"Could not send: ":"ارسال پیام ناموفق بود: ")+e.message,true);}
+  finally{button.disabled=false;}
 }
 function startCall(type){
   alert(english?
@@ -1033,6 +1048,8 @@ $("authForm").addEventListener("submit",async event=>{
 $("profileForm").addEventListener("submit",saveProfile);
 $("recipientForm").addEventListener("submit",findRecipient);
 $("sendMessageForm").addEventListener("submit",sendMessage);
+$("attachmentFile").addEventListener("change",()=>{const file=$("attachmentFile").files[0];if(file)setStatus("sendMessageStatus",(english?"Ready to send: ":"آماده ارسال: ")+file.name);});
+
 $("authBox").addEventListener("click",e=>{if(e.target.id==="authBox")closeAuth();});
 $("authBox").addEventListener("keydown",e=>{if(e.key==="Escape")closeAuth();});
 $("messageText").addEventListener("keydown",e=>{

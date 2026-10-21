@@ -55,7 +55,19 @@ h1{font-size:20px;margin:0}
   border:1px solid var(--border);border-radius:13px;
   background:var(--panel);color:var(--white);font-size:19px
 }
+.new-chat-button{display:none;flex-shrink:0}
+.new-chat-button.visible{display:grid}
 .new-chat-button svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.contact-search-fab{position:fixed;z-index:140;left:max(12px,calc((100vw - 560px)/2 + 12px));bottom:calc(78px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:7px;min-height:38px;padding:0 13px;border:1px solid #41695f;border-radius:999px;background:#193a39;color:var(--mint);box-shadow:0 6px 22px #0005;font-size:12px;font-weight:650}
+.contact-search-fab svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.contact-search-popover{position:fixed;z-index:139;left:max(12px,calc((100vw - 560px)/2 + 12px));bottom:calc(126px + env(safe-area-inset-bottom));width:min(320px,calc(100vw - 24px));max-height:calc(100dvh - 180px);overflow-y:auto;padding:13px;border:1px solid var(--border);border-radius:16px;background:var(--panel);box-shadow:0 14px 40px #0008}
+.contact-search-popover[hidden]{display:none}
+.contact-search-popover label{margin-top:8px}
+.contact-search-popover select,.contact-search-popover input{padding:9px;font-size:14px}
+.contact-search-popover .action-button{margin-top:10px;padding:9px}
+.contact-search-popover .status{margin-bottom:0}
+.contact-search-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px;font-size:13px;font-weight:700}
+.contact-search-close{width:28px;height:28px;border:0;border-radius:8px;background:var(--panel2);color:var(--muted);font-size:18px}
 .page{display:none;animation:appear .15s ease-out}
 .page.active{display:block}
 @keyframes appear{from{opacity:.65}to{opacity:1}}
@@ -253,12 +265,12 @@ footer{text-align:center;color:#718096;font-size:10px;padding:17px 0 7px}
 <body>
 <main class="app">
 <header>
+  <button class="icon-button new-chat-button" id="topNewChatButton" type="button" onclick="startNewChat()" aria-label="گفتگوی جدید" title="گفتگوی جدید"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H6l-3 2v-6.5A7.5 7.5 0 0 1 10.5 7H12"/><path d="M16.5 3.5v7M13 7h7"/></svg></button>
   <div class="logo">F</div>
   <div class="brand-text">
     <h1 id="brand">فرناز</h1>
     <div class="sub" id="subtitle">ارتباطی نزدیک‌تر، در هر کجا</div>
   </div>
-  <button class="icon-button new-chat-button" id="topNewChatButton" type="button" onclick="startNewChat()" aria-label="گفتگوی جدید" title="گفتگوی جدید"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H6l-3 2v-6.5A7.5 7.5 0 0 1 10.5 7H12"/><path d="M16.5 3.5v7M13 7h7"/></svg></button>
   <button class="icon-button" id="language" type="button" onclick="toggleLanguage()" aria-label="تغییر زبان">EN</button>
 </header>
 <div id="connectionBanner" class="connection-banner" role="status" aria-live="polite" hidden></div>
@@ -293,12 +305,23 @@ footer{text-align:center;color:#718096;font-size:10px;padding:17px 0 7px}
 
 <!-- صفحه مخاطبان -->
 <section class="page" id="contactsPage">
-  <div class="page-heading"><h2 id="contactsHeading">مخاطبان</h2><p id="contactsIntro">با ایمیل یا شماره تلفن، مخاطب را پیدا کن.</p></div>
-  <div class="panel">
+  <div class="page-heading"><h2 id="contactsHeading">مخاطبان</h2><p id="contactsIntro">مخاطبان ذخیره‌شده را انتخاب کن یا برای پیدا کردن حساب جدید جست‌وجو کن.</p></div>
+  <h3 id="savedContactsHeading" style="margin:12px 3px 10px">مخاطبان ذخیره‌شده</h3>
+  <div class="list" id="savedContactsList"></div>
+  <p id="savedContactsStatus" class="status muted-note" role="status"></p>
+  <h3 id="foundHeading" style="margin:16px 3px 10px">نتیجه جست‌وجو</h3>
+  <div id="foundContact"></div>
+  <p class="muted-note" id="contactNote">جست‌وجو فقط برای حساب‌های ثبت‌شده در فرناز انجام می‌شود.</p>
+  <button class="contact-search-fab" id="contactSearchButton" type="button" onclick="toggleContactSearch()" aria-controls="contactSearchPopover" aria-expanded="false">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg>
+    <span id="contactSearchButtonLabel">جستجوی مخاطب</span>
+  </button>
+  <div class="contact-search-popover" id="contactSearchPopover" hidden>
+    <div class="contact-search-title"><span id="contactSearchTitle">پیدا کردن مخاطب جدید</span><button class="contact-search-close" type="button" onclick="toggleContactSearch(false)" aria-label="بستن">×</button></div>
     <form id="recipientForm">
       <label for="recipientValue" id="recipientLabel">ایمیل یا شماره تلفن با کد کشور</label>
       <label for="recipientCountry" id="recipientCountryLabel">کد کشور شماره تلفن</label>
-      <select id="recipientCountry" aria-label="Phone country code" style="width:100%;padding:10px;border:1px solid #43516a;border-radius:10px;background:var(--bg);color:var(--white)">
+      <select id="recipientCountry" aria-label="Phone country code" style="width:100%;border:1px solid #43516a;border-radius:10px;background:var(--bg);color:var(--white)">
         <option value="98" selected>ایران (+98)</option><option value="49">آلمان (+49)</option><option value="1">آمریکا / کانادا (+1)</option><option value="44">بریتانیا (+44)</option><option value="90">ترکیه (+90)</option>
       </select>
       <input id="recipientValue" type="text" required autocomplete="off" placeholder="email@example.com یا 0912...">
@@ -306,12 +329,6 @@ footer{text-align:center;color:#718096;font-size:10px;padding:17px 0 7px}
     </form>
     <p id="recipientStatus" class="status" role="status"></p>
   </div>
-  <h3 id="foundHeading" style="margin:16px 3px 10px">نتیجه جست‌وجو</h3>
-  <div id="foundContact"></div>
-  <h3 id="savedContactsHeading" style="margin:20px 3px 10px">مخاطبان ذخیره‌شده</h3>
-  <div class="list" id="savedContactsList"></div>
-  <p id="savedContactsStatus" class="status muted-note" role="status"></p>
-  <p class="muted-note" id="contactNote">جست‌وجو فقط برای حساب‌های ثبت‌شده در فرناز انجام می‌شود.</p>
 </section>
 
 <!-- صفحه پروفایل -->
@@ -577,8 +594,17 @@ function renderAvatar(el,url,name){
 }
 function startNewChat(){
   if(!currentUser){openAuth();return;}
+  toggleContactSearch(false);
   navigate("contactsPage");
-  $("recipientValue").focus({preventScroll:true});
+  requestAnimationFrame(()=> $("savedContactsHeading").scrollIntoView({behavior:"smooth",block:"start"}));
+}
+function toggleContactSearch(force){
+  const panel=$("contactSearchPopover"),button=$("contactSearchButton");
+  if(!panel||!button)return;
+  const open=typeof force==="boolean"?force:panel.hidden;
+  panel.hidden=!open;
+  button.setAttribute("aria-expanded",String(open));
+  if(open)requestAnimationFrame(()=> $("recipientValue").focus({preventScroll:true}));
 }
 function toggleAttachmentMenu(force){
   const menu=$("attachmentMenu"),button=$("attachmentMenuButton");
@@ -605,6 +631,8 @@ function navigate(pageId){
   document.body.classList.toggle("chat-mode",pageId==="chatPage");
   document.querySelectorAll(".nav-button").forEach(b=>b.classList.toggle("active",b.dataset.page===pageId));
   $("bottomNav").classList.toggle("visible",pageId!=="homePage");
+  $("topNewChatButton").classList.toggle("visible",pageId==="chatsPage");
+  if(pageId!=="contactsPage")toggleContactSearch(false);
   if(pageId==="chatsPage")refreshConversationList();
   if(pageId==="contactsPage")refreshSavedContacts();
   window.scrollTo({top:0,behavior:"instant"});
@@ -702,6 +730,9 @@ function toggleLanguage(){
   $("attachmentFileOption").lastElementChild.textContent=english?"Choose file":"انتخاب فایل";
   $("topNewChatButton").title=english?"New chat":"گفتگوی جدید";
   $("topNewChatButton").setAttribute("aria-label",english?"New chat":"گفتگوی جدید");
+  $("contactSearchButtonLabel").textContent=english?"Find contact":"جستجوی مخاطب";
+  $("contactSearchTitle").textContent=english?"Find a new contact":"پیدا کردن مخاطب جدید";
+  $("contactSearchButton").setAttribute("aria-label",english?"Find a new contact":"جستجوی مخاطب جدید");
   $("recordAudioButton").title=english?"Record voice message":"ضبط پیام صوتی";$("attachmentHint").textContent=english?"Files up to 20 MB":"فایل تا ۲۰ مگابایت";
   $("loadOlderButton").textContent=english?"Load older messages":"پیام‌های قدیمی‌تر";$("cancelEditButton").textContent=english?"Cancel edit":"لغو ویرایش";
   const selectionButtons=$("selectionToolbar").querySelectorAll("button");

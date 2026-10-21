@@ -979,9 +979,15 @@ async function subscribeToMessages(){
       const m=payload.new;
       if(m.sender_id!==myId&&m.receiver_id!==myId)return;
       refreshConversationList();
-      if(currentChatUser&&
-        ((m.sender_id===myId&&m.receiver_id===currentChatUser.user_id)||
-         (m.sender_id===currentChatUser.user_id&&m.receiver_id===myId)))loadMessages();
+      if(currentChatUser&&((m.sender_id===myId&&m.receiver_id===currentChatUser.user_id)||(m.sender_id===currentChatUser.user_id&&m.receiver_id===myId)))loadMessages(false);
+    })
+    .on("postgres_changes",{event:"UPDATE",schema:"public",table:"messages"},payload=>{
+      if(currentUser?.id!==myId)return;
+      const m=payload.new;
+      if(m.sender_id===myId||m.receiver_id===myId){refreshConversationList();if(currentChatUser&&(m.sender_id===currentChatUser.user_id||m.receiver_id===currentChatUser.user_id))loadMessages(false);}
+    })
+    .on("postgres_changes",{event:"DELETE",schema:"public",table:"messages"},()=>{
+      if(currentUser?.id!==myId)return;refreshConversationList();if(currentChatUser)loadMessages(false);
     })
     .subscribe(status=>{
       if(status==="CHANNEL_ERROR"||status==="TIMED_OUT")

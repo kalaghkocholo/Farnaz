@@ -1197,35 +1197,46 @@ async function makeMessageElement(m,myId){
   }
   const time=document.createElement("time"),date=new Date(m.created_at);time.dateTime=date.toISOString();
   time.textContent=date.toLocaleTimeString(english?"en":"fa-IR",{hour:"2-digit",minute:"2-digit"})+(m.edited_at?(english?" · edited":" · ویرایش‌شده"):"");item.appendChild(time);
-  let hold=null,holdTriggered=false;
+  let pointerHold=null,touchHold=null,holdTriggered=false,holdX=0,holdY=0;
+  const interactiveTarget=target=>!!target.closest("a,button,audio,video,input,textarea,select");
+  const cancelPointerHold=()=>{clearTimeout(pointerHold);pointerHold=null;};
+  const cancelTouchHold=()=>{clearTimeout(touchHold);touchHold=null;};
   item.addEventListener("click",event=>{
     if(holdTriggered){event.preventDefault();event.stopPropagation();holdTriggered=false;return;}
     if(messageSelectionMode){toggleMessageSelection(m.id,item);return;}
-    if(event.target.closest("a,button,audio"))return;
+    if(interactiveTarget(event.target))return;
   });
   item.addEventListener("contextmenu",e=>{
     e.preventDefault();e.stopPropagation();
     if(!document.querySelector(".message-tools-floating"))showMessageActions(m,item);
   });
-  let holdX=0,holdY=0;
+  // Mouse/trackpad long-press. Keep this timer separate from touch events:
+  // iOS can emit pointerleave during a stationary touch and cancel a shared timer.
   item.addEventListener("pointerdown",event=>{
-    if(event.pointerType==="touch"||event.target.closest("a,button,audio,video,input,textarea,select"))return;
-    holdTriggered=false;holdX=event.clientX;holdY=event.clientY;clearTimeout(hold);
-    hold=setTimeout(()=>{holdTriggered=true;showMessageActions(m,item);},500);
+    if(event.pointerType==="touch"||interactiveTarget(event.target))return;
+    holdTriggered=false;holdX=event.clientX;holdY=event.clientY;cancelPointerHold();
+    pointerHold=setTimeout(()=>{holdTriggered=true;showMessageActions(m,item);},500);
   });
-  item.addEventListener("pointermove",event=>{if(Math.abs(event.clientX-holdX)>12||Math.abs(event.clientY-holdY)>12){clearTimeout(hold);hold=null;}});
-  ["pointerup","pointercancel","pointerleave"].forEach(ev=>item.addEventListener(ev,()=>{clearTimeout(hold);hold=null;}));
+  item.addEventListener("pointermove",event=>{
+    if(event.pointerType==="touch")return;
+    if(Math.abs(event.clientX-holdX)>12||Math.abs(event.clientY-holdY)>12)cancelPointerHold();
+  });
+  ["pointerup","pointercancel","pointerleave"].forEach(ev=>item.addEventListener(ev,event=>{
+    if(event.pointerType!=="touch")cancelPointerHold();
+  }));
+  // Native iOS touch path: don't share a timer with Pointer Events.
   item.addEventListener("touchstart",event=>{
-    if(event.touches.length!==1||event.target.closest("a,button,audio,video,input,textarea,select"))return;
-    const touch=event.touches[0];holdX=touch.clientX;holdY=touch.clientY;holdTriggered=false;clearTimeout(hold);
-    hold=setTimeout(()=>{holdTriggered=true;showMessageActions(m,item);},520);
+    if(event.touches.length!==1||interactiveTarget(event.target))return;
+    const touch=event.touches[0];holdX=touch.clientX;holdY=touch.clientY;holdTriggered=false;cancelTouchHold();
+    touchHold=setTimeout(()=>{holdTriggered=true;showMessageActions(m,item);},500);
   },{passive:true});
   item.addEventListener("touchmove",event=>{
-    if(!event.touches.length)return;const touch=event.touches[0];
-    if(Math.abs(touch.clientX-holdX)>12||Math.abs(touch.clientY-holdY)>12){clearTimeout(hold);hold=null;}
+    if(!event.touches.length)return;
+    const touch=event.touches[0];
+    if(Math.abs(touch.clientX-holdX)>12||Math.abs(touch.clientY-holdY)>12)cancelTouchHold();
   },{passive:true});
-  item.addEventListener("touchend",()=>{clearTimeout(hold);hold=null;});
-  item.addEventListener("touchcancel",()=>{clearTimeout(hold);hold=null;});
+  item.addEventListener("touchend",cancelTouchHold);
+  item.addEventListener("touchcancel",cancelTouchHold);
   return item;
 }
 async function renderMessages(messages,myId){

@@ -753,6 +753,25 @@ function navigate(pageId){
   document.body.classList.toggle("chat-mode",pageId==="chatPage");
   const brandHeader=document.querySelector(".app>header");
   if(brandHeader)brandHeader.hidden=pageId==="chatPage";
+  /* Apply chat header order directly as well as through CSS, so RTL/theme rules cannot override it. */
+  const chatHeader=$("chatPage")?.querySelector(".chat-header");
+  if(chatHeader){
+    const inChat=pageId==="chatPage";
+    chatHeader.style.setProperty("display",inChat?"flex":"", "important");
+    if(inChat){
+      chatHeader.style.setProperty("direction","ltr","important");
+      chatHeader.style.setProperty("align-items","center","important");
+      chatHeader.style.setProperty("gap","7px","important");
+      const back=$("backToChats"), avatar=$("chatAvatar"), person=chatHeader.querySelector(".chat-person"), calls=chatHeader.querySelector(".call-actions");
+      [[back,"1"],[avatar,"2"],[person,"3"],[calls,"4"]].forEach(([el,order])=>{if(el){el.style.setProperty("order",order,"important");el.style.setProperty("flex-shrink","0","important");}});
+      if(back){back.style.setProperty("width","26px","important");back.style.setProperty("min-width","26px","important");back.style.setProperty("flex","0 0 26px","important");const label=back.querySelector("span");if(label)label.style.setProperty("display","none","important");}
+      if(avatar){avatar.style.setProperty("width","34px","important");avatar.style.setProperty("height","34px","important");avatar.style.setProperty("flex","0 0 34px","important");}
+      if(person){person.style.setProperty("direction","rtl","important");person.style.setProperty("text-align","right","important");person.style.setProperty("flex","1 1 auto","important");person.style.setProperty("min-width","0","important");}
+      if(calls){calls.style.setProperty("margin-left","auto","important");calls.style.setProperty("flex","0 0 auto","important");calls.style.setProperty("gap","4px","important");}
+      chatHeader.querySelectorAll(".call-button").forEach(btn=>{btn.style.setProperty("width","30px","important");btn.style.setProperty("height","30px","important");btn.style.setProperty("min-width","30px","important");btn.style.setProperty("min-height","30px","important");btn.style.setProperty("padding","0","important");btn.style.setProperty("font-size","15px","important");});
+      chatHeader.querySelectorAll(".call-button svg").forEach(svg=>{svg.style.setProperty("width","16px","important");svg.style.setProperty("height","16px","important");});
+    }
+  }
   if(pageId!=="chatPage"){document.documentElement.style.removeProperty("--chat-viewport-offset");document.documentElement.style.removeProperty("--chat-viewport-height");}
   document.querySelectorAll(".nav-button").forEach(b=>b.classList.toggle("active",b.dataset.page===pageId));
   $("bottomNav").classList.toggle("visible",pageId!=="homePage"&&pageId!=="chatPage");

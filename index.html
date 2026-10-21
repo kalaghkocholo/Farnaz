@@ -503,7 +503,7 @@ let currentChatUser=null,messageSubscription=null,reconnectTimer=null,reconnectA
 let profileRequestNumber=0,chatRequestNumber=0,previousPage="chatsPage";
 let conversationView="active",conversationPrefs=new Map(),messageLoadedCount=50,messageHasMore=false;
 let selectedMessageIds=new Set(),replyTarget=null,editingMessageId=null,messageSelectionMode=false,preEditDraft="";
-let recordedVoiceFile=null,mediaRecorder=null,recordedAudioChunks=[],recordingStream=null;
+let recordedVoiceFile=null,recordedVoiceUrl=null,mediaRecorder=null,recordedAudioChunks=[],recordingStream=null;
 
 const $=id=>document.getElementById(id);
 
@@ -1469,7 +1469,7 @@ async function sendMessage(event){
       const isAudio=!!file&&(file.type||"").startsWith("audio/");
       const row={sender_id:currentUser.id,receiver_id:receiverId,body:body||null,message_type:file?(isImage?"image":"file"):"text",
         attachment_path:attachmentPath,attachment_name:attachmentName,attachment_mime:attachmentMime,attachment_size:attachmentSize,reply_to_id:replyTarget?.id||null};
-      const {data:insertedMessage,error}=await client.from("messages").insert(row).select("id").single();
+      const {error}=await client.from("messages").insert(row);
       if(error){if(attachmentPath)await client.storage.from("chat-attachments").remove([attachmentPath]);throw error;}
       cancelReply();if(isAudio)discardRecordedVoice();
     }

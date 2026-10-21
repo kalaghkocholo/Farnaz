@@ -474,7 +474,31 @@ function navigate(pageId){
   if(pageId==="contactsPage")refreshSavedContacts();
   window.scrollTo({top:0,behavior:"instant"});
 }
-function backFromChat(){navigate(previousPage==="contactsPage"?"contactsPage":"chatsPage");}
+function backFromChat(){exitMessageSelection();cancelMessageEdit();navigate(previousPage==="contactsPage"?"contactsPage":"chatsPage");}
+function setConversationView(view){conversationView=view;refreshConversationList();}
+function prefFor(id){return conversationPrefs.get(id)||{pinned:false,archived:false,hidden_at:null};}
+async function saveConversationPref(contactId,patch){
+  const next={...prefFor(contactId),...patch,user_id:currentUser.id,contact_user_id:contactId,updated_at:new Date().toISOString()};
+  const {error}=await getClient().from("conversation_preferences").upsert(next,{onConflict:"user_id,contact_user_id"});
+  if(error)throw error;conversationPrefs.set(contactId,next);await refreshConversationList();
+}
+async function conversationAction(contactId,action){
+  try{
+    const old=prefFor(contactId);
+    if(action==="delete"){
+      if(!confirm(english?"Hide this conversation from your list? The other person keeps their messages.":"این گفتگو فقط از فهرست شما پنهان شود؟ پیام‌های طرف مقابل حذف نمی‌شود."))return;
+      await saveConversationPref(contactId,{hidden_at:new Date().toISOString(),archived:false,pinned:false});
+    }else if(action==="pin")await saveConversationPref(contactId,{pinned:!old.pinned,archived:false});
+    else if(action==="archive")await saveConversationPref(contactId,{archived:!old.archived,pinned:false});
+  }catch(e){alert((english?"Action failed: ":"عملیات ناموفق بود: ")+e.message);}
+}
+function showConversationActions(card,contactId){
+  card.querySelector(".conversation-action-menu")?.remove();
+  const p=prefFor(contactId),menu=document.createElement("div");menu.className="conversation-tools conversation-action-menu";
+  const items=[[p.pinned?(english?"Unpin":"برداشتن پین"):(english?"Pin":"پین"),"pin"],[p.archived?(english?"Unarchive":"خروج از آرشیو"):(english?"Archive":"آرشیو"),"archive"],[english?"Delete chat":"حذف گفتگو","delete"]];
+  for(const [label,action] of items){const b=document.createElement("button");b.type="button";b.className="mini-button"+(action==="delete"?" danger":"");b.textContent=label;b.onclick=()=>conversationAction(contactId,action);menu.appendChild(b);}
+  card.appendChild(menu);
+}
 function openAuth(){
   $("authBox").style.display="flex";setStatus("authStatus","");
   $("authName").value="";$("authEmail").value="";$("authPassword").value="";
@@ -711,6 +735,11 @@ async function refreshSavedContacts(){
   }
 }
 async function refreshConversationList(){
+  if(!currentUser)return;
+  const prefResult=await getClient().from("conversation_preferences").select("*").eq("user_id",currentUser.id);
+  if(prefResult.error)console.warn("Conversation preferences:",prefResult.error);
+  conversationPrefs=new Map((prefResult.data||[]).map(p=>[p.contact_user_id,p]));
+
   const list=$("conversationList");if(!list||!currentUser)return;
   const myId=currentUser.id;
   setStatus("inboxStatus",english?"Loading conversations...":"در حال بارگذاری گفتگوها...");
@@ -725,14 +754,15 @@ async function refreshConversationList(){
     for(const m of data||[]){
       const id=m.sender_id===myId?m.receiver_id:m.sender_id;
       if(!id||id===myId||conversations.has(id))continue;
-      conversations.set(id,{user_id:id,lastMessage:m.body||"",created_at:m.created_at,lastSender:m.sender_id});
+      const pref=prefFor(id);
+      if(pref.hidden_at&&new Date(m.created_at)<=new Date(pref.hidden_at))continue;
+      conversations.set(id,{user_id:id,lastMessage:m.body||((m.message_type||"text")==="image"?(english?"📷 Photo":"📷 عکس"):""),created_at:m.created_at,lastSender:m.sender_id});
     }
     list.replaceChildren();
-    if(!conversations.size){
-      setStatus("inboxStatus",english?"No conversations yet. Start one from Contacts.":"هنوز گفتگویی نداری؛ از بخش مخاطبان گفتگوی جدید بساز.");return;
-    }
+    const entries=[...conversations.values()].filter(c=>conversationView==="archived"?prefFor(c.user_id).archived:!prefFor(c.user_id).archived)
+      .sort((a,b)=>Number(prefFor(b.user_id).pinned)-Number(prefFor(a.user_id).pinned)||new Date(b.created_at)-new Date(a.created_at));
+    if(!entries.length){setStatus("inboxStatus",conversationView==="archived"?(english?"No archived conversations.":"گفتگوی آرشیوشده‌ای وجود ندارد."):(english?"No conversations yet. Start one from Contacts.":"هنوز گفتگویی نداری؛ از بخش مخاطبان گفتگوی جدید بساز."));return;}
     setStatus("inboxStatus","");
-    const entries=[...conversations.values()];
     const profiles=await Promise.all(entries.map(async c=>{
       try{return await getContactProfile(c.user_id);}catch(e){console.warn("Contact profile:",e);return null;}
     }));
@@ -740,10 +770,17 @@ async function refreshConversationList(){
     entries.forEach((c,i)=>{
       const p=profiles[i]||{};
       const name=p.display_name||(english?"Farnaz user":"مخاطب فرناز");
-      const preview=(c.lastSender===myId?(english?"You: ":"شما: "):"")+c.lastMessage;
+      const pref=prefFor(c.user_id);
+      const preview=(c.lastSender===myId?(english?"You: ":"شما: "):"")+(pref.pinned?"📌 ":"")+(pref.archived?"🗄 ":"")+c.lastMessage;
       const contact={user_id:c.user_id,display_name:name,avatar_url:p.avatar_url||""};
+      const card=document.createElement("div");card.className="conversation-card"+(pref.pinned?" pinned":"")+(pref.archived?" archived":"");
       const btn=makeContactButton(contact,preview,new Date(c.created_at).toLocaleString(english?"en":"fa-IR"));
-      list.appendChild(btn);
+      btn.addEventListener("contextmenu",e=>{e.preventDefault();showConversationActions(card,c.user_id);});
+      let hold;btn.addEventListener("pointerdown",()=>{hold=setTimeout(()=>showConversationActions(card,c.user_id),550);});
+      ["pointerup","pointercancel","pointerleave"].forEach(ev=>btn.addEventListener(ev,()=>clearTimeout(hold)));
+      let sx=0;btn.addEventListener("touchstart",e=>{sx=e.changedTouches[0].clientX;},{passive:true});
+      btn.addEventListener("touchend",e=>{if(Math.abs(e.changedTouches[0].clientX-sx)>65)showConversationActions(card,c.user_id);},{passive:true});
+      card.appendChild(btn);list.appendChild(card);
     });
   }catch(e){
     console.error("Inbox load:",e);

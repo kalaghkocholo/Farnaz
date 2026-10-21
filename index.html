@@ -1113,7 +1113,7 @@ function toggleLanguage(){
     messagePrivacyNote:["",""],homeLogin:["ورود یا ثبت‌نام","Sign in or sign up"]
   };
   Object.entries(labels).forEach(([id,pair])=>{if($(id))$(id).textContent=pair[english?1:0];});
-  $("language").textContent=english?"فا":"EN";
+  if($("language"))$("language").textContent=english?"فا":"EN";
   ["recipientCountry","profilePhoneCountry"].forEach(id=>{
     const select=$(id);if(!select)return;
     const names=english?["Iran","Germany","United States / Canada","United Kingdom","Turkey"]:["ایران","آلمان","آمریکا / کانادا","بریتانیا","ترکیه"];

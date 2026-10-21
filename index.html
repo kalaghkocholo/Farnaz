@@ -197,6 +197,8 @@ input[type=file]{font-size:11px;padding:9px}
   border-radius:9px;padding:7px 12px;font-size:11px
 }
 footer{text-align:center;color:#718096;font-size:10px;padding:17px 0 7px}
+.connection-banner{margin:0 0 12px;padding:10px 12px;border:1px solid #8b6b32;border-radius:12px;background:#332b1b;color:#ffe2a8;font-size:12px;line-height:1.6}
+.connection-banner[hidden]{display:none!important}
 #authBox{
   display:none;position:fixed;inset:0;background:#101828ee;
   z-index:9999;align-items:center;justify-content:center;
@@ -229,6 +231,7 @@ footer{text-align:center;color:#718096;font-size:10px;padding:17px 0 7px}
   </div>
   <button class="icon-button" id="language" type="button" onclick="toggleLanguage()" aria-label="تغییر زبان">EN</button>
 </header>
+<div id="connectionBanner" class="connection-banner" role="status" aria-live="polite" hidden></div>
 
 <!-- صفحه شروع -->
 <section class="page active" id="homePage">
@@ -389,7 +392,7 @@ window.FARNAZ_CONFIG = {
 
 let english=false,authMode="signup",farnazClient=null,currentUser=null;
 let currentProfileName="",currentAvatarUrl="",currentPhone="";
-let currentChatUser=null,messageSubscription=null;
+let currentChatUser=null,messageSubscription=null,reconnectTimer=null,reconnectAttempts=0;
 let profileRequestNumber=0,chatRequestNumber=0,previousPage="chatsPage";
 let conversationView="active",conversationPrefs=new Map(),messageLoadedCount=50,messageHasMore=false;
 let selectedMessageIds=new Set(),replyTarget=null,editingMessageId=null,messageSelectionMode=false;
@@ -428,6 +431,68 @@ function getClient(){
 function setStatus(id,msg,isError=false){
   const e=$(id);if(!e)return;
   e.textContent=msg;e.classList.toggle("error-text",isError);
+}
+function setConnectionBanner(message,show=true){
+  const banner=$("connectionBanner");if(!banner)return;
+  banner.textContent=message||"";
+  banner.hidden=!show||!message;
+}
+function isTransientError(error){
+  const status=Number(error?.status||error?.statusCode||error?.cause?.status||0);
+  const code=String(error?.code||"").toUpperCase();
+  const message=String(error?.message||error||"").toLowerCase();
+  if(status===401||status===403||code.startsWith("23")||code.startsWith("42"))return false;
+  return status===408||status===425||status===429||status>=500||
+    /network|fetch failed|failed to fetch|timeout|timed out|temporar|connection reset|connection closed|load failed|offline|gateway|too many requests/.test(message);
+}
+const recoveryDelay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+async function retryRead(label,operation,maxAttempts=3){
+  let lastError;
+  for(let attempt=1;attempt<=maxAttempts;attempt++){
+    try{
+      if(typeof navigator!=="undefined"&&navigator.onLine===false){
+        setConnectionBanner(english?"You are offline. Farnaz will reconnect automatically.":"اتصال اینترنت قطع است؛ فرناز پس از وصل‌شدن خودکار تلاش می‌کند.");
+        throw new Error("NETWORK_OFFLINE");
+      }
+      const result=await operation();
+      if(result?.error)throw result.error;
+      if(Array.isArray(result)){
+        const failed=result.find(item=>item?.error);
+        if(failed)throw failed.error;
+      }
+      return result;
+    }catch(error){
+      lastError=error;
+      if(!isTransientError(error)||attempt===maxAttempts)throw error;
+      setConnectionBanner(english?"Connection interrupted. Retrying automatically…":"ارتباط موقتاً قطع شده؛ تلاش مجدد خودکار…");
+      await recoveryDelay(300*Math.pow(2,attempt-1)+Math.floor(Math.random()*180));
+    }
+  }
+  throw lastError;
+}
+let recoveryInProgress=false;
+function scheduleReconnect(){
+  if(reconnectTimer||!currentUser||typeof navigator!=="undefined"&&navigator.onLine===false)return;
+  const delay=Math.min(30000,1000*Math.pow(2,Math.min(reconnectAttempts,5)));
+  reconnectAttempts++;
+  reconnectTimer=setTimeout(()=>{
+    reconnectTimer=null;
+    recoverConnection();
+  },delay);
+}
+async function recoverConnection(){
+  if(recoveryInProgress||!currentUser||typeof navigator!=="undefined"&&navigator.onLine===false)return;
+  recoveryInProgress=true;
+  try{
+    await subscribeToMessages();
+    await retryRead("conversation refresh",()=>refreshConversationList(),2);
+    if(currentChatUser)await loadMessages(false);
+    setConnectionBanner("",false);
+  }catch(error){
+    console.warn("Automatic connection recovery:",error);
+    setConnectionBanner(english?"Still reconnecting. You can keep using Farnaz; it will retry automatically.":"هنوز اتصال برقرار نشده؛ می‌توانی با فرناز کار کنی و برنامه دوباره تلاش می‌کند.");
+    scheduleReconnect();
+  }finally{recoveryInProgress=false;}
 }
 function normalizeDigits(v){
   return String(v||"")
@@ -714,10 +779,9 @@ async function refreshSavedContacts(){
   list.replaceChildren();
   setStatus("savedContactsStatus",english?"Loading saved contacts...":"در حال بارگذاری مخاطبان ذخیره‌شده...");
   try{
-    const {data,error}=await getClient().from("contacts")
+    const {data,error}=await retryRead("saved contacts",()=>getClient().from("contacts")
       .select("contact_user_id,created_at")
-      .eq("user_id",myId).order("created_at",{ascending:false});
-    if(error)throw error;
+      .eq("user_id",myId).order("created_at",{ascending:false}));
     if(currentUser?.id!==myId)return;
     if(!data?.length){
       setStatus("savedContactsStatus",english?"No saved contacts yet. Search for someone above.":"هنوز مخاطبی ذخیره نشده؛ از بخش بالا جست‌وجو کن.");
@@ -742,19 +806,23 @@ async function refreshSavedContacts(){
 }
 async function refreshConversationList(){
   if(!currentUser)return;
-  const prefResult=await getClient().from("conversation_preferences").select("*").eq("user_id",currentUser.id);
-  if(prefResult.error)console.warn("Conversation preferences:",prefResult.error);
-  conversationPrefs=new Map((prefResult.data||[]).map(p=>[p.contact_user_id,p]));
+  const myId=currentUser.id;
+  try{
+    const prefResult=await retryRead("conversation preferences",()=>getClient().from("conversation_preferences").select("*").eq("user_id",myId));
+    if(currentUser?.id!==myId)return;
+    conversationPrefs=new Map((prefResult.data||[]).map(p=>[p.contact_user_id,p]));
+  }catch(prefError){
+    console.warn("Conversation preferences:",prefError);
+    if(!conversationPrefs.size)setConnectionBanner(english?"Some conversation settings could not load. Retrying…":"بخشی از تنظیمات گفتگو بارگذاری نشد؛ دوباره تلاش می‌کنیم.");
+  }
 
   const list=$("conversationList");if(!list||!currentUser)return;
-  const myId=currentUser.id;
   setStatus("inboxStatus",english?"Loading conversations...":"در حال بارگذاری گفتگوها...");
   try{
-    const {data,error}=await getClient().from("messages")
+    const {data,error}=await retryRead("conversation list",()=>getClient().from("messages")
       .select("id,sender_id,receiver_id,body,created_at,message_type,attachment_name")
       .or("sender_id.eq."+myId+",receiver_id.eq."+myId)
-      .order("created_at",{ascending:false}).limit(1000);
-    if(error)throw error;
+      .order("created_at",{ascending:false}).limit(1000));
     if(currentUser?.id!==myId)return;
     const conversations=new Map();
     for(const m of data||[]){
@@ -856,16 +924,16 @@ async function loadMessages(older=false){
     const client=getClient(),existing=Array.from($("messageList").querySelectorAll(".message[data-created-at]"));
     const oldest=older&&existing.length?existing[0]:null;
     // Query each direction separately to avoid fragile nested PostgREST OR filters.
-    let sent=client.from("messages")
-      .select("id,sender_id,receiver_id,body,created_at,message_type,attachment_path,attachment_name,attachment_mime,reply_to_id,edited_at")
-      .eq("sender_id",myId).eq("receiver_id",contactId).order("created_at",{ascending:false}).limit(older?50:50);
-    let received=client.from("messages")
-      .select("id,sender_id,receiver_id,body,created_at,message_type,attachment_path,attachment_name,attachment_mime,reply_to_id,edited_at")
-      .eq("sender_id",contactId).eq("receiver_id",myId).order("created_at",{ascending:false}).limit(older?50:50);
-    if(oldest){sent=sent.lt("created_at",oldest.dataset.createdAt);received=received.lt("created_at",oldest.dataset.createdAt);}
-    const results=await Promise.all([sent,received]);
-    if(results[0].error)throw results[0].error;
-    if(results[1].error)throw results[1].error;
+    const results=await retryRead("messages",()=>{
+      let sent=client.from("messages")
+        .select("id,sender_id,receiver_id,body,created_at,message_type,attachment_path,attachment_name,attachment_mime,reply_to_id,edited_at")
+        .eq("sender_id",myId).eq("receiver_id",contactId).order("created_at",{ascending:false}).limit(50);
+      let received=client.from("messages")
+        .select("id,sender_id,receiver_id,body,created_at,message_type,attachment_path,attachment_name,attachment_mime,reply_to_id,edited_at")
+        .eq("sender_id",contactId).eq("receiver_id",myId).order("created_at",{ascending:false}).limit(50);
+      if(oldest){sent=sent.lt("created_at",oldest.dataset.createdAt);received=received.lt("created_at",oldest.dataset.createdAt);}
+      return Promise.all([sent,received]);
+    });
     if(request!==chatRequestNumber||currentUser?.id!==myId||currentChatUser?.user_id!==contactId)return;
     let data=[...(results[0].data||[]),...(results[1].data||[])];
     data.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
@@ -874,7 +942,7 @@ async function loadMessages(older=false){
     const page=data.slice(0,50),rows=page.reverse();
     let hiddenIds=new Set();
     try{
-      const hidden=await client.from("message_hidden").select("message_id").eq("user_id",myId);
+      const hidden=await retryRead("hidden messages",()=>client.from("message_hidden").select("message_id").eq("user_id",myId));
       if(!hidden.error)hiddenIds=new Set((hidden.data||[]).map(x=>x.message_id));
       else console.warn("Could not load hidden-message preferences:",hidden.error);
     }catch(hiddenError){console.warn("Could not load hidden-message preferences:",hiddenError);}
@@ -1018,8 +1086,16 @@ async function subscribeToMessages(){
       if(currentUser?.id!==myId)return;refreshConversationList();if(currentChatUser)loadMessages(false);
     })
     .subscribe(status=>{
-      if(status==="CHANNEL_ERROR"||status==="TIMED_OUT")
-        setStatus("inboxStatus",english?"Live updates unavailable.":"به‌روزرسانی زنده در دسترس نیست.");
+      if(status==="SUBSCRIBED"){
+        reconnectAttempts=0;
+        if(reconnectTimer){clearTimeout(reconnectTimer);reconnectTimer=null;}
+        setConnectionBanner("",false);
+        setStatus("inboxStatus",english?"Connected":"متصل");
+      }else if(status==="CHANNEL_ERROR"||status==="TIMED_OUT"||status==="CLOSED"){
+        setConnectionBanner(english?"Live connection interrupted. Reconnecting automatically…":"ارتباط زنده قطع شد؛ در حال اتصال مجدد…");
+        setStatus("inboxStatus",english?"Live updates interrupted; retrying…":"به‌روزرسانی زنده قطع شد؛ تلاش مجدد…");
+        scheduleReconnect();
+      }
     });
 }
 async function sendMessage(event){
@@ -1130,6 +1206,19 @@ async function initializeApp(){
     setStatus("authStatus",(english?"Account loading failed: ":"بارگذاری حساب ناموفق بود: ")+e.message,true);
   }
 }
+window.addEventListener("offline",()=>{
+  setConnectionBanner(english?"You are offline. Messages will reload when you reconnect.":"اینترنت قطع است؛ پس از اتصال، پیام‌ها دوباره بارگذاری می‌شوند.");
+});
+window.addEventListener("online",()=>{
+  setConnectionBanner(english?"Internet restored. Reconnecting…":"اینترنت وصل شد؛ در حال بازیابی ارتباط…");
+  recoverConnection();
+});
+document.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState==="visible"&&typeof navigator!=="undefined"&&navigator.onLine&&currentUser){
+    if(currentChatUser)loadMessages(false);
+    refreshConversationList();
+  }
+});
 initializeApp();
 </script>
 </body>

@@ -578,6 +578,18 @@ body[data-font-color="white"][data-theme] .app .list-time,
 body[data-font-color="white"][data-theme] .app .sub,
 body[data-font-color="white"][data-theme] .bottom-nav .nav-button { color:#ffffff !important; }
 
+ 
+/* Accent color picker controls all primary action buttons, including black and white. */
+.primary,.action-button,.auth-submit,.composer-icon.send,.logo {
+  background:var(--accent)!important;
+  color:var(--accent-ink,#101828)!important;
+}
+.nav-button.active {
+  background:color-mix(in srgb,var(--accent) 18%,var(--panel2))!important;
+  color:var(--accent)!important;
+}
+.call-button { color:var(--accent)!important; }
+
 </style>
 </head>
 <body>
@@ -722,6 +734,8 @@ body[data-font-color="white"][data-theme] .bottom-nav .nav-button { color:#fffff
       <button type="button" class="color-choice" style="background:#fb7185" data-color="#fb7185" aria-label="صورتی" onclick="updateAppearanceSetting('accent',this.dataset.color)"></button>
       <button type="button" class="color-choice" style="background:#fbbf24" data-color="#fbbf24" aria-label="کهربایی" onclick="updateAppearanceSetting('accent',this.dataset.color)"></button>
       <button type="button" class="color-choice" style="background:#4ade80" data-color="#4ade80" aria-label="سبز" onclick="updateAppearanceSetting('accent',this.dataset.color)"></button>
+      <button type="button" class="color-choice" style="background:#000000" data-color="#000000" aria-label="سیاه" onclick="updateAppearanceSetting('accent',this.dataset.color)"></button>
+      <button type="button" class="color-choice" style="background:#ffffff" data-color="#ffffff" aria-label="سفید" onclick="updateAppearanceSetting('accent',this.dataset.color)"></button>
     </div>
   </div>
   <div class="settings-card">
@@ -858,8 +872,13 @@ function applyAppearanceSettings(){
   const fontColor=appearanceSettings.fontColor||"auto";
   document.body.dataset.fontColor=fontColor;
   root.style.setProperty("--white",fontColor==="white"?"#ffffff":fontColor==="black"?"#111111":theme==="light"?"#172237":"#f7f9fc");
-  root.style.setProperty("--accent",appearanceSettings.accent||APPEARANCE_DEFAULTS.accent);
-  root.style.setProperty("--mint",appearanceSettings.accent||APPEARANCE_DEFAULTS.accent);
+  const accent=appearanceSettings.accent||APPEARANCE_DEFAULTS.accent;
+  root.style.setProperty("--accent",accent);
+  root.style.setProperty("--mint",accent);
+  const hex=accent.replace("#","");
+  const rgb=[0,2,4].map(i=>parseInt(hex.slice(i,i+2),16));
+  const luminance=(0.2126*rgb[0]+0.7152*rgb[1]+0.0722*rgb[2])/255;
+  root.style.setProperty("--accent-ink",luminance>0.62?"#111111":"#ffffff");
   const sizes={small:"0.92",medium:"1",large:"1.12"};
   root.style.setProperty("--font-scale",sizes[appearanceSettings.fontSize]||"1");
   const fonts={system:'-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif',serif:'Georgia,"Times New Roman",serif',rounded:'"Trebuchet MS",Arial,sans-serif'};

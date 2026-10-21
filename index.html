@@ -392,7 +392,7 @@ window.FARNAZ_CONFIG = {
 
 let english=false,authMode="signup",farnazClient=null,currentUser=null;
 let currentProfileName="",currentAvatarUrl="",currentPhone="";
-let currentChatUser=null,messageSubscription=null;
+let currentChatUser=null,messageSubscription=null,reconnectTimer=null,reconnectAttempts=0;
 let profileRequestNumber=0,chatRequestNumber=0,previousPage="chatsPage";
 let conversationView="active",conversationPrefs=new Map(),messageLoadedCount=50,messageHasMore=false;
 let selectedMessageIds=new Set(),replyTarget=null,editingMessageId=null,messageSelectionMode=false;
@@ -471,6 +471,15 @@ async function retryRead(label,operation,maxAttempts=3){
   throw lastError;
 }
 let recoveryInProgress=false;
+function scheduleReconnect(){
+  if(reconnectTimer||!currentUser||typeof navigator!=="undefined"&&navigator.onLine===false)return;
+  const delay=Math.min(30000,1000*Math.pow(2,Math.min(reconnectAttempts,5)));
+  reconnectAttempts++;
+  reconnectTimer=setTimeout(()=>{
+    reconnectTimer=null;
+    recoverConnection();
+  },delay);
+}
 async function recoverConnection(){
   if(recoveryInProgress||!currentUser||typeof navigator!=="undefined"&&navigator.onLine===false)return;
   recoveryInProgress=true;
@@ -482,6 +491,7 @@ async function recoverConnection(){
   }catch(error){
     console.warn("Automatic connection recovery:",error);
     setConnectionBanner(english?"Still reconnecting. You can keep using Farnaz; it will retry automatically.":"هنوز اتصال برقرار نشده؛ می‌توانی با فرناز کار کنی و برنامه دوباره تلاش می‌کند.");
+    scheduleReconnect();
   }finally{recoveryInProgress=false;}
 }
 function normalizeDigits(v){
@@ -1077,11 +1087,14 @@ async function subscribeToMessages(){
     })
     .subscribe(status=>{
       if(status==="SUBSCRIBED"){
+        reconnectAttempts=0;
+        if(reconnectTimer){clearTimeout(reconnectTimer);reconnectTimer=null;}
         setConnectionBanner("",false);
         setStatus("inboxStatus",english?"Connected":"متصل");
       }else if(status==="CHANNEL_ERROR"||status==="TIMED_OUT"||status==="CLOSED"){
         setConnectionBanner(english?"Live connection interrupted. Reconnecting automatically…":"ارتباط زنده قطع شد؛ در حال اتصال مجدد…");
         setStatus("inboxStatus",english?"Live updates interrupted; retrying…":"به‌روزرسانی زنده قطع شد؛ تلاش مجدد…");
+        scheduleReconnect();
       }
     });
 }

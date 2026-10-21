@@ -254,13 +254,20 @@ footer{text-align:center;color:#718096;font-size:10px;padding:17px 0 7px}
   <div class="panel">
     <form id="recipientForm">
       <label for="recipientValue" id="recipientLabel">ایمیل یا شماره تلفن با کد کشور</label>
-      <input id="recipientValue" type="text" required autocomplete="off" placeholder="email@example.com یا +98912...">
+      <label for="recipientCountry" id="recipientCountryLabel">کد کشور شماره تلفن</label>
+      <select id="recipientCountry" aria-label="Phone country code" style="width:100%;padding:10px;border:1px solid #43516a;border-radius:10px;background:var(--bg);color:var(--white)">
+        <option value="98" selected>ایران (+98)</option><option value="49">آلمان (+49)</option><option value="1">آمریکا / کانادا (+1)</option><option value="44">بریتانیا (+44)</option><option value="90">ترکیه (+90)</option>
+      </select>
+      <input id="recipientValue" type="text" required autocomplete="off" placeholder="email@example.com یا 0912...">
       <button class="action-button" id="findRecipientBtn" type="submit">پیدا کردن مخاطب</button>
     </form>
     <p id="recipientStatus" class="status" role="status"></p>
   </div>
   <h3 id="foundHeading" style="margin:16px 3px 10px">نتیجه جست‌وجو</h3>
   <div id="foundContact"></div>
+  <h3 id="savedContactsHeading" style="margin:20px 3px 10px">مخاطبان ذخیره‌شده</h3>
+  <div class="list" id="savedContactsList"></div>
+  <p id="savedContactsStatus" class="status muted-note" role="status"></p>
   <p class="muted-note" id="contactNote">جست‌وجو فقط برای حساب‌های ثبت‌شده در فرناز انجام می‌شود.</p>
 </section>
 
@@ -280,7 +287,11 @@ footer{text-align:center;color:#718096;font-size:10px;padding:17px 0 7px}
       <label for="profileNameInput" id="profileNameLabel">نام نمایشی</label>
       <input id="profileNameInput" maxlength="60" required autocomplete="nickname">
       <label for="profilePhoneInput" id="profilePhoneLabel">شماره موبایل با کد کشور</label>
-      <input id="profilePhoneInput" type="tel" maxlength="20" placeholder="+98912..." autocomplete="tel">
+      <label for="profilePhoneCountry" id="profilePhoneCountryLabel">کد کشور شماره تلفن</label>
+      <select id="profilePhoneCountry" aria-label="Phone country code" style="width:100%;padding:10px;border:1px solid #43516a;border-radius:10px;background:var(--bg);color:var(--white)">
+        <option value="98" selected>ایران (+98)</option><option value="49">آلمان (+49)</option><option value="1">آمریکا / کانادا (+1)</option><option value="44">بریتانیا (+44)</option><option value="90">ترکیه (+90)</option>
+      </select>
+      <input id="profilePhoneInput" type="tel" maxlength="25" placeholder="0912..." autocomplete="tel">
       <label for="avatarFile" id="avatarFileLabel">تصویر پروفایل</label>
       <input id="avatarFile" type="file" accept="image/jpeg,image/png,image/webp">
       <p class="muted-note" id="avatarNote">فرمت JPG، PNG یا WebP؛ حداکثر ۳ مگابایت.</p>
@@ -402,7 +413,29 @@ function setStatus(id,msg,isError=false){
   const e=$(id);if(!e)return;
   e.textContent=msg;e.classList.toggle("error-text",isError);
 }
-function normalizePhone(v){return(v||"").trim().replace(/[\s().-]/g,"");}
+function normalizeDigits(v){
+  return String(v||"")
+    .replace(/[۰-۹]/g,d=>String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+    .replace(/[٠-٩]/g,d=>String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+}
+function normalizePhone(v,countryCode="98"){
+  const raw=normalizeDigits(v).trim();
+  if(!raw)return "";
+  const hasPlus=raw.startsWith("+");
+  let digits=raw.replace(/\\D/g,"");
+  if(!digits)return "";
+  if(raw.startsWith("00"))digits=digits.slice(2);
+  else if(!hasPlus&&digits.startsWith("0"))digits=String(countryCode)+digits.replace(/^0+/,"");
+  else if(!hasPlus&&String(countryCode)==="98"&&digits.startsWith("9")&&digits.length===10)digits="98"+digits;
+  else if(!hasPlus&&!digits.startsWith(String(countryCode)))digits=String(countryCode)+digits;
+  return "+"+digits;
+}
+function setPhoneCountry(selectId,phone){
+  const digits=normalizeDigits(phone).replace(/\\D/g,"");
+  const select=$(selectId);if(!select)return;
+  const match=["98","49","1","44","90"].find(code=>digits.startsWith(code));
+  if(match)select.value=match;
+}
 function initials(name){return(name||"F").trim().charAt(0).toLocaleUpperCase()||"F";}
 function renderAvatar(el,url,name){
   if(!el)return;
@@ -422,6 +455,7 @@ function navigate(pageId){
   document.querySelectorAll(".nav-button").forEach(b=>b.classList.toggle("active",b.dataset.page===pageId));
   $("bottomNav").classList.toggle("visible",pageId!=="homePage"&&pageId!=="chatPage");
   if(pageId==="chatsPage")refreshConversationList();
+  if(pageId==="contactsPage")refreshSavedContacts();
   window.scrollTo({top:0,behavior:"instant"});
 }
 function backFromChat(){navigate(previousPage==="contactsPage"?"contactsPage":"chatsPage");}
@@ -464,7 +498,10 @@ function toggleLanguage(){
     newChatButton:["＋ گفتگوی جدید","＋ New chat"],contactsHeading:["مخاطبان","Contacts"],
     contactsIntro:["با ایمیل یا شماره تلفن، مخاطب را پیدا کن.","Find someone by email or phone."],
     recipientLabel:["ایمیل یا شماره تلفن با کد کشور","Email or phone with country code"],
+    recipientCountryLabel:["کد کشور شماره تلفن","Phone country code"],
     findRecipientBtn:["پیدا کردن مخاطب","Find contact"],foundHeading:["نتیجه جست‌وجو","Search result"],
+    savedContactsHeading:["مخاطبان ذخیره‌شده","Saved contacts"],savedContactsStatus:["",""],
+    profilePhoneCountryLabel:["کد کشور شماره تلفن","Phone country code"],
     contactNote:["جست‌وجو فقط برای حساب‌های ثبت‌شده در فرناز انجام می‌شود.","Search works for registered Farnaz accounts."],
     profileHeading:["پروفایل من","My profile"],profileIntro:["اطلاعات حساب خود را مدیریت کن.","Manage your account information."],
     profileNameLabel:["نام نمایشی","Display name"],profilePhoneLabel:["شماره موبایل با کد کشور","Phone number with country code"],
@@ -482,7 +519,7 @@ function toggleLanguage(){
   $("authEmailLabel").textContent=english?"Email":"ایمیل";
   $("authPasswordLabel").textContent=english?"Password (at least 8 characters)":"رمز عبور (حداقل ۸ کاراکتر)";
   updateAuthTexts();
-  if(currentUser)refreshConversationList();
+  if(currentUser){refreshConversationList();refreshSavedContacts();}
 }
 function renderUser(user,name){
   currentUser=user;currentProfileName=(name||"").trim();
@@ -500,13 +537,22 @@ async function showUser(user){
       .select("id,display_name,avatar_url,phone").eq("id",user.id).maybeSingle();
     if(request!==profileRequestNumber||currentUser?.id!==user.id)return;
     if(error)throw error;
-    currentProfileName=data?.display_name||user.user_metadata?.display_name||"";
-    currentAvatarUrl=data?.avatar_url||"";currentPhone=data?.phone||"";
+    let profile=data;
+    if(!profile){
+      const fallbackName=(user.user_metadata?.display_name||user.email?.split("@")[0]||"Farnaz user").trim();
+      const created=await getClient().from("profiles")
+        .upsert({id:user.id,display_name:fallbackName,phone:user.phone||null},{onConflict:"id"})
+        .select("id,display_name,avatar_url,phone").single();
+      if(created.error)throw created.error;
+      profile=created.data;
+    }
+    currentProfileName=profile?.display_name||user.user_metadata?.display_name||"";
+    currentAvatarUrl=profile?.avatar_url||"";currentPhone=profile?.phone||"";
     renderUser(user,currentProfileName);
     $("profileNameInput").value=currentProfileName;
     $("profilePhoneInput").value=currentPhone;
-    setStatus("profileStatus",data?(english?"Profile loaded.":"پروفایل بارگذاری شد."):
-      (english?"Profile record not found.":"رکورد پروفایل پیدا نشد."));
+    setPhoneCountry("profilePhoneCountry",currentPhone);
+    setStatus("profileStatus",english?"Profile loaded.":"پروفایل بارگذاری شد.");
   }catch(e){
     console.error("Profile read:",e);
     setStatus("profileStatus",(english?"Could not load profile: ":"بارگذاری پروفایل ناموفق بود: ")+e.message,true);
@@ -520,13 +566,15 @@ function showGuest(){
   $("userEmail").textContent="";$("userPhone").textContent="";
   $("profileForm").reset();
   $("conversationList").replaceChildren();$("foundContact").replaceChildren();
+  $("savedContactsList").replaceChildren();setStatus("savedContactsStatus","");
+  $("recipientValue").value="";setStatus("recipientStatus","");
   $("messageList").replaceChildren();
   document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id==="homePage"));
 }
 async function saveProfile(event){
   event.preventDefault();if(!currentUser)return;
   const name=$("profileNameInput").value.trim();
-  const phone=normalizePhone($("profilePhoneInput").value);
+  const phone=normalizePhone($("profilePhoneInput").value,$("profilePhoneCountry").value);
   const file=$("avatarFile").files[0];
   const button=$("saveProfileButton");
   if(!name||name.length>60){
@@ -552,13 +600,14 @@ async function saveProfile(event){
       avatarUrl=client.storage.from("avatars").getPublicUrl(path).data.publicUrl;
     }
     const {data,error}=await client.from("profiles")
-      .update({display_name:name,phone:phone||null,avatar_url:avatarUrl||null})
-      .eq("id",currentUser.id).select("id,display_name,phone,avatar_url").maybeSingle();
+      .upsert({id:currentUser.id,display_name:name,phone:phone||null,avatar_url:avatarUrl||null},{onConflict:"id"})
+      .select("id,display_name,phone,avatar_url").single();
     if(error)throw error;
-    if(!data)throw new Error(english?"Profile row was not updated.":"رکورد پروفایل به‌روزرسانی نشد.");
     currentProfileName=data.display_name||name;currentPhone=data.phone||"";
     currentAvatarUrl=data.avatar_url||"";
-    await client.auth.updateUser({data:{display_name:currentProfileName}});
+    setPhoneCountry("profilePhoneCountry",currentPhone);
+    const {error:metadataError}=await client.auth.updateUser({data:{display_name:currentProfileName}});
+    if(metadataError)console.warn("Auth metadata update:",metadataError);
     renderUser(currentUser,currentProfileName);$("avatarFile").value="";
     setStatus("profileStatus",english?"Profile saved.":"پروفایل ذخیره شد.");
   }catch(e){
@@ -593,7 +642,7 @@ function openChat(contact,fromPage="chatsPage"){
   setStatus("sendMessageStatus","");
   navigate("chatPage");loadMessages();
 }
-function makeContactButton(contact,preview="",timeText=""){
+function makeContactButton(contact,preview="",timeText="",fromPage="chatsPage"){
   const button=document.createElement("button");
   button.type="button";button.className="list-item";
   const avatar=document.createElement("span");avatar.className="avatar medium";
@@ -605,8 +654,40 @@ function makeContactButton(contact,preview="",timeText=""){
   desc.textContent=preview;
   details.append(name,desc);button.append(avatar,details);
   if(timeText){const time=document.createElement("span");time.className="list-time";time.textContent=timeText;details.appendChild(time);}
-  button.addEventListener("click",()=>openChat(contact,"chatsPage"));
+  button.addEventListener("click",()=>openChat(contact,fromPage));
   return button;
+}
+async function refreshSavedContacts(){
+  const list=$("savedContactsList");if(!list||!currentUser)return;
+  const myId=currentUser.id;
+  list.replaceChildren();
+  setStatus("savedContactsStatus",english?"Loading saved contacts...":"در حال بارگذاری مخاطبان ذخیره‌شده...");
+  try{
+    const {data,error}=await getClient().from("contacts")
+      .select("contact_user_id,created_at")
+      .eq("user_id",myId).order("created_at",{ascending:false});
+    if(error)throw error;
+    if(currentUser?.id!==myId)return;
+    if(!data?.length){
+      setStatus("savedContactsStatus",english?"No saved contacts yet. Search for someone above.":"هنوز مخاطبی ذخیره نشده؛ از بخش بالا جست‌وجو کن.");
+      return;
+    }
+    const profiles=await Promise.all(data.map(async item=>{
+      try{return await getContactProfile(item.contact_user_id);}
+      catch(e){console.warn("Saved contact profile:",e);return null;}
+    }));
+    if(currentUser?.id!==myId)return;
+    data.forEach((item,i)=>{
+      const p=profiles[i]||{};
+      const contact={user_id:item.contact_user_id,display_name:p.display_name||(english?"Farnaz user":"کاربر فرناز"),avatar_url:p.avatar_url||"",phone:p.phone||""};
+      list.appendChild(makeContactButton(contact,p.phone||(english?"Saved contact":"مخاطب ذخیره‌شده"),
+        new Date(item.created_at).toLocaleDateString(english?"en":"fa-IR"),"contactsPage"));
+    });
+    setStatus("savedContactsStatus","");
+  }catch(e){
+    console.error("Saved contacts:",e);
+    setStatus("savedContactsStatus",(english?"Could not load saved contacts: ":"بارگذاری مخاطبان ناموفق بود: ")+e.message,true);
+  }
 }
 async function refreshConversationList(){
   const list=$("conversationList");if(!list||!currentUser)return;
@@ -661,9 +742,9 @@ async function findRecipient(event){
     if(value.includes("@")){
       ({data,error}=await client.rpc("find_farnaz_user",{search_email:value}));
     }else{
-      const phone=normalizePhone(value);
+      const phone=normalizePhone(value,$("recipientCountry").value);
       if(!/^\+[1-9]\d{7,14}$/.test(phone))
-        throw new Error(english?"Use international phone format, e.g. +98912...":"شماره باید با کد کشور وارد شود؛ مثل +98912...");
+        throw new Error(english?"Enter a valid phone number.":"شماره تلفن معتبر وارد کن.");
       ({data,error}=await client.rpc("find_farnaz_user_by_phone",{search_phone:phone}));
     }
     if(error)throw error;
@@ -676,6 +757,9 @@ async function findRecipient(event){
     if(id===currentUser.id){
       setStatus("recipientStatus",english?"You cannot message yourself.":"نمی‌توانی به حساب خودت پیام بدهی.",true);return;
     }
+    const {error:saveError}=await client.from("contacts")
+      .upsert({user_id:currentUser.id,contact_user_id:id},{onConflict:"user_id,contact_user_id",ignoreDuplicates:true});
+    if(saveError)throw saveError;
     let profile=null;
     try{profile=await getContactProfile(id);}catch(e){console.warn(e);}
     const contact={
@@ -687,8 +771,9 @@ async function findRecipient(event){
     $("foundContact").appendChild(makeContactButton(
       contact,english?"Tap to open a private conversation":"برای باز کردن گفتگوی خصوصی بزن"
     ));
-    setStatus("recipientStatus",english?"Contact found.":"مخاطب پیدا شد.");
+    setStatus("recipientStatus",english?"Contact found and saved.":"مخاطب پیدا و ذخیره شد.");
     previousPage="contactsPage";
+    await refreshSavedContacts();
   }catch(e){
     console.error("Find recipient:",e);
     setStatus("recipientStatus",(english?"Search failed: ":"جست‌وجوی مخاطب ناموفق بود: ")+e.message,true);

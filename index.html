@@ -22,7 +22,7 @@ body{
 button,input,textarea{font:inherit}
 input,textarea{font-size:16px}
 .app{width:100%;max-width:560px;height:100dvh;min-height:0;margin:auto;overflow-y:auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch}
-.app.chat-mode{height:var(--chat-viewport-height,100dvh);min-height:0;overflow:hidden;display:flex;flex-direction:column;padding-bottom:calc(8px + env(safe-area-inset-bottom))}
+.app.chat-mode{height:var(--chat-viewport-height,100dvh);min-height:0;overflow:hidden;display:flex;flex-direction:column;padding-bottom:0;transform:translateY(var(--chat-viewport-offset,0px))}
 .app.chat-mode>header{flex:0 0 auto;margin-bottom:6px}
 body.chat-mode .bottom-nav,body.chat-mode .contact-search-fab,body.chat-mode .contact-search-popover{display:none!important}
 body.chat-mode{height:var(--chat-viewport-height,100dvh);min-height:0}
@@ -186,6 +186,15 @@ input[type=file]{font-size:11px;padding:9px}
 .message img{display:block;max-width:220px;max-height:280px;border-radius:9px;margin:4px 0}
 #messageComposerTools{display:none}#attachmentFile,#cameraFile,#photoFile{display:none}
 .composer-shell{position:relative;border:1px solid #43516a;border-radius:18px;background:var(--panel);padding:5px;box-shadow:0 2px 10px #00000012}
+.voice-preview{display:flex;flex-direction:column;gap:7px;padding:8px 9px 10px;margin:0 0 5px;border-radius:13px;background:#101828;border:1px solid #35445a}
+.voice-preview[hidden]{display:none!important}
+.voice-preview-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--mint);font-size:12px;font-weight:700}
+.voice-preview-remove{width:28px;height:28px;border:0;border-radius:50%;background:#ffffff12;color:var(--white);font-size:20px}
+.voice-preview audio{display:block;width:100%;max-width:100%;height:38px}
+.voice-preview-size{font-size:10px;color:var(--muted)}
+.app.chat-mode{padding-bottom:0!important}
+.app.chat-mode>#chatPage #sendMessageForm{padding-bottom:max(4px,env(safe-area-inset-bottom));margin-bottom:0}
+.app.chat-mode>#chatPage #sendMessageStatus{margin:0;padding:0 2px;line-height:1.35}
 .attachment-menu{position:absolute;z-index:120;bottom:calc(100% + 9px);inset-inline-start:5px;width:min(230px,calc(100vw - 42px));padding:7px;border:1px solid var(--border);border-radius:15px;background:var(--panel);box-shadow:0 12px 32px #0008}
 .attachment-menu[hidden]{display:none}
 .attachment-option{display:flex;align-items:center;gap:11px;width:100%;padding:11px 10px;border:0;border-radius:10px;background:transparent;color:var(--white);text-align:start;font-size:13px}
@@ -412,6 +421,11 @@ footer{text-align:center;color:#718096;font-size:10px;padding:17px 0 7px}
   <div id="replyPreview" class="message-quote" hidden></div>
   <form id="sendMessageForm">
     <div class="composer-shell">
+      <div class="voice-preview" id="voicePreview" hidden>
+        <div class="voice-preview-heading"><span id="voicePreviewLabel">پیام صوتی آماده ارسال</span><button class="voice-preview-remove" id="removeVoicePreview" type="button" onclick="discardRecordedVoice()" aria-label="حذف صدای ضبط‌شده">×</button></div>
+        <audio id="voicePreviewPlayer" controls preload="metadata"></audio>
+        <span class="voice-preview-size" id="voicePreviewSize"></span>
+      </div>
       <div class="send-row">
         <textarea id="messageText" maxlength="5000" rows="1" placeholder="پیامت را بنویس..." aria-label="متن پیام"></textarea>
       </div>
@@ -680,6 +694,7 @@ function navigate(pageId){
   document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id===pageId));
   document.querySelector(".app").classList.toggle("chat-mode",pageId==="chatPage");
   document.body.classList.toggle("chat-mode",pageId==="chatPage");
+  if(pageId!=="chatPage"){document.documentElement.style.removeProperty("--chat-viewport-offset");document.documentElement.style.removeProperty("--chat-viewport-height");}
   document.querySelectorAll(".nav-button").forEach(b=>b.classList.toggle("active",b.dataset.page===pageId));
   $("bottomNav").classList.toggle("visible",pageId!=="homePage"&&pageId!=="chatPage");
   $("topNewChatButton").classList.toggle("visible",pageId==="chatsPage");
@@ -1341,13 +1356,36 @@ function stopAudioRecordingTracks(){
 }
 if(window.visualViewport){
   const syncChatViewport=()=>{
-    if(document.body.classList.contains("chat-mode"))
+    if(document.body.classList.contains("chat-mode")){
       document.documentElement.style.setProperty("--chat-viewport-height",Math.round(window.visualViewport.height)+"px");
-    else document.documentElement.style.removeProperty("--chat-viewport-height");
+      document.documentElement.style.setProperty("--chat-viewport-offset",Math.max(0,Math.round(window.visualViewport.offsetTop))+"px");
+    }else{
+      document.documentElement.style.removeProperty("--chat-viewport-height");
+      document.documentElement.style.removeProperty("--chat-viewport-offset");
+    }
   };
   window.visualViewport.addEventListener("resize",syncChatViewport);
   window.visualViewport.addEventListener("scroll",syncChatViewport);
   window.addEventListener("orientationchange",()=>setTimeout(syncChatViewport,120));
+  document.addEventListener("focusin",event=>{if(event.target?.id==="messageText")setTimeout(syncChatViewport,80);});
+  document.addEventListener("focusout",()=>setTimeout(syncChatViewport,80));
+}
+function showRecordedVoicePreview(){
+  const panel=$("voicePreview"),player=$("voicePreviewPlayer");
+  if(!recordedVoiceFile||!panel||!player)return;
+  if(recordedVoiceUrl){URL.revokeObjectURL(recordedVoiceUrl);recordedVoiceUrl=null;}
+  recordedVoiceUrl=URL.createObjectURL(recordedVoiceFile);
+  player.src=recordedVoiceUrl;
+  $("voicePreviewLabel").textContent=english?"Voice message ready to send":"پیام صوتی آماده ارسال";
+  $("voicePreviewSize").textContent=Math.ceil(recordedVoiceFile.size/1024)+" KB";
+  panel.hidden=false;
+}
+function discardRecordedVoice(){
+  const player=$("voicePreviewPlayer"),panel=$("voicePreview");
+  if(player){player.pause();player.removeAttribute("src");player.load();}
+  if(recordedVoiceUrl){URL.revokeObjectURL(recordedVoiceUrl);recordedVoiceUrl=null;}
+  recordedVoiceFile=null;
+  if(panel)panel.hidden=true;
 }
 async function toggleAudioRecording(){
   if(mediaRecorder&&mediaRecorder.state==="recording"){
@@ -1360,6 +1398,7 @@ async function toggleAudioRecording(){
     setStatus("sendMessageStatus",english?"Audio recording is not supported in this browser.":"ضبط صدا در این مرورگر پشتیبانی نمی‌شود.",true);return;
   }
   try{
+    discardRecordedVoice();
     recordingStream=await navigator.mediaDevices.getUserMedia({audio:true});
     const preferred=["audio/mp4","audio/webm;codecs=opus","audio/webm","audio/ogg;codecs=opus"];
     const mimeType=preferred.find(type=>MediaRecorder.isTypeSupported?.(type));
@@ -1384,7 +1423,11 @@ async function toggleAudioRecording(){
       $("recordAudioButton").classList.remove("recording");$("recordAudioButton").textContent="🎙";
       if(recordedVoiceFile){
         $("attachmentFile").value="";$("cameraFile").value="";$("photoFile").value="";
-        setStatus("sendMessageStatus",(english?"Voice message ready · ":"پیام صوتی آماده است · ")+Math.ceil(recordedVoiceFile.size/1024)+" KB · "+(english?"tap Send to send":"برای ارسال، دکمهٔ ارسال را بزن"));
+        showRecordedVoicePreview();
+        setStatus("sendMessageStatus",(english?"Voice message ready. Review it, then tap Send.":"صدای ضبط‌شده آماده است؛ گوش بده و سپس دکمهٔ ارسال را بزن."));
+      }else{
+        discardRecordedVoice();
+        setStatus("sendMessageStatus",english?"No audio was captured. Please record again.":"صدایی ضبط نشد؛ لطفاً دوباره ضبط کن.",true);
       }
     };
     mediaRecorder.start();
@@ -1423,11 +1466,12 @@ async function sendMessage(event){
         if(uploadError)throw uploadError;
         attachmentName=safeName;attachmentMime=file.type||"application/octet-stream";attachmentSize=file.size;
       }
+      const isAudio=!!file&&(file.type||"").startsWith("audio/");
       const row={sender_id:currentUser.id,receiver_id:receiverId,body:body||null,message_type:file?(isImage?"image":"file"):"text",
         attachment_path:attachmentPath,attachment_name:attachmentName,attachment_mime:attachmentMime,attachment_size:attachmentSize,reply_to_id:replyTarget?.id||null};
-      const {error}=await client.from("messages").insert(row);
+      const {data:insertedMessage,error}=await client.from("messages").insert(row).select("id").single();
       if(error){if(attachmentPath)await client.storage.from("chat-attachments").remove([attachmentPath]);throw error;}
-      cancelReply();recordedVoiceFile=null;
+      cancelReply();if(isAudio)discardRecordedVoice();
     }
     input.value="";input.style.height="auto";$("attachmentFile").value="";$("cameraFile").value="";$("photoFile").value="";
     setStatus("sendMessageStatus",english?"Message sent.":"پیام ارسال شد.");

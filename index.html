@@ -940,16 +940,33 @@ async function deleteSelectedMessages(){
 async function forwardSelectedMessages(){
   if(!selectedMessageIds.size)return;
   try{
-    const {data,error}=await getClient().from("messages").select("id,body,attachment_name").in("id",[...selectedMessageIds]).order("created_at");if(error)throw error;
-    const {data:all,error:e}=await getClient().from("messages").select("sender_id,receiver_id,created_at").or("sender_id.eq."+currentUser.id+",receiver_id.eq."+currentUser.id).order("created_at",{ascending:false}).limit(1000);if(e)throw e;
+    const {data,error}=await getClient().from("messages").select("id,body,message_type,attachment_path,attachment_name,attachment_mime,attachment_size").in("id",[...selectedMessageIds]).order("created_at");
+    if(error)throw error;
+    const {data:all,error:e}=await getClient().from("messages").select("sender_id,receiver_id,created_at").or("sender_id.eq."+currentUser.id+",receiver_id.eq."+currentUser.id).order("created_at",{ascending:false}).limit(1000);
+    if(e)throw e;
     const ids=[...new Set((all||[]).map(m=>m.sender_id===currentUser.id?m.receiver_id:m.sender_id).filter(id=>id&&id!==currentUser.id&&id!==currentChatUser?.user_id))];
     if(!ids.length)throw new Error(english?"No other conversation to forward to.":"گفتگوی دیگری برای فوروارد وجود ندارد.");
     const profiles=await Promise.all(ids.map(id=>getContactProfile(id).catch(()=>null)));
-    const labels=ids.map((id,i)=>(i+1)+". "+(profiles[i]?.display_name||ids[i].slice(0,8))).join("\n");
-    const choice=Number(prompt((english?"Choose destination by number:\n":"شماره مقصد را انتخاب کن:\n")+labels));
+    const labels=ids.map((id,i)=>(i+1)+". "+(profiles[i]?.display_name||ids[i].slice(0,8))).join("\\n");
+    const choice=Number(prompt((english?"Choose destination by number:\\n":"شماره مقصد را انتخاب کن:\\n")+labels));
     if(!Number.isInteger(choice)||choice<1||choice>ids.length)return;
-    for(const m of data||[]){const body=((english?"Forwarded: ":"فوروارد شده: ")+(m.body||m.attachment_name||"")).slice(0,5000);
-      const {error:sendError}=await getClient().from("messages").insert({sender_id:currentUser.id,receiver_id:ids[choice-1],body});if(sendError)throw sendError;}
+    const receiverId=ids[choice-1],client=getClient();
+    for(const m of data||[]){
+      let path=null;
+      if(m.attachment_path){
+        const {data:blobData,error:downloadError}=await client.storage.from("chat-attachments").download(m.attachment_path);
+        if(downloadError)throw downloadError;
+        const ext=(m.attachment_name||"photo").split(".").pop().toLowerCase().replace(/[^a-z0-9]/g,"")||"img";
+        path=currentUser.id+"/"+crypto.randomUUID()+"."+ext;
+        const {error:uploadError}=await client.storage.from("chat-attachments").upload(path,blobData,{contentType:m.attachment_mime||blobData.type||"image/jpeg",upsert:false});
+        if(uploadError)throw uploadError;
+      }
+      const {error:sendError}=await client.from("messages").insert({
+        sender_id:currentUser.id,receiver_id:receiverId,body:m.body||null,message_type:m.message_type||"text",
+        attachment_path:path,attachment_name:m.attachment_name,attachment_mime:m.attachment_mime,attachment_size:m.attachment_size
+      });
+      if(sendError){if(path)await client.storage.from("chat-attachments").remove([path]);throw sendError;}
+    }
     exitMessageSelection();alert(english?"Messages forwarded.":"پیام‌ها فوروارد شدند.");
   }catch(e){alert((english?"Forward failed: ":"فوروارد ناموفق بود: ")+e.message);}
 }

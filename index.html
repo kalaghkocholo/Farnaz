@@ -156,6 +156,11 @@ input[type=file]{font-size:11px;padding:9px}
 .empty-state{text-align:center;padding:24px 10px;color:var(--muted);font-size:12px;line-height:1.8}
 .conversation-tools,.message-tools{position:absolute;z-index:35;display:flex;align-items:center;gap:5px;flex-wrap:nowrap;max-width:min(290px,calc(100vw - 40px));padding:6px;border:1px solid var(--border);border-radius:14px;background:#111c2df7;box-shadow:0 10px 30px #0008;inset-inline-start:0;bottom:calc(100% + 5px);backdrop-filter:blur(14px)}
 .message-tools .mini-button{white-space:nowrap;padding:8px 10px;font-size:12px;border-radius:10px}
+.message-tools-floating{position:fixed;inset:auto;bottom:auto;z-index:220;max-width:calc(100vw - 24px);width:max-content;flex-wrap:wrap;justify-content:center;touch-action:manipulation}
+.message-tools-floating .mini-button{min-height:38px}
+.message-tools-floating .message-tools-dismiss{min-height:34px}
+.message-tools-floating{animation:messageMenuIn .14s ease-out}
+@keyframes messageMenuIn{from{opacity:0;transform:translateY(4px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
 .message-tools .mini-button:active{transform:scale(.97)}
 .message-tools-dismiss{width:30px;height:30px;flex:0 0 30px;border:0;border-radius:50%;background:#ffffff12;color:var(--white);font-size:19px}
 .message-quote{display:flex;align-items:center;justify-content:space-between;gap:10px;border-inline-start:3px solid var(--mint);padding:8px 10px;margin:0 0 8px;border-radius:9px;background:#203b4388;color:#d1dbe8;font-size:12px;line-height:1.5}
@@ -325,7 +330,7 @@ footer{text-align:center;color:#718096;font-size:10px;padding:17px 0 7px}
 
 <!-- صفحه مخاطبان -->
 <section class="page" id="contactsPage">
-  <div class="page-heading"><h2 id="contactsHeading">مخاطبان</h2><p id="contactsIntro">مخاطبان ذخیره‌شده را انتخاب کن یا برای پیدا کردن حساب جدید جست‌وجو کن.</p></div>
+  <div class="page-heading"><h2 id="contactsHeading">مخاطبان</h2></div>
   <div class="list" id="savedContactsList"></div>
   <p id="savedContactsStatus" class="status muted-note" role="status"></p>
   <button class="contact-search-fab" id="contactSearchButton" type="button" onclick="toggleContactSearch()" aria-controls="contactSearchPopover" aria-expanded="false">
@@ -687,6 +692,26 @@ function openAdjacentConversation(direction){
   if(nextIndex<0||nextIndex>=cards.length)return;
   cards[nextIndex].querySelector(".list-item")?.click();
 }
+(function installChatSwipeNavigation(){
+  const area=$("messageList");if(!area)return;
+  let startX=0,startY=0,startAt=0;
+  area.addEventListener("touchstart",event=>{
+    if(event.touches.length!==1)return;
+    if(event.target.closest("button,a,input,textarea,audio,video,select")){startAt=0;return;}
+    startX=event.touches[0].clientX;startY=event.touches[0].clientY;startAt=Date.now();
+  },{passive:true});
+  area.addEventListener("touchend",event=>{
+    if(!startAt||!event.changedTouches.length)return;
+    const dx=event.changedTouches[0].clientX-startX,dy=event.changedTouches[0].clientY-startY;
+    const elapsed=Date.now()-startAt;startAt=0;
+    if(Math.abs(dx)<85||Math.abs(dy)>65||elapsed>900)return;
+    dismissMessageMenus();
+    if(messageSelectionMode)exitMessageSelection();
+    if(dx>0)backFromChat();
+    else openAdjacentConversation(1);
+  },{passive:true});
+  area.addEventListener("touchcancel",()=>{startAt=0;},{passive:true});
+})();
 function setConversationView(view){conversationView=view;refreshConversationList();}
 function prefFor(id){return conversationPrefs.get(id)||{pinned:false,archived:false,hidden_at:null};}
 async function saveConversationPref(contactId,patch){
@@ -1143,7 +1168,7 @@ async function makeMessageElement(m,myId){
   }
   const time=document.createElement("time"),date=new Date(m.created_at);time.dateTime=date.toISOString();
   time.textContent=date.toLocaleTimeString(english?"en":"fa-IR",{hour:"2-digit",minute:"2-digit"})+(m.edited_at?(english?" · edited":" · ویرایش‌شده"):"");item.appendChild(time);
-  item.addEventListener("click",event=>{if(messageSelectionMode){toggleMessageSelection(m.id,item);return;}if(event.target.closest("a,button,audio"))return;dismissMessageMenus();});
+  item.addEventListener("click",event=>{if(messageSelectionMode){toggleMessageSelection(m.id,item);return;}if(event.target.closest("a,button,audio"))return;});
   item.addEventListener("contextmenu",e=>{e.preventDefault();showMessageActions(m,item);});
   let hold;item.addEventListener("pointerdown",()=>{hold=setTimeout(()=>showMessageActions(m,item),550);});
   ["pointerup","pointercancel","pointerleave"].forEach(ev=>item.addEventListener(ev,()=>clearTimeout(hold)));
@@ -1164,17 +1189,27 @@ async function loadOlderMessages(){if(messageHasMore)await loadMessages(true);}
 function dismissMessageMenus(except=null){
   document.querySelectorAll(".message-tools").forEach(menu=>{if(!except||!except.contains(menu))menu.remove();});
 }
+document.addEventListener("pointerdown",event=>{
+  if(event.target.closest(".message-tools"))return;
+  dismissMessageMenus();
+  if(messageSelectionMode&&!event.target.closest(".message, #selectionToolbar"))exitMessageSelection();
+});
 function showMessageActions(m,item){
   if(messageSelectionMode){toggleMessageSelection(m.id,item);return;}
-  dismissMessageMenus(item);
-  const menu=document.createElement("div");menu.className="message-tools";
+  dismissMessageMenus();
+  const menu=document.createElement("div");menu.className="message-tools message-tools-floating";
   const add=(label,fn,cls="mini-button")=>{const b=document.createElement("button");b.type="button";b.className=cls;b.textContent=label;b.onclick=()=>{menu.remove();fn();};menu.appendChild(b);};
   add(english?"Reply":"پاسخ",()=>setReplyTarget(m));
   add(english?"Select":"انتخاب",()=>{messageSelectionMode=true;toggleMessageSelection(m.id,item);updateSelectionToolbar();});
   if(m.sender_id===currentUser.id)add(english?"Edit":"ویرایش",()=>editMessage(m));
   add(english?"Delete":"حذف",()=>deleteMessage(m),"mini-button danger");
   const close=document.createElement("button");close.type="button";close.className="message-tools-dismiss";close.textContent="×";close.setAttribute("aria-label",english?"Close":"بستن");close.onclick=()=>menu.remove();menu.appendChild(close);
-  item.appendChild(menu);
+  document.body.appendChild(menu);
+  const rect=item.getBoundingClientRect(),menuRect=menu.getBoundingClientRect(),margin=12;
+  let left=Math.max(margin,Math.min(rect.left+(rect.width-menuRect.width)/2,window.innerWidth-menuRect.width-margin));
+  let top=rect.top-menuRect.height-8;
+  if(top<margin)top=Math.min(window.innerHeight-menuRect.height-margin,rect.bottom+8);
+  menu.style.left=left+"px";menu.style.top=Math.max(margin,top)+"px";
 }
 function setReplyTarget(m){
   replyTarget=m;const preview=$("replyPreview");preview.replaceChildren();preview.hidden=false;
@@ -1190,7 +1225,7 @@ function editMessage(m){
   $("cancelEditButton").hidden=false;$("sendMessageButton").textContent="✓";
   setStatus("sendMessageStatus",english?"Editing your message":"در حال ویرایش پیام");$("messageText").focus();
 }
-function cancelMessageEdit(){editingMessageId=null;$("messageText").value=preEditDraft;preEditDraft="";$("cancelEditButton").hidden=true;$("sendMessageButton").textContent="➤";setStatus("sendMessageStatus","");$("messageText").dispatchEvent(new Event("input",{bubbles:true}));}
+function cancelMessageEdit(){if(!editingMessageId)return;editingMessageId=null;$("messageText").value=preEditDraft;preEditDraft="";$("cancelEditButton").hidden=true;$("sendMessageButton").textContent="➤";setStatus("sendMessageStatus","");$("messageText").dispatchEvent(new Event("input",{bubbles:true}));}
 async function deleteMessage(m){
   const all=m.sender_id===currentUser.id&&confirm(english?"Delete for everyone? Choose Cancel to hide only for you.":"برای همه حذف شود؟ برای حذف فقط از صفحه خودت «لغو» را بزن.");
   try{

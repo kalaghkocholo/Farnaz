@@ -593,16 +593,16 @@ body[data-font-color="white"][data-theme] .bottom-nav .nav-button { color:#fffff
 /* Chat message bubbles follow the selected accent color with readable contrast. */
 .message{color:var(--white)}
 .my-message{
-  background:var(--accent)!important;
-  color:var(--accent-ink,#101828)!important;
+  background:var(--my-message-bg,var(--accent))!important;
+  color:var(--my-message-ink,var(--accent-ink,#101828))!important;
 }
 .their-message{
-  background:color-mix(in srgb,var(--accent) 15%,var(--panel2))!important;
-  color:var(--white)!important;
+  background:var(--their-message-bg,color-mix(in srgb,var(--accent) 15%,var(--panel2)))!important;
+  color:var(--their-message-ink,var(--white))!important;
 }
 .message p{color:inherit!important}
-.message time{color:inherit!important;opacity:.72}
-.message .message-quote{color:inherit!important;opacity:.82}
+.message time{color:inherit!important;opacity:.78}
+.message .message-quote{color:inherit!important;opacity:.88}
 
 
 </style>
@@ -893,7 +893,15 @@ function applyAppearanceSettings(){
   const hex=accent.replace("#","");
   const rgb=[0,2,4].map(i=>parseInt(hex.slice(i,i+2),16));
   const luminance=(0.2126*rgb[0]+0.7152*rgb[1]+0.0722*rgb[2])/255;
-  root.style.setProperty("--accent-ink",luminance>0.62?"#111111":"#ffffff");
+  const accentInk=luminance>0.62?"#111111":"#ffffff";
+  root.style.setProperty("--accent-ink",accentInk);
+  /* Explicit monochrome palettes keep message bubbles readable for pure black/white accents. */
+  const isPureWhite=accent.toLowerCase()==="#ffffff";
+  const isPureBlack=accent.toLowerCase()==="#000000";
+  root.style.setProperty("--my-message-bg",accent);
+  root.style.setProperty("--my-message-ink",accentInk);
+  root.style.setProperty("--their-message-bg",isPureWhite?"#eef1f5":isPureBlack?"#252525":"color-mix(in srgb, "+accent+" 15%, var(--panel2))");
+  root.style.setProperty("--their-message-ink",(isPureWhite||isPureBlack)?"#171717":(theme==="light"?"#172237":"#f7f9fc"));
   const sizes={small:"0.92",medium:"1",large:"1.12"};
   root.style.setProperty("--font-scale",sizes[appearanceSettings.fontSize]||"1");
   const fonts={system:'-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif',serif:'Georgia,"Times New Roman",serif',rounded:'"Trebuchet MS",Arial,sans-serif'};

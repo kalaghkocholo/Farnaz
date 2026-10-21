@@ -55,6 +55,7 @@ h1{font-size:20px;margin:0}
   border:1px solid var(--border);border-radius:13px;
   background:var(--panel);color:var(--white);font-size:19px
 }
+.new-chat-button svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .page{display:none;animation:appear .15s ease-out}
 .page.active{display:block}
 @keyframes appear{from{opacity:.65}to{opacity:1}}
@@ -143,7 +144,12 @@ input[type=file]{font-size:11px;padding:9px}
 .message-quote{border-inline-start:2px solid var(--mint);padding:4px 7px;margin:0 0 7px;color:#d1dbe8;font-size:11px}
 .message img{display:block;max-width:220px;max-height:280px;border-radius:9px;margin:4px 0}
 #messageComposerTools{display:none}#attachmentFile,#cameraFile,#photoFile{display:none}
-.composer-shell{border:1px solid #43516a;border-radius:18px;background:var(--panel);padding:5px;box-shadow:0 2px 10px #00000012}
+.composer-shell{position:relative;border:1px solid #43516a;border-radius:18px;background:var(--panel);padding:5px;box-shadow:0 2px 10px #00000012}
+.attachment-menu{position:absolute;z-index:120;bottom:calc(100% + 9px);inset-inline-start:5px;width:min(230px,calc(100vw - 42px));padding:7px;border:1px solid var(--border);border-radius:15px;background:var(--panel);box-shadow:0 12px 32px #0008}
+.attachment-menu[hidden]{display:none}
+.attachment-option{display:flex;align-items:center;gap:11px;width:100%;padding:11px 10px;border:0;border-radius:10px;background:transparent;color:var(--white);text-align:start;font-size:13px}
+.attachment-option:active{background:var(--panel2)}
+.attachment-option-icon{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:var(--panel2);font-size:18px;flex-shrink:0}
 .composer-shell:focus-within{border-color:#60738d}
 .send-row{display:flex;align-items:flex-end;gap:5px}
 .send-row textarea{flex:1;min-width:0;min-height:42px;max-height:112px;resize:none;border:0;background:transparent;padding:10px 9px;line-height:1.5;font-size:16px;outline:none;box-shadow:none}
@@ -252,6 +258,7 @@ footer{text-align:center;color:#718096;font-size:10px;padding:17px 0 7px}
     <h1 id="brand">فرناز</h1>
     <div class="sub" id="subtitle">ارتباطی نزدیک‌تر، در هر کجا</div>
   </div>
+  <button class="icon-button new-chat-button" id="topNewChatButton" type="button" onclick="startNewChat()" aria-label="گفتگوی جدید" title="گفتگوی جدید"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H6l-3 2v-6.5A7.5 7.5 0 0 1 10.5 7H12"/><path d="M16.5 3.5v7M13 7h7"/></svg></button>
   <button class="icon-button" id="language" type="button" onclick="toggleLanguage()" aria-label="تغییر زبان">EN</button>
 </header>
 <div id="connectionBanner" class="connection-banner" role="status" aria-live="polite" hidden></div>
@@ -363,10 +370,13 @@ footer{text-align:center;color:#718096;font-size:10px;padding:17px 0 7px}
       </div>
       <div class="composer-actions">
         <div class="composer-left">
-          <button class="composer-icon" id="attachImageButton" type="button" onclick="$('photoFile').click()" aria-label="افزودن عکس" title="عکس">＋</button>
-          <button class="composer-icon" id="cameraButton" type="button" onclick="$('cameraFile').click()" aria-label="باز کردن دوربین" title="دوربین">📷</button>
-          <button class="composer-icon" id="attachFileButton" type="button" onclick="$('attachmentFile').click()" aria-label="افزودن فایل" title="فایل">📎</button>
+          <button class="composer-icon" id="attachmentMenuButton" type="button" onclick="toggleAttachmentMenu()" aria-label="افزودن پیوست" title="افزودن پیوست" aria-haspopup="menu" aria-expanded="false">＋</button>
           <button class="composer-icon" id="recordAudioButton" type="button" onclick="toggleAudioRecording()" aria-label="ضبط پیام صوتی" title="پیام صوتی">🎙</button>
+        </div>
+        <div class="attachment-menu" id="attachmentMenu" role="menu" aria-label="گزینه‌های پیوست" hidden>
+          <button class="attachment-option" id="attachmentPhotoOption" type="button" role="menuitem" onclick="chooseAttachment('photo')"><span class="attachment-option-icon">🖼</span><span>انتخاب عکس</span></button>
+          <button class="attachment-option" id="attachmentCameraOption" type="button" role="menuitem" onclick="chooseAttachment('camera')"><span class="attachment-option-icon">📷</span><span>گرفتن عکس با دوربین</span></button>
+          <button class="attachment-option" id="attachmentFileOption" type="button" role="menuitem" onclick="chooseAttachment('file')"><span class="attachment-option-icon">📎</span><span>انتخاب فایل</span></button>
         </div>
         <div class="composer-right">
           <button class="mini-button" id="cancelEditButton" type="button" onclick="cancelMessageEdit()" hidden>لغو ویرایش</button><span class="muted-note" id="attachmentHint">فایل تا ۲۰ مگابایت</span>
@@ -565,6 +575,27 @@ function renderAvatar(el,url,name){
     el.appendChild(img);
   }else el.textContent=initials(name);
 }
+function startNewChat(){
+  if(!currentUser){openAuth();return;}
+  navigate("contactsPage");
+  $("recipientValue").focus({preventScroll:true});
+}
+function toggleAttachmentMenu(force){
+  const menu=$("attachmentMenu"),button=$("attachmentMenuButton");
+  if(!menu||!button)return;
+  const shouldOpen=typeof force==="boolean"?force:menu.hidden;
+  menu.hidden=!shouldOpen;
+  button.setAttribute("aria-expanded",String(shouldOpen));
+}
+function chooseAttachment(kind){
+  toggleAttachmentMenu(false);
+  const target=kind==="photo"?"photoFile":kind==="camera"?"cameraFile":"attachmentFile";
+  $(target)?.click();
+}
+document.addEventListener("click",event=>{
+  const menu=$("attachmentMenu"),button=$("attachmentMenuButton");
+  if(menu&&!menu.hidden&&!menu.contains(event.target)&&!button.contains(event.target))toggleAttachmentMenu(false);
+});
 function navigate(pageId){
   if(!currentUser){openAuth();return;}
   if(!$(pageId))return;
@@ -665,8 +696,12 @@ function toggleLanguage(){
   $("recipientValue").placeholder=english?"email@example.com or +98912...":"email@example.com یا +98912...";
   $("messageText").placeholder=english?"Write a message...":"پیامت را بنویس...";
   $("showActiveChats").textContent=english?"Chats":"گفتگوها";$("showArchivedChats").textContent=english?"Archive":"آرشیو";
-  $("attachImageButton").textContent="＋";$("attachImageButton").title=english?"Add photo":"افزودن عکس";
-  $("cameraButton").title=english?"Camera":"دوربین";$("attachFileButton").title=english?"Attach file":"افزودن فایل";
+  $("attachmentMenuButton").title=english?"Add attachment":"افزودن پیوست";
+  $("attachmentPhotoOption").lastElementChild.textContent=english?"Choose photo":"انتخاب عکس";
+  $("attachmentCameraOption").lastElementChild.textContent=english?"Take a photo":"گرفتن عکس با دوربین";
+  $("attachmentFileOption").lastElementChild.textContent=english?"Choose file":"انتخاب فایل";
+  $("topNewChatButton").title=english?"New chat":"گفتگوی جدید";
+  $("topNewChatButton").setAttribute("aria-label",english?"New chat":"گفتگوی جدید");
   $("recordAudioButton").title=english?"Record voice message":"ضبط پیام صوتی";$("attachmentHint").textContent=english?"Files up to 20 MB":"فایل تا ۲۰ مگابایت";
   $("loadOlderButton").textContent=english?"Load older messages":"پیام‌های قدیمی‌تر";$("cancelEditButton").textContent=english?"Cancel edit":"لغو ویرایش";
   const selectionButtons=$("selectionToolbar").querySelectorAll("button");

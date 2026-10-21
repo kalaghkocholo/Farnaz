@@ -44,8 +44,8 @@ body.chat-mode.keyboard-open .app.chat-mode>header{display:none!important}
 body.chat-mode.keyboard-open 
 /* Chat header: keep contact/back controls grouped on the left and calls on the right */
 .app.chat-mode>#chatPage .chat-header{display:flex!important;direction:ltr!important;justify-content:space-between!important;align-items:center!important;gap:8px!important;width:100%}
-.app.chat-mode>#chatPage .chat-header .chat-heading{display:flex!important;align-items:center!important;gap:6px!important;flex:1 1 auto!important;min-width:0!important}
-.app.chat-mode>#chatPage .chat-header .chat-person{flex:0 1 auto!important;width:auto!important;max-width:calc(100% - 82px)!important;min-width:0!important;margin:0!important;text-align:right!important}
+.app.chat-mode>#chatPage .chat-header .chat-heading{display:flex!important;align-items:center!important;gap:5px!important;flex:0 1 auto!important;width:auto!important;min-width:0!important}
+.app.chat-mode>#chatPage .chat-header .chat-person{display:block!important;visibility:visible!important;flex:0 1 auto!important;width:auto!important;max-width:160px!important;min-width:0!important;margin:0!important;padding:0!important;text-align:right!important;color:var(--white)!important}.app.chat-mode>#chatPage .chat-header .chat-person strong{display:block!important;visibility:visible!important;color:var(--white)!important;white-space:normal!important;overflow-wrap:anywhere!important}
 .app.chat-mode>#chatPage .chat-header .call-actions{display:flex!important;align-items:center!important;justify-content:flex-end!important;gap:4px!important;margin-left:auto!important;flex:0 0 auto!important}
 /* Farnaz chat header icon refresh: explicit, consistent SVG controls */
 .app.chat-mode>#chatPage .chat-header .call-button{display:grid!important;place-items:center!important;width:30px!important;height:30px!important;min-width:30px!important;min-height:30px!important;padding:0!important;flex:0 0 30px!important;border-radius:9px!important}
@@ -782,7 +782,8 @@ function navigate(pageId){
       if(heading){
         heading.style.setProperty("direction","ltr","important");
         heading.style.setProperty("display","flex","important");
-        heading.style.setProperty("flex","1 1 auto","important");
+        heading.style.setProperty("flex","0 1 auto","important");
+        heading.style.setProperty("width","auto","important");
         heading.style.setProperty("min-width","0","important");
         heading.style.setProperty("align-items","center","important");
         heading.style.setProperty("gap","6px","important");
@@ -820,7 +821,13 @@ function navigate(pageId){
         person.style.setProperty("text-align","right","important");
         person.style.setProperty("flex","0 1 auto","important");
         person.style.setProperty("width","auto","important");
-        person.style.setProperty("max-width","calc(100% - 82px)","important");
+        person.style.setProperty("display","block","important");
+        person.style.setProperty("visibility","visible","important");
+        person.style.setProperty("max-width","160px","important");
+        person.style.setProperty("padding","0","important");
+        person.style.setProperty("color","var(--white)","important");
+        const title=person.querySelector("strong");
+        if(title){title.style.setProperty("display","block","important");title.style.setProperty("visibility","visible","important");title.style.setProperty("color","var(--white)","important");}
         person.style.setProperty("min-width","0","important");
         person.style.setProperty("margin","0","important");
       }

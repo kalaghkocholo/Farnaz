@@ -418,6 +418,10 @@ button,.primary,.action-button,.nav-button{--button-accent:var(--accent)}
 .color-options{display:flex;gap:9px;flex-wrap:wrap;padding-top:10px}
 .color-choice{width:30px;height:30px;min-width:30px;border-radius:50%;border:2px solid transparent;box-shadow:0 0 0 1px var(--border)}
 .color-choice[aria-pressed="true"]{outline:2px solid var(--white);outline-offset:2px}
+.bubble-color-options{margin-bottom:4px}
+.bubble-color-choice[data-bubble-color="#ffffff"]{border-color:#aab5c7}
+.bubble-color-choice[data-bubble-color="auto"]{position:relative;overflow:hidden}
+.bubble-color-choice[data-bubble-color="auto"]::after{content:"↻";position:absolute;inset:0;display:grid;place-items:center;color:#172237;font-size:17px;font-weight:800;text-shadow:0 1px 2px #fff}
 .settings-reset{width:100%;margin-top:4px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:10px;padding:11px}
 body[data-theme="light"]{--bg:#f3f6fb;--panel:#fff;--panel2:#e8eef7;--border:#d5deea;--muted:#596579;--danger:#b42318}
 body[data-theme="light"] .settings-card{box-shadow:0 2px 12px rgba(20,35,60,.04)}
@@ -754,6 +758,33 @@ body[data-font-color="white"][data-theme] .bottom-nav .nav-button { color:#fffff
     </div>
   </div>
   <div class="settings-card">
+    <h3 id="outgoingBubbleTitle">رنگ حباب پیام‌های من</h3>
+    <div class="setting-copy"><strong id="outgoingBubbleLabel">پیام‌های ارسالی</strong><small id="outgoingBubbleHint">رنگ حباب پیام‌هایی که خودت می‌فرستی</small></div>
+    <div class="color-options bubble-color-options" role="group" aria-label="رنگ پیام‌های ارسالی">
+      <button type="button" class="color-choice bubble-color-choice" data-bubble-target="outgoingBubble" data-bubble-color="auto" style="background:linear-gradient(135deg,#50e3c2 50%,#27364b 50%)" aria-label="خودکار" onclick="updateAppearanceSetting('outgoingBubble',this.dataset.bubbleColor)"></button>
+      <button type="button" class="color-choice bubble-color-choice" data-bubble-target="outgoingBubble" data-bubble-color="#50e3c2" style="background:#50e3c2" aria-label="فیروزه‌ای" onclick="updateAppearanceSetting('outgoingBubble',this.dataset.bubbleColor)"></button>
+      <button type="button" class="color-choice bubble-color-choice" data-bubble-target="outgoingBubble" data-bubble-color="#7c9cff" style="background:#7c9cff" aria-label="آبی" onclick="updateAppearanceSetting('outgoingBubble',this.dataset.bubbleColor)"></button>
+      <button type="button" class="color-choice bubble-color-choice" data-bubble-target="outgoingBubble" data-bubble-color="#c084fc" style="background:#c084fc" aria-label="بنفش" onclick="updateAppearanceSetting('outgoingBubble',this.dataset.bubbleColor)"></button>
+      <button type="button" class="color-choice bubble-color-choice" data-bubble-target="outgoingBubble" data-bubble-color="#fb7185" style="background:#fb7185" aria-label="صورتی" onclick="updateAppearanceSetting('outgoingBubble',this.dataset.bubbleColor)"></button>
+      <button type="button" class="color-choice bubble-color-choice" data-bubble-target="outgoingBubble" data-bubble-color="#fbbf24" style="background:#fbbf24" aria-label="کهربایی" onclick="updateAppearanceSetting('outgoingBubble',this.dataset.bubbleColor)"></button>
+      <button type="button" class="color-choice bubble-color-choice" data-bubble-target="outgoingBubble" data-bubble-color="#4ade80" style="background:#4ade80" aria-label="سبز" onclick="updateAppearanceSetting('outgoingBubble',this.dataset.bubbleColor)"></button>
+      <button type="button" class="color-choice bubble-color-choice" data-bubble-target="outgoingBubble" data-bubble-color="#000000" style="background:#000000" aria-label="سیاه" onclick="updateAppearanceSetting('outgoingBubble',this.dataset.bubbleColor)"></button>
+      <button type="button" class="color-choice bubble-color-choice" data-bubble-target="outgoingBubble" data-bubble-color="#ffffff" style="background:#ffffff" aria-label="سفید" onclick="updateAppearanceSetting('outgoingBubble',this.dataset.bubbleColor)"></button>
+    </div>
+    <div class="setting-copy" style="margin-top:16px"><strong id="incomingBubbleLabel">پیام‌های دریافتی</strong><small id="incomingBubbleHint">رنگ حباب پیام‌هایی که مخاطب می‌فرستد</small></div>
+    <div class="color-options bubble-color-options" role="group" aria-label="رنگ پیام‌های دریافتی">
+      <button type="button" class="color-choice bubble-color-choice" data-bubble-target="incomingBubble" data-bubble-color="auto" style="background:linear-gradient(135deg,#50e3c2 50%,#27364b 50%)" aria-label="خودکار" onclick="updateAppearanceSetting('incomingBubble',this.dataset.bubbleColor)"></button>
+      <button type="button" class="color-choice bubble-color-choice" data-bubble-target="incomingBubble" data-bubble-color="#50e3c2" style="background:#50e3c2" aria-label="فیروزه‌ای" onclick="updateAppearanceSetting('incomingBubble',this.dataset.bubbleColor)"></button>
+      <button type="button" class="color-choice bubble-color-choice" data-bubble-target="incomingBubble" data-bubble-color="#7c9cff" style="background:#7c9cff" aria-label="آبی" onclick="updateAppearanceSetting('incomingBubble',this.dataset.bubbleColor)"></button>
+      <button type="button" class="color-choice bubble-color-choice" data-bubble-target="incomingBubble" data-bubble-color="#c084fc" style="background:#c084fc" aria-label="بنفش" onclick="updateAppearanceSetting('incomingBubble',this.dataset.bubbleColor)"></button>
+      <button type="button" class="color-choice bubble-color-choice" data-bubble-target="incomingBubble" data-bubble-color="#fb7185" style="background:#fb7185" aria-label="صورتی" onclick="updateAppearanceSetting('incomingBubble',this.dataset.bubbleColor)"></button>
+      <button type="button" class="color-choice bubble-color-choice" data-bubble-target="incomingBubble" data-bubble-color="#fbbf24" style="background:#fbbf24" aria-label="کهربایی" onclick="updateAppearanceSetting('incomingBubble',this.dataset.bubbleColor)"></button>
+      <button type="button" class="color-choice bubble-color-choice" data-bubble-target="incomingBubble" data-bubble-color="#4ade80" style="background:#4ade80" aria-label="سبز" onclick="updateAppearanceSetting('incomingBubble',this.dataset.bubbleColor)"></button>
+      <button type="button" class="color-choice bubble-color-choice" data-bubble-target="incomingBubble" data-bubble-color="#000000" style="background:#000000" aria-label="سیاه" onclick="updateAppearanceSetting('incomingBubble',this.dataset.bubbleColor)"></button>
+      <button type="button" class="color-choice bubble-color-choice" data-bubble-target="incomingBubble" data-bubble-color="#ffffff" style="background:#ffffff" aria-label="سفید" onclick="updateAppearanceSetting('incomingBubble',this.dataset.bubbleColor)"></button>
+    </div>
+  </div>
+  <div class="settings-card">
     <h3 id="languageTitle">زبان</h3>
     <div class="setting-row">
       <div class="setting-copy"><strong id="languageLabel">زبان برنامه</strong><small id="languageHint">فارسی یا انگلیسی</small></div>
@@ -872,7 +903,7 @@ let recordedVoiceFile=null,recordedVoiceUrl=null,mediaRecorder=null,recordedAudi
 
 const $=id=>document.getElementById(id);
 
-const APPEARANCE_DEFAULTS={theme:"dark",accent:"#50e3c2",fontSize:"medium",fontFamily:"system",fontColor:"auto"};
+const APPEARANCE_DEFAULTS={theme:"dark",accent:"#50e3c2",fontSize:"medium",fontFamily:"system",fontColor:"auto",outgoingBubble:"auto",incomingBubble:"auto"};
 const APPEARANCE_KEY="farnaz-appearance-v1";
 function readAppearanceSettings(){
   try{return {...APPEARANCE_DEFAULTS,...JSON.parse(localStorage.getItem(APPEARANCE_KEY)||"{}")};}
@@ -895,13 +926,21 @@ function applyAppearanceSettings(){
   const luminance=(0.2126*rgb[0]+0.7152*rgb[1]+0.0722*rgb[2])/255;
   const accentInk=luminance>0.62?"#111111":"#ffffff";
   root.style.setProperty("--accent-ink",accentInk);
-  /* Explicit monochrome palettes keep message bubbles readable for pure black/white accents. */
-  const isPureWhite=accent.toLowerCase()==="#ffffff";
-  const isPureBlack=accent.toLowerCase()==="#000000";
-  root.style.setProperty("--my-message-bg",accent);
-  root.style.setProperty("--my-message-ink",accentInk);
-  root.style.setProperty("--their-message-bg",isPureWhite?"#eef1f5":isPureBlack?"#252525":"color-mix(in srgb, "+accent+" 15%, var(--panel2))");
-  root.style.setProperty("--their-message-ink",(isPureWhite||isPureBlack)?"#171717":(theme==="light"?"#172237":"#f7f9fc"));
+  /* Each chat bubble has its own saved color; automatic follows the accent color. */
+  const readableInk=color=>{
+    const h=(color||"#50e3c2").replace("#","");
+    const channels=[0,2,4].map(i=>parseInt(h.slice(i,i+2),16));
+    const linear=channels.map(v=>{v/=255;return v<=0.04045?v/12.92:Math.pow((v+0.055)/1.055,2.4);});
+    return 0.2126*linear[0]+0.7152*linear[1]+0.0722*linear[2]>0.42?"#111111":"#ffffff";
+  };
+  const outgoing=appearanceSettings.outgoingBubble||"auto";
+  const incoming=appearanceSettings.incomingBubble||"auto";
+  const outgoingColor=outgoing==="auto"?accent:outgoing;
+  const incomingColor=incoming==="auto"?(accent.toLowerCase()==="#ffffff"?"#eef1f5":accent.toLowerCase()==="#000000"?"#252525":"color-mix(in srgb, "+accent+" 15%, var(--panel2))"):incoming;
+  root.style.setProperty("--my-message-bg",outgoingColor);
+  root.style.setProperty("--my-message-ink",readableInk(outgoingColor));
+  root.style.setProperty("--their-message-bg",incomingColor);
+  root.style.setProperty("--their-message-ink",incoming==="auto"&&accent!=="#ffffff"&&accent!=="#000000"?(theme==="light"?"#172237":"#f7f9fc"):readableInk(incomingColor));
   const sizes={small:"0.92",medium:"1",large:"1.12"};
   root.style.setProperty("--font-scale",sizes[appearanceSettings.fontSize]||"1");
   const fonts={system:'-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif',serif:'Georgia,"Times New Roman",serif',rounded:'"Trebuchet MS",Arial,sans-serif'};
@@ -909,10 +948,12 @@ function applyAppearanceSettings(){
   ["themeSetting","fontSizeSetting","fontFamilySetting","fontColorSetting"].forEach((id,index)=>{
     const el=$(id);if(el)el.value=[appearanceSettings.theme,appearanceSettings.fontSize,appearanceSettings.fontFamily,appearanceSettings.fontColor||"auto"][index];
   });
-  document.querySelectorAll(".color-choice").forEach(button=>button.setAttribute("aria-pressed",String(button.dataset.color===appearanceSettings.accent)));
+  document.querySelectorAll(".color-choice[data-color]").forEach(button=>button.setAttribute("aria-pressed",String(button.dataset.color===appearanceSettings.accent)));
+  document.querySelectorAll(".bubble-color-choice").forEach(button=>button.setAttribute("aria-pressed",String(button.dataset.bubbleColor===(appearanceSettings[button.dataset.bubbleTarget]||"auto"))));
 }
 function updateAppearanceSetting(key,value){
   if(key==="accent"&&!/^#[0-9a-f]{6}$/i.test(value))return;
+  if(["outgoingBubble","incomingBubble"].includes(key)&&value!=="auto"&&!/^#[0-9a-f]{6}$/i.test(value))return;
   const allowed={theme:["dark","light","system"],fontSize:["small","medium","large"],fontFamily:["system","serif","rounded"]};
   if(allowed[key]&&!allowed[key].includes(value))return;
   appearanceSettings={...appearanceSettings,[key]:value};
@@ -937,6 +978,11 @@ function applySettingsLanguage(){
     fontColorLabel:["رنگ نوشته","Font color"],fontColorHint:["رنگ متن برنامه را انتخاب کن","Choose the app text color"],
     accentTitle:["رنگ اصلی","Accent color"],accentLabel:["رنگ تأکیدی فرناز","Farnaz accent color"],
     accentHint:["برای دکمه‌ها و جزئیات رابط کاربری","Used for buttons and interface details"],
+    outgoingBubbleTitle:["رنگ حباب پیام‌های من","My message bubble color"],
+    outgoingBubbleLabel:["پیام‌های ارسالی","Outgoing messages"],
+    outgoingBubbleHint:["رنگ حباب پیام‌هایی که خودت می‌فرستی","Color of messages you send"],
+    incomingBubbleLabel:["پیام‌های دریافتی","Incoming messages"],
+    incomingBubbleHint:["رنگ حباب پیام‌هایی که مخاطب می‌فرستد","Color of messages you receive"],
     languageTitle:["زبان","Language"],languageLabel:["زبان برنامه","App language"],
     languageHint:["فارسی یا انگلیسی","Persian or English"],
     resetSettingsButton:["بازگردانی تنظیمات اولیه","Reset to defaults"]

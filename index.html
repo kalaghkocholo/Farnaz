@@ -385,7 +385,7 @@ button,.primary,.action-button,.nav-button{--button-accent:var(--accent)}
 .color-choice{width:30px;height:30px;min-width:30px;border-radius:50%;border:2px solid transparent;box-shadow:0 0 0 1px var(--border)}
 .color-choice[aria-pressed="true"]{outline:2px solid var(--white);outline-offset:2px}
 .settings-reset{width:100%;margin-top:4px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:10px;padding:11px}
-body[data-theme="light"]{--bg:#f3f6fb;--panel:#fff;--panel2:#e8eef7;--border:#d5deea;--muted:#596579;--white:#172237;--danger:#b42318}
+body[data-theme="light"]{--bg:#f3f6fb;--panel:#fff;--panel2:#e8eef7;--border:#d5deea;--muted:#596579;--danger:#b42318}
 body[data-theme="light"] .settings-card{box-shadow:0 2px 12px rgba(20,35,60,.04)}
 body[data-theme="light"] input,body[data-theme="light"] textarea,body[data-theme="light"] select{color:var(--white)}
 body[data-theme="light"] .icon-button,body[data-theme="light"] .mini-button{color:var(--white)}
@@ -402,7 +402,6 @@ body[data-theme="light"] .icon-button,body[data-theme="light"] .mini-button{colo
     <div class="sub" id="subtitle">ارتباطی نزدیک‌تر، در هر کجا</div>
   </div>
   <button class="icon-button" id="openSettingsButton" type="button" onclick="navigate('settingsPage')" aria-label="تنظیمات" title="تنظیمات">⚙</button>
-  <button class="icon-button" id="language" type="button" onclick="toggleLanguage()" aria-label="تغییر زبان">EN</button>
 </header>
 <div class="new-chat-popover" id="newChatPopover" hidden>
   <div class="new-chat-popover-title"><span id="newChatPopoverTitle">گفتگوی جدید</span><button class="contact-search-close" type="button" onclick="toggleNewChatPopover(false)" aria-label="بستن">×</button></div>
@@ -517,6 +516,12 @@ body[data-theme="light"] .icon-button,body[data-theme="light"] .mini-button{colo
         <option value="system">پیش‌فرض دستگاه</option><option value="serif">سریف</option><option value="rounded">گرد و نرم</option>
       </select>
     </div>
+    <div class="setting-row">
+      <div class="setting-copy"><strong id="fontColorLabel">رنگ نوشته</strong><small id="fontColorHint">رنگ متن برنامه را انتخاب کن</small></div>
+      <select class="setting-control" id="fontColorSetting" aria-label="رنگ نوشته" onchange="updateAppearanceSetting('fontColor',this.value)">
+        <option value="auto">خودکار بر اساس تم</option><option value="white">سفید</option><option value="black">سیاه</option>
+      </select>
+    </div>
   </div>
   <div class="settings-card">
     <h3 id="accentTitle">رنگ اصلی</h3>
@@ -606,9 +611,6 @@ body[data-theme="light"] .icon-button,body[data-theme="light"] .mini-button{colo
     <button class="nav-button" data-page="profilePage" type="button" onclick="navigate('profilePage')">
       <span class="nav-icon">◉</span><span id="navProfile">پروفایل</span>
     </button>
-    <button class="nav-button" data-page="settingsPage" type="button" onclick="navigate('settingsPage')">
-      <span class="nav-icon">⚙</span><span id="navSettings">تنظیمات</span>
-    </button>
   </div>
 </nav>
 
@@ -652,7 +654,7 @@ let recordedVoiceFile=null,recordedVoiceUrl=null,mediaRecorder=null,recordedAudi
 
 const $=id=>document.getElementById(id);
 
-const APPEARANCE_DEFAULTS={theme:"dark",accent:"#50e3c2",fontSize:"medium",fontFamily:"system"};
+const APPEARANCE_DEFAULTS={theme:"dark",accent:"#50e3c2",fontSize:"medium",fontFamily:"system",fontColor:"auto"};
 const APPEARANCE_KEY="farnaz-appearance-v1";
 function readAppearanceSettings(){
   try{return {...APPEARANCE_DEFAULTS,...JSON.parse(localStorage.getItem(APPEARANCE_KEY)||"{}")};}
@@ -664,14 +666,16 @@ function applyAppearanceSettings(){
   let theme=appearanceSettings.theme||"dark";
   if(theme==="system")theme=window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";
   document.body.dataset.theme=theme;
+  const fontColor=appearanceSettings.fontColor||"auto";
+  root.style.setProperty("--white",fontColor==="white"?"#ffffff":fontColor==="black"?"#111111":theme==="light"?"#172237":"#f7f9fc");
   root.style.setProperty("--accent",appearanceSettings.accent||APPEARANCE_DEFAULTS.accent);
   root.style.setProperty("--mint",appearanceSettings.accent||APPEARANCE_DEFAULTS.accent);
   const sizes={small:"0.92",medium:"1",large:"1.12"};
   root.style.setProperty("--font-scale",sizes[appearanceSettings.fontSize]||"1");
   const fonts={system:'-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif',serif:'Georgia,"Times New Roman",serif',rounded:'"Trebuchet MS",Arial,sans-serif'};
   document.body.style.fontFamily=fonts[appearanceSettings.fontFamily]||fonts.system;
-  ["themeSetting","fontSizeSetting","fontFamilySetting"].forEach((id,index)=>{
-    const el=$(id);if(el)el.value=[appearanceSettings.theme,appearanceSettings.fontSize,appearanceSettings.fontFamily][index];
+  ["themeSetting","fontSizeSetting","fontFamilySetting","fontColorSetting"].forEach((id,index)=>{
+    const el=$(id);if(el)el.value=[appearanceSettings.theme,appearanceSettings.fontSize,appearanceSettings.fontFamily,appearanceSettings.fontColor||"auto"][index];
   });
   document.querySelectorAll(".color-choice").forEach(button=>button.setAttribute("aria-pressed",String(button.dataset.color===appearanceSettings.accent)));
 }
@@ -698,6 +702,7 @@ function applySettingsLanguage(){
     themeHint:["روشن، تیره یا هماهنگ با دستگاه","Light, dark, or follow device"],
     fontSizeLabel:["اندازه نوشته","Text size"],fontSizeHint:["اندازه متن در سراسر برنامه","Text size across the app"],
     fontFamilyLabel:["فونت فارسی","Font style"],fontFamilyHint:["انتخاب فونت خوانا","Choose a readable font style"],
+    fontColorLabel:["رنگ نوشته","Font color"],fontColorHint:["رنگ متن برنامه را انتخاب کن","Choose the app text color"],
     accentTitle:["رنگ اصلی","Accent color"],accentLabel:["رنگ تأکیدی فرناز","Farnaz accent color"],
     accentHint:["برای دکمه‌ها و جزئیات رابط کاربری","Used for buttons and interface details"],
     languageTitle:["زبان","Language"],languageLabel:["زبان برنامه","App language"],
@@ -708,7 +713,8 @@ function applySettingsLanguage(){
   const optionSets={
     themeSetting:[["dark","تیره","Dark"],["light","روشن","Light"],["system","مطابق دستگاه","System"]],
     fontSizeSetting:[["small","کوچک","Small"],["medium","معمولی","Medium"],["large","بزرگ","Large"]],
-    fontFamilySetting:[["system","پیش‌فرض دستگاه","Device default"],["serif","سریف","Serif"],["rounded","گرد و نرم","Rounded"]]
+    fontFamilySetting:[["system","پیش‌فرض دستگاه","Device default"],["serif","سریف","Serif"],["rounded","گرد و نرم","Rounded"]],
+    fontColorSetting:[["auto","خودکار بر اساس تم","Automatic by theme"],["white","سفید","White"],["black","سیاه","Black"]]
   };
   Object.entries(optionSets).forEach(([id,items])=>{const el=$(id);if(el)Array.from(el.options).forEach((o,i)=>{o.textContent=items[i][english?2:1];});});
   if($("settingsLanguageButton"))$("settingsLanguageButton").textContent=english?"Switch to فارسی":"English / فارسی";

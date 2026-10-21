@@ -346,6 +346,8 @@ footer{text-align:center;color:#718096;font-size:10px;padding:17px 0 7px}
 .app.chat-mode.keyboard-open .app.chat-mode>#chatPage .send-row textarea{min-height:36px;max-height:76px;padding-top:7px;padding-bottom:7px}
 .app.chat-mode.keyboard-open .app.chat-mode>#chatPage .composer-icon{width:34px;height:34px;flex-basis:34px}
 
+
+.app>header[hidden]{display:none!important}
 </style>
 </head>
 <body>
@@ -741,6 +743,8 @@ function navigate(pageId){
   document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id===pageId));
   document.querySelector(".app").classList.toggle("chat-mode",pageId==="chatPage");
   document.body.classList.toggle("chat-mode",pageId==="chatPage");
+  const brandHeader=document.querySelector(".app>header");
+  if(brandHeader)brandHeader.hidden=pageId==="chatPage";
   if(pageId!=="chatPage"){document.documentElement.style.removeProperty("--chat-viewport-offset");document.documentElement.style.removeProperty("--chat-viewport-height");}
   document.querySelectorAll(".nav-button").forEach(b=>b.classList.toggle("active",b.dataset.page===pageId));
   $("bottomNav").classList.toggle("visible",pageId!=="homePage"&&pageId!=="chatPage");

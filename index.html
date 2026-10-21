@@ -365,6 +365,32 @@ footer{text-align:center;color:#718096;font-size:10px;padding:17px 0 7px}
 
 
 .app>header[hidden]{display:none!important}
+
+/* Farnaz settings and personal appearance preferences */
+:root{--accent:var(--mint);--font-scale:1}
+body{font-size:calc(14px * var(--font-scale))}
+button,.primary,.action-button,.nav-button{--button-accent:var(--accent)}
+.primary,.action-button,.nav-button.active{border-color:var(--accent)}
+.settings-page{padding:16px 14px 28px}
+.settings-intro{color:var(--muted);margin:4px 0 16px;line-height:1.7}
+.settings-card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:15px;margin:0 0 12px}
+.settings-card h3{font-size:15px;margin:0 0 13px}
+.setting-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.setting-row:last-child{border-bottom:0;padding-bottom:0}
+.setting-copy{min-width:0;flex:1}
+.setting-copy strong{display:block;font-size:14px;font-weight:600}
+.setting-copy small{display:block;color:var(--muted);font-size:12px;line-height:1.6;margin-top:3px}
+.setting-control{max-width:52%;min-width:120px;padding:9px 10px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--white)}
+.color-options{display:flex;gap:9px;flex-wrap:wrap;padding-top:10px}
+.color-choice{width:30px;height:30px;min-width:30px;border-radius:50%;border:2px solid transparent;box-shadow:0 0 0 1px var(--border)}
+.color-choice[aria-pressed="true"]{outline:2px solid var(--white);outline-offset:2px}
+.settings-reset{width:100%;margin-top:4px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:10px;padding:11px}
+body[data-theme="light"]{--bg:#f3f6fb;--panel:#fff;--panel2:#e8eef7;--border:#d5deea;--muted:#596579;--white:#172237;--danger:#b42318}
+body[data-theme="light"] .settings-card{box-shadow:0 2px 12px rgba(20,35,60,.04)}
+body[data-theme="light"] input,body[data-theme="light"] textarea,body[data-theme="light"] select{color:var(--white)}
+body[data-theme="light"] .icon-button,body[data-theme="light"] .mini-button{color:var(--white)}
+.app .page#settingsPage{padding-bottom:26px}
+@media(min-width:560px){.settings-page{padding-left:18px;padding-right:18px}}
 </style>
 </head>
 <body>
@@ -375,6 +401,7 @@ footer{text-align:center;color:#718096;font-size:10px;padding:17px 0 7px}
     <h1 id="brand">فرناز</h1>
     <div class="sub" id="subtitle">ارتباطی نزدیک‌تر، در هر کجا</div>
   </div>
+  <button class="icon-button" id="openSettingsButton" type="button" onclick="navigate('settingsPage')" aria-label="تنظیمات" title="تنظیمات">⚙</button>
   <button class="icon-button" id="language" type="button" onclick="toggleLanguage()" aria-label="تغییر زبان">EN</button>
 </header>
 <div class="new-chat-popover" id="newChatPopover" hidden>
@@ -467,6 +494,53 @@ footer{text-align:center;color:#718096;font-size:10px;padding:17px 0 7px}
   </div>
 </section>
 
+<!-- تنظیمات شخصی‌سازی -->
+<section class="page settings-page" id="settingsPage">
+  <div class="page-heading"><h2 id="settingsHeading">تنظیمات</h2><p class="settings-intro" id="settingsIntro">ظاهر فرناز را مطابق سلیقه‌ات تنظیم کن؛ تغییرات روی همین دستگاه ذخیره می‌شوند.</p></div>
+  <div class="settings-card">
+    <h3 id="appearanceTitle">ظاهر برنامه</h3>
+    <div class="setting-row">
+      <div class="setting-copy"><strong id="themeLabel">حالت نمایش</strong><small id="themeHint">روشن، تیره یا هماهنگ با دستگاه</small></div>
+      <select class="setting-control" id="themeSetting" aria-label="حالت نمایش" onchange="updateAppearanceSetting('theme',this.value)">
+        <option value="dark">تیره</option><option value="light">روشن</option><option value="system">مطابق دستگاه</option>
+      </select>
+    </div>
+    <div class="setting-row">
+      <div class="setting-copy"><strong id="fontSizeLabel">اندازه نوشته</strong><small id="fontSizeHint">اندازه متن در سراسر برنامه</small></div>
+      <select class="setting-control" id="fontSizeSetting" aria-label="اندازه نوشته" onchange="updateAppearanceSetting('fontSize',this.value)">
+        <option value="small">کوچک</option><option value="medium">معمولی</option><option value="large">بزرگ</option>
+      </select>
+    </div>
+    <div class="setting-row">
+      <div class="setting-copy"><strong id="fontFamilyLabel">فونت فارسی</strong><small id="fontFamilyHint">انتخاب فونت خوانا</small></div>
+      <select class="setting-control" id="fontFamilySetting" aria-label="فونت فارسی" onchange="updateAppearanceSetting('fontFamily',this.value)">
+        <option value="system">پیش‌فرض دستگاه</option><option value="serif">سریف</option><option value="rounded">گرد و نرم</option>
+      </select>
+    </div>
+  </div>
+  <div class="settings-card">
+    <h3 id="accentTitle">رنگ اصلی</h3>
+    <div class="setting-copy"><strong id="accentLabel">رنگ تأکیدی فرناز</strong><small id="accentHint">برای دکمه‌ها و جزئیات رابط کاربری</small></div>
+    <div class="color-options" role="group" aria-label="انتخاب رنگ اصلی">
+      <button type="button" class="color-choice" style="background:#50e3c2" data-color="#50e3c2" aria-label="فیروزه‌ای" onclick="updateAppearanceSetting('accent',this.dataset.color)"></button>
+      <button type="button" class="color-choice" style="background:#7c9cff" data-color="#7c9cff" aria-label="آبی" onclick="updateAppearanceSetting('accent',this.dataset.color)"></button>
+      <button type="button" class="color-choice" style="background:#c084fc" data-color="#c084fc" aria-label="بنفش" onclick="updateAppearanceSetting('accent',this.dataset.color)"></button>
+      <button type="button" class="color-choice" style="background:#fb7185" data-color="#fb7185" aria-label="صورتی" onclick="updateAppearanceSetting('accent',this.dataset.color)"></button>
+      <button type="button" class="color-choice" style="background:#fbbf24" data-color="#fbbf24" aria-label="کهربایی" onclick="updateAppearanceSetting('accent',this.dataset.color)"></button>
+      <button type="button" class="color-choice" style="background:#4ade80" data-color="#4ade80" aria-label="سبز" onclick="updateAppearanceSetting('accent',this.dataset.color)"></button>
+    </div>
+  </div>
+  <div class="settings-card">
+    <h3 id="languageTitle">زبان</h3>
+    <div class="setting-row">
+      <div class="setting-copy"><strong id="languageLabel">زبان برنامه</strong><small id="languageHint">فارسی یا انگلیسی</small></div>
+      <button class="setting-control" type="button" id="settingsLanguageButton" onclick="toggleLanguage()">English / فارسی</button>
+    </div>
+  </div>
+  <button class="settings-reset" id="resetSettingsButton" type="button" onclick="resetAppearanceSettings()">بازگردانی تنظیمات اولیه</button>
+  <p id="settingsStatus" class="status muted-note" role="status"></p>
+</section>
+
 <!-- صفحه اختصاصی گفتگو -->
 <section class="page" id="chatPage">
   <div class="chat-header">
@@ -532,6 +606,9 @@ footer{text-align:center;color:#718096;font-size:10px;padding:17px 0 7px}
     <button class="nav-button" data-page="profilePage" type="button" onclick="navigate('profilePage')">
       <span class="nav-icon">◉</span><span id="navProfile">پروفایل</span>
     </button>
+    <button class="nav-button" data-page="settingsPage" type="button" onclick="navigate('settingsPage')">
+      <span class="nav-icon">⚙</span><span id="navSettings">تنظیمات</span>
+    </button>
   </div>
 </nav>
 
@@ -574,6 +651,72 @@ let selectedMessageIds=new Set(),replyTarget=null,editingMessageId=null,messageS
 let recordedVoiceFile=null,recordedVoiceUrl=null,mediaRecorder=null,recordedAudioChunks=[],recordingStream=null;
 
 const $=id=>document.getElementById(id);
+
+const APPEARANCE_DEFAULTS={theme:"dark",accent:"#50e3c2",fontSize:"medium",fontFamily:"system"};
+const APPEARANCE_KEY="farnaz-appearance-v1";
+function readAppearanceSettings(){
+  try{return {...APPEARANCE_DEFAULTS,...JSON.parse(localStorage.getItem(APPEARANCE_KEY)||"{}")};}
+  catch(_){return {...APPEARANCE_DEFAULTS};}
+}
+let appearanceSettings=readAppearanceSettings();
+function applyAppearanceSettings(){
+  const root=document.documentElement;
+  let theme=appearanceSettings.theme||"dark";
+  if(theme==="system")theme=window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";
+  document.body.dataset.theme=theme;
+  root.style.setProperty("--accent",appearanceSettings.accent||APPEARANCE_DEFAULTS.accent);
+  root.style.setProperty("--mint",appearanceSettings.accent||APPEARANCE_DEFAULTS.accent);
+  const sizes={small:"0.92",medium:"1",large:"1.12"};
+  root.style.setProperty("--font-scale",sizes[appearanceSettings.fontSize]||"1");
+  const fonts={system:'-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif',serif:'Georgia,"Times New Roman",serif',rounded:'"Trebuchet MS",Arial,sans-serif'};
+  document.body.style.fontFamily=fonts[appearanceSettings.fontFamily]||fonts.system;
+  ["themeSetting","fontSizeSetting","fontFamilySetting"].forEach((id,index)=>{
+    const el=$(id);if(el)el.value=[appearanceSettings.theme,appearanceSettings.fontSize,appearanceSettings.fontFamily][index];
+  });
+  document.querySelectorAll(".color-choice").forEach(button=>button.setAttribute("aria-pressed",String(button.dataset.color===appearanceSettings.accent)));
+}
+function updateAppearanceSetting(key,value){
+  if(key==="accent"&&!/^#[0-9a-f]{6}$/i.test(value))return;
+  const allowed={theme:["dark","light","system"],fontSize:["small","medium","large"],fontFamily:["system","serif","rounded"]};
+  if(allowed[key]&&!allowed[key].includes(value))return;
+  appearanceSettings={...appearanceSettings,[key]:value};
+  try{localStorage.setItem(APPEARANCE_KEY,JSON.stringify(appearanceSettings));}catch(_){}
+  applyAppearanceSettings();
+  if($("settingsStatus"))$("settingsStatus").textContent=english?"Settings saved on this device.":"تنظیمات روی این دستگاه ذخیره شد.";
+}
+function resetAppearanceSettings(){
+  appearanceSettings={...APPEARANCE_DEFAULTS};
+  try{localStorage.setItem(APPEARANCE_KEY,JSON.stringify(appearanceSettings));}catch(_){}
+  applyAppearanceSettings();
+  if($("settingsStatus"))$("settingsStatus").textContent=english?"Default settings restored.":"تنظیمات اولیه بازگردانده شد.";
+}
+function applySettingsLanguage(){
+  const labels={
+    navSettings:["تنظیمات","Settings"],settingsHeading:["تنظیمات","Settings"],
+    settingsIntro:["ظاهر فرناز را مطابق سلیقه‌ات تنظیم کن؛ تغییرات روی همین دستگاه ذخیره می‌شوند.","Personalize Farnaz. Your choices are saved on this device."],
+    appearanceTitle:["ظاهر برنامه","Appearance"],themeLabel:["حالت نمایش","Theme"],
+    themeHint:["روشن، تیره یا هماهنگ با دستگاه","Light, dark, or follow device"],
+    fontSizeLabel:["اندازه نوشته","Text size"],fontSizeHint:["اندازه متن در سراسر برنامه","Text size across the app"],
+    fontFamilyLabel:["فونت فارسی","Font style"],fontFamilyHint:["انتخاب فونت خوانا","Choose a readable font style"],
+    accentTitle:["رنگ اصلی","Accent color"],accentLabel:["رنگ تأکیدی فرناز","Farnaz accent color"],
+    accentHint:["برای دکمه‌ها و جزئیات رابط کاربری","Used for buttons and interface details"],
+    languageTitle:["زبان","Language"],languageLabel:["زبان برنامه","App language"],
+    languageHint:["فارسی یا انگلیسی","Persian or English"],
+    resetSettingsButton:["بازگردانی تنظیمات اولیه","Reset to defaults"]
+  };
+  Object.entries(labels).forEach(([id,pair])=>{if($(id))$(id).textContent=pair[english?1:0];});
+  const optionSets={
+    themeSetting:[["dark","تیره","Dark"],["light","روشن","Light"],["system","مطابق دستگاه","System"]],
+    fontSizeSetting:[["small","کوچک","Small"],["medium","معمولی","Medium"],["large","بزرگ","Large"]],
+    fontFamilySetting:[["system","پیش‌فرض دستگاه","Device default"],["serif","سریف","Serif"],["rounded","گرد و نرم","Rounded"]]
+  };
+  Object.entries(optionSets).forEach(([id,items])=>{const el=$(id);if(el)Array.from(el.options).forEach((o,i)=>{o.textContent=items[i][english?2:1];});});
+  if($("settingsLanguageButton"))$("settingsLanguageButton").textContent=english?"Switch to فارسی":"English / فارسی";
+}
+window.addEventListener("storage",event=>{if(event.key===APPEARANCE_KEY){appearanceSettings=readAppearanceSettings();applyAppearanceSettings();}});
+if(window.matchMedia){window.matchMedia("(prefers-color-scheme: light)").addEventListener?.("change",()=>{if(appearanceSettings.theme==="system")applyAppearanceSettings();});}
+applyAppearanceSettings();
+
 
 
 function getClient(){
@@ -960,7 +1103,7 @@ function toggleLanguage(){
     profileNameLabel:["نام نمایشی","Display name"],profilePhoneLabel:["شماره موبایل با کد کشور","Phone number with country code"],
     avatarFileLabel:["تصویر پروفایل","Profile picture"],avatarNote:["فرمت JPG، PNG یا WebP؛ حداکثر ۳ مگابایت.","JPG, PNG or WebP; maximum 3 MB."],
     saveProfileButton:["ذخیره تغییرات","Save changes"],logoutButton:["خروج از حساب","Sign out"],
-    navChats:["گفتگوها","Chats"],navContacts:["مخاطبان","Contacts"],navProfile:["پروفایل","Profile"],
+    navChats:["گفتگوها","Chats"],navContacts:["مخاطبان","Contacts"],navProfile:["پروفایل","Profile"],navSettings:["تنظیمات","Settings"],
     messagePrivacyNote:["",""],homeLogin:["ورود یا ثبت‌نام","Sign in or sign up"]
   };
   Object.entries(labels).forEach(([id,pair])=>{if($(id))$(id).textContent=pair[english?1:0];});
@@ -995,6 +1138,7 @@ function toggleLanguage(){
   $("authEmailLabel").textContent=english?"Email":"ایمیل";
   $("authPasswordLabel").textContent=english?"Password (at least 8 characters)":"رمز عبور (حداقل ۸ کاراکتر)";
   updateAuthTexts();
+  applySettingsLanguage();
   if(currentUser){refreshConversationList();refreshSavedContacts();}
 }
 function renderUser(user,name){

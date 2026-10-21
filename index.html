@@ -324,9 +324,13 @@ footer{text-align:center;color:#718096;font-size:10px;padding:17px 0 7px}
 .app.chat-mode>header{display:none!important}
 .app.chat-mode>#chatPage{padding-top:2px}
 .app.chat-mode>#chatPage .chat-header{min-height:52px;padding:4px 0 7px;gap:10px}
-.app.chat-mode>#chatPage .chat-header .call-actions{order:1}
-.app.chat-mode>#chatPage .chat-header #chatAvatar{order:2}
-.app.chat-mode>#chatPage .chat-header .chat-person{order:3}
+.app.chat-mode>#chatPage .chat-header{direction:ltr;display:flex;align-items:center;gap:7px}
+.app.chat-mode>#chatPage .chat-header #backToChats{order:1;flex:0 0 26px;width:26px;min-width:26px;padding:0;font-size:20px}
+.app.chat-mode>#chatPage .chat-header #chatAvatar{order:2;width:34px;height:34px;flex:0 0 34px;font-size:14px}
+.app.chat-mode>#chatPage .chat-header .chat-person{order:3;flex:1;min-width:0;direction:rtl;text-align:right}
+.app.chat-mode>#chatPage .chat-header .call-actions{order:4;margin-left:auto;flex:0 0 auto;gap:4px}
+.app.chat-mode>#chatPage .chat-header .call-button{width:30px;height:30px;min-width:30px;min-height:30px;padding:0;border-radius:9px;font-size:15px}
+.app.chat-mode>#chatPage .chat-header .call-button svg{display:block;width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .app.chat-mode>#chatPage .back-button span{display:none!important}
 .app.chat-mode>#chatPage #chatAvatar{width:44px;height:44px;flex:0 0 44px;font-size:17px}
 .app.chat-mode>#chatPage .chat-person strong{font-size:15px;line-height:1.25}
@@ -465,7 +469,7 @@ footer{text-align:center;color:#718096;font-size:10px;padding:17px 0 7px}
     </div>
     <div class="call-actions">
       <button class="call-button" type="button" onclick="startCall('audio')" aria-label="تماس صوتی" title="تماس صوتی">☎</button>
-      <button class="call-button" type="button" onclick="startCall('video')" aria-label="تماس تصویری" title="تماس تصویری">▣</button>
+      <button class="call-button" type="button" onclick="startCall('video')" aria-label="تماس تصویری" title="تماس تصویری"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="12" height="12" rx="2"></rect><path d="m15 10 6-3v10l-6-3z"></path></svg></button>
     </div>
   </div>
   <div class="conversation-tools" id="selectionToolbar"><span class="muted-note" id="selectedCount">۰ پیام انتخاب شده</span><button class="mini-button" type="button" onclick="replyToSelected()">پاسخ</button><button class="mini-button" type="button" onclick="forwardSelectedMessages()">فوروارد</button><button class="mini-button danger" type="button" onclick="deleteSelectedMessages()">حذف</button><button class="mini-button" type="button" onclick="exitMessageSelection()">لغو</button></div>

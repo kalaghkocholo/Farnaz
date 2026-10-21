@@ -55,9 +55,15 @@ h1{font-size:20px;margin:0}
   border:1px solid var(--border);border-radius:13px;
   background:var(--panel);color:var(--white);font-size:19px
 }
-.new-chat-button{display:none;flex-shrink:0}
+.brand-stack{display:flex;flex-direction:column;align-items:center;gap:5px;flex-shrink:0;position:relative}
+.new-chat-button{display:none;flex-shrink:0;width:32px;height:30px;border-radius:10px;font-size:16px}
 .new-chat-button.visible{display:grid}
-.new-chat-button svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.new-chat-button svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.new-chat-popover{position:fixed;z-index:160;top:calc(104px + env(safe-area-inset-top));right:max(12px,calc((100vw - 560px)/2 + 12px));width:min(320px,calc(100vw - 24px));max-height:calc(100dvh - 190px);display:flex;flex-direction:column;gap:9px;padding:13px;border:1px solid var(--border);border-radius:17px;background:var(--panel);box-shadow:0 16px 44px #0009}
+.new-chat-popover[hidden]{display:none}
+.new-chat-popover input{padding:10px;font-size:15px}
+.new-chat-popover .list{overflow-y:auto;min-height:0}
+.new-chat-popover-title{display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:750;font-size:13px}
 .contact-search-fab{position:fixed;z-index:140;left:max(12px,calc((100vw - 560px)/2 + 12px));bottom:calc(78px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:7px;min-height:38px;padding:0 13px;border:1px solid #41695f;border-radius:999px;background:#193a39;color:var(--mint);box-shadow:0 6px 22px #0005;font-size:12px;font-weight:650}
 .contact-search-fab svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
 .contact-search-popover{position:fixed;z-index:139;left:max(12px,calc((100vw - 560px)/2 + 12px));bottom:calc(126px + env(safe-area-inset-bottom));width:min(320px,calc(100vw - 24px));max-height:calc(100dvh - 180px);overflow-y:auto;padding:13px;border:1px solid var(--border);border-radius:16px;background:var(--panel);box-shadow:0 14px 40px #0008}
@@ -194,7 +200,8 @@ input[type=file]{font-size:11px;padding:9px}
 .nav-button .nav-icon{font-size:21px;line-height:1.2}
 .nav-button.active{background:#203b43;color:var(--mint);font-weight:700}
 #chatPage{padding-bottom:5px}
-.back-button{display:flex;align-items:center;justify-content:center;gap:4px;min-width:64px;padding:7px 9px;white-space:nowrap;font-size:12px}\n.chat-header{
+.back-button{display:flex;align-items:center;justify-content:center;gap:4px;min-width:64px;padding:7px 9px;white-space:nowrap;font-size:12px}
+.chat-header{
   display:flex;align-items:center;gap:9px;
   padding:8px 0 12px;border-bottom:1px solid var(--border)
 }
@@ -265,14 +272,19 @@ footer{text-align:center;color:#718096;font-size:10px;padding:17px 0 7px}
 <body>
 <main class="app">
 <header>
-  <button class="icon-button new-chat-button" id="topNewChatButton" type="button" onclick="startNewChat()" aria-label="گفتگوی جدید" title="گفتگوی جدید"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H6l-3 2v-6.5A7.5 7.5 0 0 1 10.5 7H12"/><path d="M16.5 3.5v7M13 7h7"/></svg></button>
-  <div class="logo">F</div>
+  <div class="brand-stack"><div class="logo">F</div><button class="icon-button new-chat-button" id="topNewChatButton" type="button" onclick="startNewChat()" aria-label="گفتگوی جدید" title="گفتگوی جدید" aria-controls="newChatPopover" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H6l-3 2v-6.5A7.5 7.5 0 0 1 10.5 7H12"/><path d="M16.5 3.5v7M13 7h7"/></svg></button></div>
   <div class="brand-text">
     <h1 id="brand">فرناز</h1>
     <div class="sub" id="subtitle">ارتباطی نزدیک‌تر، در هر کجا</div>
   </div>
   <button class="icon-button" id="language" type="button" onclick="toggleLanguage()" aria-label="تغییر زبان">EN</button>
 </header>
+<div class="new-chat-popover" id="newChatPopover" hidden>
+  <div class="new-chat-popover-title"><span id="newChatPopoverTitle">گفتگوی جدید</span><button class="contact-search-close" type="button" onclick="toggleNewChatPopover(false)" aria-label="بستن">×</button></div>
+  <input id="savedContactFilter" type="search" autocomplete="off" placeholder="جستجو در مخاطبان ذخیره‌شده" aria-label="جستجو در مخاطبان ذخیره‌شده">
+  <div class="list" id="newChatContactsList"></div>
+  <p class="status muted-note" id="newChatContactsStatus" role="status"></p>
+</div>
 <div id="connectionBanner" class="connection-banner" role="status" aria-live="polite" hidden></div>
 
 <!-- صفحه شروع -->
@@ -295,9 +307,6 @@ footer{text-align:center;color:#718096;font-size:10px;padding:17px 0 7px}
 <!-- صفحه گفتگوها -->
 <section class="page" id="chatsPage">
   <div class="page-heading"><h2 id="chatsHeading">گفتگوها</h2><p id="chatsIntro">گفتگوهای اخیرت را اینجا می‌بینی.</p></div>
-  <div class="panel">
-    <button class="primary" id="newChatButton" type="button" onclick="navigate('contactsPage')">＋ گفتگوی جدید</button>
-  </div>
   <div class="conversation-tools"><button class="mini-button" id="showActiveChats" type="button" onclick="setConversationView('active')">گفتگوها</button><button class="mini-button" id="showArchivedChats" type="button" onclick="setConversationView('archived')">آرشیو</button></div>
   <div class="list" id="conversationList"></div>
   <div id="inboxStatus" class="status muted-note" role="status"></div>
@@ -309,9 +318,6 @@ footer{text-align:center;color:#718096;font-size:10px;padding:17px 0 7px}
   <h3 id="savedContactsHeading" style="margin:12px 3px 10px">مخاطبان ذخیره‌شده</h3>
   <div class="list" id="savedContactsList"></div>
   <p id="savedContactsStatus" class="status muted-note" role="status"></p>
-  <h3 id="foundHeading" style="margin:16px 3px 10px">نتیجه جست‌وجو</h3>
-  <div id="foundContact"></div>
-  <p class="muted-note" id="contactNote">جست‌وجو فقط برای حساب‌های ثبت‌شده در فرناز انجام می‌شود.</p>
   <button class="contact-search-fab" id="contactSearchButton" type="button" onclick="toggleContactSearch()" aria-controls="contactSearchPopover" aria-expanded="false">
     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg>
     <span id="contactSearchButtonLabel">جستجوی مخاطب</span>
@@ -328,6 +334,8 @@ footer{text-align:center;color:#718096;font-size:10px;padding:17px 0 7px}
       <button class="action-button" id="findRecipientBtn" type="submit">پیدا کردن مخاطب</button>
     </form>
     <p id="recipientStatus" class="status" role="status"></p>
+    <div id="foundContact"></div>
+    <p class="muted-note" id="contactNote">جست‌وجو فقط برای حساب‌های ثبت‌شده در فرناز انجام می‌شود.</p>
   </div>
 </section>
 
@@ -595,8 +603,29 @@ function renderAvatar(el,url,name){
 function startNewChat(){
   if(!currentUser){openAuth();return;}
   toggleContactSearch(false);
-  navigate("contactsPage");
-  requestAnimationFrame(()=> $("savedContactsHeading").scrollIntoView({behavior:"smooth",block:"start"}));
+  toggleNewChatPopover();
+}
+function toggleNewChatPopover(force){
+  const panel=$("newChatPopover"),button=$("topNewChatButton");
+  if(!panel||!button)return;
+  const open=typeof force==="boolean"?force:panel.hidden;
+  panel.hidden=!open;button.setAttribute("aria-expanded",String(open));
+  if(open){
+    $("savedContactFilter").value="";
+    filterSavedContactsForNewChat();
+    refreshSavedContacts();
+    requestAnimationFrame(()=> $("savedContactFilter").focus({preventScroll:true}));
+  }
+}
+function filterSavedContactsForNewChat(){
+  const query=($("savedContactFilter")?.value||"").trim().toLocaleLowerCase();
+  let visible=0;
+  $("newChatContactsList")?.querySelectorAll(".list-item").forEach(item=>{
+    const name=(item.dataset.contactName||"").toLocaleLowerCase();
+    const show=!query||name.includes(query);item.hidden=!show;if(show)visible++;
+  });
+  const hasItems=$("newChatContactsList")?.children.length||0;
+  $("newChatContactsStatus").textContent=hasItems?(visible?"":(english?"No matching saved contacts.":"مخاطب ذخیره‌شده‌ای با این نام پیدا نشد.")):(english?"No saved contacts yet.":"هنوز مخاطبی ذخیره نشده است.");
 }
 function toggleContactSearch(force){
   const panel=$("contactSearchPopover"),button=$("contactSearchButton");
@@ -632,6 +661,7 @@ function navigate(pageId){
   document.querySelectorAll(".nav-button").forEach(b=>b.classList.toggle("active",b.dataset.page===pageId));
   $("bottomNav").classList.toggle("visible",pageId!=="homePage");
   $("topNewChatButton").classList.toggle("visible",pageId==="chatsPage");
+  if(pageId!=="chatsPage")toggleNewChatPopover(false);
   if(pageId!=="contactsPage")toggleContactSearch(false);
   if(pageId==="chatsPage")refreshConversationList();
   if(pageId==="contactsPage")refreshSavedContacts();
@@ -698,8 +728,8 @@ function toggleLanguage(){
     f3:["یادآوری‌ها","Reminders"],f3d:["کارهای مهم را فراموش نکن.","Remember what matters."],
     f4:["تماس صوتی و تصویری","Voice & video calls"],f4d:["ارتباطی فراتر از پیام متنی.","Connect beyond text."],
     chatsHeading:["گفتگوها","Chats"],chatsIntro:["گفتگوهای اخیرت را اینجا می‌بینی.","Your recent conversations appear here."],
-    newChatButton:["＋ گفتگوی جدید","＋ New chat"],contactsHeading:["مخاطبان","Contacts"],
-    contactsIntro:["با ایمیل یا شماره تلفن، مخاطب را پیدا کن.","Find someone by email or phone."],
+    contactsHeading:["مخاطبان","Contacts"],
+    contactsIntro:["مخاطبان ذخیره‌شده را انتخاب کن یا از جست‌وجوی پایین حساب جدیدی پیدا کن.","Choose a saved contact or find a new account using the search control below."],
     recipientLabel:["ایمیل یا شماره تلفن با کد کشور","Email or phone with country code"],
     recipientCountryLabel:["کد کشور شماره تلفن","Phone country code"],
     findRecipientBtn:["پیدا کردن مخاطب","Find contact"],foundHeading:["نتیجه جست‌وجو","Search result"],
@@ -730,6 +760,9 @@ function toggleLanguage(){
   $("attachmentFileOption").lastElementChild.textContent=english?"Choose file":"انتخاب فایل";
   $("topNewChatButton").title=english?"New chat":"گفتگوی جدید";
   $("topNewChatButton").setAttribute("aria-label",english?"New chat":"گفتگوی جدید");
+  $("newChatPopoverTitle").textContent=english?"Start a new chat":"گفتگوی جدید";
+  $("savedContactFilter").placeholder=english?"Search saved contacts by name":"جستجو با نام مخاطب ذخیره‌شده";
+  $("savedContactFilter").setAttribute("aria-label",english?"Search saved contacts by name":"جستجو با نام مخاطب ذخیره‌شده");
   $("contactSearchButtonLabel").textContent=english?"Find contact":"جستجوی مخاطب";
   $("contactSearchTitle").textContent=english?"Find a new contact":"پیدا کردن مخاطب جدید";
   $("contactSearchButton").setAttribute("aria-label",english?"Find a new contact":"جستجوی مخاطب جدید");
@@ -891,7 +924,8 @@ async function refreshSavedContacts(){
       .eq("user_id",myId).order("created_at",{ascending:false}));
     if(currentUser?.id!==myId)return;
     if(!data?.length){
-      setStatus("savedContactsStatus",english?"No saved contacts yet. Search for someone above.":"هنوز مخاطبی ذخیره نشده؛ از بخش بالا جست‌وجو کن.");
+      $("newChatContactsList")?.replaceChildren();filterSavedContactsForNewChat();
+      setStatus("savedContactsStatus",english?"No saved contacts yet. Search using the button below.":"هنوز مخاطبی ذخیره نشده؛ از دکمه جست‌وجوی پایین استفاده کن.");
       return;
     }
     const profiles=await Promise.all(data.map(async item=>{
@@ -899,41 +933,48 @@ async function refreshSavedContacts(){
       catch(e){console.warn("Saved contact profile:",e);return null;}
     }));
     if(currentUser?.id!==myId)return;
+    const dropdownList=$("newChatContactsList");if(dropdownList)dropdownList.replaceChildren();
+    const seenContacts=new Set();
     data.forEach((item,i)=>{
+      const contactId=String(item.contact_user_id||"");if(!contactId||seenContacts.has(contactId))return;seenContacts.add(contactId);
       const p=profiles[i]||{};
-      const contact={user_id:item.contact_user_id,display_name:p.display_name||(english?"Farnaz user":"کاربر فرناز"),avatar_url:p.avatar_url||"",phone:p.phone||""};
+      const contact={user_id:contactId,display_name:p.display_name||(english?"Farnaz user":"کاربر فرناز"),avatar_url:p.avatar_url||"",phone:p.phone||""};
       list.appendChild(makeContactButton(contact,p.phone||(english?"Saved contact":"مخاطب ذخیره‌شده"),
         new Date(item.created_at).toLocaleDateString(english?"en":"fa-IR"),"contactsPage"));
+      if(dropdownList){const quick=makeContactButton(contact,p.phone||(english?"Saved contact":"مخاطب ذخیره‌شده"),"","chatsPage");quick.dataset.contactName=contact.display_name;dropdownList.appendChild(quick);}
     });
+    filterSavedContactsForNewChat();
     setStatus("savedContactsStatus","");
   }catch(e){
     console.error("Saved contacts:",e);
     setStatus("savedContactsStatus",(english?"Could not load saved contacts: ":"بارگذاری مخاطبان ناموفق بود: ")+e.message,true);
   }
 }
+let conversationListRequestNumber=0;
 async function refreshConversationList(){
   if(!currentUser)return;
+  const request=++conversationListRequestNumber;
   const myId=currentUser.id;
   try{
     const prefResult=await retryRead("conversation preferences",()=>getClient().from("conversation_preferences").select("*").eq("user_id",myId));
-    if(currentUser?.id!==myId)return;
-    conversationPrefs=new Map((prefResult.data||[]).map(p=>[p.contact_user_id,p]));
+    if(currentUser?.id!==myId||request!==conversationListRequestNumber)return;
+    conversationPrefs=new Map((prefResult.data||[]).map(p=>[String(p.contact_user_id),p]));
   }catch(prefError){
     console.warn("Conversation preferences:",prefError);
     if(!conversationPrefs.size)setConnectionBanner(english?"Some conversation settings could not load. Retrying…":"بخشی از تنظیمات گفتگو بارگذاری نشد؛ دوباره تلاش می‌کنیم.");
   }
 
-  const list=$("conversationList");if(!list||!currentUser)return;
+  const list=$("conversationList");if(!list||!currentUser||request!==conversationListRequestNumber)return;
   setStatus("inboxStatus",english?"Loading conversations...":"در حال بارگذاری گفتگوها...");
   try{
     const {data,error}=await retryRead("conversation list",()=>getClient().from("messages")
       .select("id,sender_id,receiver_id,body,created_at,message_type,attachment_name")
       .or("sender_id.eq."+myId+",receiver_id.eq."+myId)
       .order("created_at",{ascending:false}).limit(1000));
-    if(currentUser?.id!==myId)return;
+    if(currentUser?.id!==myId||request!==conversationListRequestNumber)return;
     const conversations=new Map();
     for(const m of data||[]){
-      const id=m.sender_id===myId?m.receiver_id:m.sender_id;
+      const id=String(m.sender_id===myId?m.receiver_id:m.sender_id||"");
       if(!id||id===myId||conversations.has(id))continue;
       const pref=prefFor(id);
       if(pref.hidden_at&&new Date(m.created_at)<=new Date(pref.hidden_at))continue;
@@ -947,7 +988,7 @@ async function refreshConversationList(){
     const profiles=await Promise.all(entries.map(async c=>{
       try{return await getContactProfile(c.user_id);}catch(e){console.warn("Contact profile:",e);return null;}
     }));
-    if(currentUser?.id!==myId)return;
+    if(currentUser?.id!==myId||request!==conversationListRequestNumber)return;
     entries.forEach((c,i)=>{
       const p=profiles[i]||{};
       const name=p.display_name||(english?"Farnaz user":"مخاطب فرناز");
@@ -1329,6 +1370,11 @@ $("authForm").addEventListener("submit",async event=>{
 });
 $("profileForm").addEventListener("submit",saveProfile);
 $("recipientForm").addEventListener("submit",findRecipient);
+$("savedContactFilter").addEventListener("input",filterSavedContactsForNewChat);
+document.addEventListener("click",event=>{
+  const panel=$("newChatPopover"),button=$("topNewChatButton");
+  if(panel&&!panel.hidden&&!panel.contains(event.target)&&!button.contains(event.target))toggleNewChatPopover(false);
+});
 $("sendMessageForm").addEventListener("submit",sendMessage);
 function handleAttachmentChange(input){
   const file=input.files[0];if(!file)return;

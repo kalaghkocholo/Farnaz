@@ -492,6 +492,28 @@ body[data-theme="light"] .bottom-nav .nav-button.active {color:var(--accent)!imp
 body[data-font-color="black"] {--white:#111111!important}
 body[data-font-color="white"] {--white:#ffffff!important}
 
+
+body[data-font-color="black"] .page h1,
+body[data-font-color="black"] .page h2,
+body[data-font-color="black"] .page h3,
+body[data-font-color="black"] .page p,
+body[data-font-color="black"] .page label,
+body[data-font-color="black"] .page .list-name,
+body[data-font-color="black"] .page .list-details,
+body[data-font-color="black"] .page .empty-state,
+body[data-font-color="black"] .page .setting-copy strong,
+body[data-font-color="black"] .app>header .brand-text {color:#111!important}
+body[data-font-color="white"] .page h1,
+body[data-font-color="white"] .page h2,
+body[data-font-color="white"] .page h3,
+body[data-font-color="white"] .page p,
+body[data-font-color="white"] .page label,
+body[data-font-color="white"] .page .list-name,
+body[data-font-color="white"] .page .list-details,
+body[data-font-color="white"] .page .empty-state,
+body[data-font-color="white"] .page .setting-copy strong,
+body[data-font-color="white"] .app>header .brand-text {color:#fff!important}
+
 </style>
 </head>
 <body>
@@ -768,6 +790,7 @@ function applyAppearanceSettings(){
   if(theme==="system")theme=window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";
   document.body.dataset.theme=theme;
   const fontColor=appearanceSettings.fontColor||"auto";
+  document.body.dataset.fontColor=fontColor;
   root.style.setProperty("--white",fontColor==="white"?"#ffffff":fontColor==="black"?"#111111":theme==="light"?"#172237":"#f7f9fc");
   root.style.setProperty("--accent",appearanceSettings.accent||APPEARANCE_DEFAULTS.accent);
   root.style.setProperty("--mint",appearanceSettings.accent||APPEARANCE_DEFAULTS.accent);

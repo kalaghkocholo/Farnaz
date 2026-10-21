@@ -476,7 +476,7 @@ let currentProfileName="",currentAvatarUrl="",currentPhone="";
 let currentChatUser=null,messageSubscription=null,reconnectTimer=null,reconnectAttempts=0;
 let profileRequestNumber=0,chatRequestNumber=0,previousPage="chatsPage";
 let conversationView="active",conversationPrefs=new Map(),messageLoadedCount=50,messageHasMore=false;
-let selectedMessageIds=new Set(),replyTarget=null,editingMessageId=null,messageSelectionMode=false;
+let selectedMessageIds=new Set(),replyTarget=null,editingMessageId=null,messageSelectionMode=false,preEditDraft="";
 let recordedVoiceFile=null,mediaRecorder=null,recordedAudioChunks=[],recordingStream=null;
 
 const $=id=>document.getElementById(id);
@@ -1186,11 +1186,11 @@ function setReplyTarget(m){
 function cancelReply(){replyTarget=null;$("replyPreview").hidden=true;$("replyPreview").replaceChildren();}
 function editMessage(m){
   if(m.sender_id!==currentUser.id)return;
-  cancelReply();editingMessageId=m.id;$("messageText").value=m.body||"";
+  cancelReply();preEditDraft=$("messageText").value;editingMessageId=m.id;$("messageText").value=m.body||"";
   $("cancelEditButton").hidden=false;$("sendMessageButton").textContent="✓";
   setStatus("sendMessageStatus",english?"Editing your message":"در حال ویرایش پیام");$("messageText").focus();
 }
-function cancelMessageEdit(){editingMessageId=null;$("messageText").value="";$("cancelEditButton").hidden=true;$("sendMessageButton").textContent="➤";setStatus("sendMessageStatus","");}
+function cancelMessageEdit(){editingMessageId=null;$("messageText").value=preEditDraft;preEditDraft="";$("cancelEditButton").hidden=true;$("sendMessageButton").textContent="➤";setStatus("sendMessageStatus","");$("messageText").dispatchEvent(new Event("input",{bubbles:true}));}
 async function deleteMessage(m){
   const all=m.sender_id===currentUser.id&&confirm(english?"Delete for everyone? Choose Cancel to hide only for you.":"برای همه حذف شود؟ برای حذف فقط از صفحه خودت «لغو» را بزن.");
   try{

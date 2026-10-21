@@ -1225,7 +1225,7 @@ function editMessage(m){
   $("cancelEditButton").hidden=false;$("sendMessageButton").textContent="✓";
   setStatus("sendMessageStatus",english?"Editing your message":"در حال ویرایش پیام");$("messageText").focus();
 }
-function cancelMessageEdit(){editingMessageId=null;$("messageText").value=preEditDraft;preEditDraft="";$("cancelEditButton").hidden=true;$("sendMessageButton").textContent="➤";setStatus("sendMessageStatus","");$("messageText").dispatchEvent(new Event("input",{bubbles:true}));}
+function cancelMessageEdit(){if(!editingMessageId)return;editingMessageId=null;$("messageText").value=preEditDraft;preEditDraft="";$("cancelEditButton").hidden=true;$("sendMessageButton").textContent="➤";setStatus("sendMessageStatus","");$("messageText").dispatchEvent(new Event("input",{bubbles:true}));}
 async function deleteMessage(m){
   const all=m.sender_id===currentUser.id&&confirm(english?"Delete for everyone? Choose Cancel to hide only for you.":"برای همه حذف شود؟ برای حذف فقط از صفحه خودت «لغو» را بزن.");
   try{

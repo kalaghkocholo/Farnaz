@@ -764,23 +764,77 @@ function navigate(pageId){
   document.body.classList.toggle("chat-mode",pageId==="chatPage");
   const brandHeader=document.querySelector(".app>header");
   if(brandHeader)brandHeader.hidden=pageId==="chatPage";
-  /* Apply chat header order directly as well as through CSS, so RTL/theme rules cannot override it. */
+  /* Explicit two-column chat header: contact/back on the LEFT, call icons on the RIGHT. */
   const chatHeader=$("chatPage")?.querySelector(".chat-header");
   if(chatHeader){
     const inChat=pageId==="chatPage";
     chatHeader.style.setProperty("display",inChat?"flex":"", "important");
     if(inChat){
+      const heading=chatHeader.querySelector(".chat-heading");
+      const calls=chatHeader.querySelector(".call-actions");
+      const back=$("backToChats"), avatar=$("chatAvatar"), person=chatHeader.querySelector(".chat-person");
       chatHeader.style.setProperty("direction","ltr","important");
+      chatHeader.style.setProperty("flex-direction","row","important");
+      chatHeader.style.setProperty("justify-content","space-between","important");
       chatHeader.style.setProperty("align-items","center","important");
-      chatHeader.style.setProperty("gap","7px","important");
-      const back=$("backToChats"), avatar=$("chatAvatar"), person=chatHeader.querySelector(".chat-person"), calls=chatHeader.querySelector(".call-actions");
-      [[back,"1"],[avatar,"2"],[person,"3"],[calls,"4"]].forEach(([el,order])=>{if(el){el.style.setProperty("order",order,"important");el.style.setProperty("flex-shrink","0","important");}});
-      if(back){back.style.setProperty("width","26px","important");back.style.setProperty("min-width","26px","important");back.style.setProperty("flex","0 0 26px","important");const label=back.querySelector("span");if(label)label.style.setProperty("display","none","important");}
-      if(avatar){avatar.style.setProperty("width","34px","important");avatar.style.setProperty("height","34px","important");avatar.style.setProperty("flex","0 0 34px","important");}
-      if(person){person.style.setProperty("direction","rtl","important");person.style.setProperty("text-align","right","important");person.style.setProperty("flex","1 1 auto","important");person.style.setProperty("min-width","0","important");}
-      if(calls){calls.style.setProperty("margin-left","auto","important");calls.style.setProperty("flex","0 0 auto","important");calls.style.setProperty("gap","4px","important");}
-      chatHeader.querySelectorAll(".call-button").forEach(btn=>{btn.style.setProperty("width","30px","important");btn.style.setProperty("height","30px","important");btn.style.setProperty("min-width","30px","important");btn.style.setProperty("min-height","30px","important");btn.style.setProperty("padding","0","important");btn.style.setProperty("font-size","15px","important");});
-      chatHeader.querySelectorAll(".call-button svg").forEach(svg=>{svg.style.setProperty("width","16px","important");svg.style.setProperty("height","16px","important");});
+      chatHeader.style.setProperty("width","100%","important");
+      chatHeader.style.setProperty("gap","8px","important");
+      if(heading){
+        heading.style.setProperty("direction","ltr","important");
+        heading.style.setProperty("display","flex","important");
+        heading.style.setProperty("flex","1 1 auto","important");
+        heading.style.setProperty("min-width","0","important");
+        heading.style.setProperty("align-items","center","important");
+        heading.style.setProperty("gap","6px","important");
+        heading.style.setProperty("order","1","important");
+      }
+      if(calls){
+        calls.style.setProperty("direction","ltr","important");
+        calls.style.setProperty("display","flex","important");
+        calls.style.setProperty("align-items","center","important");
+        calls.style.setProperty("justify-content","flex-end","important");
+        calls.style.setProperty("gap","4px","important");
+        calls.style.setProperty("margin-left","auto","important");
+        calls.style.setProperty("flex","0 0 auto","important");
+        calls.style.setProperty("order","2","important");
+      }
+      if(back){
+        back.style.setProperty("width","28px","important");
+        back.style.setProperty("min-width","28px","important");
+        back.style.setProperty("height","30px","important");
+        back.style.setProperty("min-height","30px","important");
+        back.style.setProperty("padding","0","important");
+        back.style.setProperty("flex","0 0 28px","important");
+        back.style.setProperty("order","0","important");
+        const label=back.querySelector("span");
+        if(label)label.style.setProperty("display","none","important");
+      }
+      if(avatar){
+        avatar.style.setProperty("width","32px","important");
+        avatar.style.setProperty("height","32px","important");
+        avatar.style.setProperty("flex","0 0 32px","important");
+      }
+      if(person){
+        person.style.setProperty("direction","rtl","important");
+        person.style.setProperty("text-align","right","important");
+        person.style.setProperty("flex","1 1 auto","important");
+        person.style.setProperty("min-width","0","important");
+      }
+      chatHeader.querySelectorAll(".call-button").forEach(btn=>{
+        btn.style.setProperty("display","grid","important");
+        btn.style.setProperty("place-items","center","important");
+        btn.style.setProperty("width","28px","important");
+        btn.style.setProperty("height","28px","important");
+        btn.style.setProperty("min-width","28px","important");
+        btn.style.setProperty("min-height","28px","important");
+        btn.style.setProperty("padding","0","important");
+        btn.style.setProperty("flex","0 0 28px","important");
+      });
+      chatHeader.querySelectorAll(".call-button svg").forEach(svg=>{
+        svg.style.setProperty("display","block","important");
+        svg.style.setProperty("width","15px","important");
+        svg.style.setProperty("height","15px","important");
+      });
     }
   }
   if(pageId!=="chatPage"){document.documentElement.style.removeProperty("--chat-viewport-offset");document.documentElement.style.removeProperty("--chat-viewport-height");}

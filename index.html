@@ -807,7 +807,6 @@ async function refreshConversationList(){
   }
 
   const list=$("conversationList");if(!list||!currentUser)return;
-  const myId=currentUser.id;
   setStatus("inboxStatus",english?"Loading conversations...":"در حال بارگذاری گفتگوها...");
   try{
     const {data,error}=await retryRead("conversation list",()=>getClient().from("messages")

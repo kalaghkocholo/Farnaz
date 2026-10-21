@@ -514,6 +514,29 @@ body[data-font-color="white"] .page .empty-state,
 body[data-font-color="white"] .page .setting-copy strong,
 body[data-font-color="white"] .app>header .brand-text {color:#fff!important}
 
+
+/* Explicit font-color preference for all readable interface text. */
+body[data-font-color="black"] .app,
+body[data-font-color="black"] .app header,
+body[data-font-color="black"] .app .page,
+body[data-font-color="black"] .app .page :is(h1,h2,h3,p,label,strong,small,span,li,summary),
+body[data-font-color="black"] .app footer,
+body[data-font-color="black"] .bottom-nav .nav-button,
+body[data-font-color="black"] .setting-control,
+body[data-font-color="black"] .app input,
+body[data-font-color="black"] .app textarea,
+body[data-font-color="black"] .app select {color:#111111}
+body[data-font-color="white"] .app,
+body[data-font-color="white"] .app header,
+body[data-font-color="white"] .app .page,
+body[data-font-color="white"] .app .page :is(h1,h2,h3,p,label,strong,small,span,li,summary),
+body[data-font-color="white"] .app footer,
+body[data-font-color="white"] .bottom-nav .nav-button,
+body[data-font-color="white"] .setting-control,
+body[data-font-color="white"] .app input,
+body[data-font-color="white"] .app textarea,
+body[data-font-color="white"] .app select {color:#ffffff}
+
 </style>
 </head>
 <body>
@@ -642,7 +665,9 @@ body[data-font-color="white"] .app>header .brand-text {color:#fff!important}
     <div class="setting-row">
       <div class="setting-copy"><strong id="fontColorLabel">رنگ نوشته</strong><small id="fontColorHint">رنگ متن برنامه را انتخاب کن</small></div>
       <select class="setting-control" id="fontColorSetting" aria-label="رنگ نوشته" onchange="updateAppearanceSetting('fontColor',this.value)">
-        <option value="auto">خودکار بر اساس تم</option><option value="white">سفید</option><option value="black">سیاه</option>
+        <option value="auto">خودکار بر اساس تم</option>
+        <option value="black">سیاه</option>
+        <option value="white">سفید</option>
       </select>
     </div>
   </div>

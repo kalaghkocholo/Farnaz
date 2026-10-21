@@ -846,25 +846,48 @@ async function findRecipient(event){
 async function loadMessages(older=false){
   if(!currentUser||!currentChatUser)return;
   const request=++chatRequestNumber,myId=currentUser.id,contactId=currentChatUser.user_id;
-  if(!older){$("messageList").replaceChildren();messageLoadedCount=50;selectedMessageIds.clear();messageSelectionMode=false;updateSelectionToolbar();}
+  if(!older){
+    $("messageList").replaceChildren();messageLoadedCount=50;messageHasMore=false;
+    selectedMessageIds.clear();messageSelectionMode=false;updateSelectionToolbar();
+    $("loadOlderButton").hidden=true;
+  }
   setStatus("sendMessageStatus",english?"Loading messages...":"در حال بارگذاری پیام‌ها...");
   try{
-    let query=getClient().from("messages")
+    const client=getClient(),existing=Array.from($("messageList").querySelectorAll(".message[data-created-at]"));
+    const oldest=older&&existing.length?existing[0]:null;
+    // Query each direction separately to avoid fragile nested PostgREST OR filters.
+    let sent=client.from("messages")
       .select("id,sender_id,receiver_id,body,created_at,message_type,attachment_path,attachment_name,attachment_mime,reply_to_id,edited_at")
-      .or("and(sender_id.eq."+myId+",receiver_id.eq."+contactId+"),and(sender_id.eq."+contactId+",receiver_id.eq."+myId+")")
-      .order("created_at",{ascending:false}).limit(older?50:messageLoadedCount);
-    const existing=Array.from($("messageList").querySelectorAll(".message[data-created-at]"));
-    if(older&&existing.length)query=query.lt("created_at",existing[0].dataset.createdAt);
-    const {data,error}=await query;if(error)throw error;
+      .eq("sender_id",myId).eq("receiver_id",contactId).order("created_at",{ascending:false}).limit(older?50:50);
+    let received=client.from("messages")
+      .select("id,sender_id,receiver_id,body,created_at,message_type,attachment_path,attachment_name,attachment_mime,reply_to_id,edited_at")
+      .eq("sender_id",contactId).eq("receiver_id",myId).order("created_at",{ascending:false}).limit(older?50:50);
+    if(oldest){sent=sent.lt("created_at",oldest.dataset.createdAt);received=received.lt("created_at",oldest.dataset.createdAt);}
+    const results=await Promise.all([sent,received]);
+    if(results[0].error)throw results[0].error;
+    if(results[1].error)throw results[1].error;
     if(request!==chatRequestNumber||currentUser?.id!==myId||currentChatUser?.user_id!==contactId)return;
-    let rows=(data||[]).reverse();
-    const hidden=await getClient().from("message_hidden").select("message_id").eq("user_id",myId);
-    if(hidden.error)throw hidden.error;
-    const hiddenIds=new Set((hidden.data||[]).map(x=>x.message_id));rows=rows.filter(m=>!hiddenIds.has(m.id));
-    if(older){await prependMessages(rows,myId);messageLoadedCount+=50;}else await renderMessages(rows,myId);
-    messageHasMore=(data||[]).length===(older?50:messageLoadedCount);
-    $("loadOlderButton").hidden=!messageHasMore;setStatus("sendMessageStatus","");
-  }catch(e){console.error("Load messages:",e);setStatus("sendMessageStatus",(english?"Could not load messages: ":"دریافت پیام‌ها ناموفق بود: ")+e.message,true);}
+    let data=[...(results[0].data||[]),...(results[1].data||[])];
+    data.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+    messageHasMore=data.length>(older?0:50);
+    // Fetch up to 50 combined messages; direction queries each return at most 50.
+    const page=data.slice(0,50),rows=page.reverse();
+    let hiddenIds=new Set();
+    try{
+      const hidden=await client.from("message_hidden").select("message_id").eq("user_id",myId);
+      if(!hidden.error)hiddenIds=new Set((hidden.data||[]).map(x=>x.message_id));
+      else console.warn("Could not load hidden-message preferences:",hidden.error);
+    }catch(hiddenError){console.warn("Could not load hidden-message preferences:",hiddenError);}
+    const visibleRows=rows.filter(m=>!hiddenIds.has(m.id));
+    if(older){await prependMessages(visibleRows,myId);messageLoadedCount+=50;}
+    else await renderMessages(visibleRows,myId);
+    messageHasMore=data.length>50 || (data.length===50);
+    $("loadOlderButton").hidden=!messageHasMore;
+    setStatus("sendMessageStatus","");
+  }catch(e){
+    console.error("Load messages:",e);
+    setStatus("sendMessageStatus",(english?"Could not load messages: ":"دریافت پیام‌ها ناموفق بود: ")+e.message,true);
+  }
 }
 async function makeMessageElement(m,myId){
   const item=document.createElement("article");item.className="message "+(m.sender_id===myId?"my-message":"their-message");

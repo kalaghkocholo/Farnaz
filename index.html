@@ -512,6 +512,11 @@ function toggleLanguage(){
   };
   Object.entries(labels).forEach(([id,pair])=>{if($(id))$(id).textContent=pair[english?1:0];});
   $("language").textContent=english?"فا":"EN";
+  ["recipientCountry","profilePhoneCountry"].forEach(id=>{
+    const select=$(id);if(!select)return;
+    const names=english?["Iran","Germany","United States / Canada","United Kingdom","Turkey"]:["ایران","آلمان","آمریکا / کانادا","بریتانیا","ترکیه"];
+    Array.from(select.options).forEach((option,i)=>{option.textContent=names[i]+" (+"+option.value+")";});
+  });
   $("footerText").textContent="Farnaz · Closer, wherever you are.";
   $("recipientValue").placeholder=english?"email@example.com or +98912...":"email@example.com یا +98912...";
   $("messageText").placeholder=english?"Write a message...":"پیامت را بنویس...";

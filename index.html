@@ -425,6 +425,73 @@ body[data-theme="light"] input,body[data-theme="light"] textarea,body[data-theme
 body[data-theme="light"] .icon-button,body[data-theme="light"] .mini-button{color:var(--white)}
 .app .page#settingsPage{padding-bottom:26px}
 @media(min-width:560px){.settings-page{padding-left:18px;padding-right:18px}}
+
+/* Theme consistency fix: update the whole app, not only the settings panel. */
+body[data-theme="light"] .app,
+body[data-theme="light"] .app>header,
+body[data-theme="light"] .page,
+body[data-theme="light"] .hero,
+body[data-theme="light"] .panel,
+body[data-theme="light"] .feature,
+body[data-theme="light"] .settings-card,
+body[data-theme="light"] .list-item,
+body[data-theme="light"] .conversation-card,
+body[data-theme="light"] .contact-item,
+body[data-theme="light"] .profile-card,
+body[data-theme="light"] .new-chat-popover,
+body[data-theme="light"] .contact-search-popover,
+body[data-theme="light"] .attachment-menu,
+body[data-theme="light"] .bottom-nav,
+body[data-theme="light"] .bottom-nav .nav-inner,
+body[data-theme="light"] footer {
+  background:var(--panel)!important;
+  border-color:var(--border)!important;
+}
+body[data-theme="light"] .page {background:transparent!important}
+body[data-theme="light"] .hero {background:var(--panel)!important}
+body[data-theme="light"] .app {background:var(--bg)!important}
+body[data-theme="light"] .page h1,
+body[data-theme="light"] .page h2,
+body[data-theme="light"] .page h3,
+body[data-theme="light"] .page .feature h3,
+body[data-theme="light"] .page .list-name,
+body[data-theme="light"] .page .list-details,
+body[data-theme="light"] .page label,
+body[data-theme="light"] .page .empty-state,
+body[data-theme="light"] .page .status:not(.muted-note),
+body[data-theme="light"] .page .profile-info,
+body[data-theme="light"] .page .setting-copy strong,
+body[data-theme="light"] .app>header .brand-text,
+body[data-theme="light"] .icon-button,
+body[data-theme="light"] .mini-button,
+body[data-theme="light"] .call-button,
+body[data-theme="light"] .attachment-option {
+  color:var(--white)!important;
+}
+body[data-theme="light"] .page p,
+body[data-theme="light"] .page .muted-note,
+body[data-theme="light"] .page .setting-copy small,
+body[data-theme="light"] .page .list-preview,
+body[data-theme="light"] .page .list-time,
+body[data-theme="light"] .page .profile-email,
+body[data-theme="light"] .page .profile-phone,
+body[data-theme="light"] .sub {
+  color:var(--muted)!important;
+}
+body[data-theme="light"] .page input,
+body[data-theme="light"] .page textarea,
+body[data-theme="light"] .page select,
+body[data-theme="light"] .setting-control {
+  background:var(--bg)!important;
+  color:var(--white)!important;
+  border-color:var(--border)!important;
+}
+body[data-theme="light"] .bottom-nav .nav-button {color:var(--muted)!important}
+body[data-theme="light"] .bottom-nav .nav-button.active {color:var(--accent)!important;background:var(--panel2)!important}
+/* Keep explicit black/white font choices consistent across common text surfaces. */
+body[data-font-color="black"] {--white:#111111!important}
+body[data-font-color="white"] {--white:#ffffff!important}
+
 </style>
 </head>
 <body>

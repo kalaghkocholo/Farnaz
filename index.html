@@ -126,6 +126,15 @@ input[type=file]{font-size:11px;padding:9px}
 }
 .list-time{font-size:10px;color:var(--muted);margin-top:5px}
 .empty-state{text-align:center;padding:24px 10px;color:var(--muted);font-size:12px;line-height:1.8}
+.conversation-tools,.message-tools{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.mini-button{border:1px solid var(--border);border-radius:9px;background:var(--panel2);color:var(--white);padding:7px 9px;font-size:11px}
+.mini-button.danger{color:var(--danger)}.conversation-card{position:relative}.conversation-card .list-item{width:100%}
+.conversation-card.pinned .list-item{border-color:var(--mint)}.conversation-card.archived{opacity:.78}
+.message{position:relative;touch-action:pan-y}.message.selected{outline:2px solid var(--mint)}
+.message-quote{border-inline-start:2px solid var(--mint);padding:4px 7px;margin:0 0 7px;color:#d1dbe8;font-size:11px}
+.message img{display:block;max-width:220px;max-height:280px;border-radius:9px;margin:4px 0}
+#messageComposerTools{display:flex;gap:7px;align-items:center;margin-bottom:7px}#attachmentFile{display:none}
+#loadOlderButton{width:100%;margin:8px 0}#selectionToolbar{display:none}#selectionToolbar.visible{display:flex}
 .bottom-nav{
   position:fixed;z-index:100;bottom:0;left:0;right:0;
   padding:8px 9px calc(8px + env(safe-area-inset-bottom));
@@ -244,6 +253,7 @@ footer{text-align:center;color:#718096;font-size:10px;padding:17px 0 7px}
   <div class="panel">
     <button class="primary" id="newChatButton" type="button" onclick="navigate('contactsPage')">＋ گفتگوی جدید</button>
   </div>
+  <div class="conversation-tools"><button class="mini-button" id="showActiveChats" type="button" onclick="setConversationView('active')">گفتگوها</button><button class="mini-button" id="showArchivedChats" type="button" onclick="setConversationView('archived')">آرشیو</button></div>
   <div class="list" id="conversationList"></div>
   <div id="inboxStatus" class="status muted-note" role="status"></div>
 </section>
@@ -316,10 +326,14 @@ footer{text-align:center;color:#718096;font-size:10px;padding:17px 0 7px}
       <button class="call-button" type="button" onclick="startCall('video')" aria-label="تماس تصویری" title="تماس تصویری">▣</button>
     </div>
   </div>
+  <div class="conversation-tools" id="selectionToolbar"><span class="muted-note" id="selectedCount">۰ پیام انتخاب شده</span><button class="mini-button" type="button" onclick="replyToSelected()">پاسخ</button><button class="mini-button" type="button" onclick="forwardSelectedMessages()">فوروارد</button><button class="mini-button danger" type="button" onclick="deleteSelectedMessages()">حذف</button><button class="mini-button" type="button" onclick="exitMessageSelection()">لغو</button></div>
+  <button class="mini-button" id="loadOlderButton" type="button" onclick="loadOlderMessages()" hidden>پیام‌های قدیمی‌تر</button>
   <div id="messageList" role="log" aria-live="polite" aria-label="پیام‌های گفتگو"></div>
+  <div id="replyPreview" class="message-quote" hidden></div>
   <form id="sendMessageForm">
+    <div id="messageComposerTools"><button class="mini-button" id="attachImageButton" type="button" onclick="$('attachmentFile').click()">📷 عکس</button><input id="attachmentFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif"><button class="mini-button" id="cancelEditButton" type="button" onclick="cancelMessageEdit()" hidden>لغو ویرایش</button><span class="muted-note" id="attachmentHint">حداکثر ۱۰ مگابایت</span></div>
     <div class="send-row">
-      <textarea id="messageText" maxlength="5000" required rows="1" placeholder="پیامت را بنویس..."></textarea>
+      <textarea id="messageText" maxlength="5000" rows="1" placeholder="پیامت را بنویس..."></textarea>
       <button class="action-button" id="sendMessageButton" type="submit" aria-label="ارسال پیام" title="ارسال پیام">➤</button>
     </div>
   </form>
@@ -377,6 +391,8 @@ let english=false,authMode="signup",farnazClient=null,currentUser=null;
 let currentProfileName="",currentAvatarUrl="",currentPhone="";
 let currentChatUser=null,messageSubscription=null;
 let profileRequestNumber=0,chatRequestNumber=0,previousPage="chatsPage";
+let conversationView="active",conversationPrefs=new Map(),messageLoadedCount=50,messageHasMore=false;
+let selectedMessageIds=new Set(),replyTarget=null,editingMessageId=null,messageSelectionMode=false;
 
 const $=id=>document.getElementById(id);
 

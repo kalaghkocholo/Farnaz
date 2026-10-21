@@ -395,8 +395,9 @@ body[data-theme="light"] .conversation-title,body[data-theme="light"] .contact-n
 body[data-theme="light"] .page p,body[data-theme="light"] .setting-copy small{color:var(--muted)}
 body[data-theme="light"] .setting-control,body[data-theme="light"] input,body[data-theme="light"] textarea,body[data-theme="light"] select{background:var(--panel)!important;border-color:var(--border)!important;color:var(--white)!important}
 body[data-theme="light"] .bubble{color:var(--white)}
-body[data-theme="light"] .bubble.outgoing{background:#d9f8ee!important;color:#15372f!important}
-body[data-theme="light"] .bubble.incoming{background:#e7edf5!important;color:#172237!important}
+/* Respect selected bubble colors in light theme too. */
+body[data-theme="light"] .bubble.outgoing{background:var(--my-message-bg,var(--accent))!important;color:var(--my-message-ink,#15372f)!important}
+body[data-theme="light"] .bubble.incoming{background:var(--their-message-bg,color-mix(in srgb,var(--accent) 15%,var(--panel2)))!important;color:var(--their-message-ink,#172237)!important}
 body[data-theme="light"] .icon-button,body[data-theme="light"] .mini-button,body[data-theme="light"] .call-button{color:var(--white)!important}
 body[data-theme="light"] .bottom-nav *{text-shadow:none}
 

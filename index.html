@@ -22,8 +22,15 @@ body{
 button,input,textarea{font:inherit}
 input,textarea{font-size:16px}
 .app{width:100%;max-width:560px;height:100dvh;min-height:0;margin:auto;overflow-y:auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch}
-.app.chat-mode{height:100dvh;overflow:hidden;display:flex;flex-direction:column;padding-bottom:calc(8px + env(safe-area-inset-bottom))}
-.app.chat-mode>header{flex-shrink:0;margin-bottom:6px}
+.app.chat-mode{height:var(--chat-viewport-height,100dvh);min-height:0;overflow:hidden;display:flex;flex-direction:column;padding-bottom:calc(8px + env(safe-area-inset-bottom))}
+.app.chat-mode>header{flex:0 0 auto;margin-bottom:6px}
+body.chat-mode .bottom-nav,body.chat-mode .contact-search-fab,body.chat-mode .contact-search-popover{display:none!important}
+body.chat-mode{height:var(--chat-viewport-height,100dvh);min-height:0}
+.app.chat-mode>#chatPage{min-height:0}
+.app.chat-mode>#chatPage #messageList{flex:1 1 0%;min-height:0;overflow-y:auto;padding-bottom:18px;-webkit-overflow-scrolling:touch}
+.app.chat-mode>#chatPage #sendMessageForm{flex:0 0 auto;min-height:0;margin-top:0}
+.app.chat-mode>#chatPage #sendMessageStatus{flex:0 0 auto;max-height:40px;overflow:auto}
+.app.chat-mode #footerText{display:none}
 .app.chat-mode>#connectionBanner{flex-shrink:0}
 .app.chat-mode>#chatPage{display:flex;flex:1;min-height:0;flex-direction:column;overflow:hidden}
 .app.chat-mode>#chatPage .chat-header,.app.chat-mode>#chatPage #selectionToolbar,.app.chat-mode>#chatPage #loadOlderButton,.app.chat-mode>#chatPage #replyPreview,.app.chat-mode>#chatPage #sendMessageForm,.app.chat-mode>#chatPage #sendMessageStatus{flex-shrink:0}
@@ -174,7 +181,7 @@ input[type=file]{font-size:11px;padding:9px}
 .mini-button{border:1px solid var(--border);border-radius:9px;background:var(--panel2);color:var(--white);padding:7px 9px;font-size:11px}
 .mini-button.danger{color:var(--danger)}.conversation-card{position:relative}.conversation-card .list-item{width:100%}
 .conversation-card.pinned .list-item{border-color:var(--mint)}.conversation-card.archived{opacity:.78}
-.message{position:relative;touch-action:pan-y}.message.selected{outline:2px solid var(--mint)}
+.message{position:relative;touch-action:pan-y;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}.message *{user-select:text;-webkit-user-select:text}.message audio,.message button,.message a{user-select:auto;-webkit-user-select:auto}.message.selected{outline:2px solid var(--mint)}
 .message-quote{border-inline-start:2px solid var(--mint);padding:4px 7px;margin:0 0 7px;color:#d1dbe8;font-size:11px}
 .message img{display:block;max-width:220px;max-height:280px;border-radius:9px;margin:4px 0}
 #messageComposerTools{display:none}#attachmentFile,#cameraFile,#photoFile{display:none}
@@ -674,7 +681,7 @@ function navigate(pageId){
   document.querySelector(".app").classList.toggle("chat-mode",pageId==="chatPage");
   document.body.classList.toggle("chat-mode",pageId==="chatPage");
   document.querySelectorAll(".nav-button").forEach(b=>b.classList.toggle("active",b.dataset.page===pageId));
-  $("bottomNav").classList.toggle("visible",pageId!=="homePage");
+  $("bottomNav").classList.toggle("visible",pageId!=="homePage"&&pageId!=="chatPage");
   $("topNewChatButton").classList.toggle("visible",pageId==="chatsPage");
   if(pageId!=="chatsPage")toggleNewChatPopover(false);
   if(pageId!=="contactsPage")toggleContactSearch(false);
@@ -1168,10 +1175,23 @@ async function makeMessageElement(m,myId){
   }
   const time=document.createElement("time"),date=new Date(m.created_at);time.dateTime=date.toISOString();
   time.textContent=date.toLocaleTimeString(english?"en":"fa-IR",{hour:"2-digit",minute:"2-digit"})+(m.edited_at?(english?" · edited":" · ویرایش‌شده"):"");item.appendChild(time);
-  item.addEventListener("click",event=>{if(messageSelectionMode){toggleMessageSelection(m.id,item);return;}if(event.target.closest("a,button,audio"))return;});
-  item.addEventListener("contextmenu",e=>{e.preventDefault();showMessageActions(m,item);});
-  let hold;item.addEventListener("pointerdown",()=>{hold=setTimeout(()=>showMessageActions(m,item),550);});
-  ["pointerup","pointercancel","pointerleave"].forEach(ev=>item.addEventListener(ev,()=>clearTimeout(hold)));
+  let hold=null,holdTriggered=false;
+  item.addEventListener("click",event=>{
+    if(holdTriggered){event.preventDefault();event.stopPropagation();holdTriggered=false;return;}
+    if(messageSelectionMode){toggleMessageSelection(m.id,item);return;}
+    if(event.target.closest("a,button,audio"))return;
+  });
+  item.addEventListener("contextmenu",e=>{
+    e.preventDefault();
+    if(!document.querySelector(".message-tools-floating"))showMessageActions(m,item);
+  });
+  item.addEventListener("pointerdown",event=>{
+    if(event.target.closest("a,button,audio"))return;
+    holdTriggered=false;
+    clearTimeout(hold);
+    hold=setTimeout(()=>{holdTriggered=true;showMessageActions(m,item);},450);
+  });
+  ["pointerup","pointercancel","pointerleave","pointermove"].forEach(ev=>item.addEventListener(ev,()=>{clearTimeout(hold);hold=null;}));
   return item;
 }
 async function renderMessages(messages,myId){
@@ -1319,8 +1339,23 @@ async function subscribeToMessages(){
 function stopAudioRecordingTracks(){
   if(recordingStream){recordingStream.getTracks().forEach(track=>track.stop());recordingStream=null;}
 }
+if(window.visualViewport){
+  const syncChatViewport=()=>{
+    if(document.body.classList.contains("chat-mode"))
+      document.documentElement.style.setProperty("--chat-viewport-height",Math.round(window.visualViewport.height)+"px");
+    else document.documentElement.style.removeProperty("--chat-viewport-height");
+  };
+  window.visualViewport.addEventListener("resize",syncChatViewport);
+  window.visualViewport.addEventListener("scroll",syncChatViewport);
+  window.addEventListener("orientationchange",()=>setTimeout(syncChatViewport,120));
+}
 async function toggleAudioRecording(){
-  if(mediaRecorder&&mediaRecorder.state==="recording"){mediaRecorder.stop();return;}
+  if(mediaRecorder&&mediaRecorder.state==="recording"){
+    const button=$("recordAudioButton");button.disabled=true;
+    try{mediaRecorder.stop();setStatus("sendMessageStatus",english?"Finishing recording…":"در حال آماده‌سازی صدای ضبط‌شده…");}
+    catch(e){setStatus("sendMessageStatus",english?"Could not finish recording. Try again.":"پایان ضبط ناموفق بود؛ دوباره تلاش کن.",true);}
+    return;
+  }
   if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==="undefined"){
     setStatus("sendMessageStatus",english?"Audio recording is not supported in this browser.":"ضبط صدا در این مرورگر پشتیبانی نمی‌شود.",true);return;
   }
@@ -1329,23 +1364,27 @@ async function toggleAudioRecording(){
     const preferred=["audio/mp4","audio/webm;codecs=opus","audio/webm","audio/ogg;codecs=opus"];
     const mimeType=preferred.find(type=>MediaRecorder.isTypeSupported?.(type));
     mediaRecorder=mimeType?new MediaRecorder(recordingStream,{mimeType}):new MediaRecorder(recordingStream);
+    const activeRecorder=mediaRecorder;
     recordedAudioChunks=[];
     mediaRecorder.ondataavailable=e=>{if(e.data&&e.data.size)recordedAudioChunks.push(e.data);};
     mediaRecorder.onerror=()=>{
       stopAudioRecordingTracks();mediaRecorder=null;
+      $("recordAudioButton").disabled=false;
       $("recordAudioButton").classList.remove("recording");
+      $("recordAudioButton").textContent="🎙";
       setStatus("sendMessageStatus",english?"Could not record audio. Please try again.":"ضبط صدا ناموفق بود؛ دوباره تلاش کن.",true);
     };
     mediaRecorder.onstop=()=>{
-      const actualType=mediaRecorder?.mimeType||recordedAudioChunks[0]?.type||"audio/webm";
+      const actualType=activeRecorder?.mimeType||recordedAudioChunks[0]?.type||"audio/mp4";
       const blob=new Blob(recordedAudioChunks,{type:actualType});
       const ext=actualType.includes("mp4")?"m4a":actualType.includes("ogg")?"ogg":"webm";
       recordedVoiceFile=blob.size?new File([blob],"voice-message."+ext,{type:actualType}):null;
       stopAudioRecordingTracks();mediaRecorder=null;
+      $("recordAudioButton").disabled=false;
       $("recordAudioButton").classList.remove("recording");$("recordAudioButton").textContent="🎙";
       if(recordedVoiceFile){
         $("attachmentFile").value="";$("cameraFile").value="";$("photoFile").value="";
-        setStatus("sendMessageStatus",(english?"Voice message ready · ":"پیام صوتی آماده است · ")+Math.ceil(recordedVoiceFile.size/1024)+" KB");
+        setStatus("sendMessageStatus",(english?"Voice message ready · ":"پیام صوتی آماده است · ")+Math.ceil(recordedVoiceFile.size/1024)+" KB · "+(english?"tap Send to send":"برای ارسال، دکمهٔ ارسال را بزن"));
       }
     };
     mediaRecorder.start();

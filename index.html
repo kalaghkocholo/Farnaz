@@ -947,7 +947,9 @@ async function forwardSelectedMessages(){
     if(error)throw error;
     const {data:all,error:e}=await getClient().from("messages").select("sender_id,receiver_id,created_at").or("sender_id.eq."+currentUser.id+",receiver_id.eq."+currentUser.id).order("created_at",{ascending:false}).limit(1000);
     if(e)throw e;
-    const ids=[...new Set((all||[]).map(m=>m.sender_id===currentUser.id?m.receiver_id:m.sender_id).filter(id=>id&&id!==currentUser.id&&id!==currentChatUser?.user_id))];
+    const {data:savedContacts,error:contactError}=await getClient().from("contacts").select("contact_user_id").eq("user_id",currentUser.id);
+    if(contactError)throw contactError;
+    const ids=[...new Set([...(all||[]).map(m=>m.sender_id===currentUser.id?m.receiver_id:m.sender_id),...(savedContacts||[]).map(c=>c.contact_user_id)].filter(id=>id&&id!==currentUser.id&&id!==currentChatUser?.user_id))];
     if(!ids.length)throw new Error(english?"No other conversation to forward to.":"گفتگوی دیگری برای فوروارد وجود ندارد.");
     const profiles=await Promise.all(ids.map(id=>getContactProfile(id).catch(()=>null)));
     const labels=ids.map((id,i)=>(i+1)+". "+(profiles[i]?.display_name||ids[i].slice(0,8))).join("\\n");

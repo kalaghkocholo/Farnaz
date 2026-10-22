@@ -844,3 +844,68 @@ async function findRecipient(event){
     setStatus("recipientStatus",(english?"Search failed: ":"جست‌وجوی مخاطب ناموفق بود: ")+e.message,true);
   }finally{button.disabled=false;}
 }
+
+
+/* Track the iOS/Android visual viewport so chat composers follow the keyboard. */
+(function installChatKeyboardLayout(){
+  const vv=window.visualViewport;
+  let blurTimer=null;
+  function activeChat(){
+    return document.body.classList.contains("chat-mode") ||
+      document.body.classList.contains("spaces-chat-mode");
+  }
+  function syncViewport(){
+    if(!activeChat())return;
+    const height=vv?vv.height:window.innerHeight;
+    const offset=vv?vv.offsetTop:0;
+    document.documentElement.style.setProperty("--chat-viewport-height",Math.max(180,height)+"px");
+    document.documentElement.style.setProperty("--chat-viewport-offset",Math.max(0,offset)+"px");
+    const keyboardOpen=!!vv&&(window.innerHeight-height>120);
+    document.body.classList.toggle("keyboard-open",keyboardOpen);
+    if(keyboardOpen){
+      requestAnimationFrame(()=>{
+        const privateList=document.getElementById("messageList");
+        const groupList=document.getElementById("spaceMessages");
+        if(document.body.classList.contains("chat-mode")&&privateList)privateList.scrollTop=privateList.scrollHeight;
+        if(document.body.classList.contains("spaces-chat-mode")&&groupList)groupList.scrollTop=groupList.scrollHeight;
+      });
+    }
+  }
+  function clearViewport(){
+    if(activeChat())return;
+    document.documentElement.style.removeProperty("--chat-viewport-height");
+    document.documentElement.style.removeProperty("--chat-viewport-offset");
+    document.body.classList.remove("keyboard-open");
+  }
+  document.addEventListener("focusin",event=>{
+    if(event.target?.matches("#messageText,#spaceText")){
+      clearTimeout(blurTimer);
+      requestAnimationFrame(syncViewport);
+      setTimeout(syncViewport,80);
+      setTimeout(syncViewport,220);
+    }
+  });
+  document.addEventListener("focusout",event=>{
+    if(event.target?.matches("#messageText,#spaceText")){
+      clearTimeout(blurTimer);
+      blurTimer=setTimeout(()=>{
+        if(!document.activeElement?.matches("#messageText,#spaceText"))syncViewport();
+      },180);
+    }
+  });
+  vv?.addEventListener("resize",syncViewport);
+  vv?.addEventListener("scroll",syncViewport);
+  window.addEventListener("resize",syncViewport);
+  document.addEventListener("click",event=>{
+    if(event.target.closest("#backToChats,#backSpaces")||event.target.closest(".nav-button")){
+      setTimeout(clearViewport,0);
+    }
+  });
+  const originalNavigate=window.navigate;
+  if(typeof originalNavigate==="function"&&!originalNavigate.__keyboardViewportWrapped){
+    const wrapped=function(id){originalNavigate(id);if(id==="chatPage"||id==="spacesPage")requestAnimationFrame(syncViewport);else clearViewport();};
+    wrapped.__keyboardViewportWrapped=true;
+    window.navigate=wrapped;
+  }
+  document.addEventListener("DOMContentLoaded",()=>{if(activeChat())syncViewport();});
+})();

@@ -658,3 +658,29 @@ body[data-font-color="white"][data-theme] .bottom-nav .nav-button { color:#fffff
   min-height:36px!important;padding:7px 12px!important;
   border-radius:10px!important;
 }
+
+
+/* Audio/video controls in group and channel conversation headers */
+#spacesPage #spaceDetail .space-detail-head{justify-content:space-between!important}
+#spacesPage #spaceDetail #backSpaces{margin:0!important;order:0!important}
+#spacesPage #spaceDetail .space-call-actions{
+  order:1!important;display:flex!important;align-items:center!important;
+  justify-content:center!important;gap:5px!important;flex:0 0 auto!important;
+}
+#spacesPage #spaceDetail .space-call-button{
+  display:grid!important;place-items:center!important;
+  width:32px!important;height:32px!important;min-width:32px!important;min-height:32px!important;
+  padding:0!important;border:1px solid var(--line,#334155)!important;
+  border-radius:9px!important;background:transparent!important;
+  color:var(--white,#f7f9fc)!important;flex:0 0 32px!important;
+}
+#spacesPage #spaceDetail .space-call-button svg{
+  display:block!important;width:16px!important;height:16px!important;
+  fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;
+  stroke-linecap:round!important;stroke-linejoin:round!important;
+}
+#spacesPage #spaceDetail .space-detail-head>div:last-child{
+  order:2!important;flex:1 1 auto!important;min-width:0!important;
+  margin:0!important;text-align:right!important;direction:rtl!important;
+}
+#spacesPage #spaceDetail .space-detail-head h3{margin:0 0 3px!important}

@@ -119,14 +119,14 @@ async function refresh(){
  try{const {data,error}=await getClient().from("spaces").select("*").order("created_at",{ascending:false}).limit(200);if(error)throw error;spaces=data||[];
  const {data:mem}=await getClient().from("space_members").select("space_id,role").eq("user_id",currentUser.id);const mm=new Map((mem||[]).map(x=>[x.space_id,x.role]));const f=document.querySelector("[data-filter].active")?.dataset.filter||"all";const rows=spaces.filter(s=>f==="all"||s.type===f);q("spaceList").replaceChildren();
  if(!rows.length){const e=document.createElement("div");e.className="space-empty";e.textContent=tr("هنوز گروه یا کانالی نداری؛ از دکمه ایجاد شروع کن.","No groups or channels yet. Create one to get started.");q("spaceList").appendChild(e);}
- for(const s of rows){const b=document.createElement("button");b.type="button";b.className="space-card";const i=document.createElement("span");i.className="space-avatar";renderSpaceAvatar(i,s.type==="group"?s.avatar_url:null,s.type==="group"?"👥":"📣");const c=document.createElement("span");c.className="space-copy";const n=document.createElement("strong");n.textContent=s.name;const sm=document.createElement("small");sm.textContent=(s.type==="group"?tr("گروه","Group"):s.is_public?tr("کانال عمومی","Public channel"):tr("کانال خصوصی","Private channel"))+" · "+(mm.has(s.id)?tr("عضو","Joined"):s.type==="channel"&&s.is_public?tr("برای عضویت باز کن","Open to join"):tr("خصوصی","Private"));c.append(n,sm);b.append(i,c);b.onclick=()=>open(s.id);q("spaceList").appendChild(b);}
+ for(const s of rows){const b=document.createElement("button");b.type="button";b.className="space-card";const i=document.createElement("span");i.className="space-avatar";renderSpaceAvatar(i,s.type==="group"?s.avatar_url:null,s.type==="group"?"👥":"📣",true);const c=document.createElement("span");c.className="space-copy";const n=document.createElement("strong");n.textContent=s.name;const sm=document.createElement("small");sm.textContent=(s.type==="group"?tr("گروه","Group"):s.is_public?tr("کانال عمومی","Public channel"):tr("کانال خصوصی","Private channel"))+" · "+(mm.has(s.id)?tr("عضو","Joined"):s.type==="channel"&&s.is_public?tr("برای عضویت باز کن","Open to join"):tr("خصوصی","Private"));c.append(n,sm);b.append(i,c);b.onclick=()=>open(s.id);q("spaceList").appendChild(b);}
  q("spacesStatus").textContent="";
  }catch(e){q("spacesStatus").textContent=tr("بارگذاری ناموفق بود: ","Could not load: ")+e.message;}
 }
 async function open(id){
  try{let s=spaces.find(x=>x.id===id);if(!s){const r=await getClient().from("spaces").select("*").eq("id",id).single();if(r.error)throw r.error;s=r.data;}active=s;
  document.querySelector(".app")?.classList.add("spaces-chat-mode");document.body.classList.add("spaces-chat-mode");q("bottomNav")?.classList.remove("visible");q("spaceList").hidden=true;document.querySelector(".spaces-head").hidden=true;document.querySelector(".spaces-tabs").hidden=true;document.querySelector(".spaces-actions").hidden=true;q("spacesStatus").hidden=true;q("spaceDetail").hidden=false;
- q("spaceName").textContent=s.name;q("spaceName").setAttribute("role","button");q("spaceName").tabIndex=0;q("spaceName").setAttribute("aria-label",tr("باز کردن اطلاعات گروه","Open group information"));renderSpaceAvatar(q("spaceIcon"),s.type==="group"?s.avatar_url:null,s.type==="group"?"👥":"📣");q("spaceIcon").style.cursor=s.type==="group"?"pointer":"default";q("spaceDescription").textContent=s.description||"";
+ q("spaceName").textContent=s.name;q("spaceName").setAttribute("role","button");q("spaceName").tabIndex=0;q("spaceName").setAttribute("aria-label",tr("باز کردن اطلاعات گروه","Open group information"));renderSpaceAvatar(q("spaceIcon"),s.type==="group"?s.avatar_url:null,s.type==="group"?"👥":"📣",true);q("spaceIcon").style.cursor=s.type==="group"?"pointer":"default";q("spaceDescription").textContent=s.description||"";
  const {data:membership}=await getClient().from("space_members").select("role").eq("space_id",s.id).eq("user_id",currentUser.id).maybeSingle();const joined=!!membership,manager=membership&&["owner","admin"].includes(membership.role);
  q("spaceMeta").textContent=(s.type==="group"?tr("گروه","Group"):s.is_public?tr("کانال عمومی","Public channel"):tr("کانال خصوصی","Private channel"))+(membership?" · "+(membership.role==="owner"?tr("سازنده","Owner"):membership.role==="admin"?tr("مدیر","Admin"):tr("عضو","Member")):"");
  const acts=q("spaceActions");acts.replaceChildren();
@@ -138,17 +138,20 @@ async function open(id){
  }catch(e){q("spacesStatus").textContent=tr("بازکردن فضا ناموفق بود: ","Could not open space: ")+e.message;}
 }
 
- function renderSpaceAvatar(el,path,fallback){
-  if(!el)return;el.replaceChildren();
-  if(path){const url=(path.startsWith("https://")||path.startsWith("http://"))?path:getClient().storage.from("avatars").getPublicUrl(path).data?.publicUrl;if(url){const img=document.createElement("img");img.src=url;img.alt="";img.loading="lazy";img.onerror=()=>{el.replaceChildren(document.createTextNode(fallback||"👥"));};el.appendChild(img);return;}}
-  el.textContent=fallback||"👥";
+ function renderSpaceAvatar(el,path,fallback,privateGroup=false){
+  if(!el)return;el.replaceChildren();el.dataset.avatarPath=path||"";
+  if(!path){el.textContent=fallback||"👥";return;}
+  const setImage=url=>{if(!url||!el.isConnected||el.dataset.avatarPath!==path)return;const img=document.createElement("img");img.src=url;img.alt="";img.loading="lazy";img.onerror=()=>{if(el.dataset.avatarPath===path)el.replaceChildren(document.createTextNode(fallback||"👥"));};el.replaceChildren(img);};
+  if(path.startsWith("https://")||path.startsWith("http://")){setImage(path);return;}
+  if(privateGroup){getClient().storage.from("group-avatars").createSignedUrl(path,3600).then(({data,error})=>{if(!error)setImage(data?.signedUrl);}).catch(()=>{});return;}
+  const url=getClient().storage.from("avatars").getPublicUrl(path).data?.publicUrl;setImage(url);
  }
  async function openSpaceInfo(){
   if(!active||active.type!=="group")return;
   const spaceId=active.id;
   q("spaceInfoDialog").hidden=false;q("spaceInfoStatus").textContent=tr("در حال بارگذاری اعضا…","Loading members…");
   q("spaceInfoName").textContent=active.name||"";q("spaceInfoDescription").textContent=active.description||"";
-  renderSpaceAvatar(q("spaceInfoAvatar"),active.avatar_url,"👥");
+  renderSpaceAvatar(q("spaceInfoAvatar"),active.avatar_url,"👥",true);
   const actions=q("spaceInfoActions");actions.replaceChildren();
   const {data:mine,error:mineError}=await getClient().from("space_members").select("role").eq("space_id",spaceId).eq("user_id",currentUser.id).maybeSingle();
   if(mineError){q("spaceInfoStatus").textContent=mineError.message;return;}
@@ -188,12 +191,12 @@ async function open(id){
   try{
    const name=q("spaceEditName").value.trim(),description=q("spaceEditDescription").value.trim(),file=q("spaceEditPhoto").files[0];
    if(!name)throw Error(tr("نام گروه را وارد کن.","Enter a group name."));
-   if(file&&(!file.type.startsWith("image/")||file.size>5*1024*1024))throw Error(tr("عکس باید تصویری و حداکثر ۵ مگابایت باشد.","Choose an image up to 5 MB."));
+   if(file&&(!["image/jpeg","image/png","image/webp","image/gif"].includes(file.type)||file.size>5*1024*1024))throw Error(tr("عکس باید JPG، PNG، WebP یا GIF و حداکثر ۵ مگابایت باشد.","Choose a JPG, PNG, WebP or GIF image up to 5 MB."));
    let avatar_url=active.avatar_url||null;
    if(file){
     const ext=(file.name.split(".").pop()||"jpg").toLowerCase().replace(/[^a-z0-9]/g,"")||"jpg";
-    const path=currentUser.id+"/groups/"+active.id+"/"+crypto.randomUUID()+"."+ext;
-    const {error:uploadError}=await getClient().storage.from("avatars").upload(path,file,{contentType:file.type,upsert:false});
+    const path=active.id+"/"+crypto.randomUUID()+"."+ext;
+    const {error:uploadError}=await getClient().storage.from("group-avatars").upload(path,file,{contentType:file.type,upsert:false});
     if(uploadError)throw uploadError;avatar_url=path;
    }
    const {data,error}=await getClient().from("spaces").update({name,description,avatar_url,updated_at:new Date().toISOString()}).eq("id",active.id).select("*").single();

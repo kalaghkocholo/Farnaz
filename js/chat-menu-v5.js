@@ -59,9 +59,12 @@ async function makeMessageElement(m,myId){
     messageList.style.setProperty("direction","ltr","important");
     messageList.style.setProperty("align-items","start","important");
   }
-  item.style.setProperty("justify-self",isOwnMessage?"end":"start","important");
+  // Use physical margins (not logical start/end) so RTL cannot mirror the sides.
+  item.style.setProperty("justify-self","auto","important");
   item.style.setProperty("align-self","start","important");
-  item.style.setProperty("margin","0","important");
+  item.style.setProperty("margin-left",isOwnMessage?"auto":"0","important");
+  item.style.setProperty("margin-right",isOwnMessage?"0":"auto","important");
+  item.style.setProperty("display","block","important");
   item.style.setProperty("width","fit-content","important");
   item.style.setProperty("max-width","88%","important");
   item.dataset.messageId=m.id;item.dataset.createdAt=m.created_at;

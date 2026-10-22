@@ -14,10 +14,10 @@ async function loadMessages(older=false){
     const results=await retryRead("messages",()=>{
       let sent=client.from("messages")
         .select("id,sender_id,receiver_id,body,created_at,message_type,attachment_path,attachment_name,attachment_mime,reply_to_id,edited_at")
-        .eq("sender_id",myId).eq("receiver_id",contactId).order("created_at",{ascending:false}).limit(50);
+        .eq("sender_id",myId).eq("receiver_id",contactId).order("created_at",{ascending:false}).limit(51);
       let received=client.from("messages")
         .select("id,sender_id,receiver_id,body,created_at,message_type,attachment_path,attachment_name,attachment_mime,reply_to_id,edited_at")
-        .eq("sender_id",contactId).eq("receiver_id",myId).order("created_at",{ascending:false}).limit(50);
+        .eq("sender_id",contactId).eq("receiver_id",myId).order("created_at",{ascending:false}).limit(51);
       if(oldest){sent=sent.lt("created_at",oldest.dataset.createdAt);received=received.lt("created_at",oldest.dataset.createdAt);}
       return Promise.all([sent,received]);
     });
@@ -36,7 +36,7 @@ async function loadMessages(older=false){
     const visibleRows=rows.filter(m=>!hiddenIds.has(m.id));
     if(older){await prependMessages(visibleRows,myId);messageLoadedCount+=50;}
     else await renderMessages(visibleRows,myId);
-    messageHasMore=data.length>50 || (data.length===50);
+    messageHasMore=data.length>50;
     $("loadOlderButton").hidden=!messageHasMore;
     setStatus("sendMessageStatus","");
   }catch(e){

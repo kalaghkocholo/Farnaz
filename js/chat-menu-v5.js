@@ -53,8 +53,9 @@ async function makeMessageElement(m,myId){
   const messageList=$("messageList");
   if(messageList)messageList.style.setProperty("direction","ltr","important");
   item.style.setProperty("align-self",isOwnMessage?"flex-end":"flex-start","important");
-  item.style.setProperty("margin-left",isOwnMessage?"auto":"0","important");
-  item.style.setProperty("margin-right",isOwnMessage?"0":"auto","important");
+  item.style.setProperty("justify-self",isOwnMessage?"end":"start","important");
+  item.style.setProperty("margin-left","0","important");
+  item.style.setProperty("margin-right","0","important");
   item.dataset.messageId=m.id;item.dataset.createdAt=m.created_at;
   if(selectedMessageIds.has(m.id))item.classList.add("selected");
   if(m.reply_to_id){

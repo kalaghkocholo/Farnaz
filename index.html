@@ -321,6 +321,13 @@ footer{text-align:center;color:#718096;font-size:10px;padding:17px 0 7px}
 .close-button{float:left;background:none;color:white;border:0;font-size:24px}
 .auth-submit{width:100%;margin-top:14px}
 .auth-link{background:none;color:var(--mint);border:0;padding:12px 0;font-size:12px}
+.social-auth{display:grid;gap:9px;margin:14px 0 12px}
+.social-auth-button{width:100%;min-height:44px;border:1px solid #8490a0;border-radius:999px;background:#fff;color:#222;display:flex;align-items:center;justify-content:center;gap:10px;font-size:14px;font-weight:600;padding:10px 14px}
+.social-auth-button:disabled{opacity:.65}
+.google-mark{font-family:Arial,sans-serif;font-weight:800;font-size:20px;color:#4285f4}
+.apple-mark{font-size:20px;color:#222;position:relative}
+.auth-divider{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px;margin:8px 0 12px}
+.auth-divider:before,.auth-divider:after{content:"";height:1px;background:var(--border);flex:1}
 [hidden]{display:none!important}
 @media(max-width:360px){
   .app{padding-left:9px;padding-right:9px}
@@ -873,6 +880,11 @@ body[data-font-color="white"][data-theme] .bottom-nav .nav-button { color:#fffff
     <button type="button" class="close-button" onclick="closeAuth()" aria-label="بستن">×</button>
     <h2 id="authTitle">ثبت‌نام در فرناز</h2>
     <p id="authMessage">برای ارتباط نزدیک‌تر، حساب خودت را بساز.</p>
+    <div class="social-auth">
+      <button type="button" id="googleAuth" class="social-auth-button" onclick="signInSocial('google')"><span class="google-mark" aria-hidden="true">G</span><span id="googleAuthLabel">ادامه با Google</span></button>
+      <button type="button" id="appleAuth" class="social-auth-button" onclick="signInSocial('apple')"><span class="apple-mark" aria-hidden="true">●</span><span id="appleAuthLabel">ادامه با Apple</span></button>
+    </div>
+    <div class="auth-divider"><span id="authOrLabel">یا با ایمیل</span></div>
     <form id="authForm">
       <div id="nameField">
         <label for="authName" id="authNameLabel">نام نمایشی</label>
@@ -1350,6 +1362,28 @@ function openAuth(){
   updateAuthTexts();
 }
 function closeAuth(){$("authBox").style.display="none";}
+async function signInSocial(provider){
+  const button=$(provider==="google"?"googleAuth":"appleAuth");
+  const label=button?.querySelector("span:last-child");
+  if(button)button.disabled=true;
+  setStatus("authStatus",english?"Connecting to "+(provider==="google"?"Google":"Apple")+"…":"در حال اتصال به "+(provider==="google"?"گوگل":"اپل")+"…");
+  try{
+    const client=getClient();
+    const {error}=await client.auth.signInWithOAuth({
+      provider,
+      options:{redirectTo:"https://kalaghkocholo.github.io/Farnaz/"}
+    });
+    if(error)throw error;
+  }catch(e){
+    console.error("Social sign-in:",e);
+    const message=(e.message||"").toLowerCase();
+    const setupMissing=/provider is not enabled|unsupported provider|client_id|provider not found|invalid request/.test(message);
+    setStatus("authStatus",setupMissing
+      ?(english?"This sign-in provider is not configured yet. Enable it in Supabase Auth and add its OAuth credentials first.":"此登入方式尚未設定。請先在 Supabase Auth 啟用服務並填入 OAuth 憑證。")
+      :(english?"Sign-in could not start: ":"無法開始登入：")+e.message,true);
+    if(button)button.disabled=false;
+  }
+}
 function switchAuthMode(){
   authMode=authMode==="signup"?"login":"signup";
   const signup=authMode==="signup";
@@ -1364,6 +1398,9 @@ function updateAuthTexts(){
   $("authMessage").textContent=authMode==="signup"?(v?"Create an account to stay connected.":"برای ارتباط نزدیک‌تر، حساب خودت را بساز."):(v?"Sign in with your email and password.":"با ایمیل و رمز عبورت وارد شو.");
   $("authSubmit").textContent=authMode==="signup"?(v?"Sign up":"ثبت‌نام"):(v?"Sign in":"ورود");
   $("authSwitch").textContent=authMode==="signup"?(v?"Already have an account? Sign in":"قبلاً حساب ساخته‌ام؛ ورود"):(v?"Need an account? Sign up":"حساب ندارم؛ ثبت‌نام");
+  $("googleAuthLabel").textContent=v?"Continue with Google":"ادامه با Google";
+  $("appleAuthLabel").textContent=v?"Sign in with Apple":"ادامه با Apple";
+  $("authOrLabel").textContent=v?"or continue with email":"یا با ایمیل";
 }
 function toggleLanguage(){
   english=!english;

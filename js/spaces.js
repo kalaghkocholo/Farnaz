@@ -42,14 +42,46 @@ async function contacts(containerId){
 function selected(box){return [...(q(box)?.querySelectorAll('input[type="checkbox"]:checked')||[])].map(x=>x.value).filter(x=>x!==currentUser?.id);}
 function syncType(){const g=q("spaceType").value==="group";q("spacePrivacyWrap").hidden=g;q("spaceContactsWrap").hidden=!g;}
 async function create(event){
- event.preventDefault();const btn=q("saveSpaceCreate");btn.disabled=true;
- try{const {data:{user:authUser},error:authError}=await getClient().auth.getUser();if(authError)throw authError;if(!authUser)throw Error(tr("نشست ورود معتبر نیست؛ خارج شو و دوباره وارد شو.","No valid login session. Sign out and sign in again."));if(currentUser?.id!==authUser.id)throw Error(tr("نشست کاربر تازه‌سازی نشده؛ صفحه را تازه کن و دوباره وارد شو.","The user session is out of sync. Refresh and sign in again."));const type=q("spaceType").value,name=q("spaceNewName").value.trim(),description=q("spaceNewDesc").value.trim(),is_public=type==="channel"&&q("spacePrivacy").value==="public";if(!name)throw Error("نام را وارد کن");
- const invite_code=type==="channel"&&!is_public?crypto.randomUUID().replace(/-/g,"").slice(0,16).toUpperCase():null;
- const {data:s,error}=await getClient().from("spaces").insert({type,name,description,is_public,created_by:authUser.id,invite_code}).select("*").single();if(error)throw error;
- const {error:oe}=await getClient().from("space_members").insert({space_id:s.id,user_id:currentUser.id,role:"owner"});if(oe)throw oe;
- if(type==="group"){const ids=selected("spaceContacts");if(ids.length){const {error:me}=await getClient().from("space_members").insert(ids.map(user_id=>({space_id:s.id,user_id,role:"member"})));if(me)throw Error(tr("گروه ساخته شد اما افزودن اعضای انتخاب‌شده ناموفق بود. گروه را باز کن و از گزینه افزودن اعضا دوباره تلاش کن. ","The group was created, but adding selected members failed. Open the group and use Add members to retry. ")+me.message);}}
- q("spaceCreateDialog").hidden=true;await refresh();await open(s.id);
- }catch(e){q("spaceCreateStatus").textContent=tr("ایجاد ناموفق بود: ","Could not create: ")+e.message;}finally{btn.disabled=false;}
+ event.preventDefault();
+ const btn=q("saveSpaceCreate");
+ if(btn.disabled)return;
+ btn.disabled=true;
+ q("spaceCreateStatus").textContent="";
+ let memberWarning="";
+ try{
+  const {data:{user:authUser},error:authError}=await getClient().auth.getUser();
+  if(authError)throw authError;
+  if(!authUser)throw Error(tr("نشست ورود معتبر نیست؛ خارج شو و دوباره وارد شو.","No valid login session. Sign out and sign in again."));
+  if(currentUser?.id!==authUser.id)throw Error(tr("نشست کاربر تازه‌سازی نشده؛ صفحه را تازه کن و دوباره وارد شو.","The user session is out of sync. Refresh and sign in again."));
+  const type=q("spaceType").value;
+  const name=q("spaceNewName").value.trim();
+  const description=q("spaceNewDesc").value.trim();
+  const is_public=type==="channel"&&q("spacePrivacy").value==="public";
+  if(!name)throw Error(tr("نام را وارد کن.","Enter a name."));
+  const invite_code=type==="channel"&&!is_public?crypto.randomUUID().replace(/-/g,"").slice(0,16).toUpperCase():null;
+  const {data:s,error}=await getClient().from("spaces").insert({type,name,description,is_public,created_by:authUser.id,invite_code}).select("*").single();
+  if(error)throw error;
+  const {error:ownerError}=await getClient().from("space_members").insert({space_id:s.id,user_id:authUser.id,role:"owner"});
+  if(ownerError){
+   q("spaceCreateStatus").textContent=tr("فضا ساخته شد، اما ثبت مالکیت کامل نشد. شناسه فضا: ","The space was created, but owner membership could not be recorded. Space ID: ")+s.id+" · "+ownerError.message;
+   throw ownerError;
+  }
+  if(type==="group"){
+   const ids=selected("spaceContacts");
+   if(ids.length){
+    const {error:membersError}=await getClient().from("space_members").insert(ids.map(user_id=>({space_id:s.id,user_id,role:"member"})));
+    if(membersError)memberWarning=tr("گروه ساخته شد، اما افزودن اعضای انتخاب‌شده کامل نشد. از گزینه «افزودن اعضا» داخل گروه دوباره تلاش کن. ","The group was created, but adding selected members failed. Use Add members inside the group to retry. ")+membersError.message;
+   }
+  }
+  q("spaceCreateDialog").hidden=true;
+  await refresh();
+  await open(s.id);
+  if(memberWarning)q("spaceMessageStatus").textContent=memberWarning;
+ }catch(e){
+  if(!q("spaceCreateStatus").textContent)q("spaceCreateStatus").textContent=tr("ایجاد ناموفق بود: ","Could not create: ")+(e?.message||String(e));
+ }finally{
+  btn.disabled=false;
+ }
 }
 async function refresh(){
  if(!currentUser)return;if(active&&q("spaceDetail")&&!q("spaceDetail").hidden)return;

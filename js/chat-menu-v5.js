@@ -314,7 +314,8 @@ async function subscribeToMessages(){
       const m=payload.new;
       if(m.sender_id!==myId&&m.receiver_id!==myId)return;
       refreshConversationList();
-      if(currentChatUser&&((m.sender_id===myId&&m.receiver_id===currentChatUser.user_id)||(m.sender_id===currentChatUser.user_id&&m.receiver_id===myId)))loadMessages(false);
+      // Own sends are rendered by sendMessage; avoid a second full history reload.
+      if(m.sender_id!==myId&&currentChatUser&&m.sender_id===currentChatUser.user_id&&m.receiver_id===myId)loadMessages(false);
     })
     .on("postgres_changes",{event:"UPDATE",schema:"public",table:"messages"},payload=>{
       if(currentUser?.id!==myId)return;
@@ -461,8 +462,15 @@ async function sendMessage(event){
       const isAudio=!!file&&(file.type||"").startsWith("audio/");
       const row={sender_id:currentUser.id,receiver_id:receiverId,body:body||null,message_type:file?(isImage?"image":"file"):"text",
         attachment_path:attachmentPath,attachment_name:attachmentName,attachment_mime:attachmentMime,attachment_size:attachmentSize,reply_to_id:replyTarget?.id||null};
-      const {error}=await client.from("messages").insert(row);
+      const {data:sentMessage,error}=await client.from("messages").insert(row).select("id,sender_id,receiver_id,body,created_at,message_type,attachment_path,attachment_name,attachment_mime,reply_to_id,edited_at").single();
       if(error){if(attachmentPath)await client.storage.from("chat-attachments").remove([attachmentPath]);throw error;}
+      // Append only the new message; avoid rebuilding the entire history and reloading all images.
+      if(sentMessage&&currentChatUser?.user_id===receiverId){
+        const list=$("messageList");
+        list.querySelector(".empty-state")?.remove();
+        list.appendChild(await makeMessageElement(sentMessage,currentUser.id));
+        list.scrollTop=list.scrollHeight;
+      }
       cancelReply();if(isAudio)discardRecordedVoice();
     }
     input.value="";input.style.height="auto";$("attachmentFile").value="";$("cameraFile").value="";$("photoFile").value="";

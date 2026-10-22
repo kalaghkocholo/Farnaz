@@ -740,3 +740,69 @@ body.chat-mode.keyboard-open .app.chat-mode>#chatPage #messageList,
 body.spaces-chat-mode.keyboard-open .app.spaces-chat-mode #spaceMessages{
   scroll-padding-bottom:8px!important
 }
+
+
+/* FINAL OVERRIDE: flex message stacks and viewport-sized chat screens. */
+html,body{overscroll-behavior:none}
+.app.chat-mode,.app.spaces-chat-mode{
+ position:fixed!important;left:0!important;right:0!important;
+ top:var(--chat-viewport-offset,0px)!important;
+ height:var(--chat-viewport-height,100dvh)!important;
+ max-height:var(--chat-viewport-height,100dvh)!important;
+ min-height:0!important;overflow:hidden!important;
+ transform:none!important;margin:0 auto!important;
+ display:flex!important;flex-direction:column!important;
+}
+.app.chat-mode>#chatPage{
+ display:flex!important;flex:1 1 0%!important;min-height:0!important;
+ height:100%!important;overflow:hidden!important;flex-direction:column!important
+}
+.app.chat-mode>#chatPage #messageList{
+ display:flex!important;flex-direction:column!important;align-items:stretch!important;
+ flex:1 1 0%!important;min-height:0!important;max-height:none!important;
+ overflow-y:auto!important;overscroll-behavior:contain!important
+}
+.app.chat-mode>#chatPage #sendMessageForm{
+ position:relative!important;inset:auto!important;flex:0 0 auto!important;
+ margin:0!important;padding:5px 0 max(3px,env(safe-area-inset-bottom))!important;
+ background:var(--bg)!important;z-index:50!important
+}
+.app.chat-mode>#chatPage #messageList>.message{
+ width:fit-content!important;max-width:88%!important;box-sizing:border-box!important;
+ float:none!important;clear:both!important
+}
+.app.chat-mode>#chatPage #messageList>.my-message{
+ align-self:flex-end!important;margin-left:auto!important;margin-right:0!important
+}
+.app.chat-mode>#chatPage #messageList>.their-message{
+ align-self:flex-start!important;margin-left:0!important;margin-right:auto!important
+}
+.app.spaces-chat-mode #spacesPage.active{
+ display:flex!important;flex:1 1 0%!important;min-height:0!important;
+ height:100%!important;overflow:hidden!important;flex-direction:column!important
+}
+.app.spaces-chat-mode #spacesPage #spaceDetail:not([hidden]){
+ display:flex!important;flex:1 1 0%!important;min-height:0!important;
+ height:100%!important;overflow:hidden!important;flex-direction:column!important
+}
+.app.spaces-chat-mode #spacesPage #spaceMessages{
+ display:flex!important;flex-direction:column!important;align-items:stretch!important;
+ flex:1 1 0%!important;min-height:0!important;max-height:none!important;
+ overflow-y:auto!important;overscroll-behavior:contain!important
+}
+.app.spaces-chat-mode #spacesPage #spaceMessages>.space-message{
+ display:block!important;width:fit-content!important;max-width:88%!important;
+ box-sizing:border-box!important;float:none!important;clear:both!important
+}
+.app.spaces-chat-mode #spacesPage #spaceMessages>.space-message.mine{
+ align-self:flex-end!important;margin-left:auto!important;margin-right:0!important
+}
+.app.spaces-chat-mode #spacesPage #spaceMessages>.space-message:not(.mine){
+ align-self:flex-start!important;margin-left:0!important;margin-right:auto!important
+}
+.app.spaces-chat-mode #spacesPage #spaceComposer{
+ position:relative!important;inset:auto!important;bottom:auto!important;
+ flex:0 0 auto!important;margin:0!important;
+ padding:5px 0 max(3px,env(safe-area-inset-bottom))!important;
+ background:var(--bg)!important;z-index:50!important
+}

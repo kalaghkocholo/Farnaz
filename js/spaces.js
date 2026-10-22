@@ -69,11 +69,13 @@ async function loadMessages(id){
   const keep=new Set();let cursor=list.firstElementChild;
   for(const m of rows){
    const key=String(m.id);keep.add(key);let el=existing.get(key);
-   if(!el){el=document.createElement("div");el.className="space-message";el.dataset.messageId=key;el.dataset.body="";const time=document.createElement("small");el.appendChild(time);}
+   if(!el){el=document.createElement("div");el.className="space-message";el.dataset.messageId=key;el.dataset.body="";list.appendChild(el);}
    el.classList.toggle("mine",m.sender_id===currentUser.id);
-   if(el.dataset.body!==m.body){el.dataset.body=m.body;el.firstChild?.remove();el.insertBefore(document.createTextNode(m.body),el.firstChild);}
-   const time=el.querySelector("small");const stamp=new Date(m.created_at).toLocaleTimeString(typeof english!=="undefined"&&english?"en":"fa-IR",{hour:"2-digit",minute:"2-digit"});if(time.textContent!==stamp)time.textContent=stamp;
-   if(el!==cursor)list.insertBefore(el,cursor);
+   let time=el.querySelector("small");if(!time){time=document.createElement("small");el.appendChild(time);}
+   let bodyNode=el.firstChild;if(!bodyNode||bodyNode===time||bodyNode.nodeType!==Node.TEXT_NODE){bodyNode=document.createTextNode("");el.insertBefore(bodyNode,time);}
+   if(el.dataset.body!==m.body){el.dataset.body=m.body;bodyNode.textContent=m.body;}
+   const stamp=new Date(m.created_at).toLocaleTimeString(typeof english!=="undefined"&&english?"en":"fa-IR",{hour:"2-digit",minute:"2-digit"});if(time.textContent!==stamp)time.textContent=stamp;
+   if(!el.isConnected)list.appendChild(el);
    cursor=el.nextElementSibling;
   }
   for(const [key,el] of existing)if(!keep.has(key))el.remove();

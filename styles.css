@@ -994,24 +994,29 @@ body.chat-mode .app.chat-mode #chatPage #sendMessageForm {
 }
 
 
-/* Final visual correction: swap the reversed private-chat bubble sides. */
+/* Final visual correction v2: align own bubbles right and contact bubbles left. */
 body.chat-mode .app.chat-mode #chatPage #messageList {
   direction:ltr!important;
   flex-direction:column!important;
 }
 body.chat-mode .app.chat-mode #chatPage #messageList > .message.my-message {
-  align-self:flex-start!important;
-  margin-left:0!important;
-  margin-right:auto!important;
-}
-body.chat-mode .app.chat-mode #chatPage #messageList > .message.their-message {
   align-self:flex-end!important;
   margin-left:auto!important;
   margin-right:0!important;
+  inset-inline-start:auto!important;
+  inset-inline-end:0!important;
+}
+body.chat-mode .app.chat-mode #chatPage #messageList > .message.their-message {
+  align-self:flex-start!important;
+  margin-left:0!important;
+  margin-right:auto!important;
+  inset-inline-start:0!important;
+  inset-inline-end:auto!important;
 }
 body.chat-mode .app.chat-mode #chatPage #messageList > .message {
   float:none!important;
   clear:both!important;
+  position:relative!important;
 }
 body.chat-mode, body.chat-mode .app.chat-mode,
 body.chat-mode .app.chat-mode #chatPage,

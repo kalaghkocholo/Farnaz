@@ -49,17 +49,21 @@ async function makeMessageElement(m,myId){
   const isOwnMessage=String(m.sender_id)===String(myId);
   item.className="message "+(isOwnMessage?"my-message":"their-message");
   item.dataset.messageSide=isOwnMessage?"own":"contact";
-  // Own the layout in JS so conflicting historical CSS rules cannot change bubble sides.
+  // Use a one-column grid and explicitly place each bubble in its grid cell.
+  // This avoids flex-direction/RTL interactions and the historical duplicate CSS rules.
   const messageList=$("messageList");
   if(messageList){
-    messageList.style.setProperty("display","flex","important");
-    messageList.style.setProperty("flex-direction","column","important");
-    messageList.style.setProperty("align-items","stretch","important");
+    messageList.style.setProperty("display","grid","important");
+    messageList.style.setProperty("grid-template-columns","minmax(0, 1fr)","important");
+    messageList.style.setProperty("grid-auto-rows","min-content","important");
     messageList.style.setProperty("direction","ltr","important");
+    messageList.style.setProperty("align-items","start","important");
   }
-  item.style.setProperty("align-self",isOwnMessage?"flex-end":"flex-start","important");
-  item.style.setProperty("margin-left",isOwnMessage?"auto":"0","important");
-  item.style.setProperty("margin-right",isOwnMessage?"0":"auto","important");
+  item.style.setProperty("justify-self",isOwnMessage?"end":"start","important");
+  item.style.setProperty("align-self","start","important");
+  item.style.setProperty("margin","0","important");
+  item.style.setProperty("width","fit-content","important");
+  item.style.setProperty("max-width","88%","important");
   item.dataset.messageId=m.id;item.dataset.createdAt=m.created_at;
   if(selectedMessageIds.has(m.id))item.classList.add("selected");
   if(m.reply_to_id){

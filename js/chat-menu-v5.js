@@ -399,13 +399,13 @@ function stopAudioRecordingTracks(){
 }
 if(window.visualViewport){
   const syncChatViewport=()=>{
-    const inChat=document.body.classList.contains("chat-mode");
+    const inChat=document.body.classList.contains("chat-mode")||document.body.classList.contains("spaces-chat-mode");
     const viewport=window.visualViewport;
     if(inChat){
       document.documentElement.style.setProperty("--chat-viewport-height",Math.round(viewport.height)+"px");
       document.documentElement.style.setProperty("--chat-viewport-offset",Math.max(0,Math.round(viewport.offsetTop))+"px");
-      const keyboardLikelyOpen=!!(document.activeElement&&document.activeElement.id==="messageText") &&
-        (window.innerHeight-viewport.height)>120;
+      const focusedComposer=document.activeElement&&["messageText","spaceText"].includes(document.activeElement.id);
+      const keyboardLikelyOpen=!!focusedComposer && (window.innerHeight-viewport.height)>120;
       document.body.classList.toggle("keyboard-open",keyboardLikelyOpen);
     }else{
       document.documentElement.style.removeProperty("--chat-viewport-height");
@@ -416,7 +416,7 @@ if(window.visualViewport){
   window.visualViewport.addEventListener("resize",syncChatViewport);
   window.visualViewport.addEventListener("scroll",syncChatViewport);
   window.addEventListener("orientationchange",()=>setTimeout(syncChatViewport,180));
-  document.addEventListener("focusin",event=>{if(event.target?.id==="messageText")setTimeout(syncChatViewport,100);});
+  document.addEventListener("focusin",event=>{if(["messageText","spaceText"].includes(event.target?.id))setTimeout(syncChatViewport,100);});
   document.addEventListener("focusout",()=>setTimeout(syncChatViewport,150));
 }
 function showRecordedVoicePreview(){

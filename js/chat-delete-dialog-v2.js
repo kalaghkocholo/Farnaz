@@ -173,22 +173,39 @@ function editMessage(m){
 function cancelMessageEdit(){if(!editingMessageId)return;editingMessageId=null;$("messageText").value=preEditDraft;preEditDraft="";$("cancelEditButton").hidden=true;$("sendMessageButton").textContent="➤";setStatus("sendMessageStatus","");$("messageText").dispatchEvent(new Event("input",{bubbles:true}));}
 function askDeleteScope(){
   return new Promise(resolve=>{
-    const overlay=document.createElement("div");overlay.className="farnaz-confirm-overlay";Object.assign(overlay.style,{position:"fixed",inset:"0",zIndex:"10000",display:"flex",alignItems:"center",justifyContent:"center",padding:"20px",background:"rgba(0,0,0,.48)",backdropFilter:"blur(3px)"});
-    const dialog=document.createElement("section");dialog.className="farnaz-confirm-dialog";Object.assign(dialog.style,{width:"min(100%,360px)",padding:"22px",border:"1px solid var(--border-color,rgba(128,128,128,.25))",borderRadius:"18px",background:"var(--panel-bg,var(--card-bg,#fff))",color:"var(--text-color,#222)",boxShadow:"0 16px 48px rgba(0,0,0,.22)",direction:"inherit"});
+    const overlay=document.createElement("div");
+    overlay.className="farnaz-confirm-overlay";
+    Object.assign(overlay.style,{position:"fixed",inset:"0",zIndex:"10000",display:"flex",alignItems:"center",justifyContent:"center",padding:"20px",background:"rgba(0,0,0,.48)",backdropFilter:"blur(3px)"});
+    const dialog=document.createElement("section");
+    dialog.className="farnaz-confirm-dialog";
+    Object.assign(dialog.style,{width:"min(100%,360px)",padding:"22px",border:"1px solid var(--border-color,rgba(128,128,128,.25))",borderRadius:"18px",background:"var(--panel-bg,var(--card-bg,#fff))",color:"var(--text-color,#222)",boxShadow:"0 16px 48px rgba(0,0,0,.22)",direction:"inherit"});
     dialog.setAttribute("role","dialog");dialog.setAttribute("aria-modal","true");
-    const title=document.createElement("h2");title.textContent=english?"Delete message":"حذف پیام";Object.assign(title.style,{margin:"0 0 10px",fontSize:"18px",fontWeight:"700"});
-    const message=document.createElement("p");Object.assign(message.style,{margin:"0 0 20px",lineHeight:"1.8",fontSize:"14px"});message.textContent=english?"Delete this message for everyone? Choose “Hide for me” to remove it only from your view.":"می‌خواهی این پیام برای همه حذف شود؟ برای حذف فقط از صفحه خودت، «فقط برای من» را بزن.";
-    const actions=document.createElement("div");actions.className="farnaz-confirm-actions";Object.assign(actions.style,{display:"flex",flexWrap:"wrap",gap:"8px",justifyContent:"flex-start"});
-    const hide=document.createElement("button");hide.type="button";hide.className="farnaz-confirm-secondary";Object.assign(hide.style,{minHeight:"42px",padding:"9px 13px",border:"1px solid rgba(128,128,128,.3)",borderRadius:"11px",background:"transparent",color:"inherit",font:"inherit",fontSize:"13px"});hide.textContent=english?"Hide for me":"فقط برای من";
-    const cancel=document.createElement("button");cancel.type="button";cancel.className="farnaz-confirm-secondary";Object.assign(cancel.style,{minHeight:"42px",padding:"9px 13px",border:"1px solid rgba(128,128,128,.3)",borderRadius:"11px",background:"transparent",color:"inherit",font:"inherit",fontSize:"13px"});cancel.textContent=english?"Cancel":"لغو";
-    const all=document.createElement("button");all.type="button";all.className="farnaz-confirm-danger";Object.assign(all.style,{minHeight:"42px",padding:"9px 13px",border:"1px solid transparent",borderRadius:"11px",background:"var(--danger,#c62828)",color:"#fff",font:"inherit",fontSize:"13px"});all.textContent=english?"Delete for everyone":"حذف برای همه";
+    const title=document.createElement("h2");
+    title.textContent=english?"Delete message":"حذف پیام";
+    Object.assign(title.style,{margin:"0 0 14px",fontSize:"18px",fontWeight:"700"});
+    const label=document.createElement("label");
+    label.textContent=english?"Choose where to delete":"روش حذف پیام را انتخاب کن";
+    Object.assign(label.style,{display:"block",margin:"0 0 8px",fontSize:"14px",fontWeight:"600"});
+    const select=document.createElement("select");
+    select.setAttribute("aria-label",english?"Delete scope":"روش حذف");
+    Object.assign(select.style,{width:"100%",minHeight:"48px",padding:"10px 12px",margin:"0 0 18px",border:"1px solid var(--border-color,rgba(128,128,128,.3))",borderRadius:"12px",background:"var(--input-bg,var(--panel-bg,#fff))",color:"inherit",font:"inherit",fontSize:"14px",outlineOffset:"2px"});
+    const onlyMe=document.createElement("option");onlyMe.value="me";onlyMe.textContent=english?"Only for me":"فقط برای من";
+    const everyone=document.createElement("option");everyone.value="all";everyone.textContent=english?"For everyone":"برای همه";
+    select.append(onlyMe,everyone);
+    const actions=document.createElement("div");
+    Object.assign(actions.style,{display:"flex",gap:"10px",justifyContent:"flex-start"});
+    const cancel=document.createElement("button");cancel.type="button";cancel.textContent=english?"Cancel":"لغو";
+    Object.assign(cancel.style,{flex:"1",minHeight:"44px",padding:"10px 14px",border:"1px solid rgba(128,128,128,.3)",borderRadius:"11px",background:"transparent",color:"inherit",font:"inherit"});
+    const confirmButton=document.createElement("button");confirmButton.type="button";confirmButton.textContent=english?"Continue":"ادامه";
+    Object.assign(confirmButton.style,{flex:"1",minHeight:"44px",padding:"10px 14px",border:"1px solid transparent",borderRadius:"11px",background:"var(--accent,#168f78)",color:"var(--accent-ink,#fff)",font:"inherit",fontWeight:"600"});
     let finished=false;
     const finish=value=>{if(finished)return;finished=true;overlay.remove();document.removeEventListener("keydown",onKey);resolve(value);};
     const onKey=e=>{if(e.key==="Escape")finish(null);};
-    hide.onclick=()=>finish(false);cancel.onclick=()=>finish(null);all.onclick=()=>finish(true);
+    cancel.onclick=()=>finish(null);
+    confirmButton.onclick=()=>finish(select.value==="all");
     overlay.addEventListener("click",e=>{if(e.target===overlay)finish(null);});
-    actions.append(hide,cancel,all);dialog.append(title,message,actions);overlay.append(dialog);document.body.append(overlay);
-    document.addEventListener("keydown",onKey);cancel.focus();
+    actions.append(cancel,confirmButton);dialog.append(title,label,select,actions);overlay.append(dialog);document.body.append(overlay);
+    document.addEventListener("keydown",onKey);select.focus();
   });
 }
 async function deleteMessage(m){

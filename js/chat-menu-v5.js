@@ -314,16 +314,35 @@ async function subscribeToMessages(){
       const m=payload.new;
       if(m.sender_id!==myId&&m.receiver_id!==myId)return;
       refreshConversationList();
-      // Own sends are rendered by sendMessage; avoid a second full history reload.
-      if(m.sender_id!==myId&&currentChatUser&&m.sender_id===currentChatUser.user_id&&m.receiver_id===myId)loadMessages(false);
+      // Append a newly received message in-place; never rebuild the whole chat for an INSERT.
+      if(m.sender_id!==myId&&currentChatUser&&m.sender_id===currentChatUser.user_id&&m.receiver_id===myId){
+        const list=$("messageList");
+        if(!list.querySelector('[data-message-id="'+m.id+'"]')){
+          list.querySelector(".empty-state")?.remove();
+          list.appendChild(await makeMessageElement(m,myId));
+          list.scrollTop=list.scrollHeight;
+        }
+      }
     })
-    .on("postgres_changes",{event:"UPDATE",schema:"public",table:"messages"},payload=>{
+    .on("postgres_changes",{event:"UPDATE",schema:"public",table:"messages"},async payload=>{
       if(currentUser?.id!==myId)return;
       const m=payload.new;
-      if(m.sender_id===myId||m.receiver_id===myId){refreshConversationList();if(currentChatUser&&(m.sender_id===currentChatUser.user_id||m.receiver_id===currentChatUser.user_id))loadMessages(false);}
+      if(m.sender_id===myId||m.receiver_id===myId){
+        refreshConversationList();
+        if(currentChatUser&&(m.sender_id===currentChatUser.user_id||m.receiver_id===currentChatUser.user_id)){
+          const list=$("messageList"),oldItem=list.querySelector('[data-message-id="'+m.id+'"]');
+          if(oldItem){
+            const replacement=await makeMessageElement(m,myId);
+            if(oldItem.isConnected)oldItem.replaceWith(replacement);
+          }
+        }
+      }
     })
-    .on("postgres_changes",{event:"DELETE",schema:"public",table:"messages"},()=>{
-      if(currentUser?.id!==myId)return;refreshConversationList();if(currentChatUser)loadMessages(false);
+    .on("postgres_changes",{event:"DELETE",schema:"public",table:"messages"},payload=>{
+      if(currentUser?.id!==myId)return;
+      refreshConversationList();
+      const m=payload.old;
+      if(m?.id){$("messageList").querySelector('[data-message-id="'+m.id+'"]')?.remove();}
     })
     .subscribe(status=>{
       if(status==="SUBSCRIBED"){

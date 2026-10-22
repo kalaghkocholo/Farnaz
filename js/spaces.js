@@ -140,7 +140,7 @@ async function open(id){
 
  function renderSpaceAvatar(el,path,fallback){
   if(!el)return;el.replaceChildren();
-  if(path){const url=getClient().storage.from("avatars").getPublicUrl(path).data?.publicUrl;if(url){const img=document.createElement("img");img.src=url;img.alt="";img.loading="lazy";img.onerror=()=>{el.replaceChildren(document.createTextNode(fallback||"👥"));};el.appendChild(img);return;}}
+  if(path){const url=(path.startsWith("https://")||path.startsWith("http://"))?path:getClient().storage.from("avatars").getPublicUrl(path).data?.publicUrl;if(url){const img=document.createElement("img");img.src=url;img.alt="";img.loading="lazy";img.onerror=()=>{el.replaceChildren(document.createTextNode(fallback||"👥"));};el.appendChild(img);return;}}
   el.textContent=fallback||"👥";
  }
  async function openSpaceInfo(){

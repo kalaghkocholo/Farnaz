@@ -940,3 +940,55 @@ body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceComposer {
   display:flex!important;visibility:visible!important;flex:0 0 auto!important;
   height:auto!important;min-height:0!important;position:relative!important;z-index:60!important;
 }
+
+
+/* 2026-10-22: final private-chat side swap and prevent lateral viewport drift */
+html, body {
+  width:100%!important;
+  max-width:100%!important;
+  overflow-x:hidden!important;
+  overscroll-behavior-x:none!important;
+}
+body.chat-mode {
+  position:fixed!important;
+  inset:0!important;
+  overflow:hidden!important;
+  touch-action:pan-y!important;
+}
+body.chat-mode .app.chat-mode {
+  left:0!important;
+  right:0!important;
+  width:100%!important;
+  max-width:560px!important;
+  margin-left:auto!important;
+  margin-right:auto!important;
+  box-sizing:border-box!important;
+  overflow-x:hidden!important;
+}
+body.chat-mode .app.chat-mode #chatPage {
+  width:100%!important;
+  min-width:0!important;
+  box-sizing:border-box!important;
+}
+body.chat-mode .app.chat-mode #chatPage #messageList {
+  width:100%!important;
+  min-width:0!important;
+  box-sizing:border-box!important;
+  overflow-x:hidden!important;
+  touch-action:pan-y!important;
+}
+body.chat-mode .app.chat-mode #chatPage #messageList > .message.my-message {
+  align-self:flex-start!important;
+  margin-left:0!important;
+  margin-right:auto!important;
+}
+body.chat-mode .app.chat-mode #chatPage #messageList > .message.their-message {
+  align-self:flex-end!important;
+  margin-left:auto!important;
+  margin-right:0!important;
+}
+body.chat-mode .app.chat-mode #chatPage #sendMessageForm {
+  width:100%!important;
+  min-width:0!important;
+  box-sizing:border-box!important;
+}

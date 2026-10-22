@@ -408,26 +408,8 @@ function openAdjacentConversation(direction){
   if(nextIndex<0||nextIndex>=cards.length)return;
   cards[nextIndex].querySelector(".list-item")?.click();
 }
-(function installChatSwipeNavigation(){
-  const area=$("messageList");if(!area)return;
-  let startX=0,startY=0,startAt=0;
-  area.addEventListener("touchstart",event=>{
-    if(event.touches.length!==1)return;
-    if(event.target.closest("button,a,input,textarea,audio,video,select")){startAt=0;return;}
-    startX=event.touches[0].clientX;startY=event.touches[0].clientY;startAt=Date.now();
-  },{passive:true});
-  area.addEventListener("touchend",event=>{
-    if(!startAt||!event.changedTouches.length)return;
-    const dx=event.changedTouches[0].clientX-startX,dy=event.changedTouches[0].clientY-startY;
-    const elapsed=Date.now()-startAt;startAt=0;
-    if(Math.abs(dx)<85||Math.abs(dy)>65||elapsed>900)return;
-    dismissMessageMenus();
-    if(messageSelectionMode)exitMessageSelection();
-    if(dx>0)backFromChat();
-    else openAdjacentConversation(1);
-  },{passive:true});
-  area.addEventListener("touchcancel",()=>{startAt=0;},{passive:true});
-})();
+/* Horizontal swipe navigation disabled: keep private chat stationary on mobile. */
+
 function setConversationView(view){conversationView=view;refreshConversationList();}
 function prefFor(id){return conversationPrefs.get(id)||{pinned:false,archived:false,hidden_at:null};}
 async function saveConversationPref(contactId,patch){

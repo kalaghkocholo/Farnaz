@@ -66,14 +66,15 @@ async function loadMessages(id){
   const rows=data||[],existing=new Map([...list.querySelectorAll(".space-message[data-message-id]")].map(el=>[el.dataset.messageId,el]));
   const empty=list.querySelector(".space-empty");if(rows.length&&empty)empty.remove();
   if(!rows.length&&!empty){const e=document.createElement("div");e.className="space-empty";e.textContent=tr("هنوز پیامی نیست.","No posts yet.");list.appendChild(e);}
-  const keep=new Set();
+  const keep=new Set();let cursor=list.firstElementChild;
   for(const m of rows){
    const key=String(m.id);keep.add(key);let el=existing.get(key);
    if(!el){el=document.createElement("div");el.className="space-message";el.dataset.messageId=key;el.dataset.body="";const time=document.createElement("small");el.appendChild(time);}
    el.classList.toggle("mine",m.sender_id===currentUser.id);
    if(el.dataset.body!==m.body){el.dataset.body=m.body;el.firstChild?.remove();el.insertBefore(document.createTextNode(m.body),el.firstChild);}
    const time=el.querySelector("small");const stamp=new Date(m.created_at).toLocaleTimeString(typeof english!=="undefined"&&english?"en":"fa-IR",{hour:"2-digit",minute:"2-digit"});if(time.textContent!==stamp)time.textContent=stamp;
-   list.appendChild(el);
+   if(el!==cursor)list.insertBefore(el,cursor);
+   cursor=el.nextElementSibling;
   }
   for(const [key,el] of existing)if(!keep.has(key))el.remove();
   if(wasNearBottom)list.scrollTop=list.scrollHeight;

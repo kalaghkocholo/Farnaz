@@ -36,8 +36,8 @@ async function loadMessages(older=false){
     if(older){await prependMessages(visibleRows,myId);messageLoadedCount+=50;}
     else await renderMessages(visibleRows,myId);
     messageHasMore=data.length>50;
-    const messageList=$("messageList");
-    $("loadOlderButton").hidden=!(messageHasMore&&messageList.scrollTop<=8);
+    // Keep the older-history control hidden after loading; user must scroll back to the top.
+    $("loadOlderButton").hidden=true;
     setStatus("sendMessageStatus","");
   }catch(e){
     console.error("Load messages:",e);
@@ -141,8 +141,16 @@ async function prependMessages(messages,myId){
   const list=$("messageList"),button=$("loadOlderButton");
   if(!list||!button||list.dataset.olderScrollBound==="1")return;
   list.dataset.olderScrollBound="1";
+  let previousScrollTop=list.scrollTop;
+  button.hidden=true;
   list.addEventListener("scroll",()=>{
-    button.hidden=!(messageHasMore&&list.scrollTop<=8);
+    const currentScrollTop=list.scrollTop;
+    if(currentScrollTop>8){
+      button.hidden=true;
+    }else if(previousScrollTop>8&&currentScrollTop<=8){
+      button.hidden=!messageHasMore;
+    }
+    previousScrollTop=currentScrollTop;
   },{passive:true});
 })();
 async function loadOlderMessages(){

@@ -942,7 +942,7 @@ body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceComposer {
 }
 
 
-/* Private chat viewport containment and single source of truth for bubble alignment. */
+/* Private chat viewport containment and grid-based bubble alignment. */
 html, body {
   width:100%!important;
   max-width:100%!important;
@@ -976,9 +976,11 @@ body.chat-mode .app.chat-mode #chatPage #messageList {
   min-width:0!important;
   box-sizing:border-box!important;
   direction:ltr!important;
-  display:flex!important;
-  flex-direction:column!important;
-  align-items:stretch!important;
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  grid-auto-rows:min-content!important;
+  align-items:start!important;
+  gap:8px!important;
   overflow-x:hidden!important;
   overscroll-behavior-x:none!important;
   touch-action:pan-y!important;
@@ -988,24 +990,25 @@ body.chat-mode .app.chat-mode #chatPage #messageList > article.message {
   width:fit-content!important;
   max-width:88%!important;
   min-width:0!important;
-  flex:0 0 auto!important;
+  justify-self:start!important;
+  align-self:start!important;
+  margin:0!important;
   float:none!important;
   clear:both!important;
   position:relative!important;
   direction:rtl!important;
   text-align:right!important;
+  box-sizing:border-box!important;
 }
-/* The logged-in user's own messages go on the right. */
 body.chat-mode .app.chat-mode #chatPage #messageList > article.message.my-message {
-  align-self:flex-end!important;
-  margin-left:auto!important;
-  margin-right:0!important;
+  justify-self:end!important;
+  align-self:start!important;
+  margin:0!important;
 }
-/* Messages received from the contact go on the left. */
 body.chat-mode .app.chat-mode #chatPage #messageList > article.message.their-message {
-  align-self:flex-start!important;
-  margin-left:0!important;
-  margin-right:auto!important;
+  justify-self:start!important;
+  align-self:start!important;
+  margin:0!important;
 }
 body.chat-mode .app.chat-mode #chatPage #sendMessageForm {
   width:100%!important;

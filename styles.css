@@ -624,3 +624,6 @@ body[data-font-color="white"][data-theme] .bottom-nav .nav-button { color:#fffff
 
 /* Hide the global brand/settings header only while a group or channel conversation is open. */
 .app:has(#spacesPage.active #spaceDetail:not([hidden]))>header{display:none!important}
+
+/* Explicit class toggled by spaces.js while a group/channel conversation is open. */
+.app.spaces-chat-mode>header{display:none!important}

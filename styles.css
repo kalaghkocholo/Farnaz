@@ -942,7 +942,7 @@ body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceComposer {
 }
 
 
-/* 2026-10-22: final private-chat side swap and prevent lateral viewport drift */
+/* Private chat viewport containment and single source of truth for bubble alignment. */
 html, body {
   width:100%!important;
   max-width:100%!important;
@@ -969,58 +969,46 @@ body.chat-mode .app.chat-mode #chatPage {
   width:100%!important;
   min-width:0!important;
   box-sizing:border-box!important;
+  overflow-x:hidden!important;
 }
 body.chat-mode .app.chat-mode #chatPage #messageList {
   width:100%!important;
   min-width:0!important;
   box-sizing:border-box!important;
+  direction:ltr!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
   overflow-x:hidden!important;
+  overscroll-behavior-x:none!important;
   touch-action:pan-y!important;
 }
-body.chat-mode .app.chat-mode #chatPage #messageList > .message.my-message {
-  align-self:flex-start!important;
-  margin-left:0!important;
-  margin-right:auto!important;
+body.chat-mode .app.chat-mode #chatPage #messageList > article.message {
+  display:block!important;
+  width:fit-content!important;
+  max-width:88%!important;
+  min-width:0!important;
+  flex:0 0 auto!important;
+  float:none!important;
+  clear:both!important;
+  position:relative!important;
+  direction:rtl!important;
+  text-align:right!important;
 }
-body.chat-mode .app.chat-mode #chatPage #messageList > .message.their-message {
+/* The logged-in user's own messages go on the right. */
+body.chat-mode .app.chat-mode #chatPage #messageList > article.message.my-message {
   align-self:flex-end!important;
   margin-left:auto!important;
   margin-right:0!important;
+}
+/* Messages received from the contact go on the left. */
+body.chat-mode .app.chat-mode #chatPage #messageList > article.message.their-message {
+  align-self:flex-start!important;
+  margin-left:0!important;
+  margin-right:auto!important;
 }
 body.chat-mode .app.chat-mode #chatPage #sendMessageForm {
   width:100%!important;
   min-width:0!important;
   box-sizing:border-box!important;
-}
-
-
-/* Final visual correction v2: align own bubbles right and contact bubbles left. */
-body.chat-mode .app.chat-mode #chatPage #messageList {
-  direction:ltr!important;
-  flex-direction:column!important;
-}
-body.chat-mode .app.chat-mode #chatPage #messageList > .message.my-message {
-  align-self:flex-end!important;
-  margin-left:auto!important;
-  margin-right:0!important;
-  inset-inline-start:auto!important;
-  inset-inline-end:0!important;
-}
-body.chat-mode .app.chat-mode #chatPage #messageList > .message.their-message {
-  align-self:flex-start!important;
-  margin-left:0!important;
-  margin-right:auto!important;
-  inset-inline-start:0!important;
-  inset-inline-end:auto!important;
-}
-body.chat-mode .app.chat-mode #chatPage #messageList > .message {
-  float:none!important;
-  clear:both!important;
-  position:relative!important;
-}
-body.chat-mode, body.chat-mode .app.chat-mode,
-body.chat-mode .app.chat-mode #chatPage,
-body.chat-mode .app.chat-mode #chatPage #messageList {
-  overflow-x:hidden!important;
-  overscroll-behavior-x:none!important;
 }

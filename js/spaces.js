@@ -137,7 +137,74 @@ async function open(id){
  await loadMessages(s.id);if(sub){await getClient().removeChannel(sub);sub=null;}sub=getClient().channel("space-"+s.id).on("postgres_changes",{event:"*",schema:"public",table:"space_messages",filter:"space_id=eq."+s.id},()=>{if(active?.id===s.id){clearTimeout(messageReloadTimer);messageReloadTimer=setTimeout(()=>{if(active?.id===s.id)loadMessages(s.id);},220);}}).subscribe();
  }catch(e){q("spacesStatus").textContent=tr("بازکردن فضا ناموفق بود: ","Could not open space: ")+e.message;}
 }
-let messageLoadToken=0,messageReloadTimer=null;
+
+ function renderSpaceAvatar(el,path,fallback){
+  if(!el)return;el.replaceChildren();
+  if(path){const url=getClient().storage.from("avatars").getPublicUrl(path).data?.publicUrl;if(url){const img=document.createElement("img");img.src=url;img.alt="";img.loading="lazy";img.onerror=()=>{el.replaceChildren(document.createTextNode(fallback||"👥"));};el.appendChild(img);return;}}
+  el.textContent=fallback||"👥";
+ }
+ async function openSpaceInfo(){
+  if(!active||active.type!=="group")return;
+  const spaceId=active.id;
+  q("spaceInfoDialog").hidden=false;q("spaceInfoStatus").textContent=tr("در حال بارگذاری اعضا…","Loading members…");
+  q("spaceInfoName").textContent=active.name||"";q("spaceInfoDescription").textContent=active.description||"";
+  renderSpaceAvatar(q("spaceInfoAvatar"),active.avatar_url,"👥");
+  const actions=q("spaceInfoActions");actions.replaceChildren();
+  const {data:mine,error:mineError}=await getClient().from("space_members").select("role").eq("space_id",spaceId).eq("user_id",currentUser.id).maybeSingle();
+  if(mineError){q("spaceInfoStatus").textContent=mineError.message;return;}
+  if(!mine){q("spaceInfoStatus").textContent=tr("برای مشاهده اعضا باید عضو این گروه باشی.","You must be a group member to view this roster.");return;}
+  if(["owner","admin"].includes(mine.role)){
+   const edit=document.createElement("button");edit.type="button";edit.className="space-secondary";edit.textContent=tr("ویرایش نام، توضیحات و عکس","Edit name, description & photo");edit.onclick=()=>{q("spaceEditName").value=active.name||"";q("spaceEditDescription").value=active.description||"";q("spaceEditPhoto").value="";q("spaceEditStatus").textContent="";q("spaceEditDialog").hidden=false;};actions.appendChild(edit);
+   const add=document.createElement("button");add.type="button";add.className="space-primary";add.textContent=tr("＋ افزودن عضو","＋ Add member");add.onclick=async()=>{await contacts("spaceAddContacts");q("spaceAddStatus").textContent="";q("spaceAddDialog").hidden=false;};actions.appendChild(add);
+  }
+  const {data:members,error}=await getClient().rpc("get_space_member_profiles",{p_space_id:spaceId});
+  if(error){q("spaceInfoStatus").textContent=tr("دریافت فهرست اعضا ناموفق بود: ","Could not load members: ")+error.message;return;}
+  const list=q("spaceMemberList");list.replaceChildren();
+  q("spaceMemberHeading").textContent=tr("اعضای گروه","Group members")+" · "+(members||[]).length;
+  for(const member of members||[]){
+   const row=document.createElement("div");row.className="space-member-row";
+   const av=document.createElement("span");av.className="space-avatar";renderSpaceAvatar(av,member.avatar_url,"👤");
+   const copy=document.createElement("div");copy.className="space-member-copy";
+   const name=document.createElement("strong");name.textContent=member.user_id===currentUser.id?tr("شما","You"):(member.display_name||tr("کاربر فرناز","Farnaz user"));
+   const role=document.createElement("small");role.textContent=member.role==="owner"?tr("مالک گروه","Group owner"):member.role==="admin"?tr("مدیر گروه","Group admin"):tr("عضو","Member");copy.append(name,role);row.append(av,copy);
+   const tools=document.createElement("div");tools.className="space-member-tools";
+   if(member.user_id!==currentUser.id){
+    const dm=document.createElement("button");dm.type="button";dm.className="space-secondary";dm.textContent=tr("پیام خصوصی","Private message");dm.onclick=()=>{q("spaceInfoDialog").hidden=true;openChat({user_id:member.user_id,display_name:member.display_name||tr("کاربر فرناز","Farnaz user"),avatar_url:member.avatar_url||""},"spacesPage");};tools.appendChild(dm);
+    if(mine.role==="owner"&&member.role!=="owner"){
+     const roleBtn=document.createElement("button");roleBtn.type="button";roleBtn.className="space-secondary";roleBtn.textContent=member.role==="admin"?tr("برداشتن مدیریت","Remove admin"):tr("مدیر کردن","Make admin");roleBtn.onclick=async()=>{roleBtn.disabled=true;try{const {error:e}=await getClient().rpc("set_space_member_role",{p_space_id:spaceId,p_user_id:member.user_id,p_role:member.role==="admin"?"member":"admin"});if(e)throw e;await openSpaceInfo();}catch(e){q("spaceInfoStatus").textContent=e.message;}finally{roleBtn.disabled=false;}};tools.appendChild(roleBtn);
+     const transfer=document.createElement("button");transfer.type="button";transfer.className="space-secondary";transfer.textContent=tr("انتقال مالکیت","Transfer ownership");transfer.onclick=async()=>{if(!window.confirm(tr("با انتقال مالکیت، شما مدیر می‌شوید و این عضو مالک گروه خواهد شد. ادامه می‌دهی؟","Transfer ownership to this member? You will become an admin.")))return;transfer.disabled=true;try{const {error:e}=await getClient().rpc("transfer_space_ownership",{p_space_id:spaceId,p_new_owner_id:member.user_id});if(e)throw e;await open(spaceId);await openSpaceInfo();}catch(e){q("spaceInfoStatus").textContent=e.message;}finally{transfer.disabled=false;}};tools.appendChild(transfer);
+    }
+    if(["owner","admin"].includes(mine.role)&&(mine.role==="owner"||member.role==="member")&&member.role!=="owner"){
+     const remove=document.createElement("button");remove.type="button";remove.className="space-secondary";remove.textContent=tr("حذف عضو","Remove");remove.onclick=async()=>{if(!window.confirm(tr("این عضو از گروه حذف شود؟","Remove this member from the group?")))return;remove.disabled=true;try{const {error:e}=await getClient().from("space_members").delete().eq("space_id",spaceId).eq("user_id",member.user_id);if(e)throw e;await openSpaceInfo();}catch(e){q("spaceInfoStatus").textContent=e.message;}finally{remove.disabled=false;}};tools.appendChild(remove);
+    }
+   }
+   row.appendChild(tools);list.appendChild(row);
+  }
+  q("spaceInfoStatus").textContent=tr("اطلاعات خصوصی حساب اعضا، مانند شماره تلفن و ایمیل، در این فهرست نمایش داده نمی‌شود.","Private account details such as phone numbers and email addresses are not shown here.");
+ }
+ async function saveSpaceInfo(event){
+  event.preventDefault();if(!active||!currentUser)return;
+  const btn=q("saveSpaceEdit");if(btn.disabled)return;btn.disabled=true;q("spaceEditStatus").textContent="";
+  try{
+   const name=q("spaceEditName").value.trim(),description=q("spaceEditDescription").value.trim(),file=q("spaceEditPhoto").files[0];
+   if(!name)throw Error(tr("نام گروه را وارد کن.","Enter a group name."));
+   if(file&&(!file.type.startsWith("image/")||file.size>5*1024*1024))throw Error(tr("عکس باید تصویری و حداکثر ۵ مگابایت باشد.","Choose an image up to 5 MB."));
+   let avatar_url=active.avatar_url||null;
+   if(file){
+    const ext=(file.name.split(".").pop()||"jpg").toLowerCase().replace(/[^a-z0-9]/g,"")||"jpg";
+    const path=currentUser.id+"/groups/"+active.id+"/"+crypto.randomUUID()+"."+ext;
+    const {error:uploadError}=await getClient().storage.from("avatars").upload(path,file,{contentType:file.type,upsert:false});
+    if(uploadError)throw uploadError;avatar_url=path;
+   }
+   const {data,error}=await getClient().from("spaces").update({name,description,avatar_url,updated_at:new Date().toISOString()}).eq("id",active.id).select("*").single();
+   if(error)throw error;
+   active=data;spaces=spaces.map(s=>s.id===data.id?data:s);q("spaceEditDialog").hidden=true;q("spaceInfoDialog").hidden=true;
+   await open(data.id);await openSpaceInfo();await refresh();
+  }catch(e){q("spaceEditStatus").textContent=tr("ذخیره تغییرات ناموفق بود: ","Could not save changes: ")+(e?.message||String(e));}
+  finally{btn.disabled=false;}
+ }
+
+ let messageLoadToken=0,messageReloadTimer=null;
 async function loadMessages(id){
  const token=++messageLoadToken;const list=q("spaceMessages");if(!list)return;
  const wasNearBottom=list.scrollHeight-list.scrollTop-list.clientHeight<70;

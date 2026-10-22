@@ -610,7 +610,7 @@ window.addEventListener("online",()=>{
 });
 document.addEventListener("visibilitychange",()=>{
   if(document.visibilityState==="visible"&&typeof navigator!=="undefined"&&navigator.onLine&&currentUser){
-    if(currentChatUser)loadMessages(false);
+    // Refresh the inbox only. Re-fetching chat history here re-creates every message and reloads attachments.
     refreshConversationList();
   }
 });

@@ -620,3 +620,7 @@ body[data-font-color="white"][data-theme] .bottom-nav .nav-button { color:#fffff
 .app.chat-mode>#chatPage .call-actions{order:2!important;margin:0!important;display:flex!important;gap:4px!important;align-items:center!important;flex:0 0 auto!important}
 .app.chat-mode>#chatPage .call-button{width:28px!important;height:28px!important;min-width:28px!important;min-height:28px!important;flex:0 0 28px!important;padding:0!important;display:grid!important;place-items:center!important}
 @media(max-width:360px){.app.chat-mode>#chatPage .chat-header{gap:4px!important}.app.chat-mode>#chatPage .chat-heading{gap:4px!important}.app.chat-mode>#chatPage .chat-person small{display:none!important}}
+
+
+/* Hide the global brand/settings header only while a group or channel conversation is open. */
+.app:has(#spacesPage.active #spaceDetail:not([hidden]))>header{display:none!important}

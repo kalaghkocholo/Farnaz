@@ -174,19 +174,33 @@ function editMessage(m){
 }
 function cancelMessageEdit(){if(!editingMessageId)return;editingMessageId=null;$("messageText").value=preEditDraft;preEditDraft="";$("cancelEditButton").hidden=true;$("sendMessageButton").textContent="➤";setStatus("sendMessageStatus","");$("messageText").dispatchEvent(new Event("input",{bubbles:true}));}
 async function downloadMessage(m){
+  let objectUrl=null;
   try{
+    const client=getClient();
+    let blob,filename;
     if(m.attachment_path){
-      const {data,error}=await getClient().storage.from("chat-attachments").download(m.attachment_path);
+      const {data,error}=await client.storage.from("chat-attachments").download(m.attachment_path);
       if(error)throw error;
-      const url=URL.createObjectURL(data),a=document.createElement("a");
-      a.href=url;a.download=m.attachment_name||((m.message_type==="image")?"farnaz-image":"farnaz-file");
-      document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
+      blob=data;
+      const mime=(m.attachment_mime||blob.type||"").toLowerCase();
+      const extByMime={"image/jpeg":"jpg","image/png":"png","image/gif":"gif","image/webp":"webp","image/heic":"heic","image/heif":"heif","audio/mpeg":"mp3","audio/mp4":"m4a","audio/aac":"aac","audio/ogg":"ogg","audio/wav":"wav","audio/webm":"webm","video/mp4":"mp4","application/pdf":"pdf","text/plain":"txt","application/zip":"zip"};
+      const fallbackExt=extByMime[mime]||(mime.startsWith("audio/")?"audio":mime.startsWith("image/")?"image":mime.startsWith("video/")?"video":"file");
+      filename=m.attachment_name||("farnaz-"+(m.message_type||fallbackExt)+"."+(fallbackExt==="image"?"jpg":fallbackExt));
     }else{
-      const blob=new Blob([m.body||""],{type:"text/plain;charset=utf-8"});
-      const url=URL.createObjectURL(blob),a=document.createElement("a");
-      a.href=url;a.download="farnaz-message.txt";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
+      blob=new Blob([m.body||""],{type:"text/plain;charset=utf-8"});
+      filename="farnaz-message.txt";
     }
-  }catch(e){alert((english?"Download failed: ":"دانلود ناموفق بود: ")+e.message);}
+    objectUrl=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=objectUrl;a.download=filename;a.rel="noopener";a.style.display="none";
+    document.body.appendChild(a);a.click();a.remove();
+    // On iOS Safari, open the file if the download attribute is not honored,
+    // so the user can use Share > Save to Files.
+    if(/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.matchMedia("(display-mode: standalone)").matches){
+      setTimeout(()=>{if(objectUrl)window.open(objectUrl,"_blank","noopener");},250);
+    }
+    setTimeout(()=>{if(objectUrl)URL.revokeObjectURL(objectUrl);objectUrl=null;},60000);
+  }catch(e){if(objectUrl)URL.revokeObjectURL(objectUrl);alert((english?"Download failed: ":"دانلود ناموفق بود: ")+e.message);}
 }
 function askDeleteScope(){
   return new Promise(resolve=>{

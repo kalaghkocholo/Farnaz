@@ -878,3 +878,65 @@ body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceComposer {
   inset:auto!important;
   margin-top:0!important;
 }
+
+
+/* Recovery fix: keep chat pages inside the app flex height; never force a 100% child height. */
+body.chat-mode .app.chat-mode {padding:0 13px 0!important;}
+body.chat-mode .app.chat-mode #chatPage {
+  height:auto!important;
+  min-height:0!important;
+  flex:1 1 0%!important;
+  overflow:hidden!important;
+  display:flex!important;
+  flex-direction:column!important;
+}
+body.chat-mode .app.chat-mode #chatPage #messageList {
+  display:flex!important;
+  flex:1 1 0%!important;
+  min-height:0!important;
+  height:auto!important;
+  max-height:none!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+  overflow-y:auto!important;
+}
+body.chat-mode .app.chat-mode #chatPage #messageList > .message {
+  display:block!important;
+  visibility:visible!important;
+  opacity:1!important;
+  flex:0 0 auto!important;
+  width:max-content!important;
+  max-width:88%!important;
+  min-width:0!important;
+}
+body.chat-mode .app.chat-mode #chatPage #messageList > .my-message {
+  align-self:flex-end!important;
+  margin-left:auto!important;
+  margin-right:0!important;
+}
+body.chat-mode .app.chat-mode #chatPage #messageList > .their-message {
+  align-self:flex-start!important;
+  margin-left:0!important;
+  margin-right:auto!important;
+}
+body.chat-mode .app.chat-mode #chatPage #sendMessageForm {
+  display:block!important;
+  visibility:visible!important;
+  flex:0 0 auto!important;
+  height:auto!important;
+  min-height:0!important;
+  position:relative!important;
+  margin:0!important;
+  z-index:60!important;
+}
+body.spaces-chat-mode .app.spaces-chat-mode {padding:0 13px 0!important;}
+body.spaces-chat-mode .app.spaces-chat-mode #spacesPage.active {
+  height:auto!important;min-height:0!important;flex:1 1 0%!important;
+}
+body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceDetail:not([hidden]) {
+  height:auto!important;min-height:0!important;flex:1 1 0%!important;
+}
+body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceComposer {
+  display:flex!important;visibility:visible!important;flex:0 0 auto!important;
+  height:auto!important;min-height:0!important;position:relative!important;z-index:60!important;
+}

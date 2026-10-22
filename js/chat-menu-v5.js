@@ -202,7 +202,7 @@ async function downloadMessage(m){
     setTimeout(()=>{if(objectUrl)URL.revokeObjectURL(objectUrl);objectUrl=null;},60000);
   }catch(e){if(objectUrl)URL.revokeObjectURL(objectUrl);alert((english?"Download failed: ":"دانلود ناموفق بود: ")+e.message);}
 }
-function askDeleteScope(){
+function askDeleteScope(count=1){
   return new Promise(resolve=>{
     const overlay=document.createElement("div");
     overlay.className="farnaz-confirm-overlay";
@@ -212,10 +212,10 @@ function askDeleteScope(){
     Object.assign(dialog.style,{width:"min(100%,360px)",padding:"22px",border:"1px solid var(--border-color,rgba(128,128,128,.25))",borderRadius:"18px",background:"var(--panel-bg,var(--card-bg,#fff))",color:"var(--text-color,#222)",boxShadow:"0 16px 48px rgba(0,0,0,.22)",direction:"inherit"});
     dialog.setAttribute("role","dialog");dialog.setAttribute("aria-modal","true");
     const title=document.createElement("h2");
-    title.textContent=english?"Delete message":"حذف پیام";
+    title.textContent=count>1?(english?"Delete selected messages":"حذف پیام‌های انتخاب‌شده"):(english?"Delete message":"حذف پیام");
     Object.assign(title.style,{margin:"0 0 14px",fontSize:"18px",fontWeight:"700"});
     const label=document.createElement("p");
-    label.textContent=english?"Choose where to delete":"روش حذف پیام را انتخاب کن";
+    label.textContent=english?"Choose where to delete":"مشخص کن پیام"+(count>1?"ها":"")+" کجا حذف "+(count>1?"شوند":"شود");
     Object.assign(label.style,{margin:"0 0 10px",fontSize:"14px",fontWeight:"600"});
     let scope="me";
     const choices=document.createElement("div");
@@ -264,10 +264,26 @@ async function replyToSelected(){
   setReplyTarget(data);exitMessageSelection();
 }
 async function deleteSelectedMessages(){
-  if(!selectedMessageIds.size)return;if(!confirm(english?"Hide selected messages from your view?":"پیام‌های انتخاب‌شده از صفحه شما حذف شوند؟"))return;
-  try{const rows=[...selectedMessageIds].map(message_id=>({user_id:currentUser.id,message_id}));
-    const {error}=await getClient().from("message_hidden").upsert(rows,{onConflict:"user_id,message_id"});if(error)throw error;
-    exitMessageSelection();await loadMessages(false);
+  const ids=[...selectedMessageIds];
+  if(!ids.length)return;
+  try{
+    const client=getClient();
+    const {data:messages,error:readError}=await client.from("messages").select("id,sender_id").in("id",ids);
+    if(readError)throw readError;
+    const ownIds=(messages||[]).filter(m=>m.sender_id===currentUser.id).map(m=>m.id);
+    const scope=ownIds.length?await askDeleteScope(ids.length):false;
+    if(scope===null)return;
+    if(scope){
+      const {error}=await client.from("messages").delete().in("id",ownIds).eq("sender_id",currentUser.id);
+      if(error)throw error;
+    }
+    const hideIds=scope?ids.filter(id=>!ownIds.includes(id)):ids;
+    if(hideIds.length){
+      const rows=hideIds.map(message_id=>({user_id:currentUser.id,message_id}));
+      const {error}=await client.from("message_hidden").upsert(rows,{onConflict:"user_id,message_id"});
+      if(error)throw error;
+    }
+    exitMessageSelection();await loadMessages(false);await refreshConversationList();
   }catch(e){alert((english?"Delete failed: ":"حذف ناموفق بود: ")+e.message);}
 }
 async function forwardSelectedMessages(){

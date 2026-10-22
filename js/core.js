@@ -201,7 +201,8 @@ async function recoverConnection(){
   try{
     await subscribeToMessages();
     await retryRead("conversation refresh",()=>refreshConversationList(),2);
-    if(currentChatUser)await loadMessages(false);
+    // Reconnecting the realtime channel must never rebuild the open chat history.
+    // Existing messages stay in the DOM; incoming messages are appended by the realtime handler.
     setConnectionBanner("",false);
   }catch(error){
     console.warn("Automatic connection recovery:",error);

@@ -309,7 +309,7 @@ async function subscribeToMessages(){
   await stopMessageSubscription();if(!currentUser)return;
   const myId=currentUser.id,client=getClient();
   messageSubscription=client.channel("farnaz-inbox-"+myId)
-    .on("postgres_changes",{event:"INSERT",schema:"public",table:"messages"},payload=>{
+    .on("postgres_changes",{event:"INSERT",schema:"public",table:"messages"},async payload=>{
       if(currentUser?.id!==myId)return;
       const m=payload.new;
       if(m.sender_id!==myId&&m.receiver_id!==myId)return;

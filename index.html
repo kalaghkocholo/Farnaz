@@ -325,7 +325,6 @@ footer{text-align:center;color:#718096;font-size:10px;padding:17px 0 7px}
 .social-auth-button{width:100%;min-height:44px;border:1px solid #8490a0;border-radius:999px;background:#fff;color:#222;display:flex;align-items:center;justify-content:center;gap:10px;font-size:14px;font-weight:600;padding:10px 14px}
 .social-auth-button:disabled{opacity:.65}
 .google-mark{font-family:Arial,sans-serif;font-weight:800;font-size:20px;color:#4285f4}
-.apple-mark{font-size:20px;color:#222;position:relative}
 .auth-divider{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px;margin:8px 0 12px}
 .auth-divider:before,.auth-divider:after{content:"";height:1px;background:var(--border);flex:1}
 [hidden]{display:none!important}
@@ -882,7 +881,6 @@ body[data-font-color="white"][data-theme] .bottom-nav .nav-button { color:#fffff
     <p id="authMessage">برای ارتباط نزدیک‌تر، حساب خودت را بساز.</p>
     <div class="social-auth">
       <button type="button" id="googleAuth" class="social-auth-button" onclick="signInSocial('google')"><span class="google-mark" aria-hidden="true">G</span><span id="googleAuthLabel">ادامه با Google</span></button>
-      <button type="button" id="appleAuth" class="social-auth-button" onclick="signInSocial('apple')"><span class="apple-mark" aria-hidden="true">●</span><span id="appleAuthLabel">ادامه با Apple</span></button>
     </div>
     <div class="auth-divider"><span id="authOrLabel">یا با ایمیل</span></div>
     <form id="authForm">
@@ -1362,11 +1360,11 @@ function openAuth(){
   updateAuthTexts();
 }
 function closeAuth(){$("authBox").style.display="none";}
-async function signInSocial(provider){
-  const button=$(provider==="google"?"googleAuth":"appleAuth");
+async function signInSocial(provider="google"){
+  const button=$("googleAuth");
   const label=button?.querySelector("span:last-child");
   if(button)button.disabled=true;
-  setStatus("authStatus",english?"Connecting to "+(provider==="google"?"Google":"Apple")+"…":"در حال اتصال به "+(provider==="google"?"گوگل":"اپل")+"…");
+  setStatus("authStatus",english?"Connecting to Google…":"در حال اتصال به گوگل…");
   try{
     const client=getClient();
     const {error}=await client.auth.signInWithOAuth({
@@ -1399,7 +1397,6 @@ function updateAuthTexts(){
   $("authSubmit").textContent=authMode==="signup"?(v?"Sign up":"ثبت‌نام"):(v?"Sign in":"ورود");
   $("authSwitch").textContent=authMode==="signup"?(v?"Already have an account? Sign in":"قبلاً حساب ساخته‌ام؛ ورود"):(v?"Need an account? Sign up":"حساب ندارم؛ ثبت‌نام");
   $("googleAuthLabel").textContent=v?"Continue with Google":"ادامه با Google";
-  $("appleAuthLabel").textContent=v?"Sign in with Apple":"ادامه با Apple";
   $("authOrLabel").textContent=v?"or continue with email":"یا با ایمیل";
 }
 function toggleLanguage(){

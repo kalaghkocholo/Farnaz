@@ -49,13 +49,17 @@ async function makeMessageElement(m,myId){
   const isOwnMessage=String(m.sender_id)===String(myId);
   item.className="message "+(isOwnMessage?"my-message":"their-message");
   item.dataset.messageSide=isOwnMessage?"own":"contact";
-  // Apply side at creation time so legacy CSS cannot reverse alignment.
+  // Own the layout in JS so conflicting historical CSS rules cannot change bubble sides.
   const messageList=$("messageList");
-  if(messageList)messageList.style.setProperty("direction","ltr","important");
+  if(messageList){
+    messageList.style.setProperty("display","flex","important");
+    messageList.style.setProperty("flex-direction","column","important");
+    messageList.style.setProperty("align-items","stretch","important");
+    messageList.style.setProperty("direction","ltr","important");
+  }
   item.style.setProperty("align-self",isOwnMessage?"flex-end":"flex-start","important");
-  item.style.setProperty("justify-self",isOwnMessage?"end":"start","important");
-  item.style.setProperty("margin-left","0","important");
-  item.style.setProperty("margin-right","0","important");
+  item.style.setProperty("margin-left",isOwnMessage?"auto":"0","important");
+  item.style.setProperty("margin-right",isOwnMessage?"0":"auto","important");
   item.dataset.messageId=m.id;item.dataset.createdAt=m.created_at;
   if(selectedMessageIds.has(m.id))item.classList.add("selected");
   if(m.reply_to_id){

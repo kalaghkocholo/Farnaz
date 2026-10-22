@@ -65,12 +65,11 @@ async function loadMessages(id){
   const {data,error}=await getClient().from("space_messages").select("id,sender_id,body,created_at").eq("space_id",id).order("created_at",{ascending:true}).limit(200);
   if(error)throw error;if(token!==messageLoadToken||active?.id!==id)return;
   const rows=data||[];const fragment=document.createDocumentFragment();
-  // Keep group-chat alignment independent from RTL and older CSS overrides.
-  list.style.setProperty("display","grid","important");
-  list.style.setProperty("grid-template-columns","minmax(0,1fr)","important");
-  list.style.setProperty("grid-auto-rows","min-content","important");
+  // Force a physical left-to-right flex stack for group messages.
+  list.style.setProperty("display","flex","important");
+  list.style.setProperty("flex-direction","column","important");
   list.style.setProperty("direction","ltr","important");
-  list.style.setProperty("align-items","start","important");
+  list.style.setProperty("align-items","stretch","important");
   if(!rows.length){const empty=document.createElement("div");empty.className="space-empty";empty.textContent=tr("هنوز پیامی نیست.","No posts yet.");fragment.appendChild(empty);}
   for(const m of rows){
    const el=document.createElement("div");el.className="space-message";el.dataset.messageId=String(m.id);
@@ -80,8 +79,9 @@ async function loadMessages(id){
    el.style.setProperty("display","block","important");
    el.style.setProperty("width","fit-content","important");
    el.style.setProperty("max-width","88%","important");
-   el.style.setProperty("justify-self","auto","important");
-   el.style.setProperty("align-self","start","important");
+   el.style.setProperty("flex","0 0 auto","important");
+   el.style.setProperty("position","relative","important");
+   el.style.setProperty("align-self",isOwnMessage?"flex-end":"flex-start","important");
    el.style.setProperty("margin-left",isOwnMessage?"auto":"0","important");
    el.style.setProperty("margin-right",isOwnMessage?"0":"auto","important");
    el.appendChild(document.createTextNode(String(m.body??"")));

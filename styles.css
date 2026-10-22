@@ -627,3 +627,34 @@ body[data-font-color="white"][data-theme] .bottom-nav .nav-button { color:#fffff
 
 /* Explicit class toggled by spaces.js while a group/channel conversation is open. */
 .app.spaces-chat-mode>header{display:none!important}
+
+
+/* Conversation top bars: private chats, groups and channels */
+.app.chat-mode>#chatPage .chat-header{
+  position:sticky!important;top:0!important;z-index:40!important;
+  box-sizing:border-box!important;min-height:54px!important;
+  padding:8px 10px!important;margin:0 0 8px!important;
+  background:var(--panel,var(--bg))!important;
+  border-bottom:1px solid var(--line,#334155)!important;
+  border-radius:0 0 12px 12px!important;
+}
+#spacesPage #spaceDetail .space-detail-head{
+  position:sticky!important;top:0!important;z-index:40!important;
+  box-sizing:border-box!important;min-height:54px!important;width:100%!important;
+  margin:0 0 10px!important;padding:8px 10px!important;
+  background:var(--panel,var(--bg))!important;
+  border-bottom:1px solid var(--line,#334155)!important;
+  border-radius:0 0 12px 12px!important;
+  display:flex!important;flex-direction:row!important;direction:ltr!important;
+  align-items:center!important;justify-content:space-between!important;gap:10px!important;
+}
+#spacesPage #spaceDetail #spaceIcon{display:none!important}
+#spacesPage #spaceDetail .space-detail-head>div:last-child{
+  order:2!important;flex:1 1 auto!important;min-width:0!important;
+  margin:0!important;text-align:right!important;direction:rtl!important;
+}
+#spacesPage #spaceDetail #backSpaces{
+  order:0!important;flex:0 0 auto!important;margin-left:auto!important;
+  min-height:36px!important;padding:7px 12px!important;
+  border-radius:10px!important;
+}

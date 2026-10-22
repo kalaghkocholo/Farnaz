@@ -171,8 +171,29 @@ function editMessage(m){
   setStatus("sendMessageStatus",english?"Editing your message":"در حال ویرایش پیام");$("messageText").focus();
 }
 function cancelMessageEdit(){if(!editingMessageId)return;editingMessageId=null;$("messageText").value=preEditDraft;preEditDraft="";$("cancelEditButton").hidden=true;$("sendMessageButton").textContent="➤";setStatus("sendMessageStatus","");$("messageText").dispatchEvent(new Event("input",{bubbles:true}));}
+function askDeleteScope(){
+  return new Promise(resolve=>{
+    const overlay=document.createElement("div");overlay.className="farnaz-confirm-overlay";
+    const dialog=document.createElement("section");dialog.className="farnaz-confirm-dialog";
+    dialog.setAttribute("role","dialog");dialog.setAttribute("aria-modal","true");
+    const title=document.createElement("h2");title.textContent=english?"Delete message":"حذف پیام";
+    const message=document.createElement("p");message.textContent=english?"Delete this message for everyone? Choose “Hide for me” to remove it only from your view.":"می‌خواهی این پیام برای همه حذف شود؟ برای حذف فقط از صفحه خودت، «فقط برای من» را بزن.";
+    const actions=document.createElement("div");actions.className="farnaz-confirm-actions";
+    const hide=document.createElement("button");hide.type="button";hide.className="farnaz-confirm-secondary";hide.textContent=english?"Hide for me":"فقط برای من";
+    const cancel=document.createElement("button");cancel.type="button";cancel.className="farnaz-confirm-secondary";cancel.textContent=english?"Cancel":"لغو";
+    const all=document.createElement("button");all.type="button";all.className="farnaz-confirm-danger";all.textContent=english?"Delete for everyone":"حذف برای همه";
+    let finished=false;
+    const finish=value=>{if(finished)return;finished=true;overlay.remove();document.removeEventListener("keydown",onKey);resolve(value);};
+    const onKey=e=>{if(e.key==="Escape")finish(null);};
+    hide.onclick=()=>finish(false);cancel.onclick=()=>finish(null);all.onclick=()=>finish(true);
+    overlay.addEventListener("click",e=>{if(e.target===overlay)finish(null);});
+    actions.append(hide,cancel,all);dialog.append(title,message,actions);overlay.append(dialog);document.body.append(overlay);
+    document.addEventListener("keydown",onKey);cancel.focus();
+  });
+}
 async function deleteMessage(m){
-  const all=m.sender_id===currentUser.id&&confirm(english?"Delete for everyone? Choose Cancel to hide only for you.":"برای همه حذف شود؟ برای حذف فقط از صفحه خودت «لغو» را بزن.");
+  const all=m.sender_id===currentUser.id?await askDeleteScope():false;
+  if(all===null)return;
   try{
     if(all){const {error}=await getClient().from("messages").delete().eq("id",m.id).eq("sender_id",currentUser.id);if(error)throw error;}
     else{const {error}=await getClient().from("message_hidden").upsert({user_id:currentUser.id,message_id:m.id},{onConflict:"user_id,message_id"});if(error)throw error;}

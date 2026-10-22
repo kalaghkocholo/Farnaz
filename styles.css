@@ -806,3 +806,75 @@ html,body{overscroll-behavior:none}
  padding:5px 0 max(3px,env(safe-area-inset-bottom))!important;
  background:var(--bg)!important;z-index:50!important
 }
+
+
+/* Corrective mobile chat layout: hide the global navigation and explicitly anchor bubbles. */
+body.chat-mode #bottomNav,
+body.spaces-chat-mode #bottomNav {
+  display:none!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+}
+body.chat-mode .app,
+body.spaces-chat-mode .app {
+  padding-bottom:0!important;
+}
+body.chat-mode .app.chat-mode #chatPage,
+body.spaces-chat-mode .app.spaces-chat-mode #spacesPage.active {
+  min-height:0!important;
+  height:100%!important;
+}
+body.chat-mode .app.chat-mode #chatPage #messageList,
+body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceMessages {
+  direction:ltr!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+  min-width:0!important;
+}
+body.chat-mode .app.chat-mode #chatPage #messageList > article.message {
+  display:block!important;
+  width:fit-content!important;
+  max-width:88%!important;
+  flex:0 0 auto!important;
+  position:relative!important;
+}
+body.chat-mode .app.chat-mode #chatPage #messageList > article.message.my-message {
+  align-self:flex-end!important;
+  margin-left:auto!important;
+  margin-right:0!important;
+}
+body.chat-mode .app.chat-mode #chatPage #messageList > article.message.their-message {
+  align-self:flex-start!important;
+  margin-left:0!important;
+  margin-right:auto!important;
+}
+body.chat-mode .app.chat-mode #chatPage #messageList > article.message {
+  direction:rtl!important;
+  text-align:right!important;
+}
+body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceMessages > .space-message {
+  display:block!important;
+  width:fit-content!important;
+  max-width:88%!important;
+  flex:0 0 auto!important;
+  direction:rtl!important;
+  text-align:right!important;
+}
+body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceMessages > .space-message.mine {
+  align-self:flex-end!important;
+  margin-left:auto!important;
+  margin-right:0!important;
+}
+body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceMessages > .space-message:not(.mine) {
+  align-self:flex-start!important;
+  margin-left:0!important;
+  margin-right:auto!important;
+}
+body.chat-mode .app.chat-mode #chatPage #sendMessageForm,
+body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceComposer {
+  flex:0 0 auto!important;
+  position:relative!important;
+  inset:auto!important;
+  margin-top:0!important;
+}

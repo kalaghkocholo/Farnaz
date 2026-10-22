@@ -59,28 +59,26 @@ async function open(id){
 }
 let messageLoadToken=0,messageReloadTimer=null;
 async function loadMessages(id){
- const token=++messageLoadToken;const list=q("spaceMessages");const wasNearBottom=list.scrollHeight-list.scrollTop-list.clientHeight<70;
+ const token=++messageLoadToken;const list=q("spaceMessages");if(!list)return;
+ const wasNearBottom=list.scrollHeight-list.scrollTop-list.clientHeight<70;
  try{
   const {data,error}=await getClient().from("space_messages").select("id,sender_id,body,created_at").eq("space_id",id).order("created_at",{ascending:true}).limit(200);
   if(error)throw error;if(token!==messageLoadToken||active?.id!==id)return;
-  const rows=data||[],existing=new Map([...list.querySelectorAll(".space-message[data-message-id]")].map(el=>[el.dataset.messageId,el]));
-  const empty=list.querySelector(".space-empty");if(rows.length&&empty)empty.remove();
-  if(!rows.length&&!empty){const e=document.createElement("div");e.className="space-empty";e.textContent=tr("هنوز پیامی نیست.","No posts yet.");list.appendChild(e);}
-  const keep=new Set();let cursor=list.firstElementChild;
+  const rows=data||[];const fragment=document.createDocumentFragment();
+  if(!rows.length){const empty=document.createElement("div");empty.className="space-empty";empty.textContent=tr("هنوز پیامی نیست.","No posts yet.");fragment.appendChild(empty);}
   for(const m of rows){
-   const key=String(m.id);keep.add(key);let el=existing.get(key);
-   if(!el){el=document.createElement("div");el.className="space-message";el.dataset.messageId=key;el.dataset.body="";list.appendChild(el);}
-   el.classList.toggle("mine",m.sender_id===currentUser.id);
-   let time=el.querySelector("small");if(!time){time=document.createElement("small");el.appendChild(time);}
-   let bodyNode=el.firstChild;if(!bodyNode||bodyNode===time||bodyNode.nodeType!==Node.TEXT_NODE){bodyNode=document.createTextNode("");el.insertBefore(bodyNode,time);}
-   if(el.dataset.body!==m.body){el.dataset.body=m.body;bodyNode.textContent=m.body;}
-   const stamp=new Date(m.created_at).toLocaleTimeString(typeof english!=="undefined"&&english?"en":"fa-IR",{hour:"2-digit",minute:"2-digit"});if(time.textContent!==stamp)time.textContent=stamp;
-   if(!el.isConnected)list.appendChild(el);
-   cursor=el.nextElementSibling;
+   const el=document.createElement("div");el.className="space-message";el.dataset.messageId=String(m.id);
+   if(m.sender_id===currentUser.id)el.classList.add("mine");
+   el.appendChild(document.createTextNode(String(m.body??"")));
+   const time=document.createElement("small");
+   const created=m.created_at?new Date(m.created_at):new Date();
+   time.textContent=created.toLocaleTimeString(typeof english!=="undefined"&&english?"en":"fa-IR",{hour:"2-digit",minute:"2-digit"});
+   el.appendChild(time);fragment.appendChild(el);
   }
-  for(const [key,el] of existing)if(!keep.has(key))el.remove();
+  if(token!==messageLoadToken||active?.id!==id)return;
+  list.replaceChildren(fragment);
   if(wasNearBottom)list.scrollTop=list.scrollHeight;
- }catch(e){q("spaceMessageStatus").textContent=tr("دریافت پیام ناموفق بود: ","Could not load posts: ")+e.message;}
+ }catch(e){const status=q("spaceMessageStatus");if(status)status.textContent=tr("دریافت پیام ناموفق بود: ","Could not load posts: ")+(e?.message||String(e)||"Unknown error");}
 }
 let sendingMessage=false;
 async function send(event){event.preventDefault();if(!active||sendingMessage)return;const input=q("spaceText"),body=input.value.trim();if(!body)return;sendingMessage=true;const btn=q("spaceComposer").querySelector("button[type=submit]");btn.disabled=true;input.disabled=true;try{const {error}=await getClient().from("space_messages").insert({space_id:active.id,sender_id:currentUser.id,body});if(error)throw error;input.value="";}catch(e){q("spaceMessageStatus").textContent=tr("ارسال ناموفق بود: ","Could not send: ")+e.message;}finally{sendingMessage=false;btn.disabled=false;input.disabled=false;input.focus();}}

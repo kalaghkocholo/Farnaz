@@ -47,7 +47,7 @@ async function create(event){
  const invite_code=type==="channel"&&!is_public?crypto.randomUUID().replace(/-/g,"").slice(0,16).toUpperCase():null;
  const {data:s,error}=await getClient().from("spaces").insert({type,name,description,is_public,created_by:authUser.id,invite_code}).select("*").single();if(error)throw error;
  const {error:oe}=await getClient().from("space_members").insert({space_id:s.id,user_id:currentUser.id,role:"owner"});if(oe)throw oe;
- if(type==="group"){const ids=selected("spaceContacts");if(ids.length){const {error:me}=await getClient().from("space_members").insert(ids.map(user_id=>({space_id:s.id,user_id,role:"member"})));if(me)console.warn("Group members:",me.message);}}
+ if(type==="group"){const ids=selected("spaceContacts");if(ids.length){const {error:me}=await getClient().from("space_members").insert(ids.map(user_id=>({space_id:s.id,user_id,role:"member"})));if(me)throw Error(tr("گروه ساخته شد اما افزودن اعضای انتخاب‌شده ناموفق بود. گروه را باز کن و از گزینه افزودن اعضا دوباره تلاش کن. ","The group was created, but adding selected members failed. Open the group and use Add members to retry. ")+me.message);}}
  q("spaceCreateDialog").hidden=true;await refresh();await open(s.id);
  }catch(e){q("spaceCreateStatus").textContent=tr("ایجاد ناموفق بود: ","Could not create: ")+e.message;}finally{btn.disabled=false;}
 }
@@ -80,9 +80,16 @@ async function loadMessages(id){
  const token=++messageLoadToken;const list=q("spaceMessages");if(!list)return;
  const wasNearBottom=list.scrollHeight-list.scrollTop-list.clientHeight<70;
  try{
-  const {data,error}=await getClient().from("space_messages").select("id,sender_id,body,created_at,message_type,attachment_path,attachment_name,attachment_mime,attachment_size").eq("space_id",id).order("created_at",{ascending:true}).limit(200);
+  const {data,error}=await getClient().from("space_messages").select("id,sender_id,body,created_at,message_type,attachment_path,attachment_name,attachment_mime,attachment_size").eq("space_id",id).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(200);
   if(error)throw error;if(token!==messageLoadToken||active?.id!==id)return;
-  const rows=data||[];const fragment=document.createDocumentFragment();
+  const rows=(data||[]).reverse();
+  const senderIds=[...new Set(rows.map(m=>m.sender_id).filter(Boolean).map(String))];
+  const senderEntries=await Promise.all(senderIds.map(async senderId=>{try{const profile=await getContactProfile(senderId);return [senderId,profile?.display_name||""];}catch(_){return [senderId,""];}}));
+  const senderNames=new Map(senderEntries);
+  const attachmentEntries=await Promise.all(rows.filter(m=>m.attachment_path).map(async m=>{try{const {data:asset,error:assetError}=await getClient().storage.from("chat-attachments").createSignedUrl(m.attachment_path,3600);return [String(m.id),!assetError?asset?.signedUrl||null:null];}catch(_){return [String(m.id),null];}}));
+  const attachmentUrls=new Map(attachmentEntries);
+  if(token!==messageLoadToken||active?.id!==id)return;
+  const fragment=document.createDocumentFragment();
   // Force a physical left-to-right flex stack for group messages.
   list.style.setProperty("display","flex","important");
   list.style.setProperty("flex-direction","column","important");
@@ -102,8 +109,10 @@ async function loadMessages(id){
    el.style.setProperty("align-self",isOwnMessage?"flex-end":"flex-start","important");
    el.style.setProperty("margin-left","0","important");
    el.style.setProperty("margin-right","0","important");
+   const senderName=senderNames.get(String(m.sender_id))||"";
+   if(senderName){const author=document.createElement("small");author.className="space-message-author";author.textContent=String(m.sender_id)===String(currentUser?.id)?tr("شما","You"):senderName;author.style.cssText="display:block;font-weight:700;font-size:11px;opacity:.85;margin:0 0 4px";el.appendChild(author);}
    if(m.body){const body=document.createElement("div");body.textContent=String(m.body);el.appendChild(body);}
-   if(m.attachment_path){try{const {data:asset,error:assetError}=await getClient().storage.from("chat-attachments").createSignedUrl(m.attachment_path,3600);if(!assetError&&asset?.signedUrl){if((m.message_type||"file")==="image"){const img=document.createElement("img");img.src=asset.signedUrl;img.alt=m.attachment_name||"Photo";img.loading="lazy";img.style.cssText="display:block;max-width:100%;max-height:320px;border-radius:10px;margin-top:5px";el.appendChild(img);}else if((m.attachment_mime||"").startsWith("audio/")){const audio=document.createElement("audio");audio.controls=true;audio.preload="metadata";audio.src=asset.signedUrl;audio.style.cssText="display:block;max-width:240px;margin-top:5px";audio.setAttribute("aria-label",m.attachment_name||"Voice message");el.appendChild(audio);}else{const link=document.createElement("a");link.href=asset.signedUrl;link.target="_blank";link.rel="noopener";link.download=m.attachment_name||"";link.textContent="📎 "+(m.attachment_name||"دریافت فایل");link.style.cssText="display:block;margin-top:5px;overflow-wrap:anywhere;color:inherit";el.appendChild(link);}}else{const warn=document.createElement("small");warn.textContent=tr("پیوست در دسترس نیست","Attachment unavailable");el.appendChild(warn);}}catch(_){}}
+   if(m.attachment_path){const signedUrl=attachmentUrls.get(String(m.id));if(signedUrl){if((m.message_type||"file")==="image"){const img=document.createElement("img");img.src=signedUrl;img.alt=m.attachment_name||"Photo";img.loading="lazy";img.style.cssText="display:block;max-width:100%;max-height:320px;border-radius:10px;margin-top:5px";el.appendChild(img);}else if((m.attachment_mime||"").startsWith("audio/")){const audio=document.createElement("audio");audio.controls=true;audio.preload="metadata";audio.src=signedUrl;audio.style.cssText="display:block;max-width:240px;margin-top:5px";audio.setAttribute("aria-label",m.attachment_name||"Voice message");el.appendChild(audio);}else{const link=document.createElement("a");link.href=signedUrl;link.target="_blank";link.rel="noopener";link.download=m.attachment_name||"";link.textContent="📎 "+(m.attachment_name||tr("دریافت فایل","Download file"));link.style.cssText="display:block;margin-top:5px;overflow-wrap:anywhere;color:inherit";el.appendChild(link);}}else{const warn=document.createElement("small");warn.textContent=tr("پیوست در دسترس نیست","Attachment unavailable");el.appendChild(warn);}}
    const time=document.createElement("small");
    const created=m.created_at?new Date(m.created_at):new Date();
    time.textContent=created.toLocaleTimeString(typeof english!=="undefined"&&english?"en":"fa-IR",{hour:"2-digit",minute:"2-digit"});

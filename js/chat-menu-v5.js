@@ -45,7 +45,16 @@ async function loadMessages(older=false){
   }
 }
 async function makeMessageElement(m,myId){
-  const item=document.createElement("article");item.className="message "+(m.sender_id===myId?"my-message":"their-message");
+  const item=document.createElement("article");
+  const isOwnMessage=String(m.sender_id)===String(myId);
+  item.className="message "+(isOwnMessage?"my-message":"their-message");
+  item.dataset.messageSide=isOwnMessage?"own":"contact";
+  // Apply side at creation time so legacy CSS cannot reverse alignment.
+  const messageList=$("messageList");
+  if(messageList)messageList.style.setProperty("direction","ltr","important");
+  item.style.setProperty("align-self",isOwnMessage?"flex-end":"flex-start","important");
+  item.style.setProperty("margin-left",isOwnMessage?"auto":"0","important");
+  item.style.setProperty("margin-right",isOwnMessage?"0":"auto","important");
   item.dataset.messageId=m.id;item.dataset.createdAt=m.created_at;
   if(selectedMessageIds.has(m.id))item.classList.add("selected");
   if(m.reply_to_id){

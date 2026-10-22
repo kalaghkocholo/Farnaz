@@ -303,7 +303,7 @@ function navigate(pageId){
   document.body.classList.toggle("chat-mode",pageId==="chatPage");
   const brandHeader=document.querySelector(".app>header");
   if(brandHeader)brandHeader.hidden=pageId==="chatPage";
-  /* Explicit two-column chat header: contact/back on the LEFT, call icons on the RIGHT. */
+  /* Chat header: back and call controls on the LEFT; contact identity on the RIGHT. */
   const chatHeader=$("chatPage")?.querySelector(".chat-header");
   if(chatHeader){
     const inChat=pageId==="chatPage";
@@ -326,7 +326,7 @@ function navigate(pageId){
         heading.style.setProperty("min-width","0","important");
         heading.style.setProperty("align-items","center","important");
         heading.style.setProperty("gap","6px","important");
-        heading.style.setProperty("order","1","important");
+        heading.style.setProperty("order","2","important");
       }
       if(calls){
         calls.style.setProperty("direction","ltr","important");
@@ -334,9 +334,9 @@ function navigate(pageId){
         calls.style.setProperty("align-items","center","important");
         calls.style.setProperty("justify-content","flex-end","important");
         calls.style.setProperty("gap","4px","important");
-        calls.style.setProperty("margin-left","auto","important");
+        calls.style.setProperty("margin-right","auto","important");
         calls.style.setProperty("flex","0 0 auto","important");
-        calls.style.setProperty("order","2","important");
+        calls.style.setProperty("order","1","important");
       }
       if(back){
         back.style.setProperty("width","28px","important");

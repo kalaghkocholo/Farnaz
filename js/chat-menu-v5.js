@@ -475,7 +475,8 @@ async function sendMessage(event){
     }
     input.value="";input.style.height="auto";$("attachmentFile").value="";$("cameraFile").value="";$("photoFile").value="";
     setStatus("sendMessageStatus",english?"Message sent.":"پیام ارسال شد.");
-    await loadMessages(false);await refreshConversationList();
+    // Do not reload the chat after sending: the new message was appended above.
+    await refreshConversationList();
   }catch(e){
     console.error("Send message:",e);
     setStatus("sendMessageStatus",(english?"Could not send: ":"ارسال پیام ناموفق بود: ")+e.message,true);

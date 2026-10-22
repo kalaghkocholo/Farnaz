@@ -992,3 +992,22 @@ body.chat-mode .app.chat-mode #chatPage #sendMessageForm {
   min-width:0!important;
   box-sizing:border-box!important;
 }
+
+
+/* Final correction: own messages on the right, contact messages on the left. */
+body.chat-mode .app.chat-mode #chatPage #messageList > .message.my-message {
+  align-self:flex-end!important;
+  margin-left:auto!important;
+  margin-right:0!important;
+}
+body.chat-mode .app.chat-mode #chatPage #messageList > .message.their-message {
+  align-self:flex-start!important;
+  margin-left:0!important;
+  margin-right:auto!important;
+}
+body.chat-mode, body.chat-mode .app.chat-mode,
+body.chat-mode .app.chat-mode #chatPage,
+body.chat-mode .app.chat-mode #chatPage #messageList {
+  overflow-x:hidden!important;
+  overscroll-behavior-x:none!important;
+}

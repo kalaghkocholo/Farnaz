@@ -183,15 +183,22 @@ function askDeleteScope(){
     const title=document.createElement("h2");
     title.textContent=english?"Delete message":"حذف پیام";
     Object.assign(title.style,{margin:"0 0 14px",fontSize:"18px",fontWeight:"700"});
-    const label=document.createElement("label");
+    const label=document.createElement("p");
     label.textContent=english?"Choose where to delete":"روش حذف پیام را انتخاب کن";
-    Object.assign(label.style,{display:"block",margin:"0 0 8px",fontSize:"14px",fontWeight:"600"});
-    const select=document.createElement("select");
-    select.setAttribute("aria-label",english?"Delete scope":"روش حذف");
-    Object.assign(select.style,{width:"100%",minHeight:"48px",padding:"10px 12px",margin:"0 0 18px",border:"1px solid var(--border-color,rgba(128,128,128,.3))",borderRadius:"12px",background:"var(--input-bg,var(--panel-bg,#fff))",color:"inherit",font:"inherit",fontSize:"14px",outlineOffset:"2px"});
-    const onlyMe=document.createElement("option");onlyMe.value="me";onlyMe.textContent=english?"Only for me":"فقط برای من";
-    const everyone=document.createElement("option");everyone.value="all";everyone.textContent=english?"For everyone":"برای همه";
-    select.append(onlyMe,everyone);
+    Object.assign(label.style,{margin:"0 0 10px",fontSize:"14px",fontWeight:"600"});
+    let scope="me";
+    const choices=document.createElement("div");
+    Object.assign(choices.style,{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",margin:"0 0 18px"});
+    const makeChoice=(value,text)=>{
+      const button=document.createElement("button");button.type="button";button.textContent=text;
+      Object.assign(button.style,{minHeight:"46px",padding:"10px 8px",border:"1px solid rgba(128,128,128,.35)",borderRadius:"11px",background:"transparent",color:"inherit",font:"inherit",fontSize:"14px",cursor:"pointer"});
+      button.setAttribute("aria-pressed",String(scope===value));
+      button.onclick=()=>{scope=value;[...choices.children].forEach(b=>{const active=b.dataset.scope===scope;b.setAttribute("aria-pressed",String(active));b.style.background=active?"var(--accent,#168f78)":"transparent";b.style.color=active?"var(--accent-ink,#fff)":"inherit";b.style.borderColor=active?"var(--accent,#168f78)":"rgba(128,128,128,.35)";});};
+      button.dataset.scope=value;
+      if(value===scope){button.style.background="var(--accent,#168f78)";button.style.color="var(--accent-ink,#fff)";button.style.borderColor="var(--accent,#168f78)";}
+      return button;
+    };
+    choices.append(makeChoice("me",english?"Only for me":"فقط برای من"),makeChoice("all",english?"For everyone":"برای همه"));
     const actions=document.createElement("div");
     Object.assign(actions.style,{display:"flex",gap:"10px",justifyContent:"flex-start"});
     const cancel=document.createElement("button");cancel.type="button";cancel.textContent=english?"Cancel":"لغو";
@@ -202,10 +209,10 @@ function askDeleteScope(){
     const finish=value=>{if(finished)return;finished=true;overlay.remove();document.removeEventListener("keydown",onKey);resolve(value);};
     const onKey=e=>{if(e.key==="Escape")finish(null);};
     cancel.onclick=()=>finish(null);
-    confirmButton.onclick=()=>finish(select.value==="all");
+    confirmButton.onclick=()=>finish(scope==="all");
     overlay.addEventListener("click",e=>{if(e.target===overlay)finish(null);});
-    actions.append(cancel,confirmButton);dialog.append(title,label,select,actions);overlay.append(dialog);document.body.append(overlay);
-    document.addEventListener("keydown",onKey);select.focus();
+    actions.append(cancel,confirmButton);dialog.append(title,label,choices,actions);overlay.append(dialog);document.body.append(overlay);
+    document.addEventListener("keydown",onKey);
   });
 }
 async function deleteMessage(m){

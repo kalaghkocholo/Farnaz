@@ -145,6 +145,8 @@ function showMessageActions(m,item){
   const closeMenu=()=>{menu.remove();restoreItem();clearMessageActionOverlay();};
   const add=(label,fn,cls="mini-button")=>{const b=document.createElement("button");b.type="button";b.className=cls;b.textContent=label;b.onclick=()=>{closeMenu();fn();};menu.appendChild(b);};
   add(english?"Reply":"پاسخ",()=>setReplyTarget(m));
+  add(english?"Forward":"فوروارد",()=>{selectedMessageIds.clear();selectedMessageIds.add(m.id);messageSelectionMode=true;updateSelectionToolbar();forwardSelectedMessages();});
+  add(english?"Download":"دانلود",()=>downloadMessage(m));
   add(english?"Select":"انتخاب",()=>{messageSelectionMode=true;toggleMessageSelection(m.id,item);updateSelectionToolbar();});
   if(m.sender_id===currentUser.id)add(english?"Edit":"ویرایش",()=>editMessage(m));
   add(english?"Delete":"حذف",()=>deleteMessage(m),"mini-button danger");
@@ -171,6 +173,21 @@ function editMessage(m){
   setStatus("sendMessageStatus",english?"Editing your message":"در حال ویرایش پیام");$("messageText").focus();
 }
 function cancelMessageEdit(){if(!editingMessageId)return;editingMessageId=null;$("messageText").value=preEditDraft;preEditDraft="";$("cancelEditButton").hidden=true;$("sendMessageButton").textContent="➤";setStatus("sendMessageStatus","");$("messageText").dispatchEvent(new Event("input",{bubbles:true}));}
+async function downloadMessage(m){
+  try{
+    if(m.attachment_path){
+      const {data,error}=await getClient().storage.from("chat-attachments").download(m.attachment_path);
+      if(error)throw error;
+      const url=URL.createObjectURL(data),a=document.createElement("a");
+      a.href=url;a.download=m.attachment_name||((m.message_type==="image")?"farnaz-image":"farnaz-file");
+      document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
+    }else{
+      const blob=new Blob([m.body||""],{type:"text/plain;charset=utf-8"});
+      const url=URL.createObjectURL(blob),a=document.createElement("a");
+      a.href=url;a.download="farnaz-message.txt";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
+    }
+  }catch(e){alert((english?"Download failed: ":"دانلود ناموفق بود: ")+e.message);}
+}
 function askDeleteScope(){
   return new Promise(resolve=>{
     const overlay=document.createElement("div");

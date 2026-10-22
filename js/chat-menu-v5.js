@@ -24,7 +24,6 @@ async function loadMessages(older=false){
     if(request!==chatRequestNumber||currentUser?.id!==myId||currentChatUser?.user_id!==contactId)return;
     let data=[...(results[0].data||[]),...(results[1].data||[])];
     data.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
-    messageHasMore=data.length>(older?0:50);
     // Fetch up to 50 combined messages; direction queries each return at most 50.
     const page=data.slice(0,50),rows=page.reverse();
     let hiddenIds=new Set();
@@ -37,7 +36,8 @@ async function loadMessages(older=false){
     if(older){await prependMessages(visibleRows,myId);messageLoadedCount+=50;}
     else await renderMessages(visibleRows,myId);
     messageHasMore=data.length>50;
-    $("loadOlderButton").hidden=!messageHasMore;
+    const messageList=$("messageList");
+    $("loadOlderButton").hidden=!(messageHasMore&&messageList.scrollTop<=8);
     setStatus("sendMessageStatus","");
   }catch(e){
     console.error("Load messages:",e);
@@ -137,7 +137,19 @@ async function prependMessages(messages,myId){
   for(const m of messages)frag.appendChild(await makeMessageElement(m,myId));
   list.prepend(frag);list.scrollTop=oldTop+(list.scrollHeight-oldHeight);
 }
-async function loadOlderMessages(){if(messageHasMore)await loadMessages(true);}
+(function enableOlderMessagesAtTop(){
+  const list=$("messageList"),button=$("loadOlderButton");
+  if(!list||!button||list.dataset.olderScrollBound==="1")return;
+  list.dataset.olderScrollBound="1";
+  list.addEventListener("scroll",()=>{
+    button.hidden=!(messageHasMore&&list.scrollTop<=8);
+  },{passive:true});
+})();
+async function loadOlderMessages(){
+  if(!messageHasMore)return;
+  $("loadOlderButton").hidden=true;
+  await loadMessages(true);
+}
 function clearMessageActionOverlay(){
   document.querySelectorAll(".message-action-backdrop,.message-action-clone").forEach(node=>node.remove());
   document.querySelectorAll(".message.context-active").forEach(node=>{node.style.visibility="";node.classList.remove("context-active");});

@@ -83,6 +83,10 @@ function applySettingsLanguage(){
   const labels={
     navSettings:["تنظیمات","Settings"],settingsHeading:["تنظیمات","Settings"],
     settingsIntro:["ظاهر فرناز را مطابق سلیقه‌ات تنظیم کن؛ تغییرات روی همین دستگاه ذخیره می‌شوند.","Personalize Farnaz. Your choices are saved on this device."],
+     notificationsHeading:["اعلان‌ها","Notifications"],
+     notificationsLabel:["اعلان پیام‌ها","Message notifications"],
+     notificationsHint:["اجازه نمایش اعلان روی این دستگاه؛ اعلان پس از بسته‌شدن برنامه به پیکربندی Push سرور هم نیاز دارد.","Allow notifications on this device. Push server setup is also required after the app is closed."],
+     enableNotificationsButton:["فعال‌سازی اعلان","Enable notifications"],
     appearanceTitle:["ظاهر برنامه","Appearance"],themeLabel:["حالت نمایش","Theme"],
     themeHint:["روشن، تیره یا هماهنگ با دستگاه","Light, dark, or follow device"],
     fontSizeLabel:["اندازه نوشته","Text size"],fontSizeHint:["اندازه متن در سراسر برنامه","Text size across the app"],
@@ -112,6 +116,20 @@ function applySettingsLanguage(){
 window.addEventListener("storage",event=>{if(event.key===APPEARANCE_KEY){appearanceSettings=readAppearanceSettings();applyAppearanceSettings();}});
 if(window.matchMedia){window.matchMedia("(prefers-color-scheme: light)").addEventListener?.("change",()=>{if(appearanceSettings.theme==="system")applyAppearanceSettings();});}
 applyAppearanceSettings();
+if("serviceWorker" in navigator && location.protocol!=="file:"){
+  navigator.serviceWorker.register("./service-worker.js").then(reg=>{window.farnazServiceWorkerRegistration=reg;})
+    .catch(error=>console.warn("Farnaz service worker registration:",error));
+}
+window.notifyFarnazIncomingMessage=async function(){
+  if(!("Notification" in window)||Notification.permission!=="granted"||!document.hidden)return;
+  try{
+    const reg=await navigator.serviceWorker?.ready;
+    if(reg)await reg.showNotification(english?"New message in Farnaz":"پیام جدید در فرناز",{
+      body:english?"Open Farnaz to view the message.":"برای مشاهده پیام، فرناز را باز کن.",
+      tag:"farnaz-incoming-message",icon:"./farnaz-icon.svg",badge:"./farnaz-icon.svg",data:{url:"./"}
+    });
+  }catch(error){console.warn("Farnaz message notification:",error);}
+}
 
 
 
@@ -200,6 +218,11 @@ async function recoverConnection(){
   recoveryInProgress=true;
   try{
     await subscribeToMessages();
+    // Reconcile the active private chat after downtime so messages missed while
+    // Realtime was disconnected are restored without forcing the view to bottom.
+    if(currentChatUser&&document.body.classList.contains("chat-mode")&&typeof loadMessages==="function"){
+      await loadMessages(false,true);
+    }
     await retryRead("conversation refresh",()=>refreshConversationList(),2);
     // Reconnecting the realtime channel must never rebuild the open chat history.
     // Existing messages stay in the DOM; incoming messages are appended by the realtime handler.
@@ -470,6 +493,7 @@ function renderUser(user,name){
 async function showUser(user){
   const request=++profileRequestNumber;
   currentUser=user;renderUser(user,user.user_metadata?.display_name||"");
+  window.dispatchEvent(new CustomEvent("farnaz-auth-user",{detail:{userId:user.id}}));
   setStatus("profileStatus",english?"Loading profile...":"در حال بارگذاری پروفایل...");
   try{
     const {data,error}=await getClient().from("profiles")
@@ -499,6 +523,7 @@ async function showUser(user){
 }
 function showGuest(){
   profileRequestNumber++;currentUser=null;currentProfileName="";currentAvatarUrl="";currentPhone="";
+  window.dispatchEvent(new CustomEvent("farnaz-auth-user",{detail:{userId:null}}));
   currentChatUser=null;
   $("bottomNav").classList.remove("visible");
   $("userName").textContent=english?"Farnaz user":"کاربر فرناز";

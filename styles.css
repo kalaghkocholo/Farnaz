@@ -1341,3 +1341,45 @@ body.chat-mode .app.chat-mode #chatPage #sendMessageForm {
 #chatPage .chat-header.space-detail-head .space-call-button svg circle{
   color:#50e3c2!important;stroke:#50e3c2!important;fill:none!important;
 }
+
+
+/* v27: final override for private-chat header only; match the group chat's unboxed surface */
+html body .app.chat-mode #chatPage .chat-header.space-detail-head,
+html body #chatPage .chat-header.space-detail-head{
+  background:transparent!important;
+  background-color:transparent!important;
+  border:0!important;
+  border-top:0!important;
+  border-right:0!important;
+  border-bottom:0!important;
+  border-left:0!important;
+  outline:0!important;
+  box-shadow:none!important;
+  border-radius:0!important;
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+}
+html body .app.chat-mode #chatPage .chat-header.space-detail-head::before,
+html body .app.chat-mode #chatPage .chat-header.space-detail-head::after,
+html body #chatPage .chat-header.space-detail-head::before,
+html body #chatPage .chat-header.space-detail-head::after{
+  content:none!important;
+  display:none!important;
+  border:0!important;
+  box-shadow:none!important;
+  background:transparent!important;
+}
+html body .app.chat-mode #chatPage .chat-header.space-detail-head .space-call-button,
+html body #chatPage .chat-header.space-detail-head .space-call-button{
+  color:#50e3c2!important;
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+html body .app.chat-mode #chatPage .chat-header.space-detail-head .space-call-button svg,
+html body .app.chat-mode #chatPage .chat-header.space-detail-head .space-call-button svg *,
+html body #chatPage .chat-header.space-detail-head .space-call-button svg,
+html body #chatPage .chat-header.space-detail-head .space-call-button svg *{
+  color:#50e3c2!important;
+  stroke:#50e3c2!important;
+}

@@ -646,15 +646,129 @@ function addContactInfoAction(label,icon,handler){
   }else glyph.textContent=icon;
   const text=document.createElement("span");text.textContent=label;button.append(glyph,text);button.addEventListener("click",handler);$("contactInfoActions").appendChild(button);
 }
+let messageSearchDialog=null,messageSearchRequest=0;
+function ensureMessageSearchDialog(){
+  if(messageSearchDialog)return messageSearchDialog;
+  const modal=document.createElement("div");
+  modal.id="messageSearchDialog";modal.className="message-search-dialog";modal.hidden=true;
+  modal.setAttribute("role","dialog");modal.setAttribute("aria-modal","true");modal.setAttribute("aria-labelledby","messageSearchTitle");
+  modal.innerHTML='<section class="message-search-card"><header class="message-search-heading"><h2 id="messageSearchTitle"></h2><button type="button" class="contact-info-close" id="closeMessageSearch" aria-label="Close">×</button></header><form id="messageSearchForm"><label for="messageSearchQuery" id="messageSearchQueryLabel"></label><input id="messageSearchQuery" type="search" maxlength="200" autocomplete="off"><div class="message-search-filters"><div><label for="messageSearchKind" id="messageSearchKindLabel"></label><select id="messageSearchKind"><option value="all"></option><option value="text"></option><option value="images"></option><option value="voice"></option><option value="files"></option></select></div><div><label for="messageSearchFrom" id="messageSearchFromLabel"></label><input id="messageSearchFrom" type="date"></div><div><label for="messageSearchTo" id="messageSearchToLabel"></label><input id="messageSearchTo" type="date"></div></div><button class="message-search-submit" id="messageSearchSubmit" type="submit"></button></form><p id="messageSearchStatus" class="muted-note" role="status" aria-live="polite"></p><div id="messageSearchResults" class="message-search-results"></div></section>';
+  document.body.appendChild(modal);messageSearchDialog=modal;
+  $("closeMessageSearch").addEventListener("click",closeMessageSearch);
+  modal.addEventListener("click",e=>{if(e.target===modal)closeMessageSearch();});
+  $("messageSearchForm").addEventListener("submit",searchMessageHistory);
+  modal.addEventListener("keydown",e=>{if(e.key==="Escape")closeMessageSearch();});
+  return modal;
+}
+function closeMessageSearch(){if(messageSearchDialog)messageSearchDialog.hidden=true;}
 function searchCurrentConversation(){
-  closeContactInfo();
-  const term=prompt(contactInfoText("جست‌وجو در پیام‌های بارگذاری‌شده:","Search loaded messages:"));
-  if(!term?.trim())return;
-  const messages=[...$("messageList").querySelectorAll(".message")];
-  messages.forEach(item=>item.classList.remove("contact-info-search-match"));
-  const found=messages.find(item=>item.textContent.toLocaleLowerCase().includes(term.trim().toLocaleLowerCase()));
-  if(found){found.classList.add("contact-info-search-match");found.scrollIntoView({behavior:"smooth",block:"center"});}
-  else alert(contactInfoText("عبارت در پیام‌های بارگذاری‌شده پیدا نشد.","No match in the messages currently loaded."));
+  closeContactInfo();const modal=ensureMessageSearchDialog();
+  $("messageSearchTitle").textContent=contactInfoText("جست‌وجوی پیشرفته","Advanced search");
+  $("messageSearchQueryLabel").textContent=contactInfoText("عبارت جست‌وجو","Search phrase");
+  $("messageSearchQuery").placeholder=contactInfoText("کلمه یا عبارت را بنویس…","Enter a word or phrase…");
+  $("messageSearchKindLabel").textContent=contactInfoText("نوع پیام","Message type");
+  $("messageSearchFromLabel").textContent=contactInfoText("از تاریخ","From date");
+  $("messageSearchToLabel").textContent=contactInfoText("تا تاریخ","To date");
+  $("messageSearchSubmit").textContent=contactInfoText("جست‌وجو","Search");
+  [["all","همه","All"],["text","متنی","Text"],["images","تصاویر","Images"],["voice","صوتی","Voice"],["files","فایل‌ها","Files"]].forEach(([v,fa,en],i)=>{$("messageSearchKind").options[i].textContent=english?en:fa;});
+  $("messageSearchStatus").textContent=contactInfoText("جست‌وجو در تمام تاریخچهٔ گفتگوی خصوصی","Search the full private conversation history");
+  $("messageSearchResults").replaceChildren();modal.hidden=false;$("messageSearchQuery").focus();
+}
+function messageSearchQueryBase(client,myId,contactId,senderIsMe,kind,fromIso,toIso){
+  let q=client.from("messages").select("id,sender_id,receiver_id,body,created_at,message_type,attachment_path,attachment_name,attachment_mime,reply_to_id,edited_at")
+    .eq("sender_id",senderIsMe?myId:contactId).eq("receiver_id",senderIsMe?contactId:myId);
+  if(fromIso)q=q.gte("created_at",fromIso);if(toIso)q=q.lt("created_at",toIso);
+  if(kind==="text")q=q.is("attachment_path",null);
+  if(kind==="images")q=q.eq("message_type","image").not("attachment_path","is",null);
+  if(kind==="voice")q=q.ilike("attachment_mime","audio/%").not("attachment_path","is",null);
+  if(kind==="files")q=q.not("attachment_path","is",null).not("attachment_mime","ilike","image/%").not("attachment_mime","ilike","audio/%").not("attachment_mime","ilike","video/%");
+  return q.order("created_at",{ascending:false}).limit(101);
+}
+async function searchMessageHistory(event){
+  event.preventDefault();if(!currentUser||!currentChatUser)return;
+  const term=$("messageSearchQuery").value.trim(),kind=$("messageSearchKind").value,fromValue=$("messageSearchFrom").value,toValue=$("messageSearchTo").value;
+  if(fromValue&&toValue&&fromValue>toValue){$("messageSearchStatus").textContent=contactInfoText("تاریخ شروع باید قبل از پایان باشد.","Start date must be before end date.");return;}
+  if(!term&&!fromValue&&!toValue&&kind==="all"){$("messageSearchStatus").textContent=contactInfoText("عبارت، تاریخ یا نوع پیام را مشخص کن.","Enter a phrase, date range, or message type.");return;}
+  const request=++messageSearchRequest,myId=currentUser.id,contactId=currentChatUser.user_id,client=getClient();
+  const fromIso=fromValue?new Date(fromValue+"T00:00:00").toISOString():null;
+  const toIso=toValue?new Date(new Date(toValue+"T00:00:00").getTime()+86400000).toISOString():null;
+  const safeTerm=term.replace(/[%_\\]/g,c=>"\\"+c);
+  const fields=term?(kind==="text"?["body"]:["body","attachment_name"]):[null];
+  const submit=$("messageSearchSubmit");submit.disabled=true;$("messageSearchResults").replaceChildren();
+  $("messageSearchStatus").textContent=contactInfoText("در حال جست‌وجو…","Searching…");
+  try{
+    const queries=[];
+    for(const mine of [true,false])for(const field of fields){
+      let q=messageSearchQueryBase(client,myId,contactId,mine,kind,fromIso,toIso);
+      if(field)q=q.ilike(field,"%"+safeTerm+"%");
+      queries.push(q);
+    }
+    const responses=await retryRead("message search",()=>Promise.all(queries));
+    if(request!==messageSearchRequest||String(currentChatUser?.user_id)!==String(contactId))return;
+    const unique=new Map();
+    for(const r of responses){if(r.error)throw r.error;for(const m of r.data||[])unique.set(String(m.id),m);}
+    let results=[...unique.values()];
+    if(kind==="files")results=results.filter(m=>m.attachment_path&&!/^(image|audio|video)\//i.test(m.attachment_mime||""));
+    if(kind==="images")results=results.filter(m=>m.attachment_path&&(m.message_type==="image"||(m.attachment_mime||"").startsWith("image/")));
+    if(kind==="voice")results=results.filter(m=>m.attachment_path&&(m.message_type==="audio"||(m.attachment_mime||"").startsWith("audio/")));
+    if(term){const n=term.toLocaleLowerCase();results=results.filter(m=>(m.body||"").toLocaleLowerCase().includes(n)||(m.attachment_name||"").toLocaleLowerCase().includes(n));}
+    const hidden=await retryRead("hidden messages",()=>client.from("message_hidden").select("message_id").eq("user_id",myId));
+    if(request!==messageSearchRequest||String(currentChatUser?.user_id)!==String(contactId))return;
+    if(hidden.error)throw hidden.error;const hiddenIds=new Set((hidden.data||[]).map(x=>String(x.message_id)));
+    results=results.filter(m=>!hiddenIds.has(String(m.id))).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+    const total=results.length,list=$("messageSearchResults");list.replaceChildren();
+    if(!total){$("messageSearchStatus").textContent=contactInfoText("نتیجه‌ای پیدا نشد.","No matching messages found.");return;}
+    $("messageSearchStatus").textContent=total>100?contactInfoText("بیش از ۱۰۰ نتیجه؛ ۱۰۰ مورد تازه‌تر نمایش داده شده است.","More than 100 results; showing the 100 most recent."):contactInfoText(total+" نتیجه پیدا شد.",total+" result(s) found.");
+    for(const m of results.slice(0,100)){
+      const item=document.createElement("button");item.type="button";item.className="message-search-result";
+      const snippet=document.createElement("span");snippet.className="message-search-snippet";
+      snippet.textContent=m.body||m.attachment_name||(m.message_type==="image"?contactInfoText("تصویر","Image"):m.message_type==="audio"?contactInfoText("پیام صوتی","Voice message"):contactInfoText("پیوست","Attachment"));
+      const meta=document.createElement("small");meta.className="message-search-meta";
+      const date=new Date(m.created_at).toLocaleString(english?"en":"fa-IR",{year:"numeric",month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"});
+      meta.textContent=(String(m.sender_id)===String(myId)?contactInfoText("شما","You"):(currentChatUser.display_name||contactInfoText("مخاطب","Contact")))+" · "+date;
+      item.append(snippet,meta);item.addEventListener("click",()=>openSearchedMessage(m.id,m.created_at,contactId));list.appendChild(item);
+    }
+  }catch(error){if(request===messageSearchRequest)$("messageSearchStatus").textContent=(english?"Search failed: ":"جست‌وجو ناموفق بود: ")+(error?.message||String(error));}
+  finally{if(request===messageSearchRequest)submit.disabled=false;}
+}
+async function openSearchedMessage(messageId,createdAt,contactId){
+  if(!currentUser||!currentChatUser||String(currentChatUser.user_id)!==String(contactId))return;
+  closeMessageSearch();
+  const already=[...$("messageList").querySelectorAll(".message[data-message-id]")].find(el=>String(el.dataset.messageId)===String(messageId));
+  if(already){already.classList.add("contact-info-search-match");already.scrollIntoView({behavior:"smooth",block:"center"});setTimeout(()=>already.classList.remove("contact-info-search-match"),2500);return;}
+  const request=++chatRequestNumber,myId=currentUser.id,client=getClient();
+  setStatus("sendMessageStatus",contactInfoText("در حال باز کردن پیام پیدا‌شده…","Opening matched message…"));
+  try{
+    const queries=[];
+    for(const [sender,receiver] of [[myId,contactId],[contactId,myId]]){
+      queries.push(client.from("messages").select("id,sender_id,receiver_id,body,created_at,message_type,attachment_path,attachment_name,attachment_mime,reply_to_id,edited_at").eq("sender_id",sender).eq("receiver_id",receiver).lte("created_at",createdAt).order("created_at",{ascending:false}).limit(26));
+      queries.push(client.from("messages").select("id,sender_id,receiver_id,body,created_at,message_type,attachment_path,attachment_name,attachment_mime,reply_to_id,edited_at").eq("sender_id",sender).eq("receiver_id",receiver).gt("created_at",createdAt).order("created_at",{ascending:true}).limit(26));
+    }
+    const responses=await retryRead("messages around search result",()=>Promise.all(queries));
+    if(request!==chatRequestNumber||currentUser?.id!==myId||String(currentChatUser?.user_id)!==String(contactId))return;
+    for(const r of responses)if(r.error)throw r.error;
+    const unique=new Map();responses.forEach(r=>(r.data||[]).forEach(m=>unique.set(String(m.id),m)));
+    let messages=[...unique.values()].sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+    const targetIndex=messages.findIndex(m=>String(m.id)===String(messageId));
+    if(targetIndex<0)throw new Error(contactInfoText("پیام دیگر در دسترس نیست.","This message is no longer available."));
+    const start=Math.max(0,Math.min(targetIndex-24,messages.length-50));messages=messages.slice(start,start+50);
+    const hidden=await retryRead("hidden messages",()=>client.from("message_hidden").select("message_id").eq("user_id",myId));
+    if(request!==chatRequestNumber||currentUser?.id!==myId||String(currentChatUser?.user_id)!==String(contactId))return;
+    if(hidden.error)throw hidden.error;const hiddenIds=new Set((hidden.data||[]).map(m=>String(m.message_id)));
+    messages=messages.filter(m=>!hiddenIds.has(String(m.id)));
+    const ownIds=messages.filter(m=>String(m.sender_id)===String(myId)).map(m=>String(m.id));
+    const received=messages.filter(m=>String(m.receiver_id)===String(myId)&&String(m.sender_id)!==String(myId)).map(m=>({message_id:m.id,sender_id:m.sender_id,receiver_id:m.receiver_id,reader_id:myId}));
+    const receiptPromise=ownIds.length?client.from("message_read_receipts").select("message_id,reader_id,read_at").in("message_id",ownIds):Promise.resolve({data:[],error:null});
+    const readPromise=received.length?client.from("message_read_receipts").upsert(received,{onConflict:"message_id,reader_id",ignoreDuplicates:true}).then(({error})=>{if(error)console.warn("Could not save read receipts:",error.message);}):Promise.resolve();
+    const [receipts]=await Promise.all([receiptPromise,readPromise]);
+    if(request!==chatRequestNumber||currentUser?.id!==myId||String(currentChatUser?.user_id)!==String(contactId))return;
+    readReceiptMessageIds=new Set((receipts?.data||[]).filter(r=>String(r.reader_id)!==String(myId)).map(r=>String(r.message_id)));
+    await renderMessages(messages,myId);
+    messageHasMore=start>0||responses[0].data?.length>=26||responses[2].data?.length>=26;$("loadOlderButton").hidden=true;
+    const found=[...$("messageList").querySelectorAll(".message[data-message-id]")].find(el=>String(el.dataset.messageId)===String(messageId));
+    if(found){found.classList.add("contact-info-search-match");found.scrollIntoView({behavior:"smooth",block:"center"});setTimeout(()=>found.classList.remove("contact-info-search-match"),3500);}
+    setStatus("sendMessageStatus","");
+  }catch(error){if(request===chatRequestNumber)setStatus("sendMessageStatus",(english?"Could not open search result: ":"باز کردن پیام پیدا‌شده ناموفق بود: ")+(error?.message||String(error)),true);}
 }
 async function openContactInfo(){
   if(!currentUser||!currentChatUser)return;

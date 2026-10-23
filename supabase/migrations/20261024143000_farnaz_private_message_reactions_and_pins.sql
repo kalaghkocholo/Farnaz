@@ -41,3 +41,8 @@ BEGIN
     END IF;
   END IF;
 END $$;
+
+
+-- Supabase API roles need explicit table privileges in addition to RLS policies.
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.message_reactions TO authenticated;
+GRANT SELECT, INSERT, DELETE ON TABLE public.message_pins TO authenticated;

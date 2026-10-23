@@ -78,3 +78,25 @@ The SQL changes were applied to the connected Supabase project and queried after
 1. Consolidated the two group-call SVG rules into one rule, preserving the final cascade values: 19px icon dimensions, mint stroke/color, no fill, and the existing stroke width/caps/joins.
 2. Removed one redundant group-composer override that repeated `justify-content:flex-end!important` and `direction:ltr!important` already set by the immediately preceding rule for the same selector and context.
 3. Left other repeated selectors untouched where they change layout, specificity, or final values, or where responsive/context boundaries could affect behavior. No visual regression test was available in this pass, so this was deliberately limited to declarations whose redundancy could be established from the source.
+
+
+## Live Supabase access-control review — 2026-10-23
+
+The connected project `iemykhluluoymsbqpjsn` was queried directly after the earlier review. This is a metadata/policy inspection, not an adversarial two-account integration test.
+
+- All inspected application tables in `public` have RLS enabled.
+- Private chat attachment bucket `chat-attachments` is non-public, has a server-side 20 MiB limit, and restricts reads to paths referenced by messages in which the current user is a sender or receiver, or space attachments readable through `private.can_read_space`. Upload paths must start with the authenticated user's ID. The frontend's 20 MiB check matches the bucket limit; the earlier suspected 10 MiB mismatch is not present in the live project.
+- `group-avatars` is non-public with a 5 MiB limit and member/manager-scoped policies. `avatars` is public by design; profile avatar URLs must therefore be treated as public assets, not private content.
+- Message RLS ties reads to sender/receiver, inserts to the authenticated sender, and edits to the sender. The database trigger preventing message identity changes remains part of the protection. Group/channel message reads and posting are governed by `private.can_read_space` and `private.can_post_space`; manager actions are checked by database policies.
+- The seven authenticated-callable `SECURITY DEFINER` functions flagged by the Supabase advisor were inspected. They are intentional RPCs for account discovery/profile access and group membership/administration, have an empty fixed `search_path`, and contain authentication/resource checks in their definitions. Do not revoke them blindly because the application uses them. Their privacy and abuse-resistance still require authenticated multi-user tests.
+- Supabase's security advisor still reports **Leaked Password Protection disabled**. The available connected tools can inspect SQL and advisors but do not expose the Auth dashboard setting needed to toggle it. Enable it manually in **Supabase Dashboard → Authentication → Security and Protection / Password Security** (exact labels may vary), then rerun the security advisor.
+- The Storage bucket limit and frontend 20 MiB limit agree. Do not change the bucket limit without a product decision.
+
+### Remaining verification that requires a real session or dashboard access
+
+1. Enable leaked-password protection in Auth settings and confirm the advisor warning disappears.
+2. Test as two separate authenticated accounts: private message visibility, attachment download, user lookup response fields, group role changes, and per-user message hiding.
+3. Test a disallowed MIME type and a file just above 20 MiB against the real Storage API.
+4. Check the hosted GitHub Actions run and perform a real iOS Safari/PWA smoke test.
+
+No destructive policy changes were made during this review. The remaining SECURITY DEFINER advisor warnings are not automatically vulnerabilities; each RPC needs its current authorization contract preserved and tested.

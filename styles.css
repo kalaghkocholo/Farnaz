@@ -23,7 +23,7 @@ body.chat-mode{height:var(--chat-viewport-height,100dvh);min-height:0}
 .app.chat-mode #footerText{display:none}
 .app.chat-mode>#connectionBanner{flex-shrink:0}
 .app.chat-mode>#chatPage{display:flex;flex:1;min-height:0;flex-direction:column;overflow:hidden}
-.app.chat-mode>#chatPage .chat-header:not(.space-detail-head),.app.chat-mode>#chatPage #selectionToolbar,.app.chat-mode>#chatPage #loadOlderButton,.app.chat-mode>#chatPage #replyPreview,.app.chat-mode>#chatPage #sendMessageForm,.app.chat-mode>#chatPage #sendMessageStatus{flex-shrink:0}
+.app.chat-mode>#chatPage #selectionToolbar,.app.chat-mode>#chatPage #loadOlderButton,.app.chat-mode>#chatPage #replyPreview,.app.chat-mode>#chatPage #sendMessageForm,.app.chat-mode>#chatPage #sendMessageStatus{flex-shrink:0}
 .app.chat-mode>#chatPage #messageList{flex:1;min-height:0;max-height:none;overscroll-behavior:contain}
 .app.chat-mode>#chatPage #sendMessageForm{position:sticky;bottom:0;z-index:35;flex:0 0 auto;padding-bottom:max(4px,env(safe-area-inset-bottom));margin-top:0;background:var(--bg)}
 .app.chat-mode>#chatPage #messageList{scroll-padding-bottom:12px}
@@ -238,24 +238,6 @@ input[type=file]{font-size:11px;padding:9px}
 .nav-button .nav-icon{font-size:21px;line-height:1.2}
 .nav-button.active{background:#203b43;color:var(--mint);font-weight:700}
 #chatPage{padding-bottom:5px}
-.back-button{display:flex;align-items:center;justify-content:center;gap:4px;min-width:64px;padding:7px 9px;white-space:nowrap;font-size:12px}
-.chat-header{
-  display:flex;align-items:center;gap:9px;
-  padding:8px 0 12px;border-bottom:1px solid var(--border)
-}
-.chat-person{flex:1;min-width:0}
-.chat-person strong{display:block;font-size:13px;overflow-wrap:anywhere}
-.chat-person small{display:block;font-size:10px;color:var(--muted);margin-top:4px}
-.call-actions{display:flex;gap:6px}
-.call-button{
-  width:38px;height:38px;display:grid;place-items:center;
-  border:1px solid var(--border);border-radius:12px;
-  background:var(--panel);color:var(--mint);font-size:18px
-}
-.back-button{
-  width:36px;height:38px;border:0;background:transparent;
-  color:var(--white);font-size:22px
-}
 #messageList{
   display:flex;flex-direction:column;gap:8px;
   min-height:150px;max-height:calc(100dvh - 290px);
@@ -308,9 +290,7 @@ footer{text-align:center;color:#718096;font-size:10px;padding:17px 0 7px}
 @media(max-width:360px){
   .app{padding-left:9px;padding-right:9px}
   .hero{padding:15px 12px}
-  .call-actions{gap:3px}
-  .call-button{width:34px;height:36px}
-}
+  }
 
 .app.chat-mode>header{display:none!important}
 .app.chat-mode>#chatPage{padding-top:2px}
@@ -325,11 +305,7 @@ footer{text-align:center;color:#718096;font-size:10px;padding:17px 0 7px}
 .app.chat-mode>#chatPage #attachmentHint{display:none}
 .app.chat-mode>#chatPage .composer-icon{width:36px;height:36px;flex:0 0 36px;border-radius:50%}
 .app.chat-mode>#chatPage #attachmentMenu{inset-inline-start:4px;bottom:calc(100% + 8px)}
-.app.chat-mode.keyboard-open .app.chat-mode>#chatPage .chat-header:not(.space-detail-head){min-height:0;padding:2px 0 4px}
-.app.chat-mode.keyboard-open .app.chat-mode>#chatPage #chatAvatar{width:38px;height:38px;flex-basis:38px}
-.app.chat-mode.keyboard-open .app.chat-mode>#chatPage .chat-person strong{font-size:14px}
-.app.chat-mode.keyboard-open .app.chat-mode>#chatPage .chat-person small{display:none}
-.app.chat-mode.keyboard-open .app.chat-mode>#chatPage .composer-shell{padding:3px 5px;column-gap:4px}
+.app.chat-mode.keyboard-open .app.chat-mode>#chatPage .app.chat-mode.keyboard-open .app.chat-mode>#chatPage .app.chat-mode.keyboard-open .app.chat-mode>#chatPage .composer-shell{padding:3px 5px;column-gap:4px}
 .app.chat-mode.keyboard-open .app.chat-mode>#chatPage .send-row textarea{min-height:36px;max-height:76px;padding-top:7px;padding-bottom:7px}
 .app.chat-mode.keyboard-open .app.chat-mode>#chatPage .composer-icon{width:34px;height:34px;flex-basis:34px}
 
@@ -350,7 +326,6 @@ body[data-theme="light"] .profile-card,
 body[data-theme="light"] .settings-card,
 body[data-theme="light"] .new-chat-popover,
 body[data-theme="light"] .contact-search-popover,
-body[data-theme="light"] .chat-header,
 body[data-theme="light"] #sendMessageForm,
 body[data-theme="light"] .message-composer,
 body[data-theme="light"] footer{background-color:var(--bg)!important;color:var(--white)!important}
@@ -360,7 +335,7 @@ body[data-theme="light"] .nav-button{color:var(--muted)!important;background:tra
 body[data-theme="light"] .nav-button.active{color:var(--accent)!important;background:var(--panel2)!important}
 body[data-theme="light"] .app>header{border-color:var(--border)!important}
 body[data-theme="light"] .page h1,body[data-theme="light"] .page h2,body[data-theme="light"] .page h3,
-body[data-theme="light"] .setting-copy strong,body[data-theme="light"] .chat-person strong,
+body[data-theme="light"] .setting-copy strong,
 body[data-theme="light"] .conversation-title,body[data-theme="light"] .contact-name{color:var(--white)}
 body[data-theme="light"] .page p,body[data-theme="light"] .setting-copy small{color:var(--muted)}
 body[data-theme="light"] .setting-control,body[data-theme="light"] input,body[data-theme="light"] textarea,body[data-theme="light"] select{background:var(--panel)!important;border-color:var(--border)!important;color:var(--white)!important}
@@ -368,8 +343,7 @@ body[data-theme="light"] .bubble{color:var(--white)}
 /* Respect selected bubble colors in light theme too. */
 body[data-theme="light"] .bubble.outgoing{background:var(--my-message-bg,var(--accent))!important;color:var(--my-message-ink,#15372f)!important}
 body[data-theme="light"] .bubble.incoming{background:var(--their-message-bg,color-mix(in srgb,var(--accent) 15%,var(--panel2)))!important;color:var(--their-message-ink,#172237)!important}
-body[data-theme="light"] .icon-button,body[data-theme="light"] .mini-button,body[data-theme="light"] .call-button{color:var(--white)!important}
-body[data-theme="light"] .bottom-nav *{text-shadow:none}
+body[data-theme="light"] .icon-button,body[data-theme="light"] .mini-button,body[data-theme="light"] body[data-theme="light"] .bottom-nav *{text-shadow:none}
 
 /* Farnaz settings and personal appearance preferences */
 :root{--accent:var(--mint);--font-scale:1}
@@ -439,7 +413,6 @@ body[data-theme="light"] .page .setting-copy strong,
 body[data-theme="light"] .app>header .brand-text,
 body[data-theme="light"] .icon-button,
 body[data-theme="light"] .mini-button,
-body[data-theme="light"] .call-button,
 body[data-theme="light"] .attachment-option {
   color:var(--white)!important;
 }
@@ -563,8 +536,6 @@ body[data-font-color="white"][data-theme] .bottom-nav .nav-button { color:#fffff
   background:color-mix(in srgb,var(--accent) 18%,var(--panel2))!important;
   color:var(--accent)!important;
 }
-.call-button { color:var(--accent)!important; }
-
 /* Chat message bubbles follow the selected accent color with readable contrast. */
 .message{color:var(--white)}
 .my-message{

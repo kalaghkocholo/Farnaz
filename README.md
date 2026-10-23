@@ -24,7 +24,8 @@ Farnaz is a mobile-first, Persian/English private communication web app. The cur
 - `js/chat-menu-v5.js` — private messaging, message actions, attachment/voice flows, and connection recovery
 - `js/spaces.js` — groups/channels UI and related messaging flows
 - `supabase/migrations/` — the two database hardening migrations added in this pass; this is **not yet a complete historical migration baseline**
-- `.github/workflows/validate.yml` — JavaScript syntax validation on pushes and pull requests
+- `scripts/validate.mjs` — dependency-free checks for local asset references, duplicate static IDs, CSS structure, and common server-key patterns
+- `.github/workflows/validate.yml` — JavaScript syntax and app-shell validation on pushes and pull requests
 
 The application currently uses classic browser scripts and shared global state. Avoid renaming global functions or moving code between files without checking all callers and page-navigation hooks.
 

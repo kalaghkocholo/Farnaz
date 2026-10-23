@@ -1,5 +1,5 @@
 "use strict";
-const CACHE_NAME="farnaz-shell-v7";
+const CACHE_NAME="farnaz-shell-v8";
 const APP_BASE=new URL("./",self.location.href);
 const SHELL=["./","./index.html","./styles.css","./spaces.css","./js/core.js","./js/chat-menu-v5.js","./js/spaces.js","./js/calls.js","./manifest.webmanifest","./farnaz-icon.svg"];
 self.addEventListener("install",event=>{
@@ -20,13 +20,21 @@ self.addEventListener("fetch",event=>{
     }).catch(async()=>await caches.match(req,{ignoreSearch:true})||await caches.match(new URL("./index.html",APP_BASE).href)));
     return;
   }
-  event.respondWith(caches.match(req).then(cached=>{
-    const network=fetch(req).then(response=>{
-      if(response.ok&&response.type==="basic")caches.open(CACHE_NAME).then(cache=>cache.put(req,response.clone()));
-      return response;
-    });
-    return cached||network;
-  }));
+  const isCodeAsset=/\.(?:html|css|js)$/i.test(url.pathname)||url.search.length>0;
+  event.respondWith((async()=>{
+    const cached=await caches.match(req);
+    if(isCodeAsset){
+      try{
+        const response=await fetch(req);
+        if(response.ok&&response.type==="basic")caches.open(CACHE_NAME).then(cache=>cache.put(req,response.clone()));
+        return response;
+      }catch(_){return cached||Response.error();}
+    }
+    if(cached)return cached;
+    const response=await fetch(req);
+    if(response.ok&&response.type==="basic")caches.open(CACHE_NAME).then(cache=>cache.put(req,response.clone()));
+    return response;
+  })());
 });
 self.addEventListener("push",event=>{
   let payload={};

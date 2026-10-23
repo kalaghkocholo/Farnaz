@@ -22,7 +22,7 @@ Use this checklist before publishing changes that affect authentication, messagi
 
 - [ ] Sending, receiving, pagination, reply/edit/delete, and read receipts work.
 - [ ] Multi-select actions state the deletion scope clearly.
-- [ ] Realtime reconnect does not duplicate messages or reset the active conversation.
+- [x] Source-level recovery added for reconnect/mobile suspension; two-device duplicate and history checks still need runtime verification.
 - [x] Live configuration check: private chat attachments have a 20 MiB Storage limit matching the frontend; disallowed MIME types and over-limit uploads still need runtime tests.
 - [ ] Voice recordings can be discarded before sending and their temporary URLs are released when no longer needed.
 
@@ -41,10 +41,15 @@ Use this checklist before publishing changes that affect authentication, messagi
 - [ ] Dialogs can be closed and have accessible labels/status messages.
 - [ ] No console errors on startup, navigation, sending, or reconnection.
 
+## Implemented but not yet production-verified
+
+- One-to-one WebRTC audio/video signaling and call UI (requires two-device tests and a TURN relay for reliable networks).
+- PWA manifest and service worker shell caching.
+- Notification permission UI and service-worker push event handler; true server push after app closure still requires VAPID keys, subscription storage, and a sender.
+
 ## Known not-yet-implemented capabilities
 
-- Real audio/video calling
-- Background push notifications
-- Service-worker/offline PWA behavior
+- Multi-party group calls
+- Reliable push delivery while the app is closed (until server push is configured)
 
 Do not mark these capabilities complete until their implementation and end-to-end tests exist.

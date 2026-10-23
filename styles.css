@@ -1013,7 +1013,7 @@ body.chat-mode .app.chat-mode #chatPage #sendMessageForm {
   white-space:nowrap!important;
   overflow:visible!important;
   box-sizing:border-box!important;
-  font-size:14px!important;
+  font-size:16px!important;
   font-weight:600!important;
   line-height:1.2!important;
 }
@@ -1053,11 +1053,11 @@ body.chat-mode .app.chat-mode #chatPage #sendMessageForm {
   display:grid!important;
   place-items:center!important;
   box-sizing:border-box!important;
-  flex:0 0 36px!important;
-  width:36px!important;
-  min-width:36px!important;
-  height:36px!important;
-  min-height:36px!important;
+  flex:0 0 44px!important;
+  width:44px!important;
+  min-width:44px!important;
+  height:44px!important;
+  min-height:44px!important;
   padding:0!important;
   color:#50e3c2!important;
   background:transparent!important;
@@ -1075,8 +1075,8 @@ body.chat-mode .app.chat-mode #chatPage #sendMessageForm {
 }
 #chatPage .chat-header.space-detail-head .space-call-button svg{
   display:block!important;
-  width:21px!important;
-  height:21px!important;
+  width:25px!important;
+  height:25px!important;
   fill:none!important;
   stroke:#50e3c2!important;
   color:#50e3c2!important;
@@ -1146,10 +1146,10 @@ body.chat-mode .app.chat-mode #chatPage #sendMessageForm {
     padding:6px 5px!important;
   }
   #chatPage .chat-header.space-detail-head #backToChats.space-secondary{
-    height:36px!important;
-    min-height:36px!important;
-    padding:6px 7px!important;
-    font-size:12px!important;
+    height:40px!important;
+    min-height:40px!important;
+    padding:7px 9px!important;
+    font-size:14px!important;
     gap:4px!important;
   }
   #chatPage .chat-header.space-detail-head #backToChats.space-secondary span{
@@ -1157,15 +1157,15 @@ body.chat-mode .app.chat-mode #chatPage #sendMessageForm {
   }
   #chatPage .chat-header.space-detail-head .space-call-actions{gap:3px!important}
   #chatPage .chat-header.space-detail-head .space-call-button{
-    flex-basis:30px!important;
-    width:30px!important;
-    min-width:30px!important;
-    height:30px!important;
-    min-height:30px!important;
+    flex-basis:38px!important;
+    width:38px!important;
+    min-width:38px!important;
+    height:38px!important;
+    min-height:38px!important;
   }
   #chatPage .chat-header.space-detail-head .space-call-button svg{
-    width:18px!important;
-    height:18px!important;
+    width:22px!important;
+    height:22px!important;
   }
   #chatPage .chat-header.space-detail-head #chatAvatar{
     flex-basis:32px!important;

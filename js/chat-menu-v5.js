@@ -1,6 +1,9 @@
 let readReceiptMessageIds=new Set();
-async function loadMessages(older=false){
+async function loadMessages(older=false,preserveScroll=false){
   if(!currentUser||!currentChatUser)return;
+  const scrollList=$("messageList");
+  const oldScrollTop=scrollList.scrollTop;
+  const wasNearBottom=scrollList.scrollHeight-scrollList.scrollTop-scrollList.clientHeight<100;
   const request=++chatRequestNumber,myId=currentUser.id,contactId=currentChatUser.user_id;
   if(!older)readReceiptMessageIds=new Set();
   if(!older){
@@ -43,7 +46,10 @@ async function loadMessages(older=false){
     if(request!==chatRequestNumber||currentUser?.id!==myId||currentChatUser?.user_id!==contactId)return;
     (receiptResult?.data||[]).forEach(r=>{if(String(r.reader_id)!==String(myId))readReceiptMessageIds.add(String(r.message_id));});
     if(older){await prependMessages(visibleRows,myId);messageLoadedCount+=50;}
-    else await renderMessages(visibleRows,myId);
+    else{
+      await renderMessages(visibleRows,myId);
+      if(preserveScroll&&!wasNearBottom)scrollList.scrollTop=oldScrollTop;
+    }
     messageHasMore=data.length>50;
     // Keep the older-history control hidden after loading; user must scroll back to the top.
     $("loadOlderButton").hidden=true;

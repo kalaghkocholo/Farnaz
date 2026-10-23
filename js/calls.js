@@ -225,8 +225,12 @@ async function handleIncomingSession(session,client){
   try{
     let profile=null;
     try{const {data}=await client.rpc("get_farnaz_user_profile",{search_user_id:session.caller_id});profile=Array.isArray(data)?data[0]:data;}catch(e){console.warn("Caller profile lookup:",e);}
-    if(String(signedInUserId)!==String(session.receiver_id)||(activeCall&&String(activeCall.session.id)!==sessionId))return;
-    if(activeCall)return;
+    if(String(signedInUserId)!==String(session.receiver_id))return;
+    if(activeCall){
+      if(String(activeCall.session.id)===sessionId)return;
+      try{await client.from("call_sessions").update({status:"missed"}).eq("id",session.id);}catch(_){}
+      return;
+    }
     const name=profile?.display_name||tr("مخاطب فرناز","Farnaz contact");
     activeCall={session,role:"receiver",otherId:String(session.caller_id),signalChannel:null,pc:null,localStream:null,pendingCandidates:[],timeout:null};
     showDialog(session.call_type==="video"?tr("تماس تصویری ورودی","Incoming video call"):tr("تماس صوتی ورودی","Incoming audio call"),tr("تماس از طرف ","Incoming call from ")+name);

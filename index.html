@@ -9,8 +9,8 @@
 <link rel="icon" href="./farnaz-icon.svg" type="image/svg+xml">
 <meta name="description" content="فرناز؛ ارتباطی نزدیک‌تر، در هر کجا.">
 <title>فرناز | Farnaz</title>
-<link rel="stylesheet" href="./styles.css?v=20261024-9">
-<link rel="stylesheet" href="./spaces.css?v=20261023-2">
+<link rel="stylesheet" href="./styles.css?v=20261024-10">
+<link rel="stylesheet" href="./spaces.css?v=20261024-3">
 </head>
 <body>
 <main class="app">
@@ -163,6 +163,7 @@
     <div class="setting-copy"><strong id="outgoingBubbleLabel">پیام‌های ارسالی</strong><small id="outgoingBubbleHint">رنگ حباب پیام‌هایی که خودت می‌فرستی</small></div>
     <div class="color-options bubble-color-options" role="group" aria-label="رنگ پیام‌های ارسالی">
       <button type="button" class="color-choice bubble-color-choice" data-bubble-target="outgoingBubble" data-bubble-color="auto" style="background:linear-gradient(135deg,#50e3c2 50%,#27364b 50%)" aria-label="خودکار" onclick="updateAppearanceSetting('outgoingBubble',this.dataset.bubbleColor)"></button>
+      <button type="button" class="color-choice bubble-color-choice" data-bubble-target="outgoingBubble" data-bubble-color="#c6d2e8" style="background:#c6d2e8" aria-label="سرمه‌ای کم‌رنگ" title="سرمه‌ای کم‌رنگ" onclick="updateAppearanceSetting('outgoingBubble',this.dataset.bubbleColor)"></button>
       <button type="button" class="color-choice bubble-color-choice" data-bubble-target="outgoingBubble" data-bubble-color="#50e3c2" style="background:#50e3c2" aria-label="فیروزه‌ای" onclick="updateAppearanceSetting('outgoingBubble',this.dataset.bubbleColor)"></button>
       <button type="button" class="color-choice bubble-color-choice" data-bubble-target="outgoingBubble" data-bubble-color="#7c9cff" style="background:#7c9cff" aria-label="آبی" onclick="updateAppearanceSetting('outgoingBubble',this.dataset.bubbleColor)"></button>
       <button type="button" class="color-choice bubble-color-choice" data-bubble-target="outgoingBubble" data-bubble-color="#c084fc" style="background:#c084fc" aria-label="بنفش" onclick="updateAppearanceSetting('outgoingBubble',this.dataset.bubbleColor)"></button>
@@ -177,6 +178,7 @@
     <div class="setting-copy" style="margin-top:16px"><strong id="incomingBubbleLabel">پیام‌های دریافتی</strong><small id="incomingBubbleHint">رنگ حباب پیام‌هایی که مخاطب می‌فرستد</small></div>
     <div class="color-options bubble-color-options" role="group" aria-label="رنگ پیام‌های دریافتی">
       <button type="button" class="color-choice bubble-color-choice" data-bubble-target="incomingBubble" data-bubble-color="auto" style="background:linear-gradient(135deg,#50e3c2 50%,#27364b 50%)" aria-label="خودکار" onclick="updateAppearanceSetting('incomingBubble',this.dataset.bubbleColor)"></button>
+      <button type="button" class="color-choice bubble-color-choice" data-bubble-target="incomingBubble" data-bubble-color="#bde7fa" style="background:#bde7fa" aria-label="آبی آسمانی کم‌رنگ" title="آبی آسمانی کم‌رنگ" onclick="updateAppearanceSetting('incomingBubble',this.dataset.bubbleColor)"></button>
       <button type="button" class="color-choice bubble-color-choice" data-bubble-target="incomingBubble" data-bubble-color="#50e3c2" style="background:#50e3c2" aria-label="فیروزه‌ای" onclick="updateAppearanceSetting('incomingBubble',this.dataset.bubbleColor)"></button>
       <button type="button" class="color-choice bubble-color-choice" data-bubble-target="incomingBubble" data-bubble-color="#7c9cff" style="background:#7c9cff" aria-label="آبی" onclick="updateAppearanceSetting('incomingBubble',this.dataset.bubbleColor)"></button>
       <button type="button" class="color-choice bubble-color-choice" data-bubble-target="incomingBubble" data-bubble-color="#c084fc" style="background:#c084fc" aria-label="بنفش" onclick="updateAppearanceSetting('incomingBubble',this.dataset.bubbleColor)"></button>
@@ -302,9 +304,9 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="./js/core.js?v=20261024-7"></script>
-<script src="./js/chat-menu-v5.js?v=20261024-6"></script>
-<script src="./js/spaces.js?v=20261024-2"></script>
+<script src="./js/core.js?v=20261024-8"></script>
+<script src="./js/chat-menu-v5.js?v=20261024-7"></script>
+<script src="./js/spaces.js?v=20261024-3"></script>
 <script src="./js/calls.js?v=20261024-1"></script>
 </body>
 </html>

@@ -1018,3 +1018,24 @@ body.chat-mode .app.chat-mode #chatPage #sendMessageForm {
   display:block;width:22px;height:22px;fill:none;stroke:currentColor;
   stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;
 }
+
+ 
+/* Advanced message history search dialog */
+.message-search-dialog{position:fixed;inset:0;z-index:10080;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(2,8,20,.74);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.message-search-dialog[hidden]{display:none}
+.message-search-card{position:relative;display:flex;flex-direction:column;gap:12px;width:min(560px,100%);max-height:88dvh;overflow:auto;box-sizing:border-box;padding:22px 18px 18px;border:1px solid var(--border,#334155);border-radius:20px;background:var(--panel,#172237);color:var(--white,#f7f9fc);box-shadow:0 24px 70px #0005}
+.message-search-heading{display:flex;align-items:center;justify-content:space-between;padding-inline-end:42px}
+.message-search-heading h2{font-size:19px;margin:0}
+#messageSearchForm{display:flex;flex-direction:column;gap:8px}
+#messageSearchForm label{display:block;font-size:12px;color:var(--muted,#a8b3c7);margin-bottom:4px}
+#messageSearchQuery,#messageSearchKind,#messageSearchFrom,#messageSearchTo{width:100%;min-width:0;box-sizing:border-box;border:1px solid var(--border,#334155);border-radius:10px;padding:10px;background:var(--panel2,#27364b);color:inherit;font:inherit;font-size:14px}
+.message-search-filters{display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:8px}
+.message-search-submit{border:0;border-radius:11px;padding:11px;background:var(--accent,#50e3c2);color:var(--accent-ink,#06251f);font:inherit;font-weight:700;cursor:pointer}
+.message-search-submit:disabled{opacity:.55;cursor:wait}
+#messageSearchStatus{margin:0;font-size:12px}
+.message-search-results{display:flex;flex-direction:column;gap:7px;min-height:0;overflow:auto}
+.message-search-result{display:flex;flex-direction:column;align-items:stretch;gap:6px;width:100%;text-align:start;padding:11px;border:1px solid var(--border,#334155);border-radius:11px;background:var(--panel2,#27364b);color:inherit;font:inherit;cursor:pointer}
+.message-search-result:active{border-color:var(--accent,#50e3c2)}
+.message-search-snippet{font-size:14px;line-height:1.5;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.message-search-meta{font-size:11px;color:var(--muted,#a8b3c7)}
+@media(max-width:560px){.message-search-dialog{padding:0;align-items:stretch}.message-search-card{width:100%;height:100dvh;max-height:100dvh;border-radius:0;border-inline:0;padding:50px 14px max(18px,env(safe-area-inset-bottom))}.message-search-filters{grid-template-columns:1fr 1fr}.message-search-filters>div:first-child{grid-column:1/-1}}

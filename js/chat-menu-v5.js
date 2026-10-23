@@ -721,8 +721,8 @@ window.addEventListener("online",()=>{
 });
 document.addEventListener("visibilitychange",()=>{
   if(document.visibilityState==="visible"&&typeof navigator!=="undefined"&&navigator.onLine&&currentUser){
-    // Refresh the inbox only. Re-fetching chat history here re-creates every message and reloads attachments.
-    refreshConversationList();
+    // Reconcile after mobile browsers suspend realtime sockets while backgrounded.
+    recoverConnection();
   }
 });
 initializeApp();

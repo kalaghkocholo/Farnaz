@@ -1109,3 +1109,35 @@ body.chat-mode .app.chat-mode #chatPage #sendMessageForm {
 .message-pinned-copy strong{font-size:11px;color:var(--mint)}
 .message-pinned-copy small{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .message-pinned-arrow{font-size:22px;color:var(--mint);line-height:1}
+
+
+/* Unified, accessible message action menus across private chats and spaces */
+.message-tools-floating{
+ display:flex!important;flex-direction:column!important;align-items:stretch!important;
+ gap:4px!important;width:min(290px,calc(100vw - 24px))!important;
+ max-height:min(72dvh,620px)!important;overflow-y:auto!important;
+ padding:10px!important;border:1px solid var(--border,#334155)!important;
+ border-radius:16px!important;background:var(--panel,#172237)!important;
+ color:var(--white,#f7f9fc)!important;box-shadow:0 18px 55px #0006!important;
+}
+.message-tools-floating>.mini-button{
+ display:flex!important;align-items:center!important;justify-content:flex-start!important;
+ gap:10px!important;width:100%!important;min-height:42px!important;
+ padding:9px 12px!important;border:0!important;border-radius:10px!important;
+ background:transparent!important;color:inherit!important;text-align:start!important;
+ font:inherit!important;font-size:14px!important;white-space:normal!important;
+}
+.message-tools-floating>.mini-button:active{background:var(--panel2,#27364b)!important}
+.message-tools-floating>.mini-button.danger{color:#f87171!important}
+.message-tools-floating>.message-reaction-picker{
+ display:flex!important;flex:0 0 auto!important;flex-wrap:wrap!important;
+ justify-content:flex-start!important;gap:5px!important;padding:2px 0 10px!important;
+ margin-bottom:3px!important;border-bottom:1px solid var(--border,#334155)!important;
+}
+.message-reaction-choice{border-color:var(--border,#334155)!important;background:var(--panel2,#27364b)!important}
+.message-reaction-add{font-size:22px!important;font-weight:500!important;color:var(--accent,var(--mint,#50e3c2))!important}
+.message-tools-dismiss{align-self:flex-end!important;min-width:34px!important;min-height:30px!important;border-radius:8px!important}
+@media(max-width:560px){
+ .message-tools-floating{width:min(310px,calc(100vw - 24px))!important;max-height:min(68dvh,560px)!important}
+ .message-tools-floating>.mini-button{min-height:44px!important}
+}

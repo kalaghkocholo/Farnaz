@@ -1225,3 +1225,39 @@ body.chat-mode .app.chat-mode #chatPage #sendMessageForm {
   #chatPage .chat-header.space-detail-head #chatAvatar{flex:0 0 30px!important;width:30px!important;height:30px!important;min-width:30px!important;min-height:30px!important}
   #chatPage .chat-header.space-detail-head .space-call-button{flex-basis:30px!important;width:30px!important;min-width:30px!important;height:30px!important;min-height:30px!important}
 }
+
+
+/* FINAL HEADER TUNING v24: button labels/sizing, larger call icons, swapped avatar/name order */
+#chatPage .chat-header.space-detail-head #backToChats.space-secondary{
+  flex:0 0 102px!important;width:102px!important;min-width:102px!important;max-width:102px!important;
+  height:42px!important;min-height:42px!important;padding:8px 10px!important;
+  font-size:14px!important;gap:6px!important;white-space:nowrap!important
+}
+#chatPage .chat-header.space-detail-head #backToChats.space-secondary span{
+  display:inline!important;visibility:visible!important;opacity:1!important;white-space:nowrap!important
+}
+/* Put the contact photo on the left and the contact name/details on its right. */
+#chatPage .chat-header.space-detail-head .space-title-wrap{
+  direction:ltr!important;gap:7px!important
+}
+#chatPage .chat-header.space-detail-head .space-title-copy{
+  direction:rtl!important;text-align:right!important
+}
+#chatPage .chat-header.space-detail-head .space-call-button{
+  flex:0 0 38px!important;width:38px!important;min-width:38px!important;
+  height:38px!important;min-height:38px!important
+}
+#chatPage .chat-header.space-detail-head .space-call-button svg{
+  width:21px!important;height:21px!important
+}
+@media(max-width:380px){
+  #chatPage .chat-header.space-detail-head #backToChats.space-secondary{
+    flex-basis:88px!important;width:88px!important;min-width:88px!important;max-width:88px!important;
+    height:38px!important;min-height:38px!important;padding:6px 7px!important;font-size:12px!important;gap:4px!important
+  }
+  #chatPage .chat-header.space-detail-head .space-title-wrap{gap:4px!important;max-width:calc(100% - 158px)!important}
+  #chatPage .chat-header.space-detail-head .space-call-button{
+    flex-basis:34px!important;width:34px!important;min-width:34px!important;height:34px!important;min-height:34px!important
+  }
+  #chatPage .chat-header.space-detail-head .space-call-button svg{width:19px!important;height:19px!important}
+}

@@ -1149,3 +1149,79 @@ body.chat-mode .app.chat-mode #chatPage #sendMessageForm {
 #chatPage .chat-header.space-detail-head #backToChats.space-secondary{display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:7px!important;width:96px!important;min-width:96px!important;max-width:96px!important;height:40px!important;min-height:40px!important;padding:8px 12px!important;font-size:15px!important;font-weight:600!important;line-height:1.2!important;white-space:nowrap!important;direction:rtl!important;flex:0 0 96px!important;}
 #chatPage .chat-header.space-detail-head #backToChats.space-secondary span{display:inline!important;visibility:visible!important;opacity:1!important;white-space:nowrap!important;font-size:15px!important;}
 @media(max-width:380px){#chatPage .chat-header.space-detail-head #backToChats.space-secondary{width:90px!important;min-width:90px!important;max-width:90px!important;flex-basis:90px!important;height:38px!important;min-height:38px!important;font-size:14px!important;padding:7px 9px!important}#chatPage .chat-header.space-detail-head #backToChats.space-secondary span{font-size:14px!important}}
+
+
+/* FINAL FIX: private-chat header layout. Keep back + contact on the left, calls on the right. */
+#chatPage .chat-header.space-detail-head{
+  display:flex!important;
+  flex-direction:row!important;
+  direction:ltr!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  gap:8px!important;
+  width:100%!important;
+  min-width:0!important;
+  box-sizing:border-box!important;
+}
+#chatPage .chat-header.space-detail-head #backToChats.space-secondary{
+  order:0!important;
+  display:inline-flex!important;
+  flex:0 0 96px!important;
+  width:96px!important;
+  min-width:96px!important;
+  max-width:96px!important;
+  height:40px!important;
+  min-height:40px!important;
+  padding:8px 10px!important;
+  gap:6px!important;
+  white-space:nowrap!important;
+  direction:rtl!important;
+  font-size:14px!important;
+  line-height:1.2!important;
+}
+#chatPage .chat-header.space-detail-head .space-title-wrap{
+  order:1!important;
+  display:flex!important;
+  flex:0 1 auto!important;
+  width:auto!important;
+  min-width:0!important;
+  max-width:calc(100% - 180px)!important;
+  justify-self:auto!important;
+  overflow:hidden!important;
+}
+#chatPage .chat-header.space-detail-head .space-call-actions{
+  order:2!important;
+  display:flex!important;
+  flex:0 0 auto!important;
+  width:auto!important;
+  min-width:0!important;
+  margin-left:auto!important;
+  justify-content:flex-end!important;
+  gap:4px!important;
+}
+#chatPage .chat-header.space-detail-head .space-call-button{
+  flex:0 0 34px!important;
+  width:34px!important;
+  min-width:34px!important;
+  height:34px!important;
+  min-height:34px!important;
+}
+#chatPage .chat-header.space-detail-head .space-title-copy,
+#chatPage .chat-header.space-detail-head .space-title-copy h3,
+#chatPage .chat-header.space-detail-head .space-title-copy small{
+  min-width:0!important;
+  max-width:100%!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+@media(max-width:380px){
+  #chatPage .chat-header.space-detail-head{gap:5px!important;padding-left:3px!important;padding-right:3px!important}
+  #chatPage .chat-header.space-detail-head #backToChats.space-secondary{
+    flex-basis:86px!important;width:86px!important;min-width:86px!important;max-width:86px!important;
+    height:36px!important;min-height:36px!important;padding:6px 7px!important;font-size:12px!important;gap:4px!important
+  }
+  #chatPage .chat-header.space-detail-head .space-title-wrap{max-width:calc(100% - 155px)!important;gap:4px!important}
+  #chatPage .chat-header.space-detail-head #chatAvatar{flex:0 0 30px!important;width:30px!important;height:30px!important;min-width:30px!important;min-height:30px!important}
+  #chatPage .chat-header.space-detail-head .space-call-button{flex-basis:30px!important;width:30px!important;min-width:30px!important;height:30px!important;min-height:30px!important}
+}

@@ -5,6 +5,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#101828">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./farnaz-icon.svg" type="image/svg+xml">
 <meta name="description" content="فرناز؛ ارتباطی نزدیک‌تر، در هر کجا.">
 <title>فرناز | Farnaz</title>
 <link rel="stylesheet" href="./styles.css?v=20261023-39">
@@ -187,6 +189,11 @@
       <button type="button" class="color-choice bubble-color-choice" data-bubble-target="incomingBubble" data-bubble-color="#d1d5db" style="background:#d1d5db" aria-label="خاکستری روشن" title="خاکستری روشن" onclick="updateAppearanceSetting('incomingBubble',this.dataset.bubbleColor)"></button>
       <button type="button" class="color-choice bubble-color-choice" data-bubble-target="incomingBubble" data-bubble-color="#6b7280" style="background:#6b7280" aria-label="خاکستری تیره" title="خاکستری تیره" onclick="updateAppearanceSetting('incomingBubble',this.dataset.bubbleColor)"></button></div>
   </div>
+  <div class="settings-card" id="notificationsSettingsCard">
+    <h3 id="notificationsHeading">اعلان‌ها</h3>
+    <div class="setting-row"><div class="setting-copy"><strong id="notificationsLabel">اعلان پیام‌ها</strong><small id="notificationsHint">اجازه نمایش اعلان روی این دستگاه؛ اعلان پس از بسته‌شدن برنامه به پیکربندی Push سرور هم نیاز دارد.</small></div><button class="setting-control" type="button" id="enableNotificationsButton" onclick="enableFarnazNotifications()">فعال‌سازی اعلان</button></div>
+    <p id="notificationsStatus" class="status muted-note" role="status"></p>
+  </div>
   <div class="settings-card">
     <h3 id="languageTitle">زبان</h3>
     <div class="setting-row">
@@ -295,8 +302,9 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="./js/core.js?v=20261023-20"></script>
-<script src="./js/chat-menu-v5.js?v=20261023-26"></script>
-<script src="./js/spaces.js?v=20261023-69"></script>
+<script src="./js/core.js?v=20261023-21"></script>
+<script src="./js/chat-menu-v5.js?v=20261023-27"></script>
+<script src="./js/spaces.js?v=20261023-70"></script>
+<script src="./js/calls.js?v=20261023-1"></script>
 </body>
 </html>

@@ -309,8 +309,43 @@ function updateSpaceMessageSelection(){
  if(!bar){bar=document.createElement("div");bar.id="spaceMessageSelectionBar";bar.className="space-message-selection-bar";bar.hidden=true;list.parentNode.insertBefore(bar,list);}
  bar.hidden=!spaceMessageSelectionMode;bar.replaceChildren();if(!spaceMessageSelectionMode)return;
  const count=document.createElement("span");count.textContent=tr(selectedSpaceMessageIds.size+" پیام انتخاب شده","Selected: "+selectedSpaceMessageIds.size);bar.appendChild(count);
+ const forward=document.createElement("button");forward.type="button";forward.textContent=tr("فوروارد","Forward");forward.disabled=!selectedSpaceMessageIds.size;forward.onclick=forwardSelectedSpaceMessages;bar.appendChild(forward);
  const remove=document.createElement("button");remove.type="button";remove.textContent=tr("حذف","Delete");remove.disabled=!selectedSpaceMessageIds.size;remove.onclick=deleteSelectedSpaceMessages;bar.appendChild(remove);
  const cancel=document.createElement("button");cancel.type="button";cancel.textContent=tr("لغو","Cancel");cancel.onclick=()=>{spaceMessageSelectionMode=false;selectedSpaceMessageIds.clear();updateSpaceMessageSelection();};bar.appendChild(cancel);
+}
+async function forwardSelectedSpaceMessages(){
+ if(!active||!currentUser||!selectedSpaceMessageIds.size)return;
+ try{
+  const client=getClient();
+  const {data:messages,error}=await client.from("space_messages").select("id,body,message_type,attachment_path,attachment_name,attachment_mime,attachment_size,created_at").in("id",[...selectedSpaceMessageIds]).order("created_at",{ascending:true});
+  if(error)throw error;
+  const {data:destinations,error:destError}=await client.from("spaces").select("id,name,type").neq("id",active.id).order("name");
+  if(destError)throw destError;
+  if(!destinations?.length)throw Error(tr("فضای دیگری برای فوروارد وجود ندارد.","There is no other group or channel to forward to."));
+  const choices=destinations.map((x,i)=>(i+1)+". "+x.name+" ("+x.type+")").join("\n");
+  const choice=Number(prompt(tr("شماره مقصد را انتخاب کن:\n","Choose destination by number:\n")+choices));
+  if(!Number.isInteger(choice)||choice<1||choice>destinations.length)return;
+  const destination=destinations[choice-1];
+  for(const m of messages||[]){
+   let path=null;
+   if(m.attachment_path){
+    const {data:blob,error:downloadError}=await client.storage.from("chat-attachments").download(m.attachment_path);if(downloadError)throw downloadError;
+    const ext=(m.attachment_name||"attachment").split(".").pop().toLowerCase().replace(/[^a-z0-9]/g,"")||"bin";
+    path=currentUser.id+"/spaces/"+crypto.randomUUID()+"."+ext;
+    const {error:uploadError}=await client.storage.from("chat-attachments").upload(path,blob,{contentType:m.attachment_mime||blob.type||"application/octet-stream",upsert:false});if(uploadError)throw uploadError;
+   }
+   const {error:insertError}=await client.from("space_messages").insert({space_id:destination.id,sender_id:currentUser.id,body:m.body||" ",message_type:m.message_type||"text",attachment_path:path,attachment_name:m.attachment_name||null,attachment_mime:m.attachment_mime||null,attachment_size:m.attachment_size||null});
+   if(insertError){if(path)try{await client.storage.from("chat-attachments").remove([path]);}catch(_){}throw insertError;}
+  }
+  selectedSpaceMessageIds.clear();spaceMessageSelectionMode=false;updateSpaceMessageSelection();
+  q("spaceMessageStatus").textContent=tr("پیام‌ها فوروارد شدند.","Messages forwarded.");
+ }catch(error){q("spaceMessageStatus").textContent=tr("فوروارد ناموفق بود: ","Forward failed: ")+(error?.message||String(error));}
+}
+function replyToSpaceMessage(message){
+ const input=q("spaceText");if(!input)return;
+ const quoted=String(message.body||message.attachment_name||tr("پیوست","Attachment")).split("\n").map(line=>"> "+line).join("\n");
+ input.value=(quoted+"\n"+input.value).trimStart();input.focus();input.dispatchEvent(new Event("input",{bubbles:true}));
+ q("spaceMessageStatus").textContent=tr("متن نقل‌قول‌شده آماده پاسخ است.","Quoted text is ready to reply.");
 }
 function closeSpaceMessageMenu(){
  document.querySelectorAll(".space-message-actions,.space-message-action-backdrop,.space-message-action-clone").forEach(n=>n.remove());
@@ -326,6 +361,8 @@ function showSpaceMessageActions(message,element){
  const menu=document.createElement("div");menu.className="space-message-actions";menu.setAttribute("role","dialog");
  const add=(label,fn,disabled=false)=>{const b=document.createElement("button");b.type="button";b.textContent=label;b.disabled=disabled;b.onclick=()=>{closeSpaceMessageMenu();fn();};menu.appendChild(b);};
  const own=String(message.sender_id)===String(currentUser?.id);
+ add(tr("پاسخ","Reply"),()=>replyToSpaceMessage(message));
+ add(tr("فوروارد","Forward"),()=>{selectedSpaceMessageIds.clear();selectedSpaceMessageIds.add(String(message.id));spaceMessageSelectionMode=true;updateSpaceMessageSelection();forwardSelectedSpaceMessages();});
  if(message.attachment_path)add(tr("دانلود فایل","Download attachment"),()=>downloadSpaceMessage(message));
  add(tr("انتخاب پیام","Select message"),()=>{spaceMessageSelectionMode=true;selectedSpaceMessageIds.add(String(message.id));updateSpaceMessageSelection();});
  if(own&&message.body)add(tr("ویرایش","Edit"),()=>editSpaceMessage(message));

@@ -166,6 +166,11 @@ async function startCall(type){
   if(activeCall){alert(tr("یک تماس در حال اجراست.","A call is already in progress."));return;}
   const receiverId=String(currentChatUser.user_id);
   if(receiverId===String(signedInUserId))return;
+  try{
+    const {data:blocked,error}=await getClient().from("blocked_contacts").select("blocked_user_id").eq("blocker_id",signedInUserId).eq("blocked_user_id",receiverId).maybeSingle();
+    if(error)throw error;
+    if(blocked){alert(tr("این مخاطب را مسدود کرده‌ای؛ برای تماس ابتدا مسدودسازی را بردار.","This contact is blocked. Unblock them before calling."));return;}
+  }catch(error){alert(tr("وضعیت مسدودسازی بررسی نشد: ","Could not verify block status: ")+error.message);return;}
   showDialog(type==="video"?tr("تماس تصویری","Video call"):tr("تماس صوتی","Audio call"),tr("در حال شروع تماس…","Starting call…"));
   try{
     const {data,error}=await getClient().from("call_sessions").insert({caller_id:signedInUserId,receiver_id:receiverId,call_type:type,status:"ringing"}).select("*").single();

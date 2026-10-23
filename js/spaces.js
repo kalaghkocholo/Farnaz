@@ -50,6 +50,7 @@ body.spaces-chat-mode.keyboard-open #spacesPage #spaceComposer .composer-icon{wi
 `;
 s.textContent += "/* Final single-line group composer layout */\n#spacesPage #spaceComposer .space-composer-shell{display:flex!important;flex-wrap:nowrap!important;align-items:center!important;gap:4px!important;grid-template-columns:none!important;grid-template-rows:none!important;grid-template-areas:none!important;}\n#spacesPage #spaceComposer .space-voice-preview{flex:0 0 100%!important;order:0!important;}\n#spacesPage #spaceComposer .space-voice-preview[hidden]{display:none!important;}\n#spacesPage #spaceComposer .space-send-row{order:2!important;flex:1 1 0%!important;width:0!important;min-width:0!important;grid-area:auto!important;}\n#spacesPage #spaceComposer .space-composer-actions{display:contents!important;}\n#spacesPage #spaceComposer .composer-left{order:1!important;flex:0 0 36px!important;grid-area:auto!important;}\n#spacesPage #spaceComposer .composer-right{order:3!important;flex:0 0 auto!important;grid-area:auto!important;}\n#spacesPage #spaceComposer #spaceText{width:100%!important;min-width:0!important;}\n#spacesPage #spaceComposer .composer-icon{width:34px!important;height:34px!important;min-width:34px!important;min-height:34px!important;flex:0 0 34px!important;}\n#spacesPage #spaceComposer .composer-right{gap:3px!important;}";
 s.textContent += "#spaceInfoDialog{padding:0!important;align-items:stretch!important}#spaceInfoDialog .space-dialog-card{position:relative;width:min(680px,100%)!important;height:100dvh!important;max-height:100dvh!important;border-radius:0!important;padding:52px 18px 18px!important}@media(min-width:700px){#spaceInfoDialog{align-items:center!important;padding:16px!important}#spaceInfoDialog .space-dialog-card{height:min(88dvh,900px)!important;max-height:88dvh!important;border-radius:20px!important}}";
+s.textContent += "#spaceMemberList{display:flex;flex-direction:column;gap:5px}.space-member-row{display:block!important;padding:0!important;border-bottom:1px solid var(--line,#334155);min-width:0}.space-member-trigger{display:flex;align-items:center;gap:9px;width:100%;min-width:0;padding:10px 2px;border:0;background:transparent;color:inherit;text-align:right;font:inherit;cursor:pointer;border-radius:10px}.space-member-trigger:focus-visible{outline:2px solid var(--accent,#50e3c2);outline-offset:2px}.space-member-trigger:disabled{cursor:default;opacity:1}.space-member-trigger .space-avatar{width:38px;height:38px;flex:0 0 38px;border-radius:50%;font-size:17px;overflow:hidden}.space-member-copy{flex:1;min-width:0;overflow-wrap:anywhere}.space-member-copy strong,.space-member-copy small{display:block}.space-member-copy small{opacity:.7;font-size:12px;margin-top:3px}.space-member-chevron{margin-inline-start:auto;font-size:20px;opacity:.65}.space-member-tools{display:flex;gap:6px;flex-wrap:wrap;padding:0 8px 10px 46px}.space-member-tools[hidden]{display:none!important}.space-member-tools button{font-size:12px;padding:7px 9px;white-space:normal;max-width:100%}@media(max-width:390px){.space-member-tools{padding-inline-start:4px}.space-member-tools button{flex:1 1 auto}}";
 document.head.appendChild(s);
 }
 function build(){
@@ -167,28 +168,34 @@ async function open(id){
   q("spaceMemberHeading").textContent=tr("اعضای گروه","Group members")+" · "+(members||[]).length;
   for(const member of members||[]){
    const row=document.createElement("div");row.className="space-member-row";
+   const trigger=document.createElement("button");trigger.type="button";trigger.className="space-member-trigger";
    const av=document.createElement("span");av.className="space-avatar";renderSpaceAvatar(av,member.avatar_url,"👤");
-   const copy=document.createElement("div");copy.className="space-member-copy";
+   const copy=document.createElement("span");copy.className="space-member-copy";
    const name=document.createElement("strong");name.textContent=member.user_id===currentUser.id?tr("شما","You"):(member.display_name||tr("کاربر فرناز","Farnaz user"));
-   const role=document.createElement("small");role.textContent=member.role==="owner"?tr("مالک گروه","Group owner"):member.role==="admin"?tr("مدیر گروه","Group admin"):tr("عضو","Member");copy.append(name,role);row.append(av,copy);
-   const tools=document.createElement("div");tools.className="space-member-tools";
+   const role=document.createElement("small");role.textContent=member.role==="owner"?tr("مالک گروه","Group owner"):member.role==="admin"?tr("مدیر گروه","Group admin"):tr("عضو","Member");copy.append(name,role);
+   trigger.append(av,copy);
+   const tools=document.createElement("div");tools.className="space-member-tools";tools.hidden=true;
    if(member.user_id!==currentUser.id){
+    const chevron=document.createElement("span");chevron.className="space-member-chevron";chevron.textContent="⌄";chevron.setAttribute("aria-hidden","true");trigger.appendChild(chevron);trigger.setAttribute("aria-expanded","false");
+    trigger.onclick=()=>{const expand=tools.hidden;tools.hidden=!expand;trigger.setAttribute("aria-expanded",String(expand));chevron.textContent=expand?"⌃":"⌄";};
     const dm=document.createElement("button");dm.type="button";dm.className="space-secondary";dm.textContent=tr("پیام خصوصی","Private message");dm.onclick=()=>{q("spaceInfoDialog").hidden=true;openChat({user_id:member.user_id,display_name:member.display_name||tr("کاربر فرناز","Farnaz user"),avatar_url:member.avatar_url||""},"spacesPage");};tools.appendChild(dm);
     if(mine.role==="owner"&&member.role!=="owner"){
-     const roleBtn=document.createElement("button");roleBtn.type="button";roleBtn.className="space-secondary";roleBtn.textContent=member.role==="admin"?tr("برداشتن مدیریت","Remove admin"):tr("مدیر کردن","Make admin");roleBtn.onclick=async()=>{roleBtn.disabled=true;try{const {error:e}=await getClient().rpc("set_space_member_role",{p_space_id:spaceId,p_user_id:member.user_id,p_role:member.role==="admin"?"member":"admin"});if(e)throw e;await openSpaceInfo();}catch(e){q("spaceInfoStatus").textContent=e.message;}finally{roleBtn.disabled=false;}};tools.appendChild(roleBtn);
-     const transfer=document.createElement("button");transfer.type="button";transfer.className="space-secondary";transfer.textContent=tr("انتقال مالکیت","Transfer ownership");transfer.onclick=async()=>{if(!window.confirm(tr("با انتقال مالکیت، شما مدیر می‌شوید و این عضو مالک گروه خواهد شد. ادامه می‌دهی؟","Transfer ownership to this member? You will become an admin.")))return;transfer.disabled=true;try{const {error:e}=await getClient().rpc("transfer_space_ownership",{p_space_id:spaceId,p_new_owner_id:member.user_id});if(e)throw e;await open(spaceId);await openSpaceInfo();}catch(e){q("spaceInfoStatus").textContent=e.message;}finally{transfer.disabled=false;}};tools.appendChild(transfer);
+     const roleBtn=document.createElement("button");roleBtn.type="button";roleBtn.className="space-secondary";roleBtn.textContent=member.role==="admin"?tr("برداشتن مدیریت","Remove admin"):tr("مدیر کردن","Make admin");roleBtn.onclick=async()=>{roleBtn.disabled=true;try{const {error:e}=await getClient().rpc("set_space_member_role",{p_space_id:spaceId,p_user_id:member.user_id,p_role:member.role==="admin"?"member":"admin"});if(e)throw e;await openSpaceInfo();}catch(e){q("spaceInfoStatus").textContent=tr("عملیات ناموفق بود: ","Action failed: ")+(e?.message||String(e));}finally{roleBtn.disabled=false;}};tools.appendChild(roleBtn);
+     const transfer=document.createElement("button");transfer.type="button";transfer.className="space-secondary";transfer.textContent=tr("انتقال مالکیت","Transfer ownership");transfer.onclick=async()=>{if(!window.confirm(tr("با انتقال مالکیت، شما مدیر می‌شوید و این عضو مالک گروه خواهد شد. ادامه می‌دهی؟","Transfer ownership to this member? You will become an admin.")))return;transfer.disabled=true;try{const {error:e}=await getClient().rpc("transfer_space_ownership",{p_space_id:spaceId,p_new_owner_id:member.user_id});if(e)throw e;await refresh();await open(spaceId);await openSpaceInfo();}catch(e){q("spaceInfoStatus").textContent=tr("انتقال مالکیت ناموفق بود: ","Ownership transfer failed: ")+(e?.message||String(e));}finally{transfer.disabled=false;}};tools.appendChild(transfer);
     }
     if(["owner","admin"].includes(mine.role)&&(mine.role==="owner"||member.role==="member")&&member.role!=="owner"){
-     const remove=document.createElement("button");remove.type="button";remove.className="space-secondary";remove.textContent=tr("حذف عضو","Remove");remove.onclick=async()=>{if(!window.confirm(tr("این عضو از گروه حذف شود؟","Remove this member from the group?")))return;remove.disabled=true;try{const {error:e}=await getClient().from("space_members").delete().eq("space_id",spaceId).eq("user_id",member.user_id);if(e)throw e;await openSpaceInfo();}catch(e){q("spaceInfoStatus").textContent=e.message;}finally{remove.disabled=false;}};tools.appendChild(remove);
+     const remove=document.createElement("button");remove.type="button";remove.className="space-secondary";remove.textContent=tr("حذف عضو","Remove");remove.onclick=async()=>{if(!window.confirm(tr("این عضو از گروه حذف شود؟","Remove this member from the group?")))return;remove.disabled=true;try{const {error:e}=await getClient().from("space_members").delete().eq("space_id",spaceId).eq("user_id",member.user_id);if(e)throw e;await openSpaceInfo();}catch(e){q("spaceInfoStatus").textContent=tr("حذف عضو ناموفق بود: ","Could not remove member: ")+(e?.message||String(e));}finally{remove.disabled=false;}};tools.appendChild(remove);
     }
+   }else{
+    trigger.disabled=true;trigger.setAttribute("aria-disabled","true");
    }
-   row.appendChild(tools);list.appendChild(row);
+   row.append(trigger,tools);list.appendChild(row);
   }
   q("spaceInfoStatus").textContent=tr("اطلاعات خصوصی حساب اعضا، مانند شماره تلفن و ایمیل، در این فهرست نمایش داده نمی‌شود.","Private account details such as phone numbers and email addresses are not shown here.");
  }
  async function saveSpaceInfo(event){
   event.preventDefault();if(!active||!currentUser)return;
-  const btn=q("saveSpaceEdit");if(btn.disabled)return;btn.disabled=true;q("spaceEditStatus").textContent="";
+  const btn=q("saveSpaceEdit");if(btn.disabled)return;btn.disabled=true;q("spaceEditStatus").textContent="";let uploadedGroupAvatar=null;
   try{
    const name=q("spaceEditName").value.trim(),description=q("spaceEditDescription").value.trim(),file=q("spaceEditPhoto").files[0];
    if(!name)throw Error(tr("نام گروه را وارد کن.","Enter a group name."));
@@ -198,13 +205,13 @@ async function open(id){
     const ext=(file.name.split(".").pop()||"jpg").toLowerCase().replace(/[^a-z0-9]/g,"")||"jpg";
     const path=active.id+"/"+crypto.randomUUID()+"."+ext;
     const {error:uploadError}=await getClient().storage.from("group-avatars").upload(path,file,{contentType:file.type,upsert:false});
-    if(uploadError)throw uploadError;avatar_url=path;
+    if(uploadError)throw uploadError;uploadedGroupAvatar=path;avatar_url=path;
    }
    const {data,error}=await getClient().from("spaces").update({name,description,avatar_url,updated_at:new Date().toISOString()}).eq("id",active.id).select("*").single();
    if(error)throw error;
    active=data;spaces=spaces.map(s=>s.id===data.id?data:s);q("spaceEditDialog").hidden=true;q("spaceInfoDialog").hidden=true;
    await open(data.id);await openSpaceInfo();await refresh();
-  }catch(e){q("spaceEditStatus").textContent=tr("ذخیره تغییرات ناموفق بود: ","Could not save changes: ")+(e?.message||String(e));}
+  }catch(e){if(uploadedGroupAvatar)try{await getClient().storage.from("group-avatars").remove([uploadedGroupAvatar]);}catch(_){}q("spaceEditStatus").textContent=tr("ذخیره تغییرات ناموفق بود: ","Could not save changes: ")+(e?.message||String(e));}
   finally{btn.disabled=false;}
  }
 

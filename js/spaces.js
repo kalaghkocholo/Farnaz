@@ -143,7 +143,7 @@ async function refresh(){
 async function open(id){
  try{const latest=await getClient().from("spaces").select("*").eq("id",id).single();if(latest.error)throw latest.error;const s=latest.data;active=s;spaces=spaces.map(x=>x.id===s.id?s:x);
  document.querySelector(".app")?.classList.add("spaces-chat-mode");document.body.classList.add("spaces-chat-mode");q("bottomNav")?.classList.remove("visible");q("spaceList").hidden=true;document.querySelector(".spaces-head").hidden=true;document.querySelector(".spaces-tabs").hidden=true;document.querySelector(".spaces-actions").hidden=true;q("spacesStatus").hidden=true;q("spaceDetail").hidden=false;
- q("spaceName").textContent=s.name;if(s.type==="group"){q("spaceName").setAttribute("role","button");q("spaceName").tabIndex=0;q("spaceName").setAttribute("aria-label",tr("باز کردن اطلاعات گروه","Open group information"));q("spaceName").style.cursor="pointer";}else{q("spaceName").removeAttribute("role");q("spaceName").removeAttribute("tabindex");q("spaceName").removeAttribute("aria-label");q("spaceName").style.cursor="default";}renderSpaceAvatar(q("spaceIcon"),s.avatar_url,s.type==="group"?"👥":"📣",true);q("spaceIcon").style.cursor=s.type==="group"?"pointer":"default";q("spaceIcon").style.setProperty("display","block","important");q("spaceIcon").style.setProperty("position","relative","important");q("spaceIcon").style.setProperty("flex","0 0 44px","important");q("spaceIcon").style.setProperty("width","44px","important");q("spaceIcon").style.setProperty("height","44px","important");q("spaceIcon").style.setProperty("min-width","44px","important");q("spaceIcon").style.setProperty("min-height","44px","important");q("spaceIcon").style.setProperty("visibility","visible","important");q("spaceIcon").style.setProperty("opacity","1","important");q("spaceDescription").textContent=s.description||"";
+ q("spaceName").textContent=s.name;if(s.type==="group"){q("spaceName").setAttribute("role","button");q("spaceName").tabIndex=0;q("spaceName").setAttribute("aria-label",tr("باز کردن اطلاعات گروه","Open group information"));q("spaceName").style.cursor="pointer";}else{q("spaceName").removeAttribute("role");q("spaceName").removeAttribute("tabindex");q("spaceName").removeAttribute("aria-label");q("spaceName").style.cursor="default";}renderSpaceAvatar(q("spaceIcon"),s.avatar_url,s.type==="group"?"👥":"📣",true);q("spaceIcon").style.cursor=s.type==="group"?"pointer":"default";q("spaceDescription").textContent=s.description||"";
  const {data:membership}=await getClient().from("space_members").select("role").eq("space_id",s.id).eq("user_id",currentUser.id).maybeSingle();const joined=!!membership,manager=membership&&["owner","admin"].includes(membership.role);
  q("spaceMeta").textContent=(s.type==="group"?tr("گروه","Group"):s.is_public?tr("کانال عمومی","Public channel"):tr("کانال خصوصی","Private channel"))+(membership?" · "+(membership.role==="owner"?tr("سازنده","Owner"):membership.role==="admin"?tr("مدیر","Admin"):tr("عضو","Member")):"");if(s.type==="group"){q("spaceMeta").setAttribute("role","button");q("spaceMeta").tabIndex=0;q("spaceMeta").setAttribute("aria-label",tr("باز کردن اطلاعات گروه","Open group information"));q("spaceMeta").style.cursor="pointer";}else{q("spaceMeta").removeAttribute("role");q("spaceMeta").removeAttribute("tabindex");q("spaceMeta").removeAttribute("aria-label");q("spaceMeta").style.cursor="default";}
  const acts=q("spaceActions");acts.replaceChildren();
@@ -236,6 +236,29 @@ async function cropFinish(cancel){if(!cropState)return;const a=cropState;if(canc
  }
 
  let messageLoadToken=0,messageReloadTimer=null;
+const spaceSenderProfileCache=new Map();
+const spaceAttachmentUrlCache=new Map();
+const SPACE_SIGNED_URL_TTL=50*60*1000;
+async function getCachedSpaceSenderName(senderId){
+ const key=String(senderId||"");
+ if(!key)return "";
+ if(spaceSenderProfileCache.has(key))return spaceSenderProfileCache.get(key);
+ const pending=(async()=>{const profile=await getContactProfile(key);return profile?.display_name||"";})();
+ spaceSenderProfileCache.set(key,pending);
+ try{const name=await pending;spaceSenderProfileCache.set(key,name);return name;}
+ catch(error){spaceSenderProfileCache.delete(key);throw error;}
+}
+async function getCachedSpaceAttachmentUrl(path){
+ const key=String(path||"");
+ if(!key)return null;
+ const cached=spaceAttachmentUrlCache.get(key);
+ if(cached&&cached.expiresAt>Date.now())return cached.url;
+ if(cached?.pending)return cached.pending;
+ const pending=(async()=>{const {data,error}=await getClient().storage.from("chat-attachments").createSignedUrl(key,3600);if(error)throw error;return data?.signedUrl||null;})();
+ spaceAttachmentUrlCache.set(key,{pending,expiresAt:Date.now()+SPACE_SIGNED_URL_TTL});
+ try{const url=await pending;spaceAttachmentUrlCache.set(key,{url,expiresAt:Date.now()+SPACE_SIGNED_URL_TTL});return url;}
+ catch(error){spaceAttachmentUrlCache.delete(key);throw error;}
+}
 async function loadMessages(id){
  const token=++messageLoadToken;const list=q("spaceMessages");if(!list)return;
  const wasNearBottom=list.scrollHeight-list.scrollTop-list.clientHeight<70;
@@ -244,9 +267,9 @@ async function loadMessages(id){
   if(error)throw error;if(token!==messageLoadToken||active?.id!==id)return;
   const rows=(data||[]).reverse();
   const senderIds=[...new Set(rows.map(m=>m.sender_id).filter(Boolean).map(String))];
-  const senderEntries=await Promise.all(senderIds.map(async senderId=>{try{const profile=await getContactProfile(senderId);return [senderId,profile?.display_name||""];}catch(_){return [senderId,""];}}));
+  const senderEntries=await Promise.all(senderIds.map(async senderId=>{try{return [senderId,await getCachedSpaceSenderName(senderId)];}catch(_){return [senderId,""];}}));
   const senderNames=new Map(senderEntries);
-  const attachmentEntries=await Promise.all(rows.filter(m=>m.attachment_path).map(async m=>{try{const {data:asset,error:assetError}=await getClient().storage.from("chat-attachments").createSignedUrl(m.attachment_path,3600);return [String(m.id),!assetError?asset?.signedUrl||null:null];}catch(_){return [String(m.id),null];}}));
+  const attachmentEntries=await Promise.all(rows.filter(m=>m.attachment_path).map(async m=>{try{return [String(m.id),await getCachedSpaceAttachmentUrl(m.attachment_path)];}catch(_){return [String(m.id),null];}}));
   const attachmentUrls=new Map(attachmentEntries);
   if(token!==messageLoadToken||active?.id!==id)return;
   const fragment=document.createDocumentFragment();

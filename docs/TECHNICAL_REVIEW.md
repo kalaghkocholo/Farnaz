@@ -100,3 +100,15 @@ The connected project `iemykhluluoymsbqpjsn` was queried directly after the earl
 4. Check the hosted GitHub Actions run and perform a real iOS Safari/PWA smoke test.
 
 No destructive policy changes were made during this review. The remaining SECURITY DEFINER advisor warnings are not automatically vulnerabilities; each RPC needs its current authorization contract preserved and tested.
+
+
+## Reliability and call implementation follow-up — 2026-10-23
+
+- Added a private-call signaling schema (`call_sessions`, `call_signals`) with RLS policies that restrict records to the call participants, fixed participant/type fields, and guarded call status transitions so only the receiver can accept or reject and either participant can end a call. Both tables are included in the Realtime publication. Live metadata confirms RLS is enabled (3 policies on sessions; 2 on signals) and both tables are published.
+- Added a browser WebRTC flow for one-to-one audio/video calls, including incoming-call prompts, offer/answer/ICE exchange, microphone/camera cleanup, reconnect lookup for recent ringing invitations, and a missed-call timeout. Group call buttons are hidden because multi-party calling is not implemented.
+- Added a service worker and manifest for installable PWA metadata, offline shell caching, notification display/click handling, and a notification permission control. The current UI can show notifications while the app's Realtime connection is alive; **true push delivery after the app is closed is not complete** because VAPID keys, subscription persistence, and a server-side push sender still need configuration.
+- Realtime recovery now reconciles the open private conversation after a network interruption or mobile tab suspension, while preserving the user's scroll position when they were not already at the bottom.
+
+## Important verification boundary
+
+The schema and RLS metadata for call signaling were verified against the live project. The browser code has been committed but has **not** been tested with two logged-in browsers/devices, real microphone/camera permissions, or difficult NAT/mobile networks. The WebRTC configuration currently uses public STUN servers and has no TURN relay; calls may fail on restrictive networks until a TURN service is configured. Push after app closure likewise remains a deployment task. Do not describe these features as production-verified yet.

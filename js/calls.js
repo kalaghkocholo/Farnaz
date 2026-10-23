@@ -143,7 +143,7 @@ async function rejectIncoming(){
 }
 async function cleanupCall(updateStatus){
   const call=activeCall;activeCall=null;
-  if(call){
+  if(call){if(call.timeout)clearTimeout(call.timeout);
     if(call.signalChannel)try{await getClient().removeChannel(call.signalChannel);}catch(_){}
     if(call.pc){call.pc.ontrack=null;call.pc.onicecandidate=null;call.pc.close();}
     if(call.localStream)call.localStream.getTracks().forEach(t=>t.stop());
@@ -168,9 +168,15 @@ async function startCall(type){
   try{
     const {data,error}=await getClient().from("call_sessions").insert({caller_id:signedInUserId,receiver_id:receiverId,call_type:type,status:"ringing"}).select("*").single();
     if(error)throw error;
-    activeCall={session:data,role:"caller",otherId:receiverId,signalChannel:null,pc:null,localStream:null};
+    activeCall={session:data,role:"caller",otherId:receiverId,signalChannel:null,pc:null,localStream:null,pendingCandidates:[],timeout:null};
     byId("farnazCallHangup").hidden=false;
     await preparePeer(data,"caller");
+    activeCall.timeout=setTimeout(async()=>{
+      if(!activeCall||activeCall.session.id!==data.id||activeCall.pc?.connectionState==="connected")return;
+      try{await sendSignal("hangup");await getClient().from("call_sessions").update({status:"missed"}).eq("id",data.id);}catch(e){console.warn("Missed call status:",e);}
+      await cleanupCall(false);showDialog(tr("تماس بی‌پاسخ","Missed call"),tr("پاسخی دریافت نشد.","No answer received."));
+      setTimeout(()=>{const d=byId("farnazCallDialog");if(d)d.hidden=true;},1800);
+    },45000);
   }catch(e){
     console.error("Start call:",e);try{if(activeCall?.session?.id)await getClient().from("call_sessions").update({status:"ended"}).eq("id",activeCall.session.id);}catch(_){}await cleanupCall(false);
     setCallStatus(tr("تماس شروع نشد: ","Call could not start: ")+e.message);

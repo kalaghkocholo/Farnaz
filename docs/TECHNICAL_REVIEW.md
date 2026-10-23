@@ -48,8 +48,7 @@ The application is currently built from classic browser scripts with shared glob
 
 ### Product gaps, not represented as completed features
 
-- `startCall()` currently displays a message that audio/video calling is not configured. Actual calls require a signaling service and a WebRTC implementation.
-- No service worker or background push implementation was found in the inspected application files.
+- One-to-one calling and the service-worker shell have since been added in the follow-up pass below. They remain unverified on real devices; group calls and fully configured background push are still incomplete.
 - The current GitHub Actions job checks JavaScript syntax only; it does not execute browser flows or test Supabase authorization.
 
 ## Suggested order for the next pass

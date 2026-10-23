@@ -1,5 +1,5 @@
 "use strict";
-const CACHE_NAME="farnaz-shell-v5";
+const CACHE_NAME="farnaz-shell-v6";
 const APP_BASE=new URL("./",self.location.href);
 const SHELL=["./","./index.html","./styles.css","./spaces.css","./js/core.js","./js/chat-menu-v5.js","./js/spaces.js","./js/calls.js","./manifest.webmanifest","./farnaz-icon.svg"];
 self.addEventListener("install",event=>{
@@ -20,7 +20,7 @@ self.addEventListener("fetch",event=>{
     }).catch(async()=>await caches.match(req,{ignoreSearch:true})||await caches.match(new URL("./index.html",APP_BASE).href)));
     return;
   }
-  event.respondWith(caches.match(req,{ignoreSearch:true}).then(cached=>{
+  event.respondWith(caches.match(req).then(cached=>{
     const network=fetch(req).then(response=>{
       if(response.ok&&response.type==="basic")caches.open(CACHE_NAME).then(cache=>cache.put(req,response.clone()));
       return response;

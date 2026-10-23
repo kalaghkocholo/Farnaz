@@ -62,13 +62,14 @@ async function preparePeer(session,role){
   const type=session.call_type==="video"?"video":"audio";
   const media=await navigator.mediaDevices.getUserMedia({audio:true,video:type==="video"});
   activeCall.localStream=media;
+  activeCall.pendingCandidates=activeCall.pendingCandidates||[];
   const local=byId("farnazLocalVideo");local.srcObject=media;local.hidden=type!=="video";
   const pc=new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun1.l.google.com:19302"}]});
   activeCall.pc=pc;
   media.getTracks().forEach(track=>pc.addTrack(track,media));
   pc.ontrack=event=>{
     const stream=event.streams?.[0];if(!stream)return;
-    if(type==="video"){const v=byId("farnazRemoteVideo");v.srcObject=stream;v.hidden=false;v.play().catch(()=>{});}
+    if(type==="video"){const v=byId("farnazRemoteVideo");v.srcObject=stream;v.muted=true;v.hidden=false;v.play().catch(()=>{});}
     const audio=byId("farnazRemoteAudio");audio.srcObject=stream;audio.play().catch(()=>{});
   };
   pc.onicecandidate=event=>{
@@ -92,6 +93,11 @@ async function preparePeer(session,role){
     for(const signal of data||[])await handleSignal(signal);
   }
 }
+async function flushPendingCandidates(){
+  if(!activeCall?.pc?.remoteDescription||!activeCall.pendingCandidates?.length)return;
+  const queued=activeCall.pendingCandidates.splice(0);
+  for(const candidate of queued){try{await activeCall.pc.addIceCandidate(new RTCIceCandidate(candidate));}catch(e){console.warn("Queued ICE candidate:",e);}}
+}
 async function handleSignal(signal){
   if(!activeCall||String(signal.call_id)!==String(activeCall.session.id)||processedSignals.has(signal.id))return;
   processedSignals.add(signal.id);
@@ -100,14 +106,18 @@ async function handleSignal(signal){
   if(signal.signal_type==="offer"&&activeCall.role==="receiver"){
     if(!pc) return;
     await pc.setRemoteDescription(new RTCSessionDescription(signal.payload));
+    await flushPendingCandidates();
     const answer=await pc.createAnswer();await pc.setLocalDescription(answer);
     await sendSignal("answer",{type:pc.localDescription.type,sdp:pc.localDescription.sdp});
     await getClient().from("call_sessions").update({status:"active"}).eq("id",activeCall.session.id);
     setCallStatus(tr("پاسخ ارسال شد؛ در حال اتصال…","Answer sent; connecting…"));
   }else if(signal.signal_type==="answer"&&activeCall.role==="caller"){
-    if(pc&&!pc.currentRemoteDescription)await pc.setRemoteDescription(new RTCSessionDescription(signal.payload));
+    if(pc&&!pc.currentRemoteDescription){await pc.setRemoteDescription(new RTCSessionDescription(signal.payload));await flushPendingCandidates();}
   }else if(signal.signal_type==="ice-candidate"){
-    if(pc&&signal.payload)try{await pc.addIceCandidate(new RTCIceCandidate(signal.payload));}catch(e){console.warn("ICE candidate:",e);}
+    if(pc&&signal.payload){
+      if(pc.remoteDescription){try{await pc.addIceCandidate(new RTCIceCandidate(signal.payload));}catch(e){console.warn("ICE candidate:",e);}}
+      else{activeCall.pendingCandidates=activeCall.pendingCandidates||[];activeCall.pendingCandidates.push(signal.payload);}
+    }
   }else if(signal.signal_type==="reject"){
     await cleanupCall(false);setCallStatus(tr("تماس رد شد","Call declined"));setTimeout(()=>{const d=byId("farnazCallDialog");if(d)d.hidden=true;},1400);
   }else if(signal.signal_type==="hangup"){
@@ -162,7 +172,7 @@ async function startCall(type){
     byId("farnazCallHangup").hidden=false;
     await preparePeer(data,"caller");
   }catch(e){
-    console.error("Start call:",e);await cleanupCall(false);
+    console.error("Start call:",e);try{if(activeCall?.session?.id)await getClient().from("call_sessions").update({status:"ended"}).eq("id",activeCall.session.id);}catch(_){}await cleanupCall(false);
     setCallStatus(tr("تماس شروع نشد: ","Call could not start: ")+e.message);
     byId("farnazCallHangup").hidden=false;
   }
@@ -177,18 +187,24 @@ async function setUser(userId){
   const myId=signedInUserId,client=getClient();
   inboxChannel=client.channel("farnaz-incoming-calls-"+myId);
   inboxChannel
-    .on("postgres_changes",{event:"INSERT",schema:"public",table:"call_sessions",filter:"receiver_id=eq."+myId},async payload=>{
-      const session=payload.new;
-      if(!session||session.status!=="ringing"||activeCall||String(session.caller_id)===myId)return;
-      const {data,error}=await client.rpc("get_farnaz_user_profile",{search_user_id:session.caller_id});
-      const profile=Array.isArray(data)?data[0]:data;
-      const name=profile?.display_name||tr("مخاطب فرناز","Farnaz contact");
-      activeCall={session,role:"receiver",otherId:String(session.caller_id),signalChannel:null,pc:null,localStream:null};
-      showDialog(session.call_type==="video"?tr("تماس تصویری ورودی","Incoming video call"):tr("تماس صوتی ورودی","Incoming audio call"),tr("تماس از طرف ","Incoming call from ")+name);
-      byId("farnazCallAccept").hidden=false;byId("farnazCallReject").hidden=false;
-      await notifyBackground(tr("تماس ورودی در فرناز","Incoming Farnaz call"),name,"call-"+session.id);
-    })
+    .on("postgres_changes",{event:"INSERT",schema:"public",table:"call_sessions",filter:"receiver_id=eq."+myId},payload=>handleIncomingSession(payload.new,client))
     .subscribe(status=>{if(status==="CHANNEL_ERROR"||status==="TIMED_OUT")console.warn("Incoming call listener:",status);});
+  // Recover a ringing invitation if the app reconnects after the INSERT event.
+  client.from("call_sessions").select("*").eq("receiver_id",myId).eq("status","ringing")
+    .gte("created_at",new Date(Date.now()-120000).toISOString()).order("created_at",{ascending:false}).limit(1)
+    .then(({data,error})=>{if(error)console.warn("Pending call lookup:",error);else if(data?.[0])handleIncomingSession(data[0],client);});
+}
+async function handleIncomingSession(session,client){
+  if(!session||session.status!=="ringing"||String(session.caller_id)===String(signedInUserId))return;
+  if(activeCall){try{await client.from("call_sessions").update({status:"missed"}).eq("id",session.id);}catch(_){}return;}
+  let profile=null;
+  try{const {data}=await client.rpc("get_farnaz_user_profile",{search_user_id:session.caller_id});profile=Array.isArray(data)?data[0]:data;}catch(e){console.warn("Caller profile lookup:",e);}
+  if(String(signedInUserId)!==String(session.receiver_id)||activeCall)return;
+  const name=profile?.display_name||tr("مخاطب فرناز","Farnaz contact");
+  activeCall={session,role:"receiver",otherId:String(session.caller_id),signalChannel:null,pc:null,localStream:null,pendingCandidates:[]};
+  showDialog(session.call_type==="video"?tr("تماس تصویری ورودی","Incoming video call"):tr("تماس صوتی ورودی","Incoming audio call"),tr("تماس از طرف ","Incoming call from ")+name);
+  byId("farnazCallAccept").hidden=false;byId("farnazCallReject").hidden=false;
+  await notifyBackground(tr("تماس ورودی در فرناز","Incoming Farnaz call"),name,"call-"+session.id);
 }
 window.startCall=startCall;
 window.enableFarnazNotifications=async function(){
@@ -203,4 +219,5 @@ window.enableFarnazNotifications=async function(){
 };
 window.FarnazCalls={setUser,notifyMessage:async function(){await notifyBackground(tr("پیام جدید در فرناز","New message in Farnaz"),tr("برای مشاهده پیام، فرناز را باز کن.","Open Farnaz to view the message."),"farnaz-message");}};
 window.addEventListener("farnaz-auth-user",event=>{setUser(event.detail?.userId||null).catch(console.error);});
+if(typeof currentUser!=="undefined"&&currentUser?.id)setUser(currentUser.id).catch(console.error);
 })();

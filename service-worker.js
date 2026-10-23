@@ -1,5 +1,5 @@
 "use strict";
-const CACHE_NAME="farnaz-shell-v8";
+const CACHE_NAME="farnaz-shell-v9";
 const APP_BASE=new URL("./",self.location.href);
 const SHELL=["./","./index.html","./styles.css","./spaces.css","./js/core.js","./js/chat-menu-v5.js","./js/spaces.js","./js/calls.js","./manifest.webmanifest","./farnaz-icon.svg"];
 self.addEventListener("install",event=>{

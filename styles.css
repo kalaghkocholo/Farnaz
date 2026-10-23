@@ -976,3 +976,5 @@ body.chat-mode .app.chat-mode #chatPage #sendMessageForm {
 .farnaz-call-accept{background:#20a66a;color:white}
 .farnaz-call-reject{background:#c93d4b;color:white}
 @media(prefers-reduced-motion:no-preference){.farnaz-call-card{animation:farnaz-call-in .16s ease-out}@keyframes farnaz-call-in{from{opacity:0;transform:translateY(8px) scale(.985)}to{opacity:1;transform:none}}}
+
+.space-call-actions[hidden]{display:none!important}

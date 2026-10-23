@@ -1,7 +1,7 @@
 (function(){
 "use strict";
 let signedInUserId=null,inboxChannel=null,activeCall=null;
-const processedSignals=new Set();
+const processedSignals=new Set(),pendingIncomingSessions=new Set();
 const byId=id=>document.getElementById(id);
 const tr=(fa,en)=>typeof english!=="undefined"&&english?en:fa;
 
@@ -218,16 +218,21 @@ async function handleCallStatusUpdate(session){
 }
 async function handleIncomingSession(session,client){
   if(!session||session.status!=="ringing"||String(session.caller_id)===String(signedInUserId))return;
-  if(activeCall&&String(activeCall.session.id)===String(session.id))return;
+  const sessionId=String(session.id);
+  if((activeCall&&String(activeCall.session.id)===sessionId)||pendingIncomingSessions.has(sessionId))return;
   if(activeCall){try{await client.from("call_sessions").update({status:"missed"}).eq("id",session.id);}catch(_){}return;}
-  let profile=null;
-  try{const {data}=await client.rpc("get_farnaz_user_profile",{search_user_id:session.caller_id});profile=Array.isArray(data)?data[0]:data;}catch(e){console.warn("Caller profile lookup:",e);}
-  if(String(signedInUserId)!==String(session.receiver_id)||activeCall)return;
-  const name=profile?.display_name||tr("مخاطب فرناز","Farnaz contact");
-  activeCall={session,role:"receiver",otherId:String(session.caller_id),signalChannel:null,pc:null,localStream:null,pendingCandidates:[]};
-  showDialog(session.call_type==="video"?tr("تماس تصویری ورودی","Incoming video call"):tr("تماس صوتی ورودی","Incoming audio call"),tr("تماس از طرف ","Incoming call from ")+name);
-  byId("farnazCallAccept").hidden=false;byId("farnazCallReject").hidden=false;
-  await notifyBackground(tr("تماس ورودی در فرناز","Incoming Farnaz call"),name,"call-"+session.id);
+  pendingIncomingSessions.add(sessionId);
+  try{
+    let profile=null;
+    try{const {data}=await client.rpc("get_farnaz_user_profile",{search_user_id:session.caller_id});profile=Array.isArray(data)?data[0]:data;}catch(e){console.warn("Caller profile lookup:",e);}
+    if(String(signedInUserId)!==String(session.receiver_id)||(activeCall&&String(activeCall.session.id)!==sessionId))return;
+    if(activeCall)return;
+    const name=profile?.display_name||tr("مخاطب فرناز","Farnaz contact");
+    activeCall={session,role:"receiver",otherId:String(session.caller_id),signalChannel:null,pc:null,localStream:null,pendingCandidates:[],timeout:null};
+    showDialog(session.call_type==="video"?tr("تماس تصویری ورودی","Incoming video call"):tr("تماس صوتی ورودی","Incoming audio call"),tr("تماس از طرف ","Incoming call from ")+name);
+    byId("farnazCallAccept").hidden=false;byId("farnazCallReject").hidden=false;
+    await notifyBackground(tr("تماس ورودی در فرناز","Incoming Farnaz call"),name,"call-"+session.id);
+  }finally{pendingIncomingSessions.delete(sessionId);}
 }
 window.startCall=startCall;
 window.enableFarnazNotifications=async function(){

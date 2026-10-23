@@ -196,11 +196,25 @@ async function setUser(userId){
   inboxChannel=client.channel("farnaz-incoming-calls-"+myId);
   inboxChannel
     .on("postgres_changes",{event:"INSERT",schema:"public",table:"call_sessions",filter:"receiver_id=eq."+myId},payload=>handleIncomingSession(payload.new,client))
+    .on("postgres_changes",{event:"UPDATE",schema:"public",table:"call_sessions",filter:"receiver_id=eq."+myId},payload=>handleCallStatusUpdate(payload.new))
+    .on("postgres_changes",{event:"UPDATE",schema:"public",table:"call_sessions",filter:"caller_id=eq."+myId},payload=>handleCallStatusUpdate(payload.new))
     .subscribe(status=>{if(status==="CHANNEL_ERROR"||status==="TIMED_OUT")console.warn("Incoming call listener:",status);});
   // Recover a ringing invitation if the app reconnects after the INSERT event.
   client.from("call_sessions").select("*").eq("receiver_id",myId).eq("status","ringing")
     .gte("created_at",new Date(Date.now()-120000).toISOString()).order("created_at",{ascending:false}).limit(1)
     .then(({data,error})=>{if(error)console.warn("Pending call lookup:",error);else if(data?.[0])handleIncomingSession(data[0],client);});
+}
+async function handleCallStatusUpdate(session){
+  if(!activeCall||String(activeCall.session.id)!==String(session?.id))return;
+  if(["ended","missed","rejected"].includes(session.status)){
+    const wasReceiver=activeCall.role==="receiver";
+    await cleanupCall(false);
+    if(wasReceiver||session.status==="rejected"){
+      showDialog(session.status==="missed"?tr("تماس بی‌پاسخ","Missed call"):tr("تماس پایان یافت","Call ended"),
+        session.status==="missed"?tr("تماس‌گیرنده ارتباط را قطع کرد.","The caller ended the call."):tr("تماس پایان یافت.","The call has ended."));
+      setTimeout(()=>{const d=byId("farnazCallDialog");if(d)d.hidden=true;},1600);
+    }else{const d=byId("farnazCallDialog");if(d)d.hidden=true;}
+  }
 }
 async function handleIncomingSession(session,client){
   if(!session||session.status!=="ringing"||String(session.caller_id)===String(signedInUserId))return;

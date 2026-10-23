@@ -1021,6 +1021,19 @@ body.chat-mode .app.chat-mode #chatPage #sendMessageForm {
 
  
 /* Advanced message history search dialog */
+
+/* Keep native date controls separated and readable in RTL layouts. */
+#messageSearchFrom,#messageSearchTo{
+  display:block;width:100%;min-width:0;max-width:100%;
+  direction:ltr;text-align:left;padding:7px 5px;font-size:12px;
+  flex:none;-webkit-appearance:auto;
+}
+.message-search-filters>div{min-width:0;overflow:hidden}
+@media(max-width:390px){
+  .message-search-filters{grid-template-columns:minmax(0,1fr);gap:7px}
+  .message-search-filters>div:first-child{grid-column:auto}
+}
+
 .message-search-dialog{position:fixed;inset:0;z-index:10080;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(2,8,20,.74);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .message-search-dialog[hidden]{display:none}
 .message-search-card{position:relative;display:flex;flex-direction:column;gap:12px;width:min(560px,100%);max-height:88dvh;overflow:auto;box-sizing:border-box;padding:22px 18px 18px;border:1px solid var(--border,#334155);border-radius:20px;background:var(--panel,#172237);color:var(--white,#f7f9fc);box-shadow:0 24px 70px #0005}

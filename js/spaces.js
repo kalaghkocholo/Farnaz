@@ -252,8 +252,8 @@ async function getCachedSpaceAttachmentUrl(path){
  const key=String(path||"");
  if(!key)return null;
  const cached=spaceAttachmentUrlCache.get(key);
- if(cached&&cached.expiresAt>Date.now())return cached.url;
  if(cached?.pending)return cached.pending;
+ if(cached&&cached.expiresAt>Date.now())return cached.url;
  const pending=(async()=>{const {data,error}=await getClient().storage.from("chat-attachments").createSignedUrl(key,3600);if(error)throw error;return data?.signedUrl||null;})();
  spaceAttachmentUrlCache.set(key,{pending,expiresAt:Date.now()+SPACE_SIGNED_URL_TTL});
  try{const url=await pending;spaceAttachmentUrlCache.set(key,{url,expiresAt:Date.now()+SPACE_SIGNED_URL_TTL});return url;}

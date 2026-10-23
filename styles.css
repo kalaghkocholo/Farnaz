@@ -1101,73 +1101,17 @@ body.chat-mode .app.chat-mode #chatPage #sendMessageForm {
 }
 
 
-/* Private chat header: use the same sizing and grid as the group-chat header. */
-#chatPage .chat-header{
-  display:grid!important;
-  grid-template-columns:auto auto minmax(0,1fr)!important;
-  grid-template-rows:minmax(42px,auto)!important;
-  direction:ltr!important;
-  align-items:center!important;
-  justify-content:stretch!important;
-  gap:7px!important;
-  width:100%!important;
-  min-width:0!important;
-  box-sizing:border-box!important;
-  padding:7px 8px!important;
-  margin:0 0 10px!important;
-  position:relative!important;
-  top:auto!important;
-}
-#chatPage .chat-header #backToChats{
-  grid-column:1!important;grid-row:1!important;order:0!important;
-  display:inline-flex!important;align-items:center!important;justify-content:center!important;
-  direction:rtl!important;gap:4px!important;flex:0 0 auto!important;
-  width:auto!important;min-width:max-content!important;height:36px!important;min-height:36px!important;
-  margin:0!important;padding:7px 9px!important;white-space:nowrap!important;
-  font-size:13px!important;line-height:1!important;
-}
+/* Private header copied from the group-chat header rules, scoped to the private chat. */
+#chatPage .chat-header.space-detail-head{display:grid!important;grid-template-columns:auto auto minmax(0,1fr)!important;grid-template-rows:minmax(42px,auto)!important;direction:ltr!important;align-items:center!important;justify-content:stretch!important;gap:7px!important;width:100%!important;min-width:0!important;padding:7px 8px!important;margin:0 0 10px!important;position:relative!important;top:auto!important;box-sizing:border-box!important}
+#chatPage .chat-header #backToChats{grid-column:1!important;grid-row:1!important;order:0!important;justify-self:start!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;direction:rtl!important;gap:4px!important;flex:0 0 auto!important;width:auto!important;min-width:max-content!important;height:36px!important;min-height:36px!important;margin:0!important;padding:7px 9px!important;white-space:nowrap!important;font-size:13px!important;line-height:1!important}
 #chatPage .chat-header #backToChats span{display:inline!important;visibility:visible!important;opacity:1!important}
-#chatPage .chat-header .call-actions{
-  grid-column:2!important;grid-row:1!important;order:1!important;
-  display:flex!important;align-items:center!important;justify-content:flex-start!important;
-  direction:ltr!important;gap:4px!important;flex:0 0 auto!important;width:auto!important;
-  min-width:0!important;margin:0!important;padding:0!important;
-}
-#chatPage .chat-header .call-button{
-  display:grid!important;place-items:center!important;box-sizing:border-box!important;
-  width:36px!important;height:36px!important;min-width:36px!important;min-height:36px!important;
-  flex:0 0 36px!important;padding:0!important;border-radius:10px!important;
-}
-#chatPage .chat-header .call-button svg{
-  display:block!important;width:19px!important;height:19px!important;
-  fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;
-  stroke-linecap:round!important;stroke-linejoin:round!important;
-}
-#chatPage .chat-header .chat-heading{
-  grid-column:3!important;grid-row:1!important;order:2!important;
-  display:flex!important;flex-direction:row!important;direction:rtl!important;
-  align-items:center!important;justify-self:stretch!important;gap:6px!important;
-  flex:1 1 auto!important;min-width:0!important;width:100%!important;overflow:hidden!important;
-}
-#chatPage .chat-header #chatAvatar{
-  display:grid!important;place-items:center!important;flex:0 0 36px!important;
-  width:36px!important;height:36px!important;min-width:36px!important;min-height:36px!important;
-  max-width:36px!important;max-height:36px!important;margin:0!important;overflow:hidden!important;border-radius:50%!important;
-}
-#chatPage .chat-header .chat-person{
-  display:block!important;flex:1 1 auto!important;min-width:0!important;max-width:100%!important;
-  margin:0!important;padding:0!important;overflow:hidden!important;direction:rtl!important;text-align:right!important;
-}
-#chatPage .chat-header .chat-person strong,#chatPage .chat-header .chat-person small{
-  display:block!important;max-width:100%!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;
-}
-#chatPage .chat-header .chat-person strong{margin:0 0 3px!important}
-@media(max-width:380px){
-  #chatPage .chat-header{grid-template-rows:minmax(38px,auto)!important;gap:4px!important;padding:6px 5px!important}
-  #chatPage .chat-header #chatAvatar{flex-basis:32px!important;width:32px!important;height:32px!important;min-width:32px!important;min-height:32px!important;max-width:32px!important;max-height:32px!important}
-  #chatPage .chat-header .chat-heading{gap:4px!important}
-  #chatPage .chat-header #backToChats{height:34px!important;min-height:34px!important;padding:6px 7px!important;font-size:12px!important}
-  #chatPage .chat-header .call-actions{gap:3px!important}
-  #chatPage .chat-header .call-button{width:34px!important;height:34px!important;min-width:34px!important;min-height:34px!important;flex-basis:34px!important}
-  #chatPage .chat-header .call-button svg{width:18px!important;height:18px!important}
-}
+#chatPage .chat-header .space-call-actions{grid-column:2!important;grid-row:1!important;order:1!important;display:flex!important;flex:0 0 auto!important;width:auto!important;min-width:0!important;justify-self:start!important;align-items:center!important;justify-content:flex-start!important;direction:ltr!important;gap:4px!important;margin:0!important;padding:0!important}
+#chatPage .chat-header .space-call-button{display:grid!important;place-items:center!important;box-sizing:border-box!important;width:36px!important;height:36px!important;min-width:36px!important;min-height:36px!important;flex:0 0 36px!important;padding:0!important;border-radius:10px!important}
+#chatPage .chat-header .space-call-button svg{display:block!important;width:19px!important;height:19px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important;stroke-linejoin:round!important}
+#chatPage .chat-header .space-title-wrap{grid-column:3!important;grid-row:1!important;order:2!important;display:flex!important;flex-direction:row!important;direction:rtl!important;align-items:center!important;justify-self:stretch!important;gap:6px!important;flex:1 1 auto!important;min-width:0!important;width:100%!important;overflow:hidden!important}
+#chatPage .chat-header #chatAvatar{display:grid!important;place-items:center!important;flex:0 0 36px!important;width:36px!important;height:36px!important;min-width:36px!important;min-height:36px!important;max-width:36px!important;max-height:36px!important;visibility:visible!important;opacity:1!important;overflow:hidden!important;border-radius:50%!important;margin:0!important}
+#chatPage .chat-header .space-title-copy{display:block!important;flex:1 1 auto!important;min-width:0!important;max-width:100%!important;margin:0!important;padding:0!important;overflow:hidden!important;direction:rtl!important;text-align:right!important;color:var(--white)!important}
+#chatPage .chat-header .space-title-copy h3,#chatPage .chat-header .space-title-copy small{display:block!important;max-width:100%!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
+#chatPage .chat-header .space-title-copy h3{margin:0 0 3px!important;color:var(--white)!important;font-size:inherit!important}
+@media(max-width:380px){#chatPage .chat-header.space-detail-head{grid-template-columns:auto auto minmax(0,1fr)!important;gap:4px!important;padding:6px 5px!important}#chatPage .chat-header #chatAvatar{flex-basis:32px!important;width:32px!important;height:32px!important;min-width:32px!important;min-height:32px!important;max-width:32px!important;max-height:32px!important}#chatPage .chat-header .space-call-button{width:34px!important;height:34px!important;min-width:34px!important;min-height:34px!important;flex-basis:34px!important}#chatPage .chat-header .space-title-wrap{gap:4px!important}#chatPage .chat-header #backToChats{height:34px!important;min-height:34px!important;padding:6px 7px!important;font-size:12px!important}}
+

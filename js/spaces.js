@@ -363,8 +363,9 @@ function showSpaceMessageActions(m,item){
  const clone=item.cloneNode(true);clone.className=item.className+" message-action-clone";
  clone.style.left=rect.left+"px";clone.style.top=rect.top+"px";clone.style.width=rect.width+"px";clone.style.height=rect.height+"px";
  clone.style.borderRadius=getComputedStyle(item).borderRadius;document.body.appendChild(clone);
- item.classList.add("context-active");item.style.visibility="hidden";
- const restoreItem=()=>{item.style.visibility="";item.classList.remove("context-active");};
+ item.classList.add("context-active");
+ /* Keep the real message rendered: the backdrop dims it and the clone highlights it. Hiding the source can leave it invisible if the menu is interrupted. */
+ const restoreItem=()=>{item.style.removeProperty("visibility");item.classList.remove("context-active");};
  const menu=document.createElement("div");menu.className="message-tools message-tools-floating";
  const closeMenu=()=>{menu.remove();restoreItem();closeSpaceMessageMenu();};
  const add=(label,fn,cls="mini-button")=>{const b=document.createElement("button");b.type="button";b.className=cls;b.textContent=label;b.onclick=()=>{closeMenu();fn();};menu.appendChild(b);};

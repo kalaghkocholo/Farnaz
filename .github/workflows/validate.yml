@@ -11,8 +11,8 @@ permissions:
   contents: read
 
 jobs:
-  javascript-syntax:
-    name: JavaScript syntax
+  static-validation:
+    name: Static validation
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -21,8 +21,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Validate browser scripts
+      - name: Validate JavaScript syntax
         run: |
           node --check js/core.js
           node --check js/chat-menu-v5.js
           node --check js/spaces.js
+          node --check scripts/validate.mjs
+      - name: Validate application structure
+        run: node scripts/validate.mjs

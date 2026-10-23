@@ -1322,3 +1322,22 @@ body.chat-mode .app.chat-mode #chatPage #sendMessageForm {
   #chatPage .chat-header.space-detail-head .space-call-button{flex-basis:32px!important;width:32px!important;min-width:32px!important;height:32px!important;min-height:32px!important}
   #chatPage .chat-header.space-detail-head .space-call-button svg{width:19px!important;height:19px!important}
 }
+
+/* v26: match the private-chat header to the flat group-chat header; force turquoise SVG paths in every theme */
+#chatPage .chat-header.space-detail-head{
+  background:transparent!important;background-color:transparent!important;
+  border:0!important;outline:0!important;box-shadow:none!important;
+  border-radius:0!important;
+}
+#chatPage .chat-header.space-detail-head .space-call-button,
+#chatPage .chat-header.space-detail-head .space-call-button:hover,
+#chatPage .chat-header.space-detail-head .space-call-button:active,
+#chatPage .chat-header.space-detail-head .space-call-button:focus{
+  color:#50e3c2!important;background:transparent!important;border-color:transparent!important;
+}
+#chatPage .chat-header.space-detail-head .space-call-button svg,
+#chatPage .chat-header.space-detail-head .space-call-button svg path,
+#chatPage .chat-header.space-detail-head .space-call-button svg rect,
+#chatPage .chat-header.space-detail-head .space-call-button svg circle{
+  color:#50e3c2!important;stroke:#50e3c2!important;fill:none!important;
+}

@@ -305,12 +305,12 @@ function showSpaceMessageActions(m,item){
  const closeMenu=()=>{menu.remove();restoreItem();closeSpaceMessageMenu();};
  const add=(label,fn,cls="mini-button")=>{const b=document.createElement("button");b.type="button";b.className=cls;b.textContent=label;b.onclick=()=>{closeMenu();fn();};menu.appendChild(b);};
  const own=String(m.sender_id)===String(currentUser?.id);
- add(english?"Reply":"پاسخ",()=>replyToSpaceMessage(m));
- add(english?"Forward":"فوروارد",()=>{selectedSpaceMessageIds.clear();selectedSpaceMessageIds.add(String(m.id));spaceMessageSelectionMode=true;updateSpaceMessageSelection();forwardSelectedSpaceMessages();});
- if(m.attachment_path)add(english?"Download attachment":"دانلود فایل",()=>downloadSpaceMessage(m),"mini-button download-message-action");
- add(english?"Select":"انتخاب",()=>{spaceMessageSelectionMode=true;selectedSpaceMessageIds.add(String(m.id));updateSpaceMessageSelection();});
- if(own&&m.body)add(english?"Edit":"ویرایش",()=>editSpaceMessage(m));
- add(english?"Delete":"حذف",async()=>{const scope=await askSpaceDeleteScope(1,own);if(!scope)return;try{if(scope==="me")await hideSpaceMessagesForMe([String(m.id)]);else{const {error}=await getClient().from("space_messages").delete().eq("id",m.id).eq("space_id",active.id).eq("sender_id",currentUser.id);if(error)throw error;}await loadMessages(active.id);q("spaceMessageStatus").textContent=scope==="me"?tr("پیام فقط از صفحه شما پنهان شد.","Message hidden from your view."):tr("پیام برای همه حذف شد.","Message deleted for everyone.");}catch(error){q("spaceMessageStatus").textContent=tr("حذف پیام ناموفق بود: ","Could not delete message: ")+(error?.message||String(error));}},"mini-button danger");
+ add("↩  "+(english?"Reply":"پاسخ"),()=>replyToSpaceMessage(m));
+ add("➦  "+(english?"Forward":"فوروارد"),()=>{selectedSpaceMessageIds.clear();selectedSpaceMessageIds.add(String(m.id));spaceMessageSelectionMode=true;updateSpaceMessageSelection();forwardSelectedSpaceMessages();});
+ if(m.attachment_path)add("⬇  "+(english?"Download attachment":"دانلود فایل"),()=>downloadSpaceMessage(m),"mini-button download-message-action");
+ add("☑  "+(english?"Select":"انتخاب"),()=>{spaceMessageSelectionMode=true;selectedSpaceMessageIds.add(String(m.id));updateSpaceMessageSelection();});
+ if(own&&m.body)add("✎  "+(english?"Edit":"ویرایش"),()=>editSpaceMessage(m));
+ add("🗑  "+(english?"Delete":"حذف"),async()=>{const scope=await askSpaceDeleteScope(1,own);if(!scope)return;try{if(scope==="me")await hideSpaceMessagesForMe([String(m.id)]);else{const {error}=await getClient().from("space_messages").delete().eq("id",m.id).eq("space_id",active.id).eq("sender_id",currentUser.id);if(error)throw error;}await loadMessages(active.id);q("spaceMessageStatus").textContent=scope==="me"?tr("پیام فقط از صفحه شما پنهان شد.","Message hidden from your view."):tr("پیام برای همه حذف شد.","Message deleted for everyone.");}catch(error){q("spaceMessageStatus").textContent=tr("حذف پیام ناموفق بود: ","Could not delete message: ")+(error?.message||String(error));}},"mini-button danger");
  const close=document.createElement("button");close.type="button";close.className="message-tools-dismiss";close.textContent="×";close.setAttribute("aria-label",english?"Close":"بستن");close.onclick=closeMenu;menu.appendChild(close);
  document.body.appendChild(menu);
  const menuRect=menu.getBoundingClientRect(),margin=12;let left=Math.max(margin,Math.min(rect.left+(rect.width-menuRect.width)/2,window.innerWidth-menuRect.width-margin));let top=rect.top-menuRect.height-8;

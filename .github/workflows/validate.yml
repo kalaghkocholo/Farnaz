@@ -26,6 +26,8 @@ jobs:
           node --check js/core.js
           node --check js/chat-menu-v5.js
           node --check js/spaces.js
+          node --check js/calls.js
+          node --check service-worker.js
           node --check scripts/validate.mjs
       - name: Validate application structure
         run: node scripts/validate.mjs

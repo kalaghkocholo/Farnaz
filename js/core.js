@@ -117,7 +117,7 @@ window.addEventListener("storage",event=>{if(event.key===APPEARANCE_KEY){appeara
 if(window.matchMedia){window.matchMedia("(prefers-color-scheme: light)").addEventListener?.("change",()=>{if(appearanceSettings.theme==="system")applyAppearanceSettings();});}
 applyAppearanceSettings();
 if("serviceWorker" in navigator && location.protocol!=="file:"){
-  navigator.serviceWorker.register("./service-worker.js").then(reg=>{window.farnazServiceWorkerRegistration=reg;})
+  navigator.serviceWorker.register("./service-worker.js").then(reg=>{window.farnazServiceWorkerRegistration=reg;reg.update().catch(()=>{});})
     .catch(error=>console.warn("Farnaz service worker registration:",error));
 }
 window.notifyFarnazIncomingMessage=async function(){

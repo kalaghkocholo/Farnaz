@@ -186,16 +186,18 @@ async function makeMessageElement(m,myId){
       else{const link=document.createElement("a");link.href=data.signedUrl;link.target="_blank";link.rel="noopener";link.download=m.attachment_name||"";link.textContent="📎 "+(m.attachment_name||"Download file");item.appendChild(link);}
     }else{const n=document.createElement("small");n.textContent=english?"Attachment unavailable":"پیوست در دسترس نیست";item.appendChild(n);}
   }
+  const meta=document.createElement("div");meta.className="message-meta";
   const time=document.createElement("time"),date=new Date(m.created_at);time.dateTime=date.toISOString();
-  time.textContent=date.toLocaleTimeString(english?"en":"fa-IR",{hour:"2-digit",minute:"2-digit"})+(m.edited_at?(english?" · edited":" · ویرایش‌شده"):"");item.appendChild(time);
+  time.textContent=date.toLocaleTimeString(english?"en":"fa-IR",{hour:"2-digit",minute:"2-digit"})+(m.edited_at?(english?" · edited":" · ویرایش‌شده"):"");
   if(isOwnMessage){
     const read=readReceiptMessageIds.has(String(m.id)),receipt=document.createElement("small");
     receipt.className="message-read-status";receipt.textContent=read?"✓✓":"✓";
     receipt.title=read?(english?"Read":"خوانده‌شده"):(english?"Sent; not read yet":"ارسال‌شده؛ هنوز خوانده نشده");
     receipt.setAttribute("aria-label",receipt.title);
-    receipt.style.cssText="display:inline-block;margin-inline-start:5px;font-size:12px;letter-spacing:-2px;font-weight:700;color:"+(read?"#20a66a":"var(--muted,#8a94a6)");
-    item.appendChild(receipt);
+    receipt.style.cssText="display:inline-block;margin:0;font-size:12px;letter-spacing:-2px;font-weight:700;color:"+(read?"#20a66a":"var(--muted,#8a94a6)");
+    meta.appendChild(receipt);
   }
+  meta.appendChild(time);item.appendChild(meta);
   const reactionGroups=messageReactionMap.get(String(m.id))||[];
   if(reactionGroups.length){
     const reactionBar=document.createElement("div");reactionBar.className="message-reactions";

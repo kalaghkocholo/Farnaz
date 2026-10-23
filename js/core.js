@@ -642,6 +642,9 @@ async function openContactInfo(){
   if(!currentUser||!currentChatUser)return;
   ensureContactInfoDialog();
   const request=++contactInfoRequest,contactId=currentChatUser.user_id;
+  $("contactInfoMediaTitle").textContent=contactInfoText("رسانه‌ها و فایل‌ها","Media and files");
+  $("contactInfoDelete").textContent=contactInfoText("حذف گفتگو","Delete conversation");
+  $("closeContactInfo").setAttribute("aria-label",contactInfoText("بستن","Close"));
   const name=currentChatUser.display_name||(english?"Farnaz user":"مخاطب فرناز");
   $("contactInfoTitle").textContent=name;
   $("contactInfoAbout").textContent=contactInfoText("گفتگوی خصوصی در فرناز","Private conversation on Farnaz");

@@ -22,7 +22,7 @@ Farnaz is a mobile-first, Persian/English private communication web app. The cur
 - `js/core.js` — Supabase setup, authentication, navigation, profiles, contacts, and shared state
 - `js/chat-menu-v5.js` — private messaging, message actions, attachment/voice flows, and connection recovery
 - `js/spaces.js` — groups/channels UI and related messaging flows
-- `supabase/migrations/` — SQL migrations applied to the connected Supabase project and checked into source control
+- `supabase/migrations/` — the two database hardening migrations added in this pass; this is **not yet a complete historical migration baseline**
 - `.github/workflows/validate.yml` — JavaScript syntax validation on pushes and pull requests
 
 The application currently uses classic browser scripts and shared global state. Avoid renaming global functions or moving code between files without checking all callers and page-navigation hooks.
@@ -33,7 +33,7 @@ The repository is designed to be served as a static site (for example, GitHub Pa
 
 1. Confirm the Supabase project URL and **publishable** key in `js/core.js`.
 2. Never place a Supabase `service_role` key or any secret credential in browser code.
-3. Confirm that the SQL migrations in `supabase/migrations/` match the database state.
+3. Confirm the SQL migrations in `supabase/migrations/` match the database state. The older schema history has not yet been reconstructed in this repository, so do not use this folder alone to bootstrap a fresh Supabase project.
 4. Publish the repository using the configured static-site deployment.
 5. Open the deployed site on both desktop and an iPhone-sized viewport and run the smoke-test checklist below.
 
@@ -73,6 +73,6 @@ Use dedicated test accounts and non-sensitive test content. Do not test privacy 
 
 - RLS and storage policies are part of the application boundary; review them whenever a query or table changes.
 - Functions declared `SECURITY DEFINER` require particular care. Confirm their execute grants, fixed `search_path`, authentication checks, and row-level authorization before changing their privileges.
-- Keep the checked-in migration history aligned with the connected database.
+- Keep the checked-in migration history aligned with the connected database. The historical migration set still needs to be reconstructed before a fresh environment can be reliably provisioned from source control.
 - Review Supabase security and performance advisors after database changes. Advisor warnings need context: a function required by an authenticated RPC flow is not automatically unsafe, and an unused index may simply not have been exercised yet.
 - Enable leaked-password protection in Supabase Auth settings before inviting real users.

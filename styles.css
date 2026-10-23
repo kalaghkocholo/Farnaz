@@ -978,3 +978,36 @@ body.chat-mode .app.chat-mode #chatPage #sendMessageForm {
 @media(prefers-reduced-motion:no-preference){.farnaz-call-card{animation:farnaz-call-in .16s ease-out}@keyframes farnaz-call-in{from{opacity:0;transform:translateY(8px) scale(.985)}to{opacity:1;transform:none}}}
 
 .space-call-actions[hidden]{display:none!important}
+
+
+/* Private contact information sheet */
+.contact-info-dialog{position:fixed;inset:0;z-index:10070;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(2,8,20,.72);backdrop-filter:blur(8px)}
+.contact-info-dialog[hidden]{display:none}
+.contact-info-card{position:relative;display:flex;flex-direction:column;gap:14px;width:min(520px,100%);max-height:88dvh;overflow:auto;box-sizing:border-box;padding:24px 18px 18px;border:1px solid var(--border,#334155);border-radius:22px;background:var(--panel,#172237);color:var(--white,#f7f9fc);box-shadow:0 24px 70px #0005}
+.contact-info-close{position:absolute;top:10px;inset-inline-end:12px;width:34px;height:34px;border:0;border-radius:50%;background:var(--panel2,#27364b);color:inherit;font-size:24px;cursor:pointer}
+.contact-info-profile{text-align:center;padding:12px 0 2px}
+.contact-info-avatar{margin:0 auto 10px;width:82px;height:82px;font-size:26px}
+.contact-info-profile h2{font-size:20px;margin:8px 0}
+.contact-info-profile p{margin:5px 0}
+.contact-info-phone{font-size:14px;margin-top:8px;color:var(--mint,#50e3c2);direction:ltr}
+.contact-info-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.contact-info-action{display:flex;min-width:0;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:10px 3px;border:1px solid var(--border,#334155);border-radius:13px;background:var(--panel2,#27364b);color:inherit;font:inherit;font-size:12px;cursor:pointer}
+.contact-info-action-icon{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:color-mix(in srgb,var(--accent,#50e3c2) 18%,transparent);color:var(--accent,#50e3c2);font-size:22px}
+.contact-info-media{border-top:1px solid var(--border,#334155);padding-top:12px}
+.contact-info-media h3{font-size:16px;margin:0 0 6px}
+.contact-info-media-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.contact-info-media-item{display:flex;min-width:0;flex-direction:column;gap:5px;padding:6px;border:1px solid var(--border,#334155);border-radius:10px;color:inherit;text-decoration:none;overflow:hidden}
+.contact-info-media-item img{width:100%;height:86px;object-fit:cover;border-radius:6px;background:var(--panel2,#27364b)}
+.contact-info-file-icon{display:grid;place-items:center;height:86px;border-radius:6px;background:var(--panel2,#27364b);font-size:28px;color:var(--mint,#50e3c2)}
+.contact-info-media-name{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.contact-info-danger-actions{display:flex;gap:9px;margin-top:auto;padding-top:12px;border-top:1px solid var(--border,#334155)}
+.contact-info-danger-button{flex:1;min-width:0;padding:11px 8px;border:1px solid #b42318;border-radius:12px;background:transparent;color:#f97066;font:inherit;font-size:14px;cursor:pointer}
+.contact-info-danger-button:disabled{opacity:.6;cursor:wait}
+.contact-info-search-match{outline:2px solid var(--accent,#50e3c2)!important;outline-offset:3px!important}
+#conversationTitle:focus-visible,#chatAvatar:focus-visible{outline:2px solid var(--accent,#50e3c2);outline-offset:3px;border-radius:8px}
+@media(max-width:560px){
+ .contact-info-dialog{padding:0;align-items:stretch}
+ .contact-info-card{width:100%;height:100dvh;max-height:100dvh;border-radius:0;border-inline:0;padding:52px 16px max(18px,env(safe-area-inset-bottom))}
+ .contact-info-media-item img,.contact-info-file-icon{height:76px}
+}
+@media(max-width:360px){.contact-info-actions{grid-template-columns:repeat(2,minmax(0,1fr))}.contact-info-action{flex-direction:row;justify-content:flex-start}.contact-info-media-list{grid-template-columns:repeat(2,minmax(0,1fr))}}

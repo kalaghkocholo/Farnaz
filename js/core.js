@@ -600,6 +600,18 @@ async function getContactProfile(id){
 }
 
 let contactInfoDialog=null,contactInfoBlocked=false,contactInfoRequest=0;
+document.addEventListener("click",event=>{
+  const target=event.target instanceof Element?event.target.closest("#conversationTitle, #chatAvatar"):null;
+  if(!target||!currentUser||!currentChatUser)return;
+  event.preventDefault();
+  openContactInfo();
+},true);
+document.addEventListener("keydown",event=>{
+  if((event.key==="Enter"||event.key===" ")&&event.target instanceof Element&&event.target.matches("#conversationTitle, #chatAvatar")&&currentUser&&currentChatUser){
+    event.preventDefault();
+    openContactInfo();
+  }
+});
 function ensureContactInfoDialog(){
   if(contactInfoDialog)return contactInfoDialog;
   const modal=document.createElement("div");
@@ -616,8 +628,6 @@ function ensureContactInfoDialog(){
     if(!el)return;
     el.style.cursor="pointer";el.setAttribute("role","button");el.setAttribute("tabindex","0");
     el.setAttribute("aria-haspopup","dialog");el.setAttribute("aria-label",english?"Contact information":"اطلاعات مخاطب");
-    el.addEventListener("click",openContactInfo);
-    el.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();openContactInfo();}});
   });
   return modal;
 }

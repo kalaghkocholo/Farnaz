@@ -19,6 +19,7 @@ Farnaz is a mobile-first, Persian/English private communication web app. The cur
 
 - `index.html` — application shell and page markup
 - `styles.css` — shared application styling
+- `spaces.css` — extracted styling for groups, channels, and their dialogs/composer
 - `js/core.js` — Supabase setup, authentication, navigation, profiles, contacts, and shared state
 - `js/chat-menu-v5.js` — private messaging, message actions, attachment/voice flows, and connection recovery
 - `js/spaces.js` — groups/channels UI and related messaging flows

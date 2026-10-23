@@ -34,15 +34,15 @@ body.chat-mode.keyboard-open .app.chat-mode>header{display:none!important}
 body.chat-mode.keyboard-open 
 /* Chat header: keep contact/back controls grouped on the left and calls on the right */
 .app.chat-mode>#chatPage .chat-header{display:flex!important;direction:ltr!important;justify-content:space-between!important;align-items:center!important;gap:8px!important;width:100%}
-.app.chat-mode>#chatPage .chat-header .chat-heading{display:flex!important;align-items:center!important;gap:5px!important;flex:0 1 auto!important;width:auto!important;min-width:0!important}
-.app.chat-mode>#chatPage .chat-header .chat-person{display:block!important;visibility:visible!important;flex:0 1 auto!important;width:auto!important;max-width:160px!important;min-width:0!important;margin:0!important;padding:0!important;text-align:right!important;color:var(--white)!important}.app.chat-mode>#chatPage .chat-header .chat-person strong{display:block!important;visibility:visible!important;color:var(--white)!important;white-space:normal!important;overflow-wrap:anywhere!important}
-.app.chat-mode>#chatPage .chat-header .call-actions{display:flex!important;align-items:center!important;justify-content:flex-end!important;gap:4px!important;margin-left:auto!important;flex:0 0 auto!important}
+.app.chat-mode>#chatPage .chat-header:not(.space-detail-head) .chat-heading{display:flex!important;align-items:center!important;gap:5px!important;flex:0 1 auto!important;width:auto!important;min-width:0!important}
+.app.chat-mode>#chatPage .chat-header:not(.space-detail-head) .chat-person{display:block!important;visibility:visible!important;flex:0 1 auto!important;width:auto!important;max-width:160px!important;min-width:0!important;margin:0!important;padding:0!important;text-align:right!important;color:var(--white)!important}.app.chat-mode>#chatPage .chat-header:not(.space-detail-head) .chat-person strong{display:block!important;visibility:visible!important;color:var(--white)!important;white-space:normal!important;overflow-wrap:anywhere!important}
+.app.chat-mode>#chatPage .chat-header:not(.space-detail-head) .call-actions{display:flex!important;align-items:center!important;justify-content:flex-end!important;gap:4px!important;margin-left:auto!important;flex:0 0 auto!important}
 /* Farnaz chat header icon refresh: explicit, consistent SVG controls */
-.app.chat-mode>#chatPage .chat-header .call-button{display:grid!important;place-items:center!important;width:30px!important;height:30px!important;min-width:30px!important;min-height:30px!important;padding:0!important;flex:0 0 30px!important;border-radius:9px!important}
-.app.chat-mode>#chatPage .chat-header .call-button svg{display:block!important;width:16px!important;height:16px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important;stroke-linejoin:round!important}
+.app.chat-mode>#chatPage .chat-header:not(.space-detail-head) .call-button{display:grid!important;place-items:center!important;width:30px!important;height:30px!important;min-width:30px!important;min-height:30px!important;padding:0!important;flex:0 0 30px!important;border-radius:9px!important}
+.app.chat-mode>#chatPage .chat-header:not(.space-detail-head) .call-button svg{display:block!important;width:16px!important;height:16px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important;stroke-linejoin:round!important}
 .app.chat-mode>#chatPage .chat-header{padding:3px 0 5px;gap:6px}
-body.chat-mode.keyboard-open .app.chat-mode>#chatPage .chat-header .call-button,
-body.chat-mode.keyboard-open .app.chat-mode>#chatPage .chat-header .back-button{width:32px;height:32px;min-height:32px;font-size:17px}
+body.chat-mode.keyboard-open .app.chat-mode>#chatPage .chat-header:not(.space-detail-head) .call-button,
+body.chat-mode.keyboard-open .app.chat-mode>#chatPage .chat-header:not(.space-detail-head) .back-button{width:32px;height:32px;min-height:32px;font-size:17px}
 body.chat-mode.keyboard-open .app.chat-mode>#chatPage .chat-header .chat-person small{display:none}
 body.chat-mode.keyboard-open .app.chat-mode>#chatPage #messageList{padding-top:2px;padding-bottom:6px;gap:5px}
 body.chat-mode.keyboard-open .app.chat-mode>#chatPage #sendMessageForm{padding-top:2px;padding-bottom:max(2px,env(safe-area-inset-bottom))}
@@ -328,14 +328,14 @@ footer{text-align:center;color:#718096;font-size:10px;padding:17px 0 7px}
 /* Chat-only compact header and single-row message composer */
 .app.chat-mode>header{display:none!important}
 .app.chat-mode>#chatPage{padding-top:2px}
-.app.chat-mode>#chatPage .chat-header{min-height:52px;padding:4px 0 7px;gap:10px}
-.app.chat-mode>#chatPage .chat-header{direction:ltr;display:flex;align-items:center;gap:7px}
-.app.chat-mode>#chatPage .chat-header #backToChats{order:1;flex:0 0 26px;width:26px;min-width:26px;padding:0;font-size:20px}
+.app.chat-mode>#chatPage .chat-header:not(.space-detail-head){min-height:52px;padding:4px 0 7px;gap:10px}
+.app.chat-mode>#chatPage .chat-header:not(.space-detail-head){direction:ltr;display:flex;align-items:center;gap:7px}
+.app.chat-mode>#chatPage .chat-header:not(.space-detail-head) #backToChats{order:1;flex:0 0 26px;width:26px;min-width:26px;padding:0;font-size:20px}
 .app.chat-mode>#chatPage .chat-header #chatAvatar{order:2;width:34px;height:34px;flex:0 0 34px;font-size:14px}
-.app.chat-mode>#chatPage .chat-header .chat-person{order:3;flex:1;min-width:0;direction:rtl;text-align:right}
-.app.chat-mode>#chatPage .chat-header .call-actions{order:4;margin-left:auto;flex:0 0 auto;gap:4px}
-.app.chat-mode>#chatPage .chat-header .call-button{width:30px;height:30px;min-width:30px;min-height:30px;padding:0;border-radius:9px;font-size:15px}
-.app.chat-mode>#chatPage .chat-header .call-button svg{display:block;width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.app.chat-mode>#chatPage .chat-header:not(.space-detail-head) .chat-person{order:3;flex:1;min-width:0;direction:rtl;text-align:right}
+.app.chat-mode>#chatPage .chat-header:not(.space-detail-head) .call-actions{order:4;margin-left:auto;flex:0 0 auto;gap:4px}
+.app.chat-mode>#chatPage .chat-header:not(.space-detail-head) .call-button{width:30px;height:30px;min-width:30px;min-height:30px;padding:0;border-radius:9px;font-size:15px}
+.app.chat-mode>#chatPage .chat-header:not(.space-detail-head) .call-button svg{display:block;width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .app.chat-mode>#chatPage .back-button span{display:none!important}
 .app.chat-mode>#chatPage #chatAvatar{width:44px;height:44px;flex:0 0 44px;font-size:17px}
 .app.chat-mode>#chatPage .chat-person strong{font-size:15px;line-height:1.25}
@@ -609,16 +609,16 @@ body[data-font-color="white"][data-theme] .bottom-nav .nav-button { color:#fffff
 
 
 /* Private chat header aligned with the group chat header. */
-.app.chat-mode>#chatPage .chat-header{display:flex!important;flex-direction:row!important;direction:ltr!important;justify-content:space-between!important;align-items:center!important;gap:8px!important;width:100%!important;min-width:0!important}
-.app.chat-mode>#chatPage #backToChats{order:1!important;display:inline-flex!important;flex:0 0 auto!important;width:auto!important;min-width:max-content!important;max-width:none!important;height:36px!important;min-height:36px!important;align-items:center!important;justify-content:center!important;gap:4px!important;margin:0!important;padding:7px 10px!important;white-space:nowrap!important;box-sizing:border-box!important;line-height:1!important}
-.app.chat-mode>#chatPage .call-actions{order:2!important;margin:0!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:4px!important;flex:0 0 auto!important}
-.app.chat-mode>#chatPage .call-button{width:30px!important;height:30px!important;min-width:30px!important;min-height:30px!important;flex:0 0 30px!important;padding:0!important;display:grid!important;place-items:center!important;border-radius:9px!important}
+.app.chat-mode>#chatPage .chat-header:not(.space-detail-head){display:flex!important;flex-direction:row!important;direction:ltr!important;justify-content:space-between!important;align-items:center!important;gap:8px!important;width:100%!important;min-width:0!important}
+.app.chat-mode>#chatPage .chat-header:not(.space-detail-head) #backToChats{order:1!important;display:inline-flex!important;flex:0 0 auto!important;width:auto!important;min-width:max-content!important;max-width:none!important;height:36px!important;min-height:36px!important;align-items:center!important;justify-content:center!important;gap:4px!important;margin:0!important;padding:7px 10px!important;white-space:nowrap!important;box-sizing:border-box!important;line-height:1!important}
+.app.chat-mode>#chatPage .chat-header:not(.space-detail-head) .call-actions{order:2!important;margin:0!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:4px!important;flex:0 0 auto!important}
+.app.chat-mode>#chatPage .chat-header:not(.space-detail-head) .call-button{width:30px!important;height:30px!important;min-width:30px!important;min-height:30px!important;flex:0 0 30px!important;padding:0!important;display:grid!important;place-items:center!important;border-radius:9px!important}
 .app.chat-mode>#chatPage .chat-heading{order:3!important;display:flex!important;direction:rtl!important;align-items:center!important;gap:7px!important;flex:0 1 auto!important;width:auto!important;min-width:0!important;max-width:calc(100% - 100px)!important;justify-content:flex-start!important;margin-left:auto!important}
 .app.chat-mode>#chatPage #chatAvatar{width:34px!important;height:34px!important;flex:0 0 34px!important}
 .app.chat-mode>#chatPage .chat-person{min-width:0!important;max-width:160px!important;flex:0 1 auto!important;text-align:right!important;direction:rtl!important}
 .app.chat-mode>#chatPage .chat-person h3{display:block!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
 .app.chat-mode>#chatPage .chat-person small{display:block!important}
-@media(max-width:360px){.app.chat-mode>#chatPage .chat-header{gap:4px!important}.app.chat-mode>#chatPage .chat-heading{gap:4px!important;max-width:calc(100% - 88px)!important}.app.chat-mode>#chatPage .chat-person small{display:none!important}.app.chat-mode>#chatPage #backToChats{padding:6px 8px!important;font-size:13px!important}}
+@media(max-width:360px){.app.chat-mode>#chatPage .chat-header:not(.space-detail-head){gap:4px!important}.app.chat-mode>#chatPage .chat-heading{gap:4px!important;max-width:calc(100% - 88px)!important}.app.chat-mode>#chatPage .chat-person small{display:none!important}.app.chat-mode>#chatPage .chat-header:not(.space-detail-head) #backToChats{padding:6px 8px!important;font-size:13px!important}}
 
 
 /* Hide the global brand/settings header only while a group or channel conversation is open. */

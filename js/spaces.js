@@ -460,7 +460,7 @@ async function loadMessages(id){
    el.appendChild(time);
    if(isOwnMessage){
     const receipt=document.createElement("small");receipt.className="space-message-read-status";receipt.textContent=readByMessage.has(String(m.id))?"✓✓":"✓";
-    receipt.title=readByMessage.has(String(m.id))?tr("خوانده‌شده","Read") : tr("ارسال‌شده؛ هنوز خوانده نشده","Sent; not read yet");
+    receipt.title=readByMessage.has(String(m.id))?tr("حداقل یک عضو خوانده است","Read by at least one member") : tr("ارسال‌شده؛ هنوز خوانده نشده","Sent; not read yet");
     receipt.setAttribute("aria-label",receipt.title);
     receipt.style.cssText="display:inline-block;margin-inline-start:5px;font-size:12px;letter-spacing:-2px;color:"+(readByMessage.has(String(m.id))?"#20a66a":"var(--muted,#8a94a6)")+";font-weight:700";
     el.appendChild(receipt);

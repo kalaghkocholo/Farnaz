@@ -1,6 +1,8 @@
+let readReceiptMessageIds=new Set();
 async function loadMessages(older=false){
   if(!currentUser||!currentChatUser)return;
   const request=++chatRequestNumber,myId=currentUser.id,contactId=currentChatUser.user_id;
+  if(!older)readReceiptMessageIds=new Set();
   if(!older){
     $("messageList").replaceChildren();messageLoadedCount=50;messageHasMore=false;
     selectedMessageIds.clear();messageSelectionMode=false;updateSelectionToolbar();
@@ -33,6 +35,13 @@ async function loadMessages(older=false){
       else console.warn("Could not load hidden-message preferences:",hidden.error);
     }catch(hiddenError){console.warn("Could not load hidden-message preferences:",hiddenError);}
     const visibleRows=rows.filter(m=>!hiddenIds.has(m.id));
+    const ownIds=visibleRows.filter(m=>String(m.sender_id)===String(myId)).map(m=>String(m.id));
+    const receivedIds=visibleRows.filter(m=>String(m.receiver_id)===String(myId)&&String(m.sender_id)!==String(myId)).map(m=>({message_id:m.id,sender_id:m.sender_id,receiver_id:m.receiver_id,reader_id:myId}));
+    const receiptRead=ownIds.length?client.from("message_read_receipts").select("message_id,reader_id,read_at").in("message_id",ownIds):Promise.resolve({data:[],error:null});
+    const markRead=receivedIds.length?client.from("message_read_receipts").upsert(receivedIds,{onConflict:"message_id,reader_id",ignoreDuplicates:true}).then(({error})=>{if(error)console.warn("Could not save read receipts:",error.message);}):Promise.resolve();
+    const [receiptResult]=await Promise.all([receiptRead,markRead]);
+    if(request!==chatRequestNumber||currentUser?.id!==myId||currentChatUser?.user_id!==contactId)return;
+    (receiptResult?.data||[]).forEach(r=>{if(String(r.reader_id)!==String(myId))readReceiptMessageIds.add(String(r.message_id));});
     if(older){await prependMessages(visibleRows,myId);messageLoadedCount+=50;}
     else await renderMessages(visibleRows,myId);
     messageHasMore=data.length>50;
@@ -84,6 +93,14 @@ async function makeMessageElement(m,myId){
   }
   const time=document.createElement("time"),date=new Date(m.created_at);time.dateTime=date.toISOString();
   time.textContent=date.toLocaleTimeString(english?"en":"fa-IR",{hour:"2-digit",minute:"2-digit"})+(m.edited_at?(english?" · edited":" · ویرایش‌شده"):"");item.appendChild(time);
+  if(isOwnMessage){
+    const read=readReceiptMessageIds.has(String(m.id)),receipt=document.createElement("small");
+    receipt.className="message-read-status";receipt.textContent=read?"✓✓":"✓";
+    receipt.title=read?(english?"Read":"خوانده‌شده"):(english?"Sent; not read yet":"ارسال‌شده؛ هنوز خوانده نشده");
+    receipt.setAttribute("aria-label",receipt.title);
+    receipt.style.cssText="display:inline-block;margin-inline-start:5px;font-size:12px;letter-spacing:-2px;font-weight:700;color:"+(read?"#20a66a":"var(--muted,#8a94a6)");
+    item.appendChild(receipt);
+  }
   let pointerHold=null,touchHold=null,holdTriggered=false,holdX=0,holdY=0;
   const interactiveTarget=target=>!!target.closest("a,button,audio,video,input,textarea,select");
   const cancelPointerHold=()=>{clearTimeout(pointerHold);pointerHold=null;};
@@ -393,6 +410,17 @@ async function subscribeToMessages(){
             if(oldItem.isConnected)oldItem.replaceWith(replacement);
           }
         }
+      }
+    })
+    .on("postgres_changes",{event:"INSERT",schema:"public",table:"message_read_receipts"},payload=>{
+      if(currentUser?.id!==myId)return;
+      const receipt=payload.new;
+      if(String(receipt?.sender_id)!==String(myId))return;
+      readReceiptMessageIds.add(String(receipt.message_id));
+      if(currentChatUser&&String(currentChatUser.user_id)===String(receipt.receiver_id)){
+        const item=$("messageList").querySelector('[data-message-id="'+receipt.message_id+'"]');
+        const status=item?.querySelector(".message-read-status");
+        if(status){status.textContent="✓✓";status.style.color="#20a66a";status.title=english?"Read":"خوانده‌شده";status.setAttribute("aria-label",status.title);}
       }
     })
     .on("postgres_changes",{event:"DELETE",schema:"public",table:"messages"},payload=>{

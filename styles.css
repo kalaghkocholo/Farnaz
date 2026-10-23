@@ -1091,3 +1091,21 @@ body.chat-mode .app.chat-mode #chatPage #sendMessageForm {
 .message-search-snippet{font-size:14px;line-height:1.5;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .message-search-meta{font-size:11px;color:var(--muted,#a8b3c7)}
 @media(max-width:560px){.message-search-dialog{padding:0;align-items:stretch}.message-search-card{width:100%;height:100dvh;max-height:100dvh;border-radius:0;border-inline:0;padding:50px 14px max(18px,env(safe-area-inset-bottom))}.message-search-filters{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}.message-search-filters>div:first-child{grid-column:1/-1}}
+
+
+/* Private-message emoji reactions and pinned-message banner */
+.message-reaction-picker{display:flex;flex:0 0 100%;justify-content:center;gap:3px;padding:2px 0 4px}
+.message-reaction-choice{display:grid;place-items:center;width:34px;height:34px;flex:0 0 34px;padding:0;border:1px solid transparent;border-radius:10px;background:var(--panel2);font-size:19px}
+.message-reaction-choice:active{background:#30435b;transform:scale(.96)}
+.message-pin-action{flex:0 0 auto}
+.message-pin-indicator{display:block;margin:0 0 5px;color:var(--mint);font-size:10px;font-weight:700;line-height:1.3}
+.message-reactions{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px;direction:ltr;justify-content:flex-start}
+.message-reaction-chip{min-height:27px;padding:3px 8px;border:1px solid var(--border);border-radius:999px;background:var(--panel2);color:var(--white);font-size:12px;line-height:1.2;white-space:nowrap}
+.message-reaction-chip.mine{border-color:var(--mint);background:#1d4944}
+.message-pinned-banner{display:flex;align-items:center;gap:10px;flex:0 0 auto;width:100%;min-width:0;margin:0 0 2px;padding:9px 11px;border:1px solid #3e756b;border-radius:12px;background:var(--panel);color:var(--white);text-align:start}
+.message-pinned-banner[hidden]{display:none!important}
+.message-pinned-icon{flex:0 0 auto;font-size:17px}
+.message-pinned-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:3px}
+.message-pinned-copy strong{font-size:11px;color:var(--mint)}
+.message-pinned-copy small{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.message-pinned-arrow{font-size:22px;color:var(--mint);line-height:1}

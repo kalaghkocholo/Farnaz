@@ -562,10 +562,7 @@
   justify-content:flex-end!important;
   direction:ltr!important
 }
-#spacesPage #spaceComposer .composer-right {
-  justify-content:flex-end!important;
-  direction:ltr!important
-}
+
 #spacesPage #spaceComposer .composer-icon {
   display:grid!important;
   place-items:center!important;

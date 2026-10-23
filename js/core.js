@@ -15,12 +15,12 @@ let recordedVoiceFile=null,recordedVoiceUrl=null,mediaRecorder=null,recordedAudi
 
 const $=id=>document.getElementById(id);
 
-const APPEARANCE_DEFAULTS={theme:"dark",accent:"#50e3c2",fontSize:"medium",fontFamily:"system",fontColor:"auto",outgoingBubble:"#c6d2e8",incomingBubble:"#bde7fa"};
+const APPEARANCE_DEFAULTS={theme:"dark",accent:"#7896c5",fontSize:"medium",fontFamily:"system",fontColor:"auto",outgoingBubble:"#c6d2e8",incomingBubble:"#bde7fa"};
 const APPEARANCE_KEY="farnaz-appearance-v2";
 function readAppearanceSettings(){
   try{
     const saved=localStorage.getItem(APPEARANCE_KEY);
-    if(saved)return {...APPEARANCE_DEFAULTS,...JSON.parse(saved)};
+    if(saved){const parsed=JSON.parse(saved);if(parsed.accent==="#50e3c2")parsed.accent=APPEARANCE_DEFAULTS.accent;return {...APPEARANCE_DEFAULTS,...parsed};}
     const legacy=JSON.parse(localStorage.getItem("farnaz-appearance-v1")||"{}");
     if(!legacy.outgoingBubble||legacy.outgoingBubble==="auto")legacy.outgoingBubble=APPEARANCE_DEFAULTS.outgoingBubble;
     if(!legacy.incomingBubble||legacy.incomingBubble==="auto")legacy.incomingBubble=APPEARANCE_DEFAULTS.incomingBubble;
@@ -35,6 +35,13 @@ function applyAppearanceSettings(){
   let theme=appearanceSettings.theme||"dark";
   if(theme==="system")theme=window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";
   document.body.dataset.theme=theme;
+  const palette=theme==="light"
+    ?{bg:"#f4f6fa",panel:"#ffffff",panel2:"#edf1f7",border:"#dce3ed",muted:"#68778d",white:"#172237",danger:"#b42318",mint:"#7896c5"}
+    :{bg:"#101722",panel:"#182231",panel2:"#222e3e",border:"#303d4f",muted:"#a4b1c3",white:"#f4f7fb",danger:"#ffaaa9",mint:"#91acd8"};
+  Object.entries(palette).forEach(([key,value])=>root.style.setProperty("--"+key,value));
+  root.style.setProperty("--bg",palette.bg);root.style.setProperty("--panel",palette.panel);
+  root.style.setProperty("--panel2",palette.panel2);root.style.setProperty("--border",palette.border);
+  root.style.setProperty("--muted",palette.muted);root.style.setProperty("--danger",palette.danger);
   const fontColor=appearanceSettings.fontColor||"auto";
   document.body.dataset.fontColor=fontColor;
   root.style.setProperty("--white",fontColor==="white"?"#ffffff":fontColor==="black"?"#111111":theme==="light"?"#172237":"#f7f9fc");
@@ -55,12 +62,14 @@ function applyAppearanceSettings(){
   };
   const outgoing=appearanceSettings.outgoingBubble||"auto";
   const incoming=appearanceSettings.incomingBubble||"auto";
-  const outgoingColor=outgoing==="auto"?accent:outgoing;
-  const incomingColor=incoming==="auto"?(accent.toLowerCase()==="#ffffff"?"#eef1f5":accent.toLowerCase()==="#000000"?"#252525":"color-mix(in srgb, "+accent+" 15%, var(--panel2))"):incoming;
+  const isDefaultOutgoing=outgoing==="#c6d2e8"||outgoing==="auto";
+  const isDefaultIncoming=incoming==="#bde7fa"||incoming==="auto";
+  const outgoingColor=isDefaultOutgoing?(theme==="light"?"#dce6f5":"#293d59") : outgoing;
+  const incomingColor=isDefaultIncoming?(theme==="light"?"#ffffff":"#222d3b"):incoming;
   root.style.setProperty("--my-message-bg",outgoingColor);
   root.style.setProperty("--my-message-ink",readableInk(outgoingColor));
   root.style.setProperty("--their-message-bg",incomingColor);
-  root.style.setProperty("--their-message-ink",incoming==="auto"&&accent!=="#ffffff"&&accent!=="#000000"?(theme==="light"?"#172237":"#f7f9fc"):readableInk(incomingColor));
+  root.style.setProperty("--their-message-ink",readableInk(incomingColor));
   const sizes={small:"0.92",medium:"1",large:"1.12"};
   root.style.setProperty("--font-scale",sizes[appearanceSettings.fontSize]||"1");
   const fonts={system:'-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif',serif:'Georgia,"Times New Roman",serif',rounded:'"Trebuchet MS",Arial,sans-serif'};

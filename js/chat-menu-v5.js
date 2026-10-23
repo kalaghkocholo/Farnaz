@@ -556,6 +556,11 @@ async function sendMessage(event){
     const {data:s,error:se}=await getClient().auth.getSession();if(se)throw se;
     if(!s.session||s.session.user.id!==currentUser.id)throw new Error(english?"Session expired. Sign in again.":"نشست منقضی شده؛ دوباره وارد شو.");
     const client=getClient(),receiverId=currentChatUser.user_id;
+    if(!editingMessageId){
+      const {data:blocked,error:blockError}=await client.from("blocked_contacts").select("blocked_user_id").eq("blocker_id",currentUser.id).eq("blocked_user_id",receiverId).maybeSingle();
+      if(blockError)throw blockError;
+      if(blocked)throw new Error(english?"This contact is blocked. Unblock them before sending a message.":"این مخاطب را مسدود کرده‌ای؛ برای ارسال پیام ابتدا مسدودسازی را بردار.");
+    }
     if(editingMessageId){
       const {error}=await client.from("messages").update({body,edited_at:new Date().toISOString()}).eq("id",editingMessageId).eq("sender_id",currentUser.id);
       if(error)throw error;cancelMessageEdit();

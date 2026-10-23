@@ -395,6 +395,7 @@ async function subscribeToMessages(){
           list.querySelector(".empty-state")?.remove();
           list.appendChild(await makeMessageElement(m,myId));
           list.scrollTop=list.scrollHeight;
+          if(document.body.classList.contains("chat-mode")) client.from("message_read_receipts").upsert([{message_id:m.id,sender_id:m.sender_id,receiver_id:m.receiver_id,reader_id:myId}],{onConflict:"message_id,reader_id",ignoreDuplicates:true}).then(({error})=>{if(error)console.warn(error.message);});
         }
       }
     })

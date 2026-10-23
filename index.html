@@ -210,9 +210,9 @@
   <div class="chat-header space-detail-head">
     <button class="space-secondary" id="backToChats" type="button" onclick="backFromChat()" aria-label="بازگشت به فهرست گفتگوها" title="بازگشت"><span>← بازگشت</span></button>
     <div class="space-title-wrap chat-heading">
-      <div class="space-avatar avatar medium" id="chatAvatar">F</div>
+      <div class="space-avatar avatar medium" id="chatAvatar" onclick="openContactInfo()" title="اطلاعات مخاطب">F</div>
       <div class="space-title-copy chat-person">
-        <h3 id="conversationTitle">گفتگو</h3>
+        <h3 id="conversationTitle" onclick="openContactInfo()" title="اطلاعات مخاطب">گفتگو</h3>
         <small id="chatSubtitle" class="space-muted">گفتگوی خصوصی</small>
       </div>
     </div>
@@ -302,7 +302,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="./js/core.js?v=20261024-4"></script>
+<script src="./js/core.js?v=20261024-5"></script>
 <script src="./js/chat-menu-v5.js?v=20261024-1"></script>
 <script src="./js/spaces.js?v=20261023-71"></script>
 <script src="./js/calls.js?v=20261024-1"></script>

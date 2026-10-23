@@ -1261,3 +1261,64 @@ body.chat-mode .app.chat-mode #chatPage #sendMessageForm {
   }
   #chatPage .chat-header.space-detail-head .space-call-button svg{width:19px!important;height:19px!important}
 }
+
+
+/* FINAL HEADER FIX v25: explicit turquoise call icons and consistent private-chat layout */
+#chatPage .chat-header.space-detail-head{
+  display:flex!important;flex-direction:row!important;direction:ltr!important;
+  align-items:center!important;justify-content:flex-start!important;gap:8px!important;
+  width:100%!important;min-width:0!important;box-sizing:border-box!important;
+}
+#chatPage .chat-header.space-detail-head #backToChats.space-secondary{
+  order:0!important;display:inline-flex!important;flex:0 0 102px!important;
+  width:102px!important;min-width:102px!important;max-width:102px!important;
+  height:42px!important;min-height:42px!important;padding:8px 10px!important;
+  font-size:14px!important;gap:6px!important;direction:rtl!important;white-space:nowrap!important;
+}
+#chatPage .chat-header.space-detail-head #backToChats.space-secondary span{
+  display:inline!important;visibility:visible!important;opacity:1!important;white-space:nowrap!important;
+}
+#chatPage .chat-header.space-detail-head .space-title-wrap{
+  order:1!important;display:flex!important;flex:0 1 auto!important;flex-direction:row!important;
+  direction:ltr!important;align-items:center!important;gap:7px!important;min-width:0!important;
+  width:auto!important;max-width:calc(100% - 190px)!important;overflow:hidden!important;
+}
+#chatPage .chat-header.space-detail-head #chatAvatar{
+  order:0!important;flex:0 0 36px!important;width:36px!important;height:36px!important;
+  min-width:36px!important;min-height:36px!important;
+}
+#chatPage .chat-header.space-detail-head .space-title-copy{
+  order:1!important;direction:rtl!important;text-align:right!important;min-width:0!important;
+  flex:1 1 auto!important;overflow:hidden!important;
+}
+#chatPage .chat-header.space-detail-head .space-title-copy h3,
+#chatPage .chat-header.space-detail-head .space-title-copy small{
+  display:block!important;max-width:100%!important;overflow:hidden!important;
+  text-overflow:ellipsis!important;white-space:nowrap!important;
+}
+#chatPage .chat-header.space-detail-head .space-call-actions{
+  order:2!important;display:flex!important;flex:0 0 auto!important;align-items:center!important;
+  justify-content:flex-end!important;gap:5px!important;margin-left:auto!important;min-width:0!important;
+}
+#chatPage .chat-header.space-detail-head .space-call-button{
+  display:grid!important;place-items:center!important;flex:0 0 38px!important;
+  width:38px!important;min-width:38px!important;height:38px!important;min-height:38px!important;
+  padding:0!important;color:#50e3c2!important;background:transparent!important;
+}
+#chatPage .chat-header.space-detail-head .space-call-button svg{
+  display:block!important;width:21px!important;height:21px!important;fill:none!important;
+  stroke:#50e3c2!important;color:#50e3c2!important;stroke-width:1.8!important;
+  stroke-linecap:round!important;stroke-linejoin:round!important;
+}
+@media(max-width:380px){
+  #chatPage .chat-header.space-detail-head{gap:4px!important;padding-left:3px!important;padding-right:3px!important}
+  #chatPage .chat-header.space-detail-head #backToChats.space-secondary{
+    flex-basis:88px!important;width:88px!important;min-width:88px!important;max-width:88px!important;
+    height:38px!important;min-height:38px!important;padding:6px 6px!important;font-size:12px!important;gap:3px!important;
+  }
+  #chatPage .chat-header.space-detail-head .space-title-wrap{gap:4px!important;max-width:calc(100% - 166px)!important}
+  #chatPage .chat-header.space-detail-head #chatAvatar{flex-basis:30px!important;width:30px!important;height:30px!important;min-width:30px!important;min-height:30px!important}
+  #chatPage .chat-header.space-detail-head .space-call-actions{gap:3px!important}
+  #chatPage .chat-header.space-detail-head .space-call-button{flex-basis:32px!important;width:32px!important;min-width:32px!important;height:32px!important;min-height:32px!important}
+  #chatPage .chat-header.space-detail-head .space-call-button svg{width:19px!important;height:19px!important}
+}

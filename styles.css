@@ -1011,3 +1011,10 @@ body.chat-mode .app.chat-mode #chatPage #sendMessageForm {
  .contact-info-media-item img,.contact-info-file-icon{height:76px}
 }
 @media(max-width:360px){.contact-info-actions{grid-template-columns:repeat(2,minmax(0,1fr))}.contact-info-action{flex-direction:row;justify-content:flex-start}.contact-info-media-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* Contact sheet call icons clone the exact SVGs from the private-chat header. */
+.contact-info-action-icon svg{
+  display:block;width:22px;height:22px;fill:none;stroke:currentColor;
+  stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;
+}

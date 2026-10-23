@@ -1,4 +1,87 @@
 let readReceiptMessageIds=new Set();
+let messageReactionMap=new Map(),pinnedMessageIds=new Set(),currentPinnedMessage=null;
+const MESSAGE_REACTION_CHOICES=["👍","❤️","😂","😮","😢","🙏"];
+function ensurePinnedMessageBanner(){
+  const list=$("messageList");if(!list)return null;
+  let banner=$("pinnedMessageBanner");
+  if(!banner){
+    banner=document.createElement("button");banner.id="pinnedMessageBanner";banner.type="button";
+    banner.className="message-pinned-banner";banner.hidden=true;
+    banner.innerHTML='<span class="message-pinned-icon" aria-hidden="true">📌</span><span class="message-pinned-copy"><strong></strong><small></small></span><span class="message-pinned-arrow" aria-hidden="true">›</span>';
+    banner.addEventListener("click",async()=>{
+      if(!currentPinnedMessage||!currentChatUser)return;
+      const target=$("messageList").querySelector('[data-message-id="'+currentPinnedMessage.id+'"]');
+      if(target){target.scrollIntoView({behavior:"smooth",block:"center"});target.classList.add("contact-info-search-match");setTimeout(()=>target.classList.remove("contact-info-search-match"),1800);}
+      else if(typeof openMessageFromSearch==="function")await openMessageFromSearch(currentPinnedMessage.id,currentPinnedMessage.created_at,currentChatUser.user_id);
+    });
+    list.before(banner);
+  }
+  return banner;
+}
+function updatePinnedMessageBanner(){
+  const banner=ensurePinnedMessageBanner();if(!banner)return;
+  if(!currentPinnedMessage){banner.hidden=true;return;}
+  const message=currentPinnedMessage;
+  const preview=(message.body||message.attachment_name||(english?"Attachment":"پیوست")).trim();
+  banner.querySelector("strong").textContent=english?"Pinned message":"پیام سنجاق‌شده";
+  banner.querySelector("small").textContent=preview.length>90?preview.slice(0,87)+"…":preview;
+  banner.hidden=false;
+}
+async function loadMessageDecorations(messages,myId,contactId){
+  const client=getClient(),ids=[...new Set((messages||[]).map(m=>String(m.id)).filter(Boolean))];
+  if(ids.length){
+    try{
+      const {data,error}=await client.from("message_reactions").select("message_id,user_id,emoji").in("message_id",ids);
+      if(error)throw error;
+      const grouped=new Map();
+      for(const r of data||[]){
+        const key=String(r.message_id);if(!grouped.has(key))grouped.set(key,new Map());
+        const byEmoji=grouped.get(key);if(!byEmoji.has(r.emoji))byEmoji.set(r.emoji,[]);
+        byEmoji.get(r.emoji).push(String(r.user_id));
+      }
+      for(const id of ids){
+        const byEmoji=grouped.get(id)||new Map();
+        messageReactionMap.set(id,[...byEmoji.entries()].map(([emoji,users])=>({emoji,users})));
+      }
+    }catch(e){console.warn("Could not load message reactions:",e.message);}
+  }
+  try{
+    const {data,error}=await client.from("message_pins")
+      .select("message_id,pinned_by,pinned_at,messages!inner(id,body,attachment_name,created_at,sender_id,receiver_id)")
+      .order("pinned_at",{ascending:false}).limit(100);
+    if(error)throw error;
+    const relevant=(data||[]).map(pin=>{
+      const m=Array.isArray(pin.messages)?pin.messages[0]:pin.messages;
+      return m&&((String(m.sender_id)===String(myId)&&String(m.receiver_id)===String(contactId))||(String(m.sender_id)===String(contactId)&&String(m.receiver_id)===String(myId)))?{...pin,...m}:null;
+    }).filter(Boolean);
+    pinnedMessageIds=new Set(relevant.map(p=>String(p.message_id)));
+    currentPinnedMessage=relevant[0]||null;
+    updatePinnedMessageBanner();
+  }catch(e){console.warn("Could not load pinned messages:",e.message);}
+}
+async function toggleMessageReaction(messageId,emoji){
+  if(!currentUser||!currentChatUser)return;
+  const client=getClient(),id=String(messageId),mine=(messageReactionMap.get(id)||[]).find(r=>r.emoji===emoji&&r.users.includes(String(currentUser.id)));
+  try{
+    const result=mine
+      ?await client.from("message_reactions").delete().eq("message_id",messageId).eq("user_id",currentUser.id)
+      :await client.from("message_reactions").upsert({message_id:messageId,user_id:currentUser.id,emoji},{onConflict:"message_id,user_id"});
+    if(result.error)throw result.error;
+    await loadMessages(false,true);
+  }catch(e){console.error("Message reaction failed:",e);setStatus("sendMessageStatus",(english?"Could not save reaction: ":"ذخیره واکنش ناموفق بود: ")+e.message,true);}
+}
+async function toggleMessagePin(messageId){
+  if(!currentUser||!currentChatUser)return;
+  const client=getClient(),id=String(messageId),alreadyPinned=pinnedMessageIds.has(id);
+  try{
+    const result=alreadyPinned
+      ?await client.from("message_pins").delete().eq("message_id",messageId)
+      :await client.from("message_pins").insert({message_id:messageId,pinned_by:currentUser.id});
+    if(result.error)throw result.error;
+    await loadMessages(false,true);
+  }catch(e){console.error("Pin message failed:",e);setStatus("sendMessageStatus",(english?"Could not update pinned message: ":"تغییر سنجاق پیام ناموفق بود: ")+e.message,true);}
+}
+
 async function loadMessages(older=false,preserveScroll=false){
   if(!currentUser||!currentChatUser)return;
   const scrollList=$("messageList");
@@ -38,6 +121,8 @@ async function loadMessages(older=false,preserveScroll=false){
       else console.warn("Could not load hidden-message preferences:",hidden.error);
     }catch(hiddenError){console.warn("Could not load hidden-message preferences:",hiddenError);}
     const visibleRows=rows.filter(m=>!hiddenIds.has(m.id));
+    await loadMessageDecorations(visibleRows,myId,contactId);
+    if(request!==chatRequestNumber||currentUser?.id!==myId||currentChatUser?.user_id!==contactId)return;
     const ownIds=visibleRows.filter(m=>String(m.sender_id)===String(myId)).map(m=>String(m.id));
     const receivedIds=visibleRows.filter(m=>String(m.receiver_id)===String(myId)&&String(m.sender_id)!==String(myId)).map(m=>({message_id:m.id,sender_id:m.sender_id,receiver_id:m.receiver_id,reader_id:myId}));
     const receiptRead=ownIds.length?client.from("message_read_receipts").select("message_id,reader_id,read_at").in("message_id",ownIds):Promise.resolve({data:[],error:null});
@@ -84,6 +169,10 @@ async function makeMessageElement(m,myId){
   item.style.setProperty("max-width","88%","important");
   item.dataset.messageId=m.id;item.dataset.createdAt=m.created_at;
   if(selectedMessageIds.has(m.id))item.classList.add("selected");
+  if(pinnedMessageIds.has(String(m.id))){
+    const pin=document.createElement("div");pin.className="message-pin-indicator";
+    pin.textContent=english?"📌 Pinned":"📌 سنجاق‌شده";item.appendChild(pin);
+  }
   if(m.reply_to_id){
     try{const {data}=await getClient().from("messages").select("body,attachment_name").eq("id",m.reply_to_id).maybeSingle();
       if(data){const q=document.createElement("div");q.className="message-quote";q.textContent=(english?"Replying to: ":"در پاسخ به: ")+(data.body||data.attachment_name||"");item.appendChild(q);}}catch(e){console.warn(e);}
@@ -106,6 +195,18 @@ async function makeMessageElement(m,myId){
     receipt.setAttribute("aria-label",receipt.title);
     receipt.style.cssText="display:inline-block;margin-inline-start:5px;font-size:12px;letter-spacing:-2px;font-weight:700;color:"+(read?"#20a66a":"var(--muted,#8a94a6)");
     item.appendChild(receipt);
+  }
+  const reactionGroups=messageReactionMap.get(String(m.id))||[];
+  if(reactionGroups.length){
+    const reactionBar=document.createElement("div");reactionBar.className="message-reactions";
+    for(const group of reactionGroups){
+      const chip=document.createElement("button");chip.type="button";chip.className="message-reaction-chip"+(group.users.includes(String(myId))?" mine":"");
+      chip.textContent=group.emoji+" "+group.users.length;
+      chip.setAttribute("aria-label",group.emoji+" "+group.users.length);
+      chip.addEventListener("click",event=>{event.stopPropagation();toggleMessageReaction(m.id,group.emoji);});
+      reactionBar.appendChild(chip);
+    }
+    item.appendChild(reactionBar);
   }
   let pointerHold=null,touchHold=null,holdTriggered=false,holdX=0,holdY=0;
   const interactiveTarget=target=>!!target.closest("a,button,audio,video,input,textarea,select");
@@ -208,6 +309,15 @@ function showMessageActions(m,item){
   const menu=document.createElement("div");menu.className="message-tools message-tools-floating";
   const closeMenu=()=>{menu.remove();restoreItem();clearMessageActionOverlay();};
   const add=(label,fn,cls="mini-button")=>{const b=document.createElement("button");b.type="button";b.className=cls;b.textContent=label;b.onclick=()=>{closeMenu();fn();};menu.appendChild(b);};
+  const reactionPicker=document.createElement("div");reactionPicker.className="message-reaction-picker";
+  reactionPicker.setAttribute("aria-label",english?"React to message":"واکنش به پیام");
+  for(const emoji of MESSAGE_REACTION_CHOICES){
+    const choice=document.createElement("button");choice.type="button";choice.className="message-reaction-choice";choice.textContent=emoji;
+    choice.setAttribute("aria-label",(english?"React with ":"واکنش ")+emoji);
+    choice.onclick=()=>{closeMenu();toggleMessageReaction(m.id,emoji);};reactionPicker.appendChild(choice);
+  }
+  menu.appendChild(reactionPicker);
+  add(pinnedMessageIds.has(String(m.id))?(english?"Unpin message":"برداشتن سنجاق"):(english?"Pin message":"سنجاق پیام"),()=>toggleMessagePin(m.id),"mini-button message-pin-action");
   add(english?"Reply":"پاسخ",()=>setReplyTarget(m));
   add(english?"Forward":"فوروارد",()=>{selectedMessageIds.clear();selectedMessageIds.add(m.id);messageSelectionMode=true;updateSelectionToolbar();forwardSelectedMessages();});
   add(english?"Download attachment":"دانلود فایل",()=>downloadMessage(m),"mini-button download-message-action");
@@ -429,6 +539,16 @@ async function subscribeToMessages(){
         const status=item?.querySelector(".message-read-status");
         if(status){status.textContent="✓✓";status.style.color="#20a66a";status.title=english?"Read":"خوانده‌شده";status.setAttribute("aria-label",status.title);}
       }
+    })
+    .on("postgres_changes",{event:"*",schema:"public",table:"message_reactions"},payload=>{
+      if(currentUser?.id!==myId||!currentChatUser||!document.body.classList.contains("chat-mode"))return;
+      const row=payload.new||payload.old;if(!row?.message_id)return;
+      const item=$("messageList").querySelector('[data-message-id="'+row.message_id+'"]');
+      if(item)loadMessages(false,true);
+    })
+    .on("postgres_changes",{event:"*",schema:"public",table:"message_pins"},payload=>{
+      if(currentUser?.id!==myId||!currentChatUser||!document.body.classList.contains("chat-mode"))return;
+      loadMessages(false,true);
     })
     .on("postgres_changes",{event:"DELETE",schema:"public",table:"messages"},payload=>{
       if(currentUser?.id!==myId)return;

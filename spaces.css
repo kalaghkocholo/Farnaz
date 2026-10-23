@@ -1203,17 +1203,6 @@ body.spaces-chat-mode.keyboard-open #spacesPage #spaceComposer .composer-icon {
     gap:3px!important
   }
 }
-#spacesPage #spaceDetail .space-call-button svg {
-  display:block!important;
-  width:16px!important;
-  height:16px!important;
-  fill:none!important;
-  stroke:currentColor!important;
-  stroke-width:1.8!important;
-  stroke-linecap:round!important;
-  stroke-linejoin:round!important;
-  color:var(--mint)!important
-}
 /* Group call buttons use the same surface as the private-chat call buttons. */
 #spacesPage #spaceDetail .space-call-button {
   
@@ -1235,13 +1224,15 @@ body.spaces-chat-mode.keyboard-open #spacesPage #spaceComposer .composer-icon {
   
 }
 #spacesPage #spaceDetail .space-call-button svg {
-  
-   width:19px!important;
+  display:block!important;
+  width:19px!important;
   height:19px!important;
-  
-   color:var(--mint)!important;
+  fill:none!important;
   stroke:var(--mint)!important;
-  
+  stroke-width:1.8!important;
+  stroke-linecap:round!important;
+  stroke-linejoin:round!important;
+  color:var(--mint)!important
 }
 @media(max-width:380px) {
   

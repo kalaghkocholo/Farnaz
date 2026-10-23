@@ -15,11 +15,19 @@ let recordedVoiceFile=null,recordedVoiceUrl=null,mediaRecorder=null,recordedAudi
 
 const $=id=>document.getElementById(id);
 
-const APPEARANCE_DEFAULTS={theme:"dark",accent:"#50e3c2",fontSize:"medium",fontFamily:"system",fontColor:"auto",outgoingBubble:"auto",incomingBubble:"auto"};
-const APPEARANCE_KEY="farnaz-appearance-v1";
+const APPEARANCE_DEFAULTS={theme:"dark",accent:"#50e3c2",fontSize:"medium",fontFamily:"system",fontColor:"auto",outgoingBubble:"#c6d2e8",incomingBubble:"#bde7fa"};
+const APPEARANCE_KEY="farnaz-appearance-v2";
 function readAppearanceSettings(){
-  try{return {...APPEARANCE_DEFAULTS,...JSON.parse(localStorage.getItem(APPEARANCE_KEY)||"{}")};}
-  catch(_){return {...APPEARANCE_DEFAULTS};}
+  try{
+    const saved=localStorage.getItem(APPEARANCE_KEY);
+    if(saved)return {...APPEARANCE_DEFAULTS,...JSON.parse(saved)};
+    const legacy=JSON.parse(localStorage.getItem("farnaz-appearance-v1")||"{}");
+    if(!legacy.outgoingBubble||legacy.outgoingBubble==="auto")legacy.outgoingBubble=APPEARANCE_DEFAULTS.outgoingBubble;
+    if(!legacy.incomingBubble||legacy.incomingBubble==="auto")legacy.incomingBubble=APPEARANCE_DEFAULTS.incomingBubble;
+    const migrated={...APPEARANCE_DEFAULTS,...legacy};
+    localStorage.setItem(APPEARANCE_KEY,JSON.stringify(migrated));
+    return migrated;
+  }catch(_){return {...APPEARANCE_DEFAULTS};}
 }
 let appearanceSettings=readAppearanceSettings();
 function applyAppearanceSettings(){

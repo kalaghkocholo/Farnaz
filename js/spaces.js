@@ -59,7 +59,18 @@ s.textContent += ".space-avatar,.space-info-avatar{position:relative;overflow:hi
 s.textContent += "#spaceCropDialog{position:fixed;inset:0;z-index:11000;background:#000c;display:flex;align-items:center;justify-content:center;padding:14px}#spaceCropDialog[hidden]{display:none!important}#spaceCropDialog .space-crop-card{width:min(100%,420px);max-height:calc(100dvh - 28px);overflow:auto;background:var(--card,#172033);color:var(--white,#f7f9fc);border-radius:20px;padding:18px;box-sizing:border-box}#spaceCropDialog *{box-sizing:border-box}#spaceCropViewport{width:min(100%,300px);aspect-ratio:1;margin:14px auto;position:relative;overflow:hidden;border-radius:50%;background:#101827;touch-action:none;user-select:none}#spaceCropImage{position:absolute;max-width:none;max-height:none;pointer-events:none}#spaceCropDialog .space-crop-actions{display:flex;gap:10px;margin-top:16px}#spaceCropDialog .space-crop-actions button{flex:1;min-height:44px}#spaceCropZoom{width:100%}";
 s.textContent += "#spaceInfoDialog .space-info-actions{display:flex!important;align-items:stretch!important;gap:12px!important;flex-wrap:wrap!important;margin:14px 0 18px!important}#spaceInfoDialog .space-info-actions button{flex:1 1 135px!important;min-height:44px!important;border:0!important;border-radius:12px!important;padding:10px 14px!important;font-weight:700!important;white-space:normal!important}#spaceInfoDialog .space-info-actions button.space-secondary{background:#4778e6!important;color:#fff!important}#spaceInfoDialog .space-info-actions button.space-primary{background:#18a98e!important;color:#fff!important}.space-member-tools{display:flex!important;flex-wrap:nowrap!important;align-items:center!important;gap:7px!important;overflow-x:auto!important;overflow-y:hidden!important;white-space:nowrap!important;padding:6px 4px 10px!important;scrollbar-width:thin!important;-webkit-overflow-scrolling:touch!important}.space-member-tools button{flex:0 0 auto!important;width:auto!important;max-width:none!important;white-space:nowrap!important;min-height:34px!important}.space-member-tools small{flex:0 0 auto!important;white-space:nowrap!important}#spaceInfoDialog .space-info-avatar img{object-fit:cover!important}";
 
-s.textContent += "\n/* Farnaz group header: one authoritative RTL grid.\n   Right-to-left order: back button, group identity, call actions. */\n#spacesPage #spaceDetail .space-detail-head{\n display:grid!important;grid-template-columns:auto minmax(0,1fr) auto!important;\n grid-template-rows:minmax(44px,auto)!important;direction:rtl!important;\n align-items:center!important;justify-content:stretch!important;gap:8px!important;\n width:100%!important;min-width:0!important;box-sizing:border-box!important;\n padding:8px 10px!important;margin:0 0 10px!important;position:sticky!important;\n top:0!important;z-index:40!important;background:var(--panel,var(--bg))!important;\n border-bottom:1px solid var(--line,#334155)!important;border-radius:0 0 12px 12px!important;\n}\n#spacesPage #spaceDetail #backSpaces{grid-column:1!important;grid-row:1!important;justify-self:start!important;order:0!important;flex:none!important;margin:0!important;min-height:36px!important;padding:7px 10px!important}\n#spacesPage #spaceDetail .space-title-wrap{grid-column:2!important;grid-row:1!important;display:flex!important;flex-direction:row!important;direction:rtl!important;align-items:center!important;justify-self:stretch!important;gap:8px!important;min-width:0!important;width:100%!important;overflow:hidden!important;order:0!important}\n#spacesPage #spaceDetail #spaceIcon{display:grid!important;place-items:center!important;position:relative!important;flex:0 0 44px!important;width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important;max-width:44px!important;max-height:44px!important;visibility:visible!important;opacity:1!important;overflow:hidden!important;border-radius:50%!important;margin:0!important}\n#spacesPage #spaceDetail #spaceIcon img{display:block!important;position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;object-fit:cover!important;border-radius:inherit!important}\n#spacesPage #spaceDetail .space-title-copy{display:block!important;flex:1 1 auto!important;min-width:0!important;max-width:100%!important;margin:0!important;overflow:hidden!important;direction:rtl!important;text-align:right!important}\n#spacesPage #spaceDetail .space-title-copy h3,#spacesPage #spaceDetail .space-title-copy small{display:block!important;max-width:100%!important;overflow-wrap:anywhere!important}\n#spacesPage #spaceDetail .space-title-copy h3{margin:0 0 3px!important}\n#spacesPage #spaceDetail .space-call-actions{grid-column:3!important;grid-row:1!important;order:0!important;display:flex!important;flex:0 0 auto!important;width:auto!important;min-width:0!important;max-width:max-content!important;margin:0!important;padding:0!important;justify-self:end!important;align-items:center!important;justify-content:flex-end!important;gap:5px!important;direction:ltr!important}\n#spacesPage #spaceDetail .space-call-button{display:grid!important;place-items:center!important;width:32px!important;height:32px!important;min-width:32px!important;min-height:32px!important;flex:0 0 32px!important;padding:0!important;border:1px solid var(--line,#334155)!important;border-radius:9px!important;background:transparent!important;color:var(--white,#f7f9fc)!important}\n#spacesPage #spaceDetail .space-call-button svg{display:block!important;width:16px!important;height:16px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important;stroke-linejoin:round!important}\n@media(max-width:380px){#spacesPage #spaceDetail .space-detail-head{grid-template-rows:minmax(38px,auto)!important;gap:5px!important;padding:7px 6px!important}#spacesPage #spaceDetail #spaceIcon{flex-basis:38px!important;width:38px!important;height:38px!important;min-width:38px!important;min-height:38px!important;max-width:38px!important;max-height:38px!important}#spacesPage #spaceDetail .space-title-wrap{gap:5px!important}#spacesPage #spaceDetail #backSpaces{padding:6px 8px!important}}\n";
+s.textContent += "\n/* Farnaz group header: one authoritative RTL grid.\n   Right-to-left order: back button, group identity, call actions. */\n#spacesPage #spaceDetail .space-detail-head{\n display:grid!important;grid-template-columns:auto minmax(0,1fr) auto!important;\n grid-template-rows:minmax(44px,auto)!important;direction:ltr!important;\n align-items:center!important;justify-content:stretch!important;gap:8px!important;\n width:100%!important;min-width:0!important;box-sizing:border-box!important;\n padding:8px 10px!important;margin:0 0 10px!important;position:sticky!important;\n top:0!important;z-index:40!important;background:var(--panel,var(--bg))!important;\n border-bottom:1px solid var(--line,#334155)!important;border-radius:0 0 12px 12px!important;\n}\n#spacesPage #spaceDetail #backSpaces{grid-column:1!important;grid-row:1!important;justify-self:start!important;direction:rtl!important;order:0!important;flex:none!important;margin:0!important;min-height:36px!important;padding:7px 10px!important}\n#spacesPage #spaceDetail .space-title-wrap{grid-column:2!important;grid-row:1!important;display:flex!important;flex-direction:row!important;direction:rtl!important;align-items:center!important;justify-self:stretch!important;gap:8px!important;min-width:0!important;width:100%!important;overflow:hidden!important;order:0!important}\n#spacesPage #spaceDetail #spaceIcon{display:grid!important;place-items:center!important;position:relative!important;flex:0 0 44px!important;width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important;max-width:44px!important;max-height:44px!important;visibility:visible!important;opacity:1!important;overflow:hidden!important;border-radius:50%!important;margin:0!important}\n#spacesPage #spaceDetail #spaceIcon img{display:block!important;position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;object-fit:cover!important;border-radius:inherit!important}\n#spacesPage #spaceDetail .space-title-copy{display:block!important;flex:1 1 auto!important;min-width:0!important;max-width:100%!important;margin:0!important;overflow:hidden!important;direction:rtl!important;text-align:right!important}\n#spacesPage #spaceDetail .space-title-copy h3,#spacesPage #spaceDetail .space-title-copy small{display:block!important;max-width:100%!important;overflow-wrap:anywhere!important}\n#spacesPage #spaceDetail .space-title-copy h3{margin:0 0 3px!important}\n#spacesPage #spaceDetail .space-call-actions{grid-column:3!important;grid-row:1!important;order:0!important;display:flex!important;flex:0 0 auto!important;width:auto!important;min-width:0!important;max-width:max-content!important;margin:0!important;padding:0!important;justify-self:end!important;align-items:center!important;justify-content:flex-end!important;gap:5px!important;direction:ltr!important}\n#spacesPage #spaceDetail .space-call-button{display:grid!important;place-items:center!important;width:32px!important;height:32px!important;min-width:32px!important;min-height:32px!important;flex:0 0 32px!important;padding:0!important;border:1px solid var(--line,#334155)!important;border-radius:9px!important;background:transparent!important;color:var(--white,#f7f9fc)!important}\n#spacesPage #spaceDetail .space-call-button svg{display:block!important;width:16px!important;height:16px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.8!important;stroke-linecap:round!important;stroke-linejoin:round!important}\n@media(max-width:380px){#spacesPage #spaceDetail .space-detail-head{grid-template-rows:minmax(38px,auto)!important;gap:5px!important;padding:7px 6px!important}#spacesPage #spaceDetail #spaceIcon{flex-basis:38px!important;width:38px!important;height:38px!important;min-width:38px!important;min-height:38px!important;max-width:38px!important;max-height:38px!important}#spacesPage #spaceDetail .space-title-wrap{gap:5px!important}#spacesPage #spaceDetail #backSpaces{padding:6px 8px!important}}
+#spacesPage #spaceDetail .space-message{touch-action:pan-y;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;cursor:pointer}
+#spacesPage #spaceDetail .space-message-selected{outline:2px solid var(--accent,#18a98e)!important;outline-offset:2px!important}
+.space-message-selection-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px;margin:6px 0;border-radius:10px;background:var(--panel,#1f2937);position:relative;z-index:3}
+.space-message-selection-bar[hidden]{display:none!important}
+.space-message-selection-bar button,.space-message-actions button{border:1px solid var(--line,#475569);border-radius:8px;padding:7px 10px;background:var(--panel,#1f2937);color:var(--text,#f8fafc)}
+.space-message-selection-bar button:disabled{opacity:.45}
+.space-message-actions{position:fixed;z-index:12000;display:flex;flex-direction:column;gap:6px;min-width:190px;max-width:220px;padding:10px;border:1px solid var(--line,#475569);border-radius:12px;background:var(--panel,#1f2937);box-shadow:0 10px 35px #0006}
+.space-message-actions strong{font-size:13px;padding:4px}
+.space-message-actions button{text-align:right;min-height:38px}
+.space-message-actions button:disabled{opacity:.45}
+\n";
 document.head.appendChild(s);
 }
 function build(){
@@ -231,6 +242,8 @@ async function cropFinish(cancel){if(!cropState)return;const a=cropState;if(canc
  }
 
  let messageLoadToken=0,messageReloadTimer=null;
+const selectedSpaceMessageIds=new Set();
+let spaceMessageSelectionMode=false;
 const spaceSenderProfileCache=new Map();
 const spaceAttachmentUrlCache=new Map();
 const SPACE_SIGNED_URL_TTL=50*60*1000;
@@ -254,6 +267,66 @@ async function getCachedSpaceAttachmentUrl(path){
  try{const url=await pending;spaceAttachmentUrlCache.set(key,{url,expiresAt:Date.now()+SPACE_SIGNED_URL_TTL});return url;}
  catch(error){spaceAttachmentUrlCache.delete(key);throw error;}
 }
+
+function updateSpaceMessageSelection(){
+ const list=q("spaceMessages");if(!list)return;
+ list.querySelectorAll(".space-message").forEach(el=>el.classList.toggle("space-message-selected",selectedSpaceMessageIds.has(el.dataset.messageId)));
+ let bar=q("spaceMessageSelectionBar");
+ if(!bar){bar=document.createElement("div");bar.id="spaceMessageSelectionBar";bar.className="space-message-selection-bar";bar.hidden=true;list.parentNode.insertBefore(bar,list);}
+ bar.hidden=!spaceMessageSelectionMode;
+ bar.replaceChildren();
+ if(!spaceMessageSelectionMode)return;
+ const count=document.createElement("span");count.textContent=tr(selectedSpaceMessageIds.size+" پیام انتخاب شده","Selected: "+selectedSpaceMessageIds.size);bar.appendChild(count);
+ const remove=document.createElement("button");remove.type="button";remove.textContent=tr("حذف پیام‌های من","Delete my messages");remove.disabled=!selectedSpaceMessageIds.size||![...selectedSpaceMessageIds].some(id=>list.querySelector('.space-message[data-message-id="'+CSS.escape(id)+'"]')?.dataset.messageSide==="own");remove.onclick=deleteSelectedSpaceMessages;bar.appendChild(remove);
+ const cancel=document.createElement("button");cancel.type="button";cancel.textContent=tr("لغو","Cancel");cancel.onclick=()=>{spaceMessageSelectionMode=false;selectedSpaceMessageIds.clear();updateSpaceMessageSelection();};bar.appendChild(cancel);
+}
+async function deleteSelectedSpaceMessages(){
+ if(!active||!currentUser)return;
+ const list=q("spaceMessages");
+ const ids=[...selectedSpaceMessageIds].filter(id=>list.querySelector('.space-message[data-message-id="'+CSS.escape(id)+'"]')?.dataset.messageSide==="own");
+ if(!ids.length){q("spaceMessageStatus").textContent=tr("فقط پیام‌های خودت را می‌توانی از اینجا حذف کنی.","Only your own messages can be deleted here.");return;}
+ if(!confirm(tr("پیام‌های انتخاب‌شده برای همه اعضا حذف شوند؟","Delete the selected messages for everyone?")))return;
+ const spaceId=active.id;
+ try{
+  const {error}=await getClient().from("space_messages").delete().in("id",ids).eq("space_id",spaceId).eq("sender_id",currentUser.id);
+  if(error)throw error;
+  selectedSpaceMessageIds.clear();spaceMessageSelectionMode=false;
+  q("spaceMessageStatus").textContent=tr("پیام‌های انتخاب‌شده حذف شدند.","Selected messages deleted.");
+  await loadMessages(spaceId);
+ }catch(error){q("spaceMessageStatus").textContent=tr("حذف پیام ناموفق بود: ","Could not delete messages: ")+(error?.message||String(error));}
+}
+function showSpaceMessageActions(message,element){
+ document.querySelector(".space-message-actions")?.remove();
+ const menu=document.createElement("div");menu.className="space-message-actions";menu.setAttribute("role","dialog");
+ const title=document.createElement("strong");title.textContent=tr("گزینه‌های پیام","Message options");menu.appendChild(title);
+ const add=(label,fn,disabled=false)=>{const b=document.createElement("button");b.type="button";b.textContent=label;b.disabled=disabled;b.onclick=()=>{menu.remove();fn();};menu.appendChild(b);};
+ add(tr("انتخاب پیام","Select message"),()=>{spaceMessageSelectionMode=true;selectedSpaceMessageIds.add(String(message.id));updateSpaceMessageSelection();});
+ const own=String(message.sender_id)===String(currentUser?.id);
+ add(tr("حذف پیام برای همه","Delete for everyone"),async()=>{if(!confirm(tr("این پیام برای همه اعضا حذف شود؟","Delete this message for everyone?")))return;try{const {error}=await getClient().from("space_messages").delete().eq("id",message.id).eq("space_id",active.id).eq("sender_id",currentUser.id);if(error)throw error;selectedSpaceMessageIds.delete(String(message.id));await loadMessages(active.id);}catch(error){q("spaceMessageStatus").textContent=tr("حذف پیام ناموفق بود: ","Could not delete message: ")+(error?.message||String(error));}},!own);
+ add(tr("بستن","Close"),()=>{});
+ document.body.appendChild(menu);
+ const rect=element.getBoundingClientRect();
+ menu.style.left=Math.max(8,Math.min(window.innerWidth-220,rect.left))+"px";
+ menu.style.top=Math.max(8,Math.min(window.innerHeight-180,rect.top-145))+"px";
+ const dismiss=e=>{if(!menu.contains(e.target)){menu.remove();document.removeEventListener("pointerdown",dismiss,true);}};
+ setTimeout(()=>document.addEventListener("pointerdown",dismiss,true),0);
+}
+function bindSpaceMessageActions(element,message){
+ let timer=null,startX=0,startY=0,held=false;
+ const cancel=()=>{if(timer){clearTimeout(timer);timer=null;}};
+ const interactive=target=>!!target.closest("a,button,audio,video,input,textarea,select");
+ element.addEventListener("click",event=>{
+  if(held){event.preventDefault();event.stopPropagation();held=false;return;}
+  if(spaceMessageSelectionMode){event.preventDefault();const id=String(message.id);selectedSpaceMessageIds.has(id)?selectedSpaceMessageIds.delete(id):selectedSpaceMessageIds.add(id);updateSpaceMessageSelection();}
+ });
+ element.addEventListener("contextmenu",event=>{event.preventDefault();event.stopPropagation();showSpaceMessageActions(message,element);});
+ element.addEventListener("touchstart",event=>{if(event.touches.length!==1||interactive(event.target))return;const t=event.touches[0];startX=t.clientX;startY=t.clientY;held=false;cancel();timer=setTimeout(()=>{held=true;showSpaceMessageActions(message,element);},500);},{passive:true});
+ element.addEventListener("touchmove",event=>{const t=event.touches[0];if(t&&(Math.abs(t.clientX-startX)>12||Math.abs(t.clientY-startY)>12))cancel();},{passive:true});
+ element.addEventListener("touchend",cancel,{passive:true});element.addEventListener("touchcancel",cancel,{passive:true});
+ element.addEventListener("pointerdown",event=>{if(event.pointerType==="touch"||interactive(event.target))return;startX=event.clientX;startY=event.clientY;held=false;cancel();timer=setTimeout(()=>{held=true;showSpaceMessageActions(message,element);},500);});
+ element.addEventListener("pointermove",event=>{if(event.pointerType!=="touch"&&(Math.abs(event.clientX-startX)>12||Math.abs(event.clientY-startY)>12))cancel();});
+ ["pointerup","pointercancel","pointerleave"].forEach(type=>element.addEventListener(type,cancel));
+}
 async function loadMessages(id){
  const token=++messageLoadToken;const list=q("spaceMessages");if(!list)return;
  const wasNearBottom=list.scrollHeight-list.scrollTop-list.clientHeight<70;
@@ -275,7 +348,7 @@ async function loadMessages(id){
   list.style.setProperty("align-items","stretch","important");
   if(!rows.length){const empty=document.createElement("div");empty.className="space-empty";empty.textContent=tr("هنوز پیامی نیست.","No posts yet.");fragment.appendChild(empty);}
   for(const m of rows){
-   const el=document.createElement("div");el.className="space-message";el.dataset.messageId=String(m.id);
+   const el=document.createElement("div");el.className="space-message";el.dataset.messageId=String(m.id);el.dataset.messageSide=String(m.sender_id)===String(currentUser?.id)?"own":"contact";if(selectedSpaceMessageIds.has(String(m.id)))el.classList.add("space-message-selected");
    const isOwnMessage=String(m.sender_id)===String(currentUser?.id);
    el.dataset.messageSide=isOwnMessage?"own":"contact";
    if(isOwnMessage)el.classList.add("mine");
@@ -294,7 +367,7 @@ async function loadMessages(id){
    const time=document.createElement("small");
    const created=m.created_at?new Date(m.created_at):new Date();
    time.textContent=created.toLocaleTimeString(typeof english!=="undefined"&&english?"en":"fa-IR",{hour:"2-digit",minute:"2-digit"});
-   el.appendChild(time);fragment.appendChild(el);
+   el.appendChild(time);bindSpaceMessageActions(el,m);fragment.appendChild(el);
   }
   if(token!==messageLoadToken||active?.id!==id)return;
   list.replaceChildren(fragment);

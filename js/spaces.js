@@ -352,20 +352,16 @@ function replyToSpaceMessage(message){
 }
 function closeSpaceMessageMenu(){
  document.querySelectorAll(".space-message-actions,.space-message-action-backdrop,.space-message-action-clone,.message-tools,.message-action-backdrop,.message-action-clone").forEach(n=>n.remove());
- document.querySelectorAll(".space-message.context-active").forEach(n=>{n.style.visibility="";n.classList.remove("context-active");});
+ document.querySelectorAll(".space-message.context-active").forEach(n=>n.classList.remove("context-active"));
 }
 function showSpaceMessageActions(m,item){
  if(spaceMessageSelectionMode){const id=String(m.id);selectedSpaceMessageIds.has(id)?selectedSpaceMessageIds.delete(id):selectedSpaceMessageIds.add(id);updateSpaceMessageSelection();return;}
  closeSpaceMessageMenu();
- const rect=item.getBoundingClientRect();
  const backdrop=document.createElement("div");backdrop.className="message-action-backdrop";backdrop.setAttribute("aria-hidden","true");
  backdrop.addEventListener("click",()=>closeSpaceMessageMenu());document.body.appendChild(backdrop);
- const clone=item.cloneNode(true);clone.className=item.className+" message-action-clone";
- clone.style.left=rect.left+"px";clone.style.top=rect.top+"px";clone.style.width=rect.width+"px";clone.style.height=rect.height+"px";
- clone.style.borderRadius=getComputedStyle(item).borderRadius;document.body.appendChild(clone);
+ /* Keep the original message in place. No clone and no visibility toggling, so it cannot be left hidden after the menu closes. */
  item.classList.add("context-active");
- /* Keep the real message rendered: the backdrop dims it and the clone highlights it. Hiding the source can leave it invisible if the menu is interrupted. */
- const restoreItem=()=>{item.style.removeProperty("visibility");item.classList.remove("context-active");};
+ const restoreItem=()=>{item.classList.remove("context-active");};
  const menu=document.createElement("div");menu.className="message-tools message-tools-floating";
  const closeMenu=()=>{menu.remove();restoreItem();closeSpaceMessageMenu();};
  const add=(label,fn,cls="mini-button")=>{const b=document.createElement("button");b.type="button";b.className=cls;b.textContent=label;b.onclick=()=>{closeMenu();fn();};menu.appendChild(b);};

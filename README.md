@@ -13,7 +13,7 @@ Farnaz is a mobile-first, Persian/English private communication web app. The cur
 - Read-receipt and per-user message visibility features
 - Persian (RTL) and English (LTR) interface modes
 
-**Known limitations:** Audio/video call controls are currently placeholders; real-time calling is not implemented. Background push notifications and a service-worker-based offline/PWA experience are also not implemented yet. Do not treat these as production-ready features.
+**Implementation status (not yet production-verified):** One-to-one WebRTC audio/video signaling and call UI have been added, but they still need two-device testing and a TURN relay for reliable connections. Group calls are not implemented. The PWA manifest and service worker shell cache are in place. Notifications can be enabled on-device while the app is connected; push delivery after the app is closed still needs VAPID keys, subscription persistence, and a server-side sender. Offline caching does not make Supabase messaging available without a network.
 
 ## Repository layout
 
@@ -23,7 +23,9 @@ Farnaz is a mobile-first, Persian/English private communication web app. The cur
 - `js/core.js` — Supabase setup, authentication, navigation, profiles, contacts, and shared state
 - `js/chat-menu-v5.js` — private messaging, message actions, attachment/voice flows, and connection recovery
 - `js/spaces.js` — groups/channels UI and related messaging flows
-- `supabase/migrations/` — the two database hardening migrations added in this pass; this is **not yet a complete historical migration baseline**
+- `js/calls.js` — one-to-one WebRTC call UI and signaling client
+- `service-worker.js`, `manifest.webmanifest`, `farnaz-icon.svg` — PWA shell, install metadata, and notification event handler
+- `supabase/migrations/` — recent hardening and call-signaling migrations; this is **not yet a complete historical migration baseline**
 - `scripts/validate.mjs` — dependency-free checks for local asset references, duplicate static IDs, CSS structure, and common server-key patterns
 - `.github/workflows/validate.yml` — JavaScript syntax and app-shell validation on pushes and pull requests
 
@@ -49,6 +51,8 @@ A recent Node.js release can check JavaScript syntax without installing applicat
 node --check js/core.js
 node --check js/chat-menu-v5.js
 node --check js/spaces.js
+node --check js/calls.js
+node --check service-worker.js
 ```
 
 These checks detect syntax errors only; they do **not** prove that browser behavior, Supabase permissions, realtime delivery, uploads, or iOS keyboard behavior work correctly. The repository's GitHub Actions workflow runs the syntax checks automatically.
@@ -68,6 +72,8 @@ Run these checks after UI, database, authentication, or message-flow changes:
 9. Switch Persian/English and light/dark themes; check layout direction, composer placement, and the iOS keyboard.
 10. Disconnect and reconnect the network; confirm the app recovers without duplicate messages.
 11. Check browser console and network requests for errors.
+12. With two separate test accounts on different devices, test incoming/outgoing audio and video calls, reject, hang up, permissions denied, and network loss. Calls may fail on restrictive networks until a TURN relay is configured.
+13. Install the PWA, enable notification permission, and verify notification clicks open Farnaz. Do not consider push after app closure verified until the server push sender is configured and tested.
 
 Use dedicated test accounts and non-sensitive test content. Do not test privacy boundaries with real users' private data.
 

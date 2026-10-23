@@ -600,12 +600,7 @@ async function getContactProfile(id){
 }
 
 let contactInfoDialog=null,contactInfoBlocked=false,contactInfoRequest=0;
-document.addEventListener("click",event=>{
-  const target=event.target instanceof Element?event.target.closest("#conversationTitle, #chatAvatar"):null;
-  if(!target||!currentUser||!currentChatUser)return;
-  event.preventDefault();
-  openContactInfo();
-},true);
+/* Click is wired directly in index.html; avoid a second delegated click path. */
 document.addEventListener("keydown",event=>{
   if((event.key==="Enter"||event.key===" ")&&event.target instanceof Element&&event.target.matches("#conversationTitle, #chatAvatar")&&currentUser&&currentChatUser){
     event.preventDefault();

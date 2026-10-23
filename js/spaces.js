@@ -2,6 +2,7 @@
 "use strict";
 const q=id=>document.getElementById(id);
 let active=null,sub=null,spaces=[];
+const spacePinnedMessageIds=new Set();
 const tr=(fa,en)=>typeof english!=="undefined"&&english?en:fa;
 function build(){
  const app=document.querySelector(".app"),foot=q("footerText"),p=document.createElement("section");p.className="page";p.id="spacesPage";
@@ -293,9 +294,31 @@ function closeSpaceMessageMenu(){
  document.querySelectorAll(".space-message-actions,.space-message-action-backdrop,.space-message-action-clone,.message-tools,.message-action-backdrop,.message-action-clone").forEach(n=>n.remove());
  document.querySelectorAll(".space-message.context-active").forEach(n=>n.classList.remove("context-active"));
 }
+async function toggleSpaceMessagePin(message){
+ const id=String(message.id),spaceId=String(active?.id||message.space_id||"");
+ if(!spaceId)return;
+ const status=q("spaceMessageStatus");
+ try{
+  if(spacePinnedMessageIds.has(id)){
+   const {error}=await getClient().from("space_message_pins").delete().eq("message_id",id).eq("space_id",spaceId);
+   if(error)throw error;
+   spacePinnedMessageIds.delete(id);
+   if(status)status.textContent=tr("سنجاق پیام برداشته شد.","Message unpinned.");
+  }else{
+   const {error}=await getClient().from("space_message_pins").insert({message_id:id,space_id:spaceId,pinned_by:currentUser.id});
+   if(error)throw error;
+   spacePinnedMessageIds.add(id);
+   if(status)status.textContent=tr("پیام در گروه سنجاق شد.","Message pinned in this space.");
+  }
+  await loadMessages(spaceId);
+ }catch(error){
+  if(status)status.textContent=tr("سنجاق پیام ناموفق بود: ","Could not pin message: ")+(error?.message||String(error));
+ }
+}
 function showSpaceMessageActions(m,item){
  if(spaceMessageSelectionMode){const id=String(m.id);selectedSpaceMessageIds.has(id)?selectedSpaceMessageIds.delete(id):selectedSpaceMessageIds.add(id);updateSpaceMessageSelection();return;}
  closeSpaceMessageMenu();
+ const rect=item.getBoundingClientRect();
  const backdrop=document.createElement("div");backdrop.className="message-action-backdrop";backdrop.setAttribute("aria-hidden","true");
  backdrop.addEventListener("click",()=>closeSpaceMessageMenu());document.body.appendChild(backdrop);
  /* Keep the original message in place. No clone and no visibility toggling, so it cannot be left hidden after the menu closes. */
@@ -305,6 +328,7 @@ function showSpaceMessageActions(m,item){
  const closeMenu=()=>{menu.remove();restoreItem();closeSpaceMessageMenu();};
  const add=(label,fn,cls="mini-button")=>{const b=document.createElement("button");b.type="button";b.className=cls;b.textContent=label;b.onclick=()=>{closeMenu();fn();};menu.appendChild(b);};
  const own=String(m.sender_id)===String(currentUser?.id);
+ add((spacePinnedMessageIds.has(String(m.id))?"📌  "+(english?"Unpin message":"برداشتن سنجاق"):"📌  "+(english?"Pin message":"سنجاق پیام")),()=>toggleSpaceMessagePin(m));
  add("↩  "+(english?"Reply":"پاسخ"),()=>replyToSpaceMessage(m));
  add("➦  "+(english?"Forward":"فوروارد"),()=>{selectedSpaceMessageIds.clear();selectedSpaceMessageIds.add(String(m.id));spaceMessageSelectionMode=true;updateSpaceMessageSelection();forwardSelectedSpaceMessages();});
  if(m.attachment_path)add("⬇  "+(english?"Download attachment":"دانلود فایل"),()=>downloadSpaceMessage(m),"mini-button download-message-action");
@@ -355,6 +379,8 @@ async function loadMessages(id){
  try{
   const {data,error}=await getClient().from("space_messages").select("id,sender_id,body,created_at,edited_at,message_type,attachment_path,attachment_name,attachment_mime,attachment_size").eq("space_id",id).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(200);
   if(error)throw error;if(token!==messageLoadToken||active?.id!==id)return;
+  const {data:pinnedRows,error:pinnedError}=await getClient().from("space_message_pins").select("message_id").eq("space_id",id);
+  if(pinnedError)throw pinnedError;spacePinnedMessageIds.clear();(pinnedRows||[]).forEach(row=>spacePinnedMessageIds.add(String(row.message_id)));
   const {data:hiddenRows,error:hiddenError}=await getClient().from("space_message_hidden").select("message_id").eq("user_id",currentUser.id);if(hiddenError)throw hiddenError;const hiddenIds=new Set((hiddenRows||[]).map(x=>String(x.message_id)));
   const rows=(data||[]).filter(m=>!hiddenIds.has(String(m.id))).reverse();
   const ownMessageIds=rows.filter(m=>String(m.sender_id)===String(currentUser?.id)).map(m=>String(m.id));
@@ -389,6 +415,7 @@ async function loadMessages(id){
    el.style.setProperty("align-self",isOwnMessage?"flex-end":"flex-start","important");
    el.style.setProperty("margin-left","0","important");
    el.style.setProperty("margin-right","0","important");
+   if(spacePinnedMessageIds.has(String(m.id))){const pin=document.createElement("small");pin.className="space-message-pin-indicator";pin.textContent="📌 "+tr("پیام سنجاق‌شده","Pinned message");pin.style.cssText="display:block;font-size:10px;font-weight:700;color:var(--mint,#50e3c2);margin:0 0 4px";el.appendChild(pin);}
    const senderName=senderNames.get(String(m.sender_id))||"";
    if(senderName){const author=document.createElement("small");author.className="space-message-author";author.textContent=String(m.sender_id)===String(currentUser?.id)?tr("شما","You"):senderName;author.style.cssText="display:block;font-weight:700;font-size:11px;opacity:.85;margin:0 0 4px";el.appendChild(author);}
    if(m.body){const body=document.createElement("div");body.textContent=String(m.body);el.appendChild(body);}

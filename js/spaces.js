@@ -148,7 +148,7 @@ async function open(id){
  if(s.type==="channel"&&s.is_public&&!joined){const b=document.createElement("button");b.className="space-primary";b.textContent=tr("عضویت در کانال","Join channel");b.onclick=async()=>{const r=await getClient().from("space_members").insert({space_id:s.id,user_id:currentUser.id,role:"member"});if(r.error)q("spaceMessageStatus").textContent=r.error.message;else{await open(s.id);refresh();}};acts.appendChild(b);}
  if(s.type==="channel"&&!s.is_public&&manager&&s.invite_code){const span=document.createElement("span");span.className="space-muted space-code";span.textContent=tr("کد دعوت: ","Invite code: ")+s.invite_code;acts.appendChild(span);const b=document.createElement("button");b.className="space-secondary";b.textContent=tr("کپی کد","Copy code");b.onclick=()=>navigator.clipboard.writeText(s.invite_code).then(()=>q("spaceMessageStatus").textContent=tr("کد کپی شد.","Invite code copied.")).catch(()=>q("spaceMessageStatus").textContent=s.invite_code);acts.appendChild(b);}
  q("spaceComposer").hidden=!(s.type==="group"?joined:!!manager);q("spaceMessageStatus").textContent=!joined&&s.type==="channel"?tr("برای دنبال‌کردن کانال عضو شو؛ فقط مدیران می‌توانند پیام منتشر کنند.","Join to follow this channel. Only admins can publish posts."):"";
- await loadMessages(s.id);if(sub){await getClient().removeChannel(sub);sub=null;}sub=getClient().channel("space-"+s.id).on("postgres_changes",{event:"*",schema:"public",table:"space_messages",filter:"space_id=eq."+s.id},()=>{if(active?.id===s.id){clearTimeout(messageReloadTimer);messageReloadTimer=setTimeout(()=>{if(active?.id===s.id)loadMessages(s.id);},220);}}).subscribe();
+ await loadMessages(s.id);if(sub){await getClient().removeChannel(sub);sub=null;}sub=getClient().channel("space-"+s.id).on("postgres_changes",{event:"*",schema:"public",table:"space_messages",filter:"space_id=eq."+s.id},()=>{if(active?.id===s.id){clearTimeout(messageReloadTimer);messageReloadTimer=setTimeout(()=>{if(active?.id===s.id)loadMessages(s.id);},220);}}).on("postgres_changes",{event:"INSERT",schema:"public",table:"space_message_reads",filter:"space_id=eq."+s.id},()=>{if(active?.id===s.id){clearTimeout(messageReloadTimer);messageReloadTimer=setTimeout(()=>{if(active?.id===s.id)loadMessages(s.id);},220);}}).subscribe();
  }catch(e){q("spacesStatus").textContent=tr("بازکردن فضا ناموفق بود: ","Could not open space: ")+e.message;}
 }
 
@@ -418,6 +418,12 @@ async function loadMessages(id){
   if(error)throw error;if(token!==messageLoadToken||active?.id!==id)return;
   const {data:hiddenRows,error:hiddenError}=await getClient().from("space_message_hidden").select("message_id").eq("user_id",currentUser.id);if(hiddenError)throw hiddenError;const hiddenIds=new Set((hiddenRows||[]).map(x=>String(x.message_id)));
   const rows=(data||[]).filter(m=>!hiddenIds.has(String(m.id))).reverse();
+  const ownMessageIds=rows.filter(m=>String(m.sender_id)===String(currentUser?.id)).map(m=>String(m.id));
+  const incomingMessageIds=rows.filter(m=>String(m.sender_id)!==String(currentUser?.id)).map(m=>String(m.id));
+  const receiptRead=ownMessageIds.length?getClient().from("space_message_reads").select("message_id,user_id,read_at").eq("space_id",id).in("message_id",ownMessageIds):Promise.resolve({data:[],error:null});
+  const markIncomingRead=incomingMessageIds.length?getClient().from("space_message_reads").upsert(incomingMessageIds.map(message_id=>({space_id:id,message_id,user_id:currentUser.id})),{onConflict:"message_id,user_id",ignoreDuplicates:true}).then(({error})=>{if(error)console.warn("Farnaz read receipt could not be saved:",error.message);}):Promise.resolve();
+  const [receiptResult]=await Promise.all([receiptRead,markIncomingRead]);
+  const readByMessage=new Set((receiptResult?.data||[]).filter(r=>String(r.user_id)!==String(currentUser?.id)).map(r=>String(r.message_id)));
   const senderIds=[...new Set(rows.map(m=>m.sender_id).filter(Boolean).map(String))];
   const senderEntries=await Promise.all(senderIds.map(async senderId=>{try{return [senderId,await getCachedSpaceSenderName(senderId)];}catch(_){return [senderId,""];}}));
   const senderNames=new Map(senderEntries);
@@ -451,7 +457,15 @@ async function loadMessages(id){
    const time=document.createElement("small");
    const created=m.created_at?new Date(m.created_at):new Date();
    time.textContent=created.toLocaleTimeString(typeof english!=="undefined"&&english?"en":"fa-IR",{hour:"2-digit",minute:"2-digit"})+(m.edited_at?tr(" · ویرایش‌شده"," · edited"):"");
-   el.appendChild(time);bindSpaceMessageActions(el,m);fragment.appendChild(el);
+   el.appendChild(time);
+   if(isOwnMessage){
+    const receipt=document.createElement("small");receipt.className="space-message-read-status";receipt.textContent=readByMessage.has(String(m.id))?"✓✓":"✓";
+    receipt.title=readByMessage.has(String(m.id))?tr("خوانده‌شده","Read") : tr("ارسال‌شده؛ هنوز خوانده نشده","Sent; not read yet");
+    receipt.setAttribute("aria-label",receipt.title);
+    receipt.style.cssText="display:inline-block;margin-inline-start:5px;font-size:12px;letter-spacing:-2px;color:"+(readByMessage.has(String(m.id))?"#20a66a":"var(--muted,#8a94a6)")+";font-weight:700";
+    el.appendChild(receipt);
+   }
+   bindSpaceMessageActions(el,m);fragment.appendChild(el);
   }
   if(token!==messageLoadToken||active?.id!==id)return;
   list.replaceChildren(fragment);

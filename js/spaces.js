@@ -420,17 +420,18 @@ async function loadMessages(id){
    if(senderName){const author=document.createElement("small");author.className="space-message-author";author.textContent=String(m.sender_id)===String(currentUser?.id)?tr("شما","You"):senderName;author.style.cssText="display:block;font-weight:700;font-size:11px;opacity:.85;margin:0 0 4px";el.appendChild(author);}
    if(m.body){const body=document.createElement("div");body.textContent=String(m.body);el.appendChild(body);}
    if(m.attachment_path){const signedUrl=attachmentUrls.get(String(m.id));if(signedUrl){if((m.message_type||"file")==="image"){const img=document.createElement("img");img.src=signedUrl;img.alt=m.attachment_name||"Photo";img.loading="lazy";img.style.cssText="display:block;max-width:100%;max-height:320px;border-radius:10px;margin-top:5px";el.appendChild(img);}else if((m.attachment_mime||"").startsWith("audio/")){const audio=document.createElement("audio");audio.controls=true;audio.preload="metadata";audio.src=signedUrl;audio.style.cssText="display:block;max-width:240px;margin-top:5px";audio.setAttribute("aria-label",m.attachment_name||"Voice message");el.appendChild(audio);}else{const link=document.createElement("a");link.href=signedUrl;link.target="_blank";link.rel="noopener";link.download=m.attachment_name||"";link.textContent="📎 "+(m.attachment_name||tr("دریافت فایل","Download file"));link.style.cssText="display:block;margin-top:5px;overflow-wrap:anywhere;color:inherit";el.appendChild(link);}}else{const warn=document.createElement("small");warn.textContent=tr("پیوست در دسترس نیست","Attachment unavailable");el.appendChild(warn);}}
-   const time=document.createElement("small");
+   const meta=document.createElement("div");meta.className="space-message-meta";
+   const time=document.createElement("small");time.className="space-message-time";
    const created=m.created_at?new Date(m.created_at):new Date();
    time.textContent=created.toLocaleTimeString(typeof english!=="undefined"&&english?"en":"fa-IR",{hour:"2-digit",minute:"2-digit"})+(m.edited_at?tr(" · ویرایش‌شده"," · edited"):"");
-   el.appendChild(time);
    if(isOwnMessage){
     const receipt=document.createElement("small");receipt.className="space-message-read-status";receipt.textContent=readByMessage.has(String(m.id))?"✓✓":"✓";
     receipt.title=readByMessage.has(String(m.id))?tr("حداقل یک عضو خوانده است","Read by at least one member") : tr("ارسال‌شده؛ هنوز خوانده نشده","Sent; not read yet");
     receipt.setAttribute("aria-label",receipt.title);
-    receipt.style.cssText="display:inline-block;margin-inline-start:5px;font-size:12px;letter-spacing:-2px;color:"+(readByMessage.has(String(m.id))?"#20a66a":"var(--muted,#8a94a6)")+";font-weight:700";
-    el.appendChild(receipt);
+    receipt.style.cssText="display:inline-block;margin:0;font-size:12px;letter-spacing:-2px;color:"+(readByMessage.has(String(m.id))?"#20a66a":"var(--muted,#8a94a6)")+";font-weight:700";
+    meta.appendChild(receipt);
    }
+   meta.appendChild(time);el.appendChild(meta);
    bindSpaceMessageActions(el,m);fragment.appendChild(el);
   }
   if(token!==messageLoadToken||active?.id!==id)return;

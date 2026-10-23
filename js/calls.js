@@ -112,6 +112,8 @@ async function handleSignal(signal){
     await getClient().from("call_sessions").update({status:"active"}).eq("id",activeCall.session.id);
     setCallStatus(tr("پاسخ ارسال شد؛ در حال اتصال…","Answer sent; connecting…"));
   }else if(signal.signal_type==="answer"&&activeCall.role==="caller"){
+    activeCall.answered=true;
+    if(activeCall.timeout){clearTimeout(activeCall.timeout);activeCall.timeout=null;}
     if(pc&&!pc.currentRemoteDescription){await pc.setRemoteDescription(new RTCSessionDescription(signal.payload));await flushPendingCandidates();}
   }else if(signal.signal_type==="ice-candidate"){
     if(pc&&signal.payload){
@@ -172,7 +174,7 @@ async function startCall(type){
     byId("farnazCallHangup").hidden=false;
     await preparePeer(data,"caller");
     activeCall.timeout=setTimeout(async()=>{
-      if(!activeCall||activeCall.session.id!==data.id||activeCall.pc?.connectionState==="connected")return;
+      if(!activeCall||activeCall.session.id!==data.id||activeCall.answered||activeCall.pc?.connectionState==="connected")return;
       try{await sendSignal("hangup");await getClient().from("call_sessions").update({status:"missed"}).eq("id",data.id);}catch(e){console.warn("Missed call status:",e);}
       await cleanupCall(false);showDialog(tr("تماس بی‌پاسخ","Missed call"),tr("پاسخی دریافت نشد.","No answer received."));
       setTimeout(()=>{const d=byId("farnazCallDialog");if(d)d.hidden=true;},1800);
@@ -202,6 +204,7 @@ async function setUser(userId){
 }
 async function handleIncomingSession(session,client){
   if(!session||session.status!=="ringing"||String(session.caller_id)===String(signedInUserId))return;
+  if(activeCall&&String(activeCall.session.id)===String(session.id))return;
   if(activeCall){try{await client.from("call_sessions").update({status:"missed"}).eq("id",session.id);}catch(_){}return;}
   let profile=null;
   try{const {data}=await client.rpc("get_farnaz_user_profile",{search_user_id:session.caller_id});profile=Array.isArray(data)?data[0]:data;}catch(e){console.warn("Caller profile lookup:",e);}

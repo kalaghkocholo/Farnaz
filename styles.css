@@ -1032,3 +1032,70 @@ body.chat-mode .app.chat-mode #chatPage #sendMessageForm {
   .app.chat-mode>#chatPage .chat-header .call-button{width:34px!important;height:34px!important;min-width:34px!important;min-height:34px!important;flex-basis:34px!important}
   .app.chat-mode>#chatPage .chat-header .call-button svg{width:18px!important;height:18px!important}
 }
+
+
+/* Final corrective override: target the actual private-chat header DOM. */
+#chatPage .chat-header .chat-heading{
+  display:flex!important;
+  flex-direction:row!important;
+  direction:rtl!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  gap:7px!important;
+  min-width:0!important;
+}
+#chatPage .chat-header .chat-heading #chatAvatar{
+  order:0!important;
+  width:38px!important;
+  height:38px!important;
+  min-width:38px!important;
+  flex:0 0 38px!important;
+}
+#chatPage .chat-header .chat-heading .chat-person{
+  order:1!important;
+  display:block!important;
+  flex:0 1 auto!important;
+  min-width:0!important;
+  text-align:right!important;
+}
+#chatPage .chat-header .chat-controls-left{
+  display:flex!important;
+  align-items:center!important;
+  gap:6px!important;
+  flex:0 0 auto!important;
+}
+#chatPage .chat-header .chat-controls-left #backToChats{
+  display:inline-flex!important;
+  width:auto!important;
+  min-width:max-content!important;
+  height:36px!important;
+  min-height:36px!important;
+  flex:0 0 auto!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:4px!important;
+  padding:0 8px!important;
+  white-space:nowrap!important;
+  font-size:13px!important;
+}
+#chatPage .chat-header .chat-controls-left #backToChats span{
+  display:inline!important;
+  visibility:visible!important;
+  opacity:1!important;
+}
+#chatPage .chat-header .chat-controls-left .call-button{
+  width:38px!important;
+  height:38px!important;
+  min-width:38px!important;
+  min-height:38px!important;
+  flex:0 0 38px!important;
+}
+#chatPage .chat-header .chat-controls-left .call-button svg{
+  width:20px!important;
+  height:20px!important;
+}
+@media(max-width:360px){
+  #chatPage .chat-header .chat-controls-left #backToChats{padding:0 5px!important;font-size:12px!important;gap:3px!important}
+  #chatPage .chat-header .chat-controls-left .call-button{width:34px!important;height:34px!important;min-width:34px!important;min-height:34px!important;flex-basis:34px!important}
+  #chatPage .chat-header .chat-controls-left .call-button svg{width:18px!important;height:18px!important}
+}

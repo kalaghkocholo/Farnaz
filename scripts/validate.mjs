@@ -61,6 +61,8 @@ const clientFiles = [
   "js/core.js",
   "js/chat-menu-v5.js",
   "js/spaces.js",
+  "js/calls.js",
+  "service-worker.js",
   "styles.css",
   "spaces.css",
 ];
@@ -89,8 +91,15 @@ for (const id of ids) {
 
 checkBalancedCss("styles.css", sources["styles.css"]);
 checkBalancedCss("spaces.css", sources["spaces.css"]);
-
-for (const path of ["js/core.js", "js/chat-menu-v5.js", "js/spaces.js"]) {
+try {
+  const manifest = JSON.parse(read("manifest.webmanifest"));
+  if (!manifest.start_url || !manifest.scope || !Array.isArray(manifest.icons) || manifest.icons.length === 0) {
+    errors.push("manifest.webmanifest is missing required install metadata");
+  }
+} catch (error) {
+  errors.push("manifest.webmanifest is not valid JSON: " + error.message);
+}
+for (const path of ["js/core.js", "js/chat-menu-v5.js", "js/spaces.js", "js/calls.js", "service-worker.js"]) {
   const source = sources[path];
   if (/sb_secret_[A-Za-z0-9_-]{16,}/i.test(source)) {
     errors.push(path + ": possible Supabase secret key found in client code");

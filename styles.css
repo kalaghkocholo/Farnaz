@@ -1131,3 +1131,10 @@ body.chat-mode .app.chat-mode #chatPage #sendMessageForm {
 .message-tools-floating>.mini-button.danger{color:#f87171!important}
 .message-tools-floating>.message-tools-dismiss{align-self:flex-end!important;min-width:30px!important;min-height:28px!important;border-radius:8px!important}
 @media(max-width:560px){.message-tools-floating{width:min(220px,calc(100vw - 28px))!important}.message-tools-floating>.mini-button{min-height:40px!important}}
+
+/* Farnaz default chat palette and a shared one-line timestamp/read receipt footer. */
+.my-message{background:var(--my-message-bg,#c6d2e8)!important;color:var(--my-message-ink,#172237)!important}
+.their-message{background:var(--their-message-bg,#bde7fa)!important;color:var(--their-message-ink,#172237)!important}
+.message-meta{display:flex;direction:ltr;align-items:center;justify-content:flex-start;gap:5px;margin-top:5px;font-size:9px;line-height:1.25;opacity:.82;white-space:nowrap}
+.message-meta time{display:inline!important;margin:0;color:inherit!important;opacity:1!important;font-size:9px;white-space:nowrap}
+.message-meta .message-read-status{display:inline-block;flex:0 0 auto;margin:0!important;line-height:1;font-size:12px}

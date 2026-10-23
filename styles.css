@@ -947,10 +947,10 @@ body.chat-mode .app.chat-mode #chatPage #sendMessageForm {
 }
 
 
-/* Match private-chat call buttons to the group header controls. */
+/* Private call buttons use the same surface and border as group call buttons. */
 .app.chat-mode #chatPage .call-button{
-  background:var(--card,var(--panel2))!important;
-  border:1px solid var(--line,var(--border))!important;
+  background:var(--panel2)!important;
+  border:1px solid var(--border)!important;
   color:var(--white)!important;
   box-shadow:none!important;
 }

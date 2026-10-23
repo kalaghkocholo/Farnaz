@@ -108,15 +108,15 @@
   align-self:flex-start;
   padding:10px 12px;
   border-radius:14px 14px 14px 4px;
-  background:var(--their-message-bg,#26364b);
-  color:var(--their-message-ink,var(--white,#f7f9fc));
+  background:var(--their-message-bg,#bde7fa);
+  color:var(--their-message-ink,#172237);
   white-space:pre-wrap;
   overflow-wrap:anywhere
 }
 .space-message.mine {
   align-self:flex-end;
-  background:var(--my-message-bg,#1e6c5b);
-  color:var(--my-message-ink,#fff);
+  background:var(--my-message-bg,#c6d2e8);
+  color:var(--my-message-ink,#172237);
   border-radius:14px 14px 4px 14px
 }
 .space-message small {
@@ -1254,3 +1254,10 @@ body.spaces-chat-mode.keyboard-open #spacesPage #spaceComposer .composer-icon {
 #spacesPage #spaceDetail .space-detail-head {
   margin-bottom:0!important;
 }
+
+/* Consistent default bubble palette and left-aligned one-row time/read status. */
+#spacesPage .space-message{background:var(--their-message-bg,#bde7fa)!important;color:var(--their-message-ink,#172237)!important}
+#spacesPage .space-message.mine{background:var(--my-message-bg,#c6d2e8)!important;color:var(--my-message-ink,#172237)!important}
+#spacesPage .space-message-meta{display:flex;direction:ltr;align-items:center;justify-content:flex-start;gap:5px;margin-top:5px;font-size:10px;line-height:1.25;opacity:.82;white-space:nowrap}
+#spacesPage .space-message-meta .space-message-time{display:inline!important;margin:0!important;font-size:10px;opacity:1}
+#spacesPage .space-message-meta .space-message-read-status{display:inline-block;flex:0 0 auto;margin:0!important;line-height:1;font-size:12px}

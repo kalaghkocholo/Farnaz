@@ -250,6 +250,15 @@ function normalizePhone(v,countryCode="98"){
   else if(!hasPlus&&!digits.startsWith(String(countryCode)))digits=String(countryCode)+digits;
   return "+"+digits;
 }
+function formatContactPhone(phone){
+  const raw=normalizeDigits(phone).trim();
+  if(!raw)return "";
+  let digits=raw.replace(/\D/g,"");
+  if(digits.startsWith("0098"))digits=digits.slice(4);
+  else if(digits.startsWith("98")&&digits.length===12)digits=digits.slice(2);
+  if(digits.length===10&&digits.startsWith("9"))digits="0"+digits;
+  return digits;
+}
 function setPhoneCountry(selectId,phone){
   const digits=normalizeDigits(phone).replace(/\D/g,"");
   const select=$(selectId);if(!select)return;
@@ -630,7 +639,11 @@ function closeContactInfo(){if(contactInfoDialog)contactInfoDialog.hidden=true;}
 function contactInfoText(fa,en){return english?en:fa;}
 function addContactInfoAction(label,icon,handler){
   const button=document.createElement("button");button.type="button";button.className="contact-info-action";
-  const glyph=document.createElement("span");glyph.className="contact-info-action-icon";glyph.textContent=icon;
+  const glyph=document.createElement("span");glyph.className="contact-info-action-icon";
+  if(icon.startsWith("#chatPage")){
+    const source=document.querySelector(icon);
+    if(source)glyph.appendChild(source.cloneNode(true));
+  }else glyph.textContent=icon;
   const text=document.createElement("span");text.textContent=label;button.append(glyph,text);button.addEventListener("click",handler);$("contactInfoActions").appendChild(button);
 }
 function searchCurrentConversation(){
@@ -662,8 +675,8 @@ async function openContactInfo(){
   $("contactInfoBlock").textContent=contactInfoText("در حال بررسی…","Checking…");
   contactInfoBlocked=false;contactInfoDialog.hidden=false;
   addContactInfoAction(contactInfoText("پیام","Message"),"✉",closeContactInfo);
-  addContactInfoAction(contactInfoText("تماس صوتی","Audio call"),"☎",()=>{closeContactInfo();startCall("audio");});
-  addContactInfoAction(contactInfoText("تماس تصویری","Video call"),"▣",()=>{closeContactInfo();startCall("video");});
+  addContactInfoAction(contactInfoText("تماس صوتی","Audio call"),"#chatPage .call-actions button[onclick=\"startCall('audio')\"] svg",()=>{closeContactInfo();startCall("audio");});
+  addContactInfoAction(contactInfoText("تماس تصویری","Video call"),"#chatPage .call-actions button[onclick=\"startCall('video')\"] svg",()=>{closeContactInfo();startCall("video");});
   addContactInfoAction(contactInfoText("جست‌وجو در گفتگو","Search chat"),"⌕",searchCurrentConversation);
   try{
     const client=getClient();
@@ -679,7 +692,7 @@ async function openContactInfo(){
     }
     /* The profile RPC is the authority for phone visibility; never fall back to raw profile reads. */
     if(profileResult?.phone){
-      $("contactInfoPhone").textContent=(english?"Phone: ":"شماره تلفن: ")+profileResult.phone;
+      $("contactInfoPhone").textContent=(english?"Phone: ":"شماره تلفن: ")+formatContactPhone(profileResult.phone);
       $("contactInfoPhone").hidden=false;
     }
     if(blockedResult.error)throw blockedResult.error;

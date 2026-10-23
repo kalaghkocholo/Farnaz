@@ -6,7 +6,7 @@ Use this checklist before publishing changes that affect authentication, messagi
 
 - [ ] GitHub Actions JavaScript syntax workflow passes.
 - [ ] New SQL migrations are committed under `supabase/migrations/` and match the connected project.
-- [ ] Supabase security and performance advisors have been reviewed.
+- [ ] Supabase security and performance advisors have been reviewed; the latest review still shows leaked-password protection disabled.
 - [ ] No service-role or secret key is present in client files.
 
 ## Authentication and privacy
@@ -15,7 +15,7 @@ Use this checklist before publishing changes that affect authentication, messagi
 - [ ] Account lookup returns only the minimum data needed to start a conversation.
 - [ ] Users cannot enumerate or retrieve private profile fields beyond the intended product rules.
 - [ ] RLS prevents cross-account reads and writes.
-- [ ] Storage paths and policies restrict private attachments to authorized participants.
+- [x] Static policy inspection: private chat attachments are in a non-public bucket with participant/member-scoped read policies; verify with two real accounts before release.
 - [ ] Privileged database functions validate the current authenticated user and the requested resource.
 
 ## Messaging
@@ -23,7 +23,7 @@ Use this checklist before publishing changes that affect authentication, messagi
 - [ ] Sending, receiving, pagination, reply/edit/delete, and read receipts work.
 - [ ] Multi-select actions state the deletion scope clearly.
 - [ ] Realtime reconnect does not duplicate messages or reset the active conversation.
-- [ ] Attachment type and size restrictions match the server-side Storage limits.
+- [x] Live configuration check: private chat attachments have a 20 MiB Storage limit matching the frontend; disallowed MIME types and over-limit uploads still need runtime tests.
 - [ ] Voice recordings can be discarded before sending and their temporary URLs are released when no longer needed.
 
 ## Groups and channels

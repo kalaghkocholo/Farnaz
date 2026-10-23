@@ -308,28 +308,7 @@ function showMessageActions(m,item){
   const restoreItem=()=>{item.style.visibility="";item.classList.remove("context-active");};
   const menu=document.createElement("div");menu.className="message-tools message-tools-floating";
   const closeMenu=()=>{menu.remove();restoreItem();clearMessageActionOverlay();};
-  const panel=document.createElement("div");panel.className="message-tools-panel";
-  const add=(label,fn,cls="mini-button")=>{const b=document.createElement("button");b.type="button";b.className=cls;b.textContent=label;b.onclick=()=>{closeMenu();fn();};panel.appendChild(b);};
-  const reactionPicker=document.createElement("div");reactionPicker.className="message-reaction-picker";
-  reactionPicker.setAttribute("aria-label",english?"React to message":"واکنش به پیام");
-  const customChoices=(()=>{try{return JSON.parse(localStorage.getItem("farnazCustomReactionEmoji")||"[]").filter(x=>typeof x==="string"&&x.length<=8).slice(0,24);}catch(_){return [];}})();
-  const renderReactionChoice=emoji=>{
-    const choice=document.createElement("button");choice.type="button";choice.className="message-reaction-choice";choice.textContent=emoji;
-    choice.setAttribute("aria-label",(english?"React with ":"واکنش ")+emoji);
-    choice.onclick=()=>{closeMenu();toggleMessageReaction(m.id,emoji);};reactionPicker.appendChild(choice);
-  };
-  [...MESSAGE_REACTION_CHOICES,...customChoices.filter(x=>!MESSAGE_REACTION_CHOICES.includes(x))].forEach(renderReactionChoice);
-  const addEmoji=document.createElement("button");addEmoji.type="button";addEmoji.className="message-reaction-choice message-reaction-add";addEmoji.textContent="+";
-  addEmoji.setAttribute("aria-label",english?"Add an emoji":"افزودن ایموجی");
-  addEmoji.onclick=()=>{
-    const value=prompt(english?"Enter an emoji to add":"ایموجی موردنظر را وارد کن");
-    if(!value||!value.trim())return;
-    const emoji=Array.from(value.trim()).slice(0,8).join("");
-    if(!/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/u.test(emoji)){alert(english?"Please enter an emoji.":"لطفاً یک ایموجی وارد کن.");return;}
-    try{const saved=JSON.parse(localStorage.getItem("farnazCustomReactionEmoji")||"[]");if(!saved.includes(emoji))localStorage.setItem("farnazCustomReactionEmoji",JSON.stringify([...saved,emoji].slice(-24)));}catch(_){}
-    closeMenu();toggleMessageReaction(m.id,emoji);
-  };
-  reactionPicker.appendChild(addEmoji);menu.appendChild(reactionPicker);
+  const add=(label,fn,cls="mini-button")=>{const b=document.createElement("button");b.type="button";b.className=cls;b.textContent=label;b.onclick=()=>{closeMenu();fn();};menu.appendChild(b);};
   add("📌  "+(pinnedMessageIds.has(String(m.id))?(english?"Unpin message":"برداشتن سنجاق"):(english?"Pin message":"سنجاق پیام")),()=>toggleMessagePin(m.id),"mini-button message-pin-action");
   add("↩  "+(english?"Reply":"پاسخ"),()=>setReplyTarget(m));
   add("➦  "+(english?"Forward":"فوروارد"),()=>{selectedMessageIds.clear();selectedMessageIds.add(m.id);messageSelectionMode=true;updateSelectionToolbar();forwardSelectedMessages();});
@@ -337,7 +316,7 @@ function showMessageActions(m,item){
   add("☑  "+(english?"Select":"انتخاب"),()=>{messageSelectionMode=true;toggleMessageSelection(m.id,item);updateSelectionToolbar();});
   if(m.sender_id===currentUser.id)add("✎  "+(english?"Edit":"ویرایش"),()=>editMessage(m));
   add("🗑  "+(english?"Delete":"حذف"),()=>deleteMessage(m),"mini-button danger");
-  const close=document.createElement("button");close.type="button";close.className="message-tools-dismiss";close.textContent="×";close.setAttribute("aria-label",english?"Close":"بستن");close.onclick=closeMenu;panel.appendChild(close);menu.appendChild(panel);
+  const close=document.createElement("button");close.type="button";close.className="message-tools-dismiss";close.textContent="×";close.setAttribute("aria-label",english?"Close":"بستن");close.onclick=closeMenu;menu.appendChild(close);
   document.body.appendChild(menu);
   const menuRect=menu.getBoundingClientRect(),margin=12;
   let left=Math.max(margin,Math.min(rect.left+(rect.width-menuRect.width)/2,window.innerWidth-menuRect.width-margin));

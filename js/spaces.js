@@ -84,6 +84,7 @@ s.textContent += `
   }
 }
 `;
+s.textContent += "\n/* Hide the unused empty group-description row beneath the header. */\n#spacesPage #spaceDetail #spaceDescription:empty{display:none!important}";
 document.head.appendChild(s);
 }
 function build(){

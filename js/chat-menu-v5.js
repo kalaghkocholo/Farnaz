@@ -308,7 +308,8 @@ function showMessageActions(m,item){
   const restoreItem=()=>{item.style.visibility="";item.classList.remove("context-active");};
   const menu=document.createElement("div");menu.className="message-tools message-tools-floating";
   const closeMenu=()=>{menu.remove();restoreItem();clearMessageActionOverlay();};
-  const add=(label,fn,cls="mini-button")=>{const b=document.createElement("button");b.type="button";b.className=cls;b.textContent=label;b.onclick=()=>{closeMenu();fn();};menu.appendChild(b);};
+  const panel=document.createElement("div");panel.className="message-tools-panel";
+  const add=(label,fn,cls="mini-button")=>{const b=document.createElement("button");b.type="button";b.className=cls;b.textContent=label;b.onclick=()=>{closeMenu();fn();};panel.appendChild(b);};
   const reactionPicker=document.createElement("div");reactionPicker.className="message-reaction-picker";
   reactionPicker.setAttribute("aria-label",english?"React to message":"واکنش به پیام");
   const customChoices=(()=>{try{return JSON.parse(localStorage.getItem("farnazCustomReactionEmoji")||"[]").filter(x=>typeof x==="string"&&x.length<=8).slice(0,24);}catch(_){return [];}})();
@@ -336,7 +337,7 @@ function showMessageActions(m,item){
   add("☑  "+(english?"Select":"انتخاب"),()=>{messageSelectionMode=true;toggleMessageSelection(m.id,item);updateSelectionToolbar();});
   if(m.sender_id===currentUser.id)add("✎  "+(english?"Edit":"ویرایش"),()=>editMessage(m));
   add("🗑  "+(english?"Delete":"حذف"),()=>deleteMessage(m),"mini-button danger");
-  const close=document.createElement("button");close.type="button";close.className="message-tools-dismiss";close.textContent="×";close.setAttribute("aria-label",english?"Close":"بستن");close.onclick=closeMenu;menu.appendChild(close);
+  const close=document.createElement("button");close.type="button";close.className="message-tools-dismiss";close.textContent="×";close.setAttribute("aria-label",english?"Close":"بستن");close.onclick=closeMenu;panel.appendChild(close);menu.appendChild(panel);
   document.body.appendChild(menu);
   const menuRect=menu.getBoundingClientRect(),margin=12;
   let left=Math.max(margin,Math.min(rect.left+(rect.width-menuRect.width)/2,window.innerWidth-menuRect.width-margin));

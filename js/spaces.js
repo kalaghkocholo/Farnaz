@@ -522,4 +522,3 @@ function wire(){
 function boot(){if(q("spacesPage"))return;style();build();wire();}
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);else boot();
 })();
-s += "";

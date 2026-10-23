@@ -1144,3 +1144,8 @@ body.chat-mode .app.chat-mode #chatPage #sendMessageForm {
     font-size:14px!important;
   }
 }
+
+/* v22 hard override for the private-chat back button */
+#chatPage .chat-header.space-detail-head #backToChats.space-secondary{display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:7px!important;width:96px!important;min-width:96px!important;max-width:96px!important;height:40px!important;min-height:40px!important;padding:8px 12px!important;font-size:15px!important;font-weight:600!important;line-height:1.2!important;white-space:nowrap!important;direction:rtl!important;flex:0 0 96px!important;}
+#chatPage .chat-header.space-detail-head #backToChats.space-secondary span{display:inline!important;visibility:visible!important;opacity:1!important;white-space:nowrap!important;font-size:15px!important;}
+@media(max-width:380px){#chatPage .chat-header.space-detail-head #backToChats.space-secondary{width:90px!important;min-width:90px!important;max-width:90px!important;flex-basis:90px!important;height:38px!important;min-height:38px!important;font-size:14px!important;padding:7px 9px!important}#chatPage .chat-header.space-detail-head #backToChats.space-secondary span{font-size:14px!important}}

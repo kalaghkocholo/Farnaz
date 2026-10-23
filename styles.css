@@ -945,3 +945,16 @@ body.chat-mode .app.chat-mode #chatPage #sendMessageForm {
   }
   .app.chat-mode #chatPage .chat-heading{gap:3px!important}
 }
+
+
+/* Match private-chat call buttons to the group header controls. */
+.app.chat-mode #chatPage .call-button{
+  background:var(--card,var(--panel2))!important;
+  border:1px solid var(--line,var(--border))!important;
+  color:var(--white)!important;
+  box-shadow:none!important;
+}
+.app.chat-mode #chatPage .call-button svg{
+  color:var(--mint)!important;
+  stroke:var(--mint)!important;
+}

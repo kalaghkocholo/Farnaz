@@ -64,3 +64,11 @@ The application is currently built from classic browser scripts with shared glob
 ## Verification boundary
 
 The SQL changes were applied to the connected Supabase project and queried afterward. GitHub file changes were committed. A complete browser session on iOS/desktop was not run in this pass, and the syntax workflow's hosted result was not available at review time. Do not interpret source review or SQL metadata checks as proof that all user flows work end to end.
+
+
+## Follow-up pass — static checks and product accuracy
+
+1. Added `scripts/validate.mjs` and expanded the GitHub Actions workflow. It checks the syntax of all three browser scripts, validates local script/stylesheet links in `index.html`, detects duplicate static IDs, checks CSS string/comment/brace balance, and scans browser JavaScript for common Supabase secret-key patterns. These are guardrails, not a full browser test suite.
+2. Updated the landing-page feature cards and both Persian/English translation entries so the public-facing copy emphasizes contacts, groups, and channels instead of suggesting that background reminders and real audio/video calls are already implemented.
+3. Rechecked CSS selector repetition with a lightweight source scan. The main `styles.css` contains many repeated selector blocks (roughly 90 selectors appear more than once in the source scan), particularly around chat viewport, composer, and theme overrides. Some rules may be intentional because they sit in different media queries or are later compatibility overrides. They should not be deleted mechanically. The next CSS refactor should first map each rule to its enclosing media/theme context and remove only demonstrably redundant declarations, with visual regression checks for iOS chat layout.
+4. The connected Supabase project has a migration history covering the existing database changes, but the repository does not yet contain a complete historical SQL migration baseline. The database's migration ledger alone does not provide the original SQL text. Do not synthesize old migrations from their names or use a guessed baseline; recover the original SQL from a trusted source or create a carefully reviewed schema baseline in a separate, tested process.

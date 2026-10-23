@@ -1115,3 +1115,32 @@ body.chat-mode .app.chat-mode #chatPage #sendMessageForm {
 #chatPage .chat-header .space-title-copy h3{margin:0 0 3px!important;color:var(--white)!important;font-size:inherit!important}
 @media(max-width:380px){#chatPage .chat-header.space-detail-head{grid-template-columns:auto auto minmax(0,1fr)!important;gap:4px!important;padding:6px 5px!important}#chatPage .chat-header #chatAvatar{flex-basis:32px!important;width:32px!important;height:32px!important;min-width:32px!important;min-height:32px!important;max-width:32px!important;max-height:32px!important}#chatPage .chat-header .space-call-button{width:34px!important;height:34px!important;min-width:34px!important;min-height:34px!important;flex-basis:34px!important}#chatPage .chat-header .space-title-wrap{gap:4px!important}#chatPage .chat-header #backToChats{height:34px!important;min-height:34px!important;padding:6px 7px!important;font-size:12px!important}}
 
+
+
+/* Private chat back button: larger, with visible Persian label. */
+#chatPage .chat-header #backToChats{
+  min-width:94px!important;
+  height:40px!important;
+  min-height:40px!important;
+  padding:8px 12px!important;
+  gap:7px!important;
+  font-size:15px!important;
+  font-weight:600!important;
+  line-height:1.2!important;
+}
+#chatPage .chat-header #backToChats span{
+  display:inline!important;
+  visibility:visible!important;
+  opacity:1!important;
+  white-space:nowrap!important;
+}
+@media(max-width:380px){
+  #chatPage .chat-header #backToChats{
+    min-width:88px!important;
+    height:38px!important;
+    min-height:38px!important;
+    padding:7px 9px!important;
+    gap:6px!important;
+    font-size:14px!important;
+  }
+}

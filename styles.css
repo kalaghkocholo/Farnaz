@@ -594,14 +594,8 @@ body[data-font-color="white"][data-theme] .bottom-nav .nav-button { color:#fffff
   flex:0 0 auto!important;margin-top:0!important;padding:5px 0 max(3px,env(safe-area-inset-bottom))!important;
   background:var(--bg)!important
 }
-/* In Persian RTL chats, messages sent by the current user belong on the right. */
+/* Keep message direction rules; alignment is defined once in the final chat layout. */
 .app.chat-mode>#chatPage #messageList{direction:ltr!important;align-items:stretch!important}
-.app.chat-mode>#chatPage #messageList>.my-message{
-  align-self:flex-end!important;margin-left:auto!important;margin-right:0!important
-}
-.app.chat-mode>#chatPage #messageList>.their-message{
-  align-self:flex-start!important;margin-left:0!important;margin-right:auto!important
-}
 .app.chat-mode>#chatPage #messageList>.message{direction:rtl!important;text-align:right!important}
 .app.spaces-chat-mode #spacesPage #spaceMessages>.space-message{
   direction:rtl!important;text-align:right!important

@@ -958,3 +958,21 @@ body.chat-mode .app.chat-mode #chatPage #sendMessageForm {
   color:var(--mint)!important;
   stroke:var(--mint)!important;
 }
+
+
+/* PWA notifications and one-to-one WebRTC call surface */
+.farnaz-call-dialog{position:fixed;inset:0;z-index:10050;background:rgba(5,12,24,.76);display:flex;align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(8px)}
+.farnaz-call-dialog[hidden]{display:none}
+.farnaz-call-card{width:min(100%,460px);max-height:90dvh;overflow:auto;background:var(--panel,#172237);color:var(--white,#f8fafc);border:1px solid var(--border,#2b3a50);border-radius:22px;padding:18px;box-shadow:0 22px 80px #0007}
+.farnaz-call-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.farnaz-call-top strong{font-size:17px}
+.farnaz-call-top button{border:0;border-radius:12px;width:38px;height:38px;background:var(--panel2,#1d2b42);color:inherit;font-size:24px}
+#farnazCallStatus{min-height:24px;line-height:1.7;color:var(--muted,#aab5c7);overflow-wrap:anywhere}
+.farnaz-call-media{display:grid;grid-template-columns:1fr;gap:8px}
+.farnaz-call-media video{width:100%;max-height:38dvh;object-fit:cover;background:#050912;border-radius:16px}
+.farnaz-call-media audio{width:100%}
+.farnaz-call-actions{display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+.farnaz-call-actions button{border:0;border-radius:13px;padding:12px 18px;font:inherit;font-weight:700}
+.farnaz-call-accept{background:#20a66a;color:white}
+.farnaz-call-reject{background:#c93d4b;color:white}
+@media(prefers-reduced-motion:no-preference){.farnaz-call-card{animation:farnaz-call-in .16s ease-out}@keyframes farnaz-call-in{from{opacity:0;transform:translateY(8px) scale(.985)}to{opacity:1;transform:none}}}

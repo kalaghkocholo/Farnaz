@@ -1334,3 +1334,17 @@ body[data-theme="light"] #spacesPage .space-swipe-hint{color:#526f9d}
 #spacesPage .space-row-shell.swiped .space-swipe-hint{opacity:0;animation:none}
 @keyframes spaceSwipeNudge{0%,100%{transform:translate(0,-50%);opacity:.58}50%{transform:translate(-3px,-50%);opacity:1}}
 @media (prefers-reduced-motion:reduce){#spacesPage .space-swipe-hint{animation:none}}
+
+.space-admin-settings{border:1px solid var(--border);border-radius:14px;padding:14px;margin:14px 0;background:var(--panel2)}
+.space-admin-settings h4{margin:8px 0 12px}
+.space-admin-settings>label:not(.space-setting-toggle){display:block;margin:10px 0 5px;font-size:13px;color:var(--muted)}
+.space-admin-settings select{width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--white)}
+.space-setting-toggle{display:flex;align-items:center;gap:9px;padding:9px 0;font-size:13px}
+.space-setting-toggle input{width:18px;height:18px;accent-color:var(--accent);flex:0 0 auto}
+.space-admin-settings>.space-primary{width:100%;margin-top:10px}
+.space-pending-message{border-top:1px solid var(--border);padding:10px 0;display:flex;gap:8px;align-items:center;justify-content:space-between}
+.space-pending-message p{margin:0;min-width:0;overflow-wrap:anywhere;font-size:13px}
+.privacy-toggle{display:flex;align-items:flex-start;gap:10px;padding:12px 0;border-top:1px solid var(--border)}
+.privacy-toggle input{width:18px;height:18px;margin-top:3px;accent-color:var(--accent);flex:0 0 auto}
+.privacy-toggle span{display:flex;flex-direction:column;gap:4px}
+.privacy-toggle small{color:var(--muted);font-size:12px;line-height:1.5}

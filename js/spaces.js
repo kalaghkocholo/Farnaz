@@ -183,7 +183,7 @@ function renderSpaceAdminSettings(mine,isChannel){
  const manager=!!mine&&["owner","admin"].includes(mine.role);panel.hidden=!manager;
  if(!manager)return;
  q("spaceMemberVisibility").value=active.member_list_visibility||"members";
- q("spaceMembersCanSend").checked=active.members_can_send_messages!==false;
+ q("spaceMembersCanSend").checked=active.members_can_send_messages!==false;q("spaceMembersCanSend").closest("label").hidden=isChannel;
  q("spaceMembersCanAdd").checked=active.members_can_add_members===true;
  q("spaceAllowReplies").checked=active.allow_channel_replies===true;
  q("spaceAllowReplies").closest("label").hidden=!isChannel;
@@ -232,6 +232,9 @@ async function openSpaceInfo(){
   if(error){q("spaceInfoStatus").textContent=tr("دریافت فهرست اعضا ناموفق بود: ","Could not load members: ")+error.message;return;}
   const list=q("spaceMemberList");list.replaceChildren();
   q("spaceMemberHeading").textContent=tr("اعضای گروه","Group members")+" · "+(members||[]).length;
+  if(typeof privacySettings==="undefined"||privacySettings.show_space_online_count!==false){
+   try{const presenceRows=await Promise.all((members||[]).map(async member=>{try{const {data,error}=await getClient().rpc("get_farnaz_presence_status",{p_user_id:member.user_id});if(error)return false;const status=Array.isArray(data)?data[0]:data;return !!(status?.can_see_online&&status.is_online);}catch(_){return false;}}));const onlineTotal=presenceRows.filter(Boolean).length;q("spaceMemberHeading").textContent+=" · "+tr("آنلاین ","Online ")+onlineTotal;}catch(_){}
+  }
   for(const member of members||[]){
    const row=document.createElement("div");row.className="space-member-row";
    const trigger=document.createElement("button");trigger.type="button";trigger.className="space-member-trigger";

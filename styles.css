@@ -1324,3 +1324,38 @@ body[data-theme="light"] .welcome-shell{background:radial-gradient(ellipse at 50
   text-align:center!important;
   box-shadow:0 4px 14px #0002!important;
 }
+
+
+/* Final welcome language toggle: one compact EN/FA button at top-left. */
+.welcome-shell .welcome-language-switch{
+  box-sizing:border-box!important;
+  position:absolute!important;
+  top:14px!important;
+  left:14px!important;
+  right:auto!important;
+  inset-inline-start:auto!important;
+  inset-inline-end:auto!important;
+  z-index:20!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:42px!important;
+  min-width:42px!important;
+  max-width:42px!important;
+  height:34px!important;
+  min-height:34px!important;
+  padding:0!important;
+  margin:0!important;
+  border:1px solid #7896c5!important;
+  border-radius:10px!important;
+  background:#7896c5!important;
+  color:#101828!important;
+  font-family:inherit!important;
+  font-size:12px!important;
+  font-weight:750!important;
+  line-height:1!important;
+  letter-spacing:0!important;
+  white-space:nowrap!important;
+  text-align:center!important;
+  box-shadow:0 4px 14px #0002!important;
+}

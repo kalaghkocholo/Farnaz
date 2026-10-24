@@ -68,13 +68,32 @@ async function create(event){
   btn.disabled=false;
  }
 }
+function spaceMuteStorageKey(){return "farnaz-muted-spaces:"+String(currentUser?.id||"anonymous");}
+function getMutedSpaceIds(){try{const v=JSON.parse(localStorage.getItem(spaceMuteStorageKey())||"[]");return new Set(Array.isArray(v)?v.map(String):[]);}catch(e){return new Set();}}
+function isSpaceMuted(id){return getMutedSpaceIds().has(String(id));}
+function setSpaceMuted(id,muted){const ids=getMutedSpaceIds();if(muted)ids.add(String(id));else ids.delete(String(id));try{localStorage.setItem(spaceMuteStorageKey(),JSON.stringify([...ids]));return true;}catch(e){return false;}}
+function toggleSpaceCardActions(space,role,card){
+ const list=q("spaceList");const old=list.querySelector('[data-space-options-for="'+CSS.escape(String(space.id))+'"]');if(old){old.remove();return;}
+ list.querySelectorAll(".space-card-actions").forEach(el=>el.remove());
+ const panel=document.createElement("div");panel.className="space-card-actions";panel.dataset.spaceOptionsFor=String(space.id);panel.style.cssText="display:flex;flex-wrap:wrap;gap:8px;padding:8px 12px 12px;margin-top:-6px;margin-bottom:8px;border:1px solid var(--border-color,rgba(127,127,127,.25));border-radius:12px;";
+ const muted=isSpaceMuted(space.id);
+ if(role){
+  const mute=document.createElement("button");mute.type="button";mute.className="space-secondary";mute.textContent=muted?tr("🔔 خارج کردن از سایلنت","🔔 Unmute"):tr("🔕 سایلنت کردن","🔕 Mute");mute.onclick=()=>{const ok=setSpaceMuted(space.id,!muted);if(!ok){q("spacesStatus").textContent=tr("ذخیره تنظیم سایلنت ممکن نشد.","Could not save mute setting.");return;}refresh();};panel.appendChild(mute);
+  const leave=document.createElement("button");leave.type="button";leave.className="space-secondary";leave.textContent=tr("ترک "+(space.type==="channel"?"کانال":"گروه"),"Leave "+(space.type==="channel"?"channel":"group"));
+  if(role==="owner"){leave.disabled=true;leave.title=tr("مالک ابتدا باید مالکیت را منتقل کند یا فضا را حذف کند.","Owners must transfer ownership or delete the space first.");}
+  else leave.onclick=async()=>{if(!window.confirm(tr("از «"+space.name+"» خارج می‌شوی؟","Leave “"+space.name+"”?")))return;leave.disabled=true;try{const {error}=await getClient().from("space_members").delete().eq("space_id",space.id).eq("user_id",currentUser.id);if(error)throw error;setSpaceMuted(space.id,false);await refresh();q("spacesStatus").textContent=tr("از فضا خارج شدی.","You left the space.");}catch(e){q("spacesStatus").textContent=tr("خروج ناموفق بود: ","Could not leave: ")+(e?.message||String(e));leave.disabled=false;}};panel.appendChild(leave);
+ }else{
+  const info=document.createElement("small");info.className="space-muted";info.textContent=space.type==="channel"&&space.is_public?tr("برای عضویت، روی کارت کانال بزن.","Tap the channel card to join."):tr("برای استفاده از این گزینه‌ها ابتدا عضو شو.","Join this space to use these options.");panel.appendChild(info);
+ }
+ card.insertAdjacentElement("afterend",panel);
+}
 async function refresh(){
  if(!currentUser)return;if(active&&q("spaceDetail")&&!q("spaceDetail").hidden)return;
  q("spaceList").replaceChildren();q("spacesStatus").textContent=tr("در حال بارگذاری…","Loading…");
  try{const {data,error}=await getClient().from("spaces").select("*").order("created_at",{ascending:false}).limit(200);if(error)throw error;spaces=data||[];
  const {data:mem}=await getClient().from("space_members").select("space_id,role").eq("user_id",currentUser.id);const mm=new Map((mem||[]).map(x=>[x.space_id,x.role]));const f=document.querySelector("[data-filter].active")?.dataset.filter||"all";const rows=spaces.filter(s=>f==="all"||s.type===f);q("spaceList").replaceChildren();
  if(!rows.length){const e=document.createElement("div");e.className="space-empty";e.textContent=tr("هنوز گروه یا کانالی نداری؛ از دکمه ایجاد شروع کن.","No groups or channels yet. Create one to get started.");q("spaceList").appendChild(e);}
- for(const s of rows){const b=document.createElement("button");b.type="button";b.className="space-card";const i=document.createElement("span");i.className="space-avatar";renderSpaceAvatar(i,s.avatar_url,s.type==="group"?"👥":"📣",true);const c=document.createElement("span");c.className="space-copy";const n=document.createElement("strong");n.textContent=s.name;const sm=document.createElement("small");sm.textContent=(s.type==="group"?tr("گروه","Group"):s.is_public?tr("کانال عمومی","Public channel"):tr("کانال خصوصی","Private channel"))+" · "+(mm.has(s.id)?tr("عضو","Joined"):s.type==="channel"&&s.is_public?tr("برای عضویت باز کن","Open to join"):tr("خصوصی","Private"));c.append(n,sm);b.append(i,c);b.onclick=()=>open(s.id);q("spaceList").appendChild(b);}
+ for(const s of rows){const role=mm.get(s.id)||null,muted=isSpaceMuted(s.id);const b=document.createElement("button");b.type="button";b.className="space-card";const i=document.createElement("span");i.className="space-avatar";renderSpaceAvatar(i,s.avatar_url,s.type==="group"?"👥":"📣",true);const copy=document.createElement("span");copy.className="space-copy";const n=document.createElement("strong");n.textContent=s.name;n.style.cursor="pointer";n.title=tr("برای تنظیمات گروه یا کانال بزن","Tap for group or channel options");n.onclick=e=>{e.preventDefault();e.stopPropagation();toggleSpaceCardActions(s,role,b);};const sm=document.createElement("small");sm.textContent=(s.type==="group"?tr("گروه","Group"):s.is_public?tr("کانال عمومی","Public channel"):tr("کانال خصوصی","Private channel"))+" · "+(role?tr("عضو","Joined"):s.type==="channel"&&s.is_public?tr("برای عضویت باز کن","Open to join"):tr("خصوصی","Private"))+(muted?" · 🔕 "+tr("سایلنت","Muted"):"");copy.append(n,sm);b.append(i,copy);b.onclick=()=>open(s.id);q("spaceList").appendChild(b);}
  q("spacesStatus").textContent="";
  }catch(e){q("spacesStatus").textContent=tr("بارگذاری ناموفق بود: ","Could not load: ")+e.message;}
 }

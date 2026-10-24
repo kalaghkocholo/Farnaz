@@ -272,10 +272,29 @@ function formatContactPhone(phone){
   const raw=normalizeDigits(phone).trim();
   if(!raw)return "";
   let digits=raw.replace(/\D/g,"");
-  if(digits.startsWith("0098"))digits=digits.slice(4);
-  else if(digits.startsWith("98")&&digits.length===12)digits=digits.slice(2);
-  if(digits.length===10&&digits.startsWith("9"))digits="0"+digits;
-  return digits;
+  if(digits.startsWith("00"))digits=digits.slice(2);
+  const countries=[
+    {code:"98",national:"0",length:10},
+    {code:"49",national:"0"},
+    {code:"44",national:"0"},
+    {code:"90",national:"0"},
+    {code:"1",national:""}
+  ];
+  const country=countries.sort((a,b)=>b.code.length-a.code.length).find(c=>digits.startsWith(c.code));
+  if(country){
+    let local=digits.slice(country.code.length);
+    if(country.national==="0")local=local.replace(/^0+/,"");
+    return country.national+local;
+  }
+  return "+"+digits;
+}
+function setPhoneDisplay(el,phone){
+  if(!el)return;
+  el.textContent=formatContactPhone(phone);
+  el.setAttribute("dir","ltr");
+  el.style.direction="ltr";
+  el.style.unicodeBidi="isolate";
+  el.style.textAlign="left";
 }
 function setPhoneCountry(selectId,phone){
   const digits=normalizeDigits(phone).replace(/\D/g,"");
@@ -526,7 +545,7 @@ function renderUser(user,name){
   document.body.dataset.authState="user";const settingsButton=$("openSettingsButton");if(settingsButton){settingsButton.hidden=false;settingsButton.style.removeProperty("display");}
   $("userName").textContent=currentProfileName||(english?"Farnaz user":"کاربر فرناز");
   $("userEmail").textContent=user.email||"";
-  $("userPhone").textContent=currentPhone||"";
+  setPhoneDisplay($("userPhone"),currentPhone);
   renderAvatar($("userAvatar"),currentAvatarUrl,$("userName").textContent);
 }
 async function showUser(user){
@@ -552,7 +571,7 @@ async function showUser(user){
     currentAvatarUrl=profile?.avatar_url||"";currentPhone=profile?.phone||"";
     renderUser(user,currentProfileName);
     $("profileNameInput").value=currentProfileName;
-    $("profilePhoneInput").value=currentPhone;
+    setPhoneCountry("profilePhoneCountry",currentPhone);\n    $("profilePhoneInput").value=formatContactPhone(currentPhone);
     $("showPhoneSetting").checked=profile?.show_phone!==false;
     setPhoneCountry("profilePhoneCountry",currentPhone);
     setStatus("profileStatus",english?"Profile loaded.":"پروفایل بارگذاری شد.");
@@ -839,7 +858,7 @@ async function openContactInfo(){
     }
     /* The profile RPC is the authority for phone visibility; never fall back to raw profile reads. */
     if(profileResult?.phone){
-      $("contactInfoPhone").textContent=(english?"Phone: ":"شماره تلفن: ")+formatContactPhone(profileResult.phone);
+      $("contactInfoPhone").textContent=(english?"Phone: ":"شماره تلفن: ")+formatContactPhone(profileResult.phone);$("contactInfoPhone").setAttribute("dir","ltr");$("contactInfoPhone").style.direction="ltr";$("contactInfoPhone").style.unicodeBidi="isolate";
       $("contactInfoPhone").hidden=false;
     }
     if(blockedResult.error)throw blockedResult.error;
@@ -949,7 +968,7 @@ async function refreshUnmatchedPhoneContacts(){
       const avatar=document.createElement("div");avatar.className="avatar";avatar.textContent=initials(item.display_name);
       const details=document.createElement("div");details.className="phone-contact-details";
       const name=document.createElement("strong");name.textContent=item.display_name||(english?"Phone contact":"مخاطب گوشی");
-      const phone=document.createElement("span");phone.textContent=item.phone||"";
+      const phone=document.createElement("span");setPhoneDisplay(phone,item.phone||"");
       const state=document.createElement("small");state.textContent=english?"Not on Farnaz yet":"هنوز در فرناز ثبت‌نام نکرده";
       details.append(name,phone,state);row.append(avatar,details);list.appendChild(row);
     }

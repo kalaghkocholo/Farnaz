@@ -1264,10 +1264,10 @@ body[data-theme="light"] .welcome-shell{background:radial-gradient(ellipse at 50
 #headerFButton[hidden]{display:none!important}
 
 
-/* One welcome language button, positioned clear of the iPhone status area. */
+/* One welcome language button, positioned higher and clear of the welcome card text. */
 #homePage > #welcomeLanguageButton{
   position:fixed!important;
-  top:calc(env(safe-area-inset-top, 0px) + 48px)!important;
+  top:calc(env(safe-area-inset-top, 0px) + 8px)!important;
   right:16px!important;
   left:auto!important;
   inset-inline-start:auto!important;

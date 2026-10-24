@@ -438,7 +438,12 @@ function showConversationActions(card,contactId){
   card.appendChild(menu);
 }
 function openSignup(){authMode="signup";openAuth();}
+function openLogin(){authMode="login";openAuth();}
 function openAuth(){
+  const signup=authMode==="signup";
+  $("nameField").style.display=signup?"block":"none";
+  $("authName").required=signup;
+  $("authPassword").autocomplete=signup?"new-password":"current-password";
   $("authBox").style.display="flex";setStatus("authStatus","");
   $("authName").value="";$("authEmail").value="";$("authPassword").value="";
   updateAuthTexts();

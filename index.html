@@ -90,7 +90,7 @@
       <select id="recipientCountry" aria-label="Phone country code" style="width:100%;border:1px solid #43516a;border-radius:10px;background:var(--bg);color:var(--white)">
         <option value="98" selected>ایران (+98)</option><option value="49">آلمان (+49)</option><option value="1">آمریکا / کانادا (+1)</option><option value="44">بریتانیا (+44)</option><option value="90">ترکیه (+90)</option>
       </select>
-      <input id="recipientValue" type="text" required autocomplete="off" placeholder="email@example.com یا 0912...">
+      <input id="recipientValue" type="text" dir="ltr" required autocomplete="off" placeholder="email@example.com یا 0912...">
       <button class="action-button" id="findRecipientBtn" type="submit">پیدا کردن مخاطب</button>
     </form>
     <p id="recipientStatus" class="status" role="status"></p>
@@ -119,7 +119,7 @@
       <select id="profilePhoneCountry" aria-label="Phone country code" style="width:100%;padding:10px;border:1px solid #43516a;border-radius:10px;background:var(--bg);color:var(--white)">
         <option value="98" selected>ایران (+98)</option><option value="49">آلمان (+49)</option><option value="1">آمریکا / کانادا (+1)</option><option value="44">بریتانیا (+44)</option><option value="90">ترکیه (+90)</option>
       </select>
-      <input id="profilePhoneInput" type="tel" maxlength="25" placeholder="0912..." autocomplete="tel">
+      <input id="profilePhoneInput" type="tel" dir="ltr" maxlength="25" placeholder="0912..." autocomplete="tel">
       <label class="profile-phone-visibility" for="showPhoneSetting"><input id="showPhoneSetting" type="checkbox" checked> <span id="showPhoneSettingLabel">نمایش شماره موبایل به مخاطبان (پیش‌فرض روشن)</span></label>
       <p class="muted-note" id="showPhoneSettingHint">اگر خاموشش کنی، شماره‌ات در اطلاعات مخاطب نمایش داده نمی‌شود.</p>
       <label for="avatarFile" id="avatarFileLabel">تصویر پروفایل</label>

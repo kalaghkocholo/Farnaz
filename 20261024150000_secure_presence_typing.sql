@@ -94,8 +94,7 @@ as $function$
       select 1 from public.blocked_contacts bl
       where (bl.blocker_id = auth.uid() and bl.blocked_user_id = a.contact_user_id)
          or (bl.blocker_id = a.contact_user_id and bl.blocked_user_id = auth.uid())
-    )
-    ;
+    );
 $function$;
 revoke all on function public.get_farnaz_mutual_contact_ids() from public, anon;
 grant execute on function public.get_farnaz_mutual_contact_ids() to authenticated;

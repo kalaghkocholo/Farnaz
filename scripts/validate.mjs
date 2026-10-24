@@ -84,15 +84,15 @@ for (const match of html.matchAll(/<(?:script|link)\b[^>]*>/gi)) {
 
 // The app's real script dependencies are injected by a runtime loader, so the
 // ordinary <script src> scan above cannot see them. Validate those paths too.
-const loader = html.match(/const scripts\\s*=\\s*\\[([\\s\\S]*?)\\n\\s*\\];/);
+const loader = html.match(/const scripts\s*=\s*\[([\s\S]*?)\n\s*\];/);
 if (!loader) {
   errors.push("index.html: dynamic script loader list was not found");
 } else {
   const loadedLocalPaths = [];
-  for (const match of loader[1].matchAll(/["'](\\.\\/[^"']+)["']/g)) {
+  for (const match of loader[1].matchAll(/["'](\.\/[^"']+)["']/g)) {
     const url = match[1];
-    if (/^(?:https?:)?\\/\\//i.test(url) || url.startsWith("data:")) continue;
-    const localPath = decodeURIComponent(url.split(/[?#]/, 1)[0]).replace(/^\\.\\//, "");
+    if (/^(?:https?:)?\/\//i.test(url) || url.startsWith("data:")) continue;
+    const localPath = decodeURIComponent(url.split(/[?#]/, 1)[0]).replace(/^\.\//, "");
     loadedLocalPaths.push("./" + localPath);
     if (!existsSync(resolve(root, localPath))) {
       errors.push("index.html dynamic loader references missing local script: " + url);
@@ -100,12 +100,12 @@ if (!loader) {
   }
 
   const serviceWorker = sources["service-worker.js"];
-  const shell = serviceWorker.match(/const SHELL\\s*=\\s*\\[([\\s\\S]*?)\\];/);
+  const shell = serviceWorker.match(/const SHELL\s*=\s*\[([\s\S]*?)\];/);
   if (!shell) {
     errors.push("service-worker.js: shell asset list was not found");
   } else {
     const shellPaths = new Set(
-      [...shell[1].matchAll(/["'](\\.\\/[^"']+)["']/g)].map((match) => match[1].split(/[?#]/, 1)[0])
+      [...shell[1].matchAll(/["'](\.\/[^"']+)["']/g)].map((match) => match[1].split(/[?#]/, 1)[0])
     );
     for (const path of loadedLocalPaths) {
       if (!shellPaths.has(path)) {

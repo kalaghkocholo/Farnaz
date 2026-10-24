@@ -1314,7 +1314,7 @@ body[data-theme="light"] #spaceAddContacts .space-contact{background:#f4f6fa!imp
 
 /* Swipe actions for group and channel cards */
 #spacesPage .space-row-shell{position:relative;overflow:hidden;border-radius:15px;margin:8px 0;isolation:isolate}
-#spacesPage .space-row-shell .space-card{position:relative;z-index:2;box-sizing:border-box;margin:0;min-height:70px;touch-action:pan-y;transition:transform .22s ease;will-change:transform}
+#spacesPage .space-row-shell .space-card{position:relative;z-index:2;box-sizing:border-box;margin:0;min-height:70px;touch-action:pan-y;transition:transform .22s ease}
 #spacesPage .space-row-shell.swiped .space-card{transform:translateX(-196px)}
 #spacesPage .space-card-actions{position:absolute;z-index:1;top:0;right:0;bottom:0;width:196px;display:flex;align-items:stretch;justify-content:space-evenly;gap:2px;padding:4px;background:var(--panel2,#202b3d);border:1px solid var(--border,#334155);border-radius:15px;box-sizing:border-box}
 #spacesPage .space-swipe-action{flex:1;min-width:0;padding:4px 2px;border:0;border-radius:9px;background:transparent;color:var(--white,#fff);font-size:10px;line-height:1.25;white-space:normal;overflow-wrap:anywhere}
@@ -1329,7 +1329,7 @@ body[data-theme="light"] #spacesPage .space-swipe-action{color:#172237}
 
 /* A subtle left-arrow cue tells users group/channel rows can be swiped. */
 #spacesPage .space-row-shell .space-card{padding-left:34px}
-#spacesPage .space-swipe-hint{position:absolute;left:11px;top:50%;transform:translateY(-50%);display:grid;place-items:center;width:19px;height:28px;border-radius:8px;color:var(--accent,#50e3c2);font-size:21px;font-weight:700;line-height:1;opacity:.82;pointer-events:none;animation:spaceSwipeNudge 1.8s ease-in-out infinite}
+#spacesPage .space-swipe-hint{position:absolute;left:11px;top:50%;transform:translateY(-50%);display:grid;place-items:center;width:19px;height:28px;border-radius:8px;color:var(--accent,#50e3c2);font-size:21px;font-weight:700;line-height:1;opacity:.82;pointer-events:none;animation:spaceSwipeNudge 1.8s ease-in-out 2}
 body[data-theme="light"] #spacesPage .space-swipe-hint{color:#526f9d}
 #spacesPage .space-row-shell.swiped .space-swipe-hint{opacity:0;animation:none}
 @keyframes spaceSwipeNudge{0%,100%{transform:translate(0,-50%);opacity:.58}50%{transform:translate(-3px,-50%);opacity:1}}

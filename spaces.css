@@ -18,9 +18,9 @@
 .spaces-tabs button,.space-secondary {
   padding:9px 12px;
   border-radius:12px;
-  border:1px solid var(--line,#334155);
-  background:var(--card,#172033);
-  color:var(--white,#f7f9fc)
+  border:1px solid var(--border,var(--line,#334155));
+  background:var(--panel2,var(--card,#172033));
+  color:var(--white,var(--text,#f7f9fc))
 }
 .spaces-tabs .active,.space-primary {
   background:var(--accent,#50e3c2);
@@ -40,10 +40,10 @@
   text-align:start;
   padding:13px;
   margin:8px 0;
-  border:1px solid var(--line,#334155);
+  border:1px solid var(--border,var(--line,#334155));
   border-radius:15px;
-  background:var(--card,#172033);
-  color:var(--white,#f7f9fc)
+  background:var(--panel,var(--card,#172033));
+  color:var(--white,var(--text,#f7f9fc))
 }
 .space-avatar {
   width:44px;
@@ -909,8 +909,8 @@ body.spaces-chat-mode.keyboard-open #spacesPage #spaceComposer .composer-icon {
   width:min(100%,420px);
   max-height:calc(100dvh - 28px);
   overflow:auto;
-  background:var(--card,#172033);
-  color:var(--white,#f7f9fc);
+  background:var(--panel,var(--card,#172033));
+  color:var(--white,var(--text,#f7f9fc));
   border-radius:20px;
   padding:18px;
   box-sizing:border-box
@@ -964,8 +964,9 @@ body.spaces-chat-mode.keyboard-open #spacesPage #spaceComposer .composer-icon {
   white-space:normal!important
 }
 #spaceInfoDialog .space-info-actions button.space-secondary {
-  background:#4778e6!important;
-  color:#fff!important
+  background:var(--panel2)!important;
+  color:var(--white)!important;
+  border:1px solid var(--border)!important
 }
 #spaceInfoDialog .space-info-actions button.space-primary {
   background:#18a98e!important;
@@ -1269,6 +1270,7 @@ body.spaces-chat-mode.keyboard-open #spacesPage #spaceComposer .composer-icon {
 #spacesPage .space-message-meta{color:inherit!important}
 #spacesPage .space-message-meta .space-message-read-status{color:var(--accent)!important}
 #spacesPage .spaces-tabs button,#spacesPage .spaces-actions button,#spacesPage .space-call-button{background:var(--panel2)!important;color:var(--white)!important;border-color:var(--border)!important}
+#spacesPage #backSpaces,#spacesPage .space-secondary{background:var(--panel2)!important;color:var(--white)!important;border-color:var(--border)!important}
 #spacesPage .spaces-tabs button.active{background:color-mix(in srgb,var(--accent) 18%,var(--panel))!important;color:var(--accent)!important}
 #spacesPage .space-composer,#spacesPage .space-composer textarea{border-color:var(--border)!important;color:var(--white)!important}
 #spacesPage .space-dialog-card,#spacesPage .space-message-actions{background:var(--panel)!important;color:var(--white)!important;border-color:var(--border)!important}

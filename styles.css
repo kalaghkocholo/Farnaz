@@ -1274,6 +1274,24 @@ body[data-theme="light"] .welcome-shell{background:radial-gradient(ellipse at 50
   inset-inline-end:16px!important;
   transform:none!important;
   z-index:9999!important;
+  box-sizing:border-box!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:42px!important;
+  min-width:42px!important;
+  height:34px!important;
+  min-height:34px!important;
+  padding:0!important;
+  margin:0!important;
+  border:1px solid #7896c5!important;
+  border-radius:10px!important;
+  background:#7896c5!important;
+  color:#101828!important;
+  font-size:12px!important;
+  font-weight:750!important;
+  line-height:1!important;
+  box-shadow:0 4px 14px #0002!important;
 }
 #homePage:not(.active) > #welcomeLanguageButton{display:none!important}
 #homePage .welcome-shell .welcome-language-switch{display:none!important}

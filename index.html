@@ -373,7 +373,7 @@
       script.src=urls[attempt++];
       script.onload=()=>finish(true);
       script.onerror=()=>finish(false);
-      timer=setTimeout(()=>finish(false),4000);
+      if(index===0)timer=setTimeout(()=>finish(false),4000);
       document.body.appendChild(script);
     }
     next();

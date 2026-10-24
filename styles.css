@@ -1359,3 +1359,16 @@ body[data-theme="light"] .welcome-shell{background:radial-gradient(ellipse at 50
   text-align:center!important;
   box-shadow:0 4px 14px #0002!important;
 }
+
+
+/* Pin EN/FA toggle to the physical left edge of the welcome card. */
+.welcome-shell .welcome-language-switch{
+  position:absolute!important;
+  left:14px!important;
+  right:auto!important;
+  inset-inline-start:14px!important;
+  inset-inline-end:auto!important;
+  transform:none!important;
+  margin-left:0!important;
+  margin-right:auto!important;
+}

@@ -110,14 +110,14 @@ async function open(id){
   const actions=q("spaceInfoActions");actions.replaceChildren();
   const {data:mine,error:mineError}=await getClient().from("space_members").select("role").eq("space_id",spaceId).eq("user_id",currentUser.id).maybeSingle();
   if(mineError){q("spaceInfoStatus").textContent=mineError.message;return;}
-  if(!mine){q("spaceInfoStatus").textContent=isChannel?tr("برای مشاهده اطلاعات کامل باید عضو این کانال باشی.","Join this channel to view its full information."):tr("برای مشاهده اعضا باید عضو این گروه باشی.","You must be a group member to view this roster.");return;}
+  if(!mine&&!isChannel){q("spaceInfoStatus").textContent=tr("برای مشاهده اعضا باید عضو این گروه باشی.","You must be a group member to view this roster.");return;}
   if(isChannel){
    q("spaceMemberHeading").textContent=tr("جزئیات کانال","Channel details");
    const detail=q("spaceMemberList");detail.replaceChildren();
    const visibility=document.createElement("p");visibility.className="space-muted";visibility.textContent=active.is_public?tr("کانال عمومی","Public channel"):tr("کانال خصوصی با کد دعوت","Private channel");
    const count=document.createElement("p");count.className="space-muted";count.textContent=tr("در حال دریافت تعداد اعضا…","Loading subscriber count…");detail.append(visibility,count);
    try{const {count:n,error:e}=await getClient().from("space_members").select("user_id",{count:"exact",head:true}).eq("space_id",spaceId);if(e)throw e;count.textContent=tr("تعداد اعضا: ","Members: ")+(n??0);}catch(e){count.textContent="";}
-   if(["owner","admin"].includes(mine.role)){
+   if(mine&&["owner","admin"].includes(mine.role)){
     const edit=document.createElement("button");edit.type="button";edit.className="space-secondary";edit.textContent=tr("ویرایش نام، توضیحات و عکس","Edit name, description & photo");edit.onclick=()=>{q("spaceEditTitle").textContent=tr("ویرایش اطلاعات کانال","Edit channel information");q("spaceEditForm").querySelector('label[for="spaceEditName"]').textContent=tr("نام کانال","Channel name");q("spaceEditForm").querySelector('label[for="spaceEditDescription"]').textContent=tr("توضیحات","Description");q("spaceEditForm").querySelector('label[for="spaceEditPhoto"]').textContent=tr("عکس کانال","Channel photo");q("spaceEditForm").querySelector(".space-muted").textContent=tr("عکس کانال برای اعضای کانال قابل مشاهده است.","The channel photo is visible to channel members.");q("cancelSpaceEdit").textContent=tr("انصراف","Cancel");q("saveSpaceEdit").textContent=tr("ذخیره","Save");q("spaceEditName").value=active.name||"";q("spaceEditDescription").value=active.description||"";q("spaceEditPhoto").value="";q("spaceEditStatus").textContent="";q("spaceEditDialog").hidden=false;};actions.appendChild(edit);
    }
    q("spaceInfoStatus").textContent=tr("اطلاعات کانال","Channel information");

@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" href="./farnaz-icon.svg?v=20261024-4">
 <meta name="description" content="فرناز؛ ارتباطی نزدیک‌تر، در هر کجا.">
 <title>فرناز | Farnaz</title>
-<link rel="stylesheet" href="./styles.css?v=20261024-21">
+<link rel="stylesheet" href="./styles.css?v=20261024-22">
 <link rel="stylesheet" href="./spaces.css?v=20261024-24">
 </head>
 <body data-auth-state="guest">
@@ -28,6 +28,8 @@
 </header>
 <div class="new-chat-popover" id="newChatPopover" hidden>
   <div class="new-chat-popover-title"><span id="newChatPopoverTitle">گفتگوی جدید</span><button class="contact-search-close" type="button" onclick="toggleNewChatPopover(false)" aria-label="بستن">×</button></div>
+  <button class="new-chat-option" type="button" onclick="toggleNewChatPopover(false);navigate('contactsPage');toggleContactSearch(true)"><span class="new-chat-option-icon">↗</span><span><strong>چت خصوصی</strong><small>انتخاب یا پیدا کردن مخاطب</small></span></button>
+  <button class="new-chat-option" type="button" onclick="createGroupFromHome()"><span class="new-chat-option-icon">＋</span><span><strong>ساخت گروه</strong><small>شروع گفتگوی گروهی جدید</small></span></button>
   <input id="savedContactFilter" type="search" autocomplete="off" placeholder="جستجو در مخاطبان ذخیره‌شده" aria-label="جستجو در مخاطبان ذخیره‌شده">
   <div class="list" id="newChatContactsList"></div>
   <p class="status muted-note" id="newChatContactsStatus" role="status"></p>
@@ -36,24 +38,21 @@
 
 <!-- صفحه شروع -->
 <section class="page active" id="homePage">
-  <div class="hero">
-    <div class="tag" id="welcome">خوش آمدی به فرناز</div>
+  <div class="welcome-shell">
+    <div class="welcome-mark"><img src="./farnaz-icon.svg?v=20261024-4" alt="Farnaz"></div>
+    <div class="welcome-kicker">FARNAZ · CONNECT</div>
     <h2 id="headline">آدم‌های مهم زندگی‌ات، همیشه نزدیک تو</h2>
-    <p id="description">یک فضای ساده برای گفتگو و ارتباط با کسانی که برایت مهم‌اند.</p>
-    <button class="primary" id="start" type="button" onclick="openAuth()">شروع کنیم ←</button>
+    <p id="description">گفتگوهای خصوصی و گروهی، در فضایی ساده و آرام.</p>
+    <button class="primary" id="start" type="button" onclick="openAuth()">ورود به فرناز <span aria-hidden="true">←</span></button>
+    <button class="welcome-secondary" type="button" onclick="openAuth();switchAuthMode()">ساخت حساب جدید</button>
+    <div class="welcome-footnote"><span></span> ارتباطی نزدیک‌تر، در هر کجا</div>
   </div>
-  <div class="features">
-    <article class="feature"><div class="emoji">💬</div><h3 id="f1">گفتگوی خصوصی</h3><p id="f1d">پیام‌هایت را مرتب دنبال کن.</p></article>
-    <article class="feature"><div class="emoji">📷</div><h3 id="f2">عکس و فایل</h3><p id="f2d">لحظه‌ها و فایل‌ها را به اشتراک بگذار.</p></article>
-    <article class="feature"><div class="emoji">👥</div><h3 id="f3">مخاطبان</h3><p id="f3d">مخاطبان مهمت را ذخیره و سریع پیدا کن.</p></article>
-    <article class="feature"><div class="emoji">📣</div><h3 id="f4">گروه‌ها و کانال‌ها</h3><p id="f4d">گفت‌وگوهای جمعی و اطلاع‌رسانی در یک جا.</p></article>
-  </div>
-  <button class="language" type="button" onclick="openAuth()" id="homeLogin">ورود یا ثبت‌نام</button>
 </section>
 
 <!-- صفحه گفتگوها -->
 <section class="page" id="chatsPage">
-  <div class="page-heading"><h2 id="chatsHeading">گفتگوها</h2><p id="chatsIntro">گفتگوهای اخیرت را اینجا می‌بینی.</p></div>
+  <div class="chats-topline"><div class="page-heading"><h2 id="chatsHeading">گفتگوها</h2><p id="chatsIntro">گفتگوهای اخیرت را اینجا می‌بینی.</p></div><button class="chats-new-button" type="button" onclick="startNewChat()" aria-label="گفتگوی جدید" title="گفتگوی جدید"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></div>
+  <label class="conversation-search" for="conversationSearch"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg><input id="conversationSearch" type="search" autocomplete="off" placeholder="جستجوی گفتگوها" aria-label="جستجوی گفتگوها"></label>
   <div class="conversation-tools"><button class="mini-button" id="showActiveChats" type="button" onclick="setConversationView('active')">گفتگوها</button><button class="mini-button" id="showArchivedChats" type="button" onclick="setConversationView('archived')">آرشیو</button></div>
   <div class="list" id="conversationList"></div>
   <div id="inboxStatus" class="status muted-note" role="status"></div>
@@ -338,7 +337,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="./js/core.js?v=20261024-32"></script>
+<script src="./js/core.js?v=20261024-33"></script>
 <script src="./js/chat-menu-v5.js?v=20261024-7"></script>
 <script src="./js/spaces.js?v=20261024-25"></script>
 <script src="./js/calls.js?v=20261024-1"></script>

@@ -571,9 +571,9 @@ async function showUser(user){
     currentAvatarUrl=profile?.avatar_url||"";currentPhone=profile?.phone||"";
     renderUser(user,currentProfileName);
     $("profileNameInput").value=currentProfileName;
-    setPhoneCountry("profilePhoneCountry",currentPhone);\n    $("profilePhoneInput").value=formatContactPhone(currentPhone);
-    $("showPhoneSetting").checked=profile?.show_phone!==false;
     setPhoneCountry("profilePhoneCountry",currentPhone);
+    $("profilePhoneInput").value=formatContactPhone(currentPhone);
+    $("showPhoneSetting").checked=profile?.show_phone!==false;
     setStatus("profileStatus",english?"Profile loaded.":"پروفایل بارگذاری شد.");
   }catch(e){
     console.error("Profile read:",e);
@@ -1000,8 +1000,8 @@ async function refreshSavedContacts(){
       const contactId=String(item.contact_user_id||"");if(!contactId||seenContacts.has(contactId))return;seenContacts.add(contactId);
       const p=profiles[i]||{};
       const contact={user_id:contactId,display_name:importedNames.get(contactId)||p.display_name||(english?"Farnaz user":"کاربر فرناز"),avatar_url:p.avatar_url||"",phone:p.phone||""};
-      list.appendChild(makeContactButton(contact,p.phone||(english?"Farnaz member":"عضو فرناز"),item.created_at?new Date(item.created_at).toLocaleDateString(english?"en":"fa-IR"):"","contactsPage"));
-      if(dropdownList){const quick=makeContactButton(contact,p.phone||(english?"Farnaz member":"عضو فرناز"),"","chatsPage");quick.dataset.contactName=contact.display_name;dropdownList.appendChild(quick);}
+      list.appendChild(makeContactButton(contact,p.phone?formatContactPhone(p.phone):(english?"Farnaz member":"عضو فرناز"),item.created_at?new Date(item.created_at).toLocaleDateString(english?"en":"fa-IR"):"","contactsPage"));
+      if(dropdownList){const quick=makeContactButton(contact,p.phone?formatContactPhone(p.phone):(english?"Farnaz member":"عضو فرناز"),"","chatsPage");quick.dataset.contactName=contact.display_name;dropdownList.appendChild(quick);}
     });
     filterSavedContactsForNewChat();
     setStatus("savedContactsStatus",(data||[]).length?"":(english?"No saved Farnaz contacts yet.":"هنوز مخاطب عضو فرنازی ذخیره نشده است."));

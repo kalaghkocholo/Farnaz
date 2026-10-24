@@ -664,6 +664,16 @@ function showGuest(){
 }
 
 
+window.addEventListener("farnaz-auth-user",event=>{
+  const userId=event.detail?.userId;
+  if(!userId)return;
+  setTimeout(()=>{
+    if(currentUser?.id!==userId)return;
+    if(document.getElementById("chatsPage")?.classList.contains("active"))refreshConversationList();
+    if(document.getElementById("contactsPage")?.classList.contains("active"))refreshSavedContacts();
+  },400);
+});
+
 async function startFarnazPresence(){
  if(!currentUser)return;
  const client=getClient(),uid=String(currentUser.id);

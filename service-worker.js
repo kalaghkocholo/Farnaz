@@ -1,7 +1,7 @@
 "use strict";
-const CACHE_NAME="farnaz-shell-v44";
+const CACHE_NAME="farnaz-shell-v46";
 const APP_BASE=new URL("./",self.location.href);
-const SHELL=["./","./index.html","./styles.css","./spaces.css","./js/core.js","./js/chat-menu-v5.js","./js/spaces.js","./js/calls.js","./manifest.webmanifest","./farnaz-icon.svg?v=20261024-2"];
+const SHELL=["./","./index.html","./styles.css","./spaces.css","./js/core.js","./js/chat-menu-v5.js","./js/spaces.js","./js/calls.js","./manifest.webmanifest","./farnaz-icon.svg?v=20261024-4"];
 self.addEventListener("install",event=>{
   event.waitUntil(caches.open(CACHE_NAME).then(cache=>cache.addAll(SHELL.map(path=>new URL(path,APP_BASE).href))).then(()=>self.skipWaiting()));
 });
@@ -42,8 +42,8 @@ self.addEventListener("push",event=>{
   const title=String(payload.title||"فرناز | Farnaz");
   const options={
     body:String(payload.body||"پیام جدیدی دریافت کردی."),
-    icon:"./farnaz-icon.svg?v=20261024-2",
-    badge:"./farnaz-icon.svg?v=20261024-2",
+    icon:"./farnaz-icon.svg?v=20261024-4",
+    badge:"./farnaz-icon.svg?v=20261024-4",
     tag:String(payload.tag||"farnaz-push"),
     renotify:false,
     data:{url:payload.url||"./"}

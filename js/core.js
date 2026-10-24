@@ -319,6 +319,7 @@ function renderAvatar(el,url,name){
 function startNewChat(){
   if(!currentUser){openAuth();return;}
   toggleContactSearch(false);
+  /* The visible control is .chats-new-button; older code expected a missing #topNewChatButton. */
   toggleNewChatPopover();
 }
 function createGroupFromHome(){
@@ -335,7 +336,7 @@ function applyConversationSearch(){
   });
 }
 function toggleNewChatPopover(force){
-  const panel=$("newChatPopover"),button=$("topNewChatButton");
+  const panel=$("newChatPopover"),button=$("topNewChatButton")||document.querySelector(".chats-new-button");
   if(!panel||!button)return;
   const open=typeof force==="boolean"?force:panel.hidden;
   panel.hidden=!open;button.setAttribute("aria-expanded",String(open));
@@ -355,6 +356,15 @@ function filterSavedContactsForNewChat(){
   });
   const hasItems=$("newChatContactsList")?.children.length||0;
   $("newChatContactsStatus").textContent=hasItems?(visible?"":(english?"No matching saved contacts.":"مخاطب ذخیره‌شده‌ای با این نام پیدا نشد.")):(english?"No saved contacts yet.":"هنوز مخاطبی ذخیره نشده است.");
+}
+function toggleContactsImport(force){
+  const panel=$("phoneContactsImport"),button=$("contactsImportToggle");
+  if(!panel||!button)return;
+  const open=typeof force==="boolean"?force:panel.hidden;
+  panel.hidden=!open;
+  button.setAttribute("aria-expanded",String(open));
+  button.textContent=open?"×":"＋";
+  button.setAttribute("aria-label",open?(english?"Close contact import":"بستن بخش افزودن مخاطب"):(english?"Add or sync contacts":"افزودن یا همگام‌سازی مخاطب"));
 }
 function toggleContactSearch(force){
   const panel=$("contactSearchPopover"),button=$("contactSearchButton");

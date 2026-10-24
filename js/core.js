@@ -31,7 +31,7 @@ function readAppearanceSettings(){
 }
 let appearanceSettings=readAppearanceSettings();
 let privacySettings={presence_visibility:"contacts",last_seen_visibility:"contacts",show_typing:true,show_read_receipts:true,show_space_online_count:true};
-let farnazPresenceChannel=null,farnazPresenceTimer=null,farnazPresenceMap=new Map(),farnazPresenceContactCache=new Map(),farnazPresenceChannels=new Map(),farnazTypingChannel=null,farnazVisibilityHandler=null;
+let farnazPresenceChannel=null,farnazPresenceTimer=null,farnazPresenceMap=new Map(),farnazPresenceContactCache=new Map(),farnazPresenceChannels=new Map(),farnazTypingChannel=null,farnazVisibilityHandler=null,farnazPresenceSessionId=null;
 let privateTypingTimer=null,remoteTypingTimer=null;
 function applyAppearanceSettings(){
   const root=document.documentElement;
@@ -608,15 +608,16 @@ async function startFarnazPresence(){
  if(!currentUser)return;
  const client=getClient(),uid=String(currentUser.id);
  await stopFarnazPresence();
+ if(!farnazPresenceSessionId)farnazPresenceSessionId=crypto.randomUUID();
  const ownTopic="farnaz-presence:"+uid;
- const ownChannel=client.channel(ownTopic,{config:{private:true,presence:{key:uid}}});
+ const ownChannel=client.channel(ownTopic,{config:{private:true,presence:{key:uid+":"+farnazPresenceSessionId}}});
  farnazPresenceChannel=ownChannel;
  const notifyPresence=()=>window.dispatchEvent(new CustomEvent("farnaz-presence-updated",{detail:{userIds:[...farnazPresenceMap.keys()]}}));
  const trackOwn=async()=>{
   if(!currentUser||String(currentUser.id)!==uid||farnazPresenceChannel!==ownChannel)return;
   if(document.visibilityState!=="visible"){try{await ownChannel.untrack();}catch(_){}return;}
   const now=new Date().toISOString();
-  try{await client.from("profiles").update({last_seen_at:now,presence_online:true}).eq("id",uid);}catch(_){}
+  try{await client.rpc("set_farnaz_presence_session",{p_session_id:farnazPresenceSessionId,p_active:true});}catch(_){}
   try{await ownChannel.track({user_id:uid,online:true,updated_at:now});}catch(_){}
  };
  ownChannel.subscribe(async status=>{
@@ -649,7 +650,7 @@ async function startFarnazPresence(){
    return;
   }
   if(farnazPresenceTimer){clearInterval(farnazPresenceTimer);farnazPresenceTimer=null;}
-  try{client.from("profiles").update({last_seen_at:new Date().toISOString(),presence_online:false}).eq("id",uid);}catch(_){}
+  try{client.rpc("set_farnaz_presence_session",{p_session_id:farnazPresenceSessionId,p_active:false});}catch(_){}
   try{ownChannel.untrack();}catch(_){}
   for(const [id,ch] of farnazPresenceChannels){client.removeChannel(ch).catch(()=>{});farnazPresenceChannels.delete(id);farnazPresenceMap.delete(id);}
   if(farnazTypingChannel){try{farnazTypingChannel.send({type:"broadcast",event:"typing",payload:{from:uid,typing:false}});}catch(_){}client.removeChannel(farnazTypingChannel).catch(()=>{});farnazTypingChannel=null;}
@@ -678,7 +679,7 @@ async function stopFarnazPresence(){
  if(farnazPresenceTimer){clearInterval(farnazPresenceTimer);farnazPresenceTimer=null;}
  if(farnazVisibilityHandler){document.removeEventListener("visibilitychange",farnazVisibilityHandler);farnazVisibilityHandler=null;}
  const client=farnazClient;
- if(client&&currentUser){try{await client.from("profiles").update({presence_online:false}).eq("id",currentUser.id);}catch(_){}}
+ if(client&&currentUser&&farnazPresenceSessionId){try{await client.rpc("set_farnaz_presence_session",{p_session_id:farnazPresenceSessionId,p_active:false});}catch(_){}}
  const own=farnazPresenceChannel;farnazPresenceChannel=null;
  if(own&&client){try{await own.untrack();await client.removeChannel(own);}catch(_){}}
  if(client){

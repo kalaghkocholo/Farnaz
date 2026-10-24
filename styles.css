@@ -1176,3 +1176,7 @@ body[data-theme="light"] .contact-info-card,body[data-theme="light"] .message-se
 body[data-theme="light"] .space-dialog-card,body[data-theme="light"] .auth-card{box-shadow:0 6px 24px rgba(24,39,62,.045)!important}
 body[data-theme="light"] .social-auth-button{background:#fff!important;color:#1f2937!important}
 body[data-theme="light"] .message-tools-floating>.mini-button:active{background:var(--panel2)!important}
+
+
+/* Keep Settings unavailable before login even if other header button styles are applied. */
+#openSettingsButton[hidden]{display:none!important}

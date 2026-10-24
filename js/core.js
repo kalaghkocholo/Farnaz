@@ -6,7 +6,7 @@ window.FARNAZ_CONFIG = {
 };
 
 let english=false,authMode="signup",farnazClient=null,currentUser=null;
-let currentProfileName="",currentAvatarUrl="",currentPhone="";
+let currentProfileName="",currentAvatarUrl="",currentPhone="",currentChatPresenceLabel="گفتگوی خصوصی";
 let currentChatUser=null,messageSubscription=null,reconnectTimer=null,reconnectAttempts=0;
 let profileRequestNumber=0,chatRequestNumber=0,previousPage="chatsPage";
 let conversationView="active",conversationPrefs=new Map(),messageLoadedCount=50,messageHasMore=false;
@@ -619,9 +619,9 @@ async function startFarnazPresence(){
   const p=event?.payload||{};
   if(p.scope!=="private"||String(p.to)!==String(currentUser?.id)||String(p.from)!==String(currentChatUser?.user_id)||privacySettings.show_typing===false)return;
   const subtitle=$("chatSubtitle");if(!subtitle)return;
-  subtitle.textContent=p.typing?(english?"Typing…":"در حال نوشتن…"):(english?"Private conversation":"گفتگوی خصوصی");
+  subtitle.textContent=p.typing?(english?"Typing…":"در حال نوشتن…"):currentChatPresenceLabel;
   if(remoteTypingTimer)clearTimeout(remoteTypingTimer);
-  if(p.typing)remoteTypingTimer=setTimeout(()=>{if(subtitle)subtitle.textContent=english?"Private conversation":"گفتگوی خصوصی";},2200);
+  if(p.typing)remoteTypingTimer=setTimeout(()=>{if(subtitle)subtitle.textContent=currentChatPresenceLabel;},2200);
 }).channel.on("presence",{event:"sync"},()=>{
   if(farnazPresenceChannel!==channel)return;
   const state=channel.presenceState(),next=new Map();
@@ -1009,6 +1009,19 @@ async function deleteContactConversation(){
   }finally{$("contactInfoDelete").disabled=false;}
 }
 
+
+async function refreshPrivatePresence(contactId){
+ const subtitle=$("chatSubtitle");if(!subtitle||!currentUser||!contactId)return;
+ currentChatPresenceLabel=english?"Private conversation":"گفتگوی خصوصی";subtitle.textContent=currentChatPresenceLabel;
+ try{
+  const {data,error}=await getClient().rpc("get_farnaz_presence_status",{p_user_id:contactId});if(error)throw error;
+  const row=Array.isArray(data)?data[0]:data;if(!row||String(currentChatUser?.user_id)!==String(contactId))return;
+  if(row.can_see_online&&row.is_online)currentChatPresenceLabel=english?"Online":"آنلاین";
+  else if(row.can_see_last_seen&&row.last_seen_at){const when=new Date(row.last_seen_at);currentChatPresenceLabel=(english?"Last seen ":"آخرین بازدید: ")+when.toLocaleString(english?"en":"fa-IR",{dateStyle:"short",timeStyle:"short"});}
+  subtitle.textContent=currentChatPresenceLabel;
+ }catch(_){subtitle.textContent=currentChatPresenceLabel;}
+}
+
 function openChat(contact,fromPage="chatsPage"){
   ensureContactInfoDialog();
   currentChatUser=contact;previousPage=fromPage;
@@ -1016,7 +1029,7 @@ function openChat(contact,fromPage="chatsPage"){
   $("chatSubtitle").textContent=english?"Private conversation":"گفتگوی خصوصی";
   renderAvatar($("chatAvatar"),contact.avatar_url||"",$("conversationTitle").textContent);
   setStatus("sendMessageStatus","");
-  navigate("chatPage");loadMessages();
+  currentChatPresenceLabel=english?"Private conversation":"گفتگوی خصوصی";navigate("chatPage");refreshPrivatePresence(contact.user_id);loadMessages();
 }
 function makeContactButton(contact,preview="",timeText="",fromPage="chatsPage"){
   const button=document.createElement("button");

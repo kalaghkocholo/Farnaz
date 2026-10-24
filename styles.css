@@ -1205,3 +1205,46 @@ body[data-auth-state="guest"] #openSettingsButton{display:none!important;visibil
 .phone-contact-details{display:flex;flex-direction:column;gap:4px;min-width:0;overflow-wrap:anywhere}
 .phone-contact-details strong{font-weight:650}
 .phone-contact-details span,.phone-contact-details small{color:var(--muted);font-size:12px}
+
+
+/* Farnaz conversation-first home refresh */
+.welcome-shell{position:relative;isolation:isolate;overflow:hidden;min-height:min(68dvh,620px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px 22px 25px;border:1px solid var(--border);border-radius:28px;background:radial-gradient(ellipse at 50% 5%,color-mix(in srgb,var(--accent,#7896c5) 19%,transparent),transparent 55%),linear-gradient(155deg,var(--panel),var(--bg))}
+.welcome-shell:before{content:"";position:absolute;z-index:-1;width:230px;height:230px;border:1px solid color-mix(in srgb,var(--accent,#7896c5) 18%,transparent);border-radius:50%;top:-115px;inset-inline-start:-90px}
+.welcome-mark{width:100px;height:100px;display:grid;place-items:center;margin-bottom:22px;border:1px solid color-mix(in srgb,var(--accent,#7896c5) 38%,var(--border));border-radius:30px;background:var(--panel2);box-shadow:0 15px 45px #0002}
+.welcome-mark img{width:84px;height:84px;object-fit:contain}
+.welcome-kicker{font-size:10px;letter-spacing:3px;font-weight:800;color:var(--accent,#7896c5);direction:ltr}
+.welcome-shell h2{max-width:290px;font-size:25px;line-height:1.7;margin:13px 0 4px}
+.welcome-shell>p{max-width:280px;margin:0 0 20px;color:var(--muted);font-size:13px}
+.welcome-shell .primary{max-width:300px;min-height:48px;border-radius:15px;background:var(--accent,#7896c5);color:#fff}
+.welcome-secondary{width:100%;max-width:300px;margin-top:9px;padding:12px;border:1px solid var(--border);border-radius:14px;background:transparent;color:var(--white);font-size:13px;font-weight:650}
+.welcome-footnote{display:flex;align-items:center;gap:8px;margin-top:28px;color:var(--muted);font-size:10px}
+.welcome-footnote span{width:6px;height:6px;border-radius:50%;background:var(--accent,#7896c5);box-shadow:0 0 12px var(--accent,#7896c5)}
+.chats-topline{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:6px 0 13px}
+.chats-topline .page-heading{margin:0;min-width:0}
+.chats-topline .page-heading h2{font-size:22px;margin:0}
+.chats-topline .page-heading p{margin:3px 0 0;color:var(--muted);font-size:11px}
+.chats-new-button{width:42px;height:42px;flex:0 0 42px;display:grid;place-items:center;border:1px solid color-mix(in srgb,var(--accent,#7896c5) 35%,var(--border));border-radius:15px;background:var(--panel);color:var(--accent,#7896c5)}
+.chats-new-button svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+.conversation-search{display:flex;align-items:center;gap:9px;margin:0 0 13px;padding:0 13px;border:1px solid var(--border);border-radius:15px;background:var(--panel);color:var(--muted)}
+.conversation-search svg{width:17px;height:17px;flex:0 0 17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+.conversation-search input{min-width:0;padding:12px 0;border:0;outline:none!important;background:transparent;color:var(--white);font-size:14px;box-shadow:none}
+.conversation-search input::placeholder{color:var(--muted)}
+#chatsPage .conversation-tools{position:static;max-width:none;justify-content:flex-start;margin:0 0 10px;padding:3px;border-radius:12px;background:var(--panel);box-shadow:none;backdrop-filter:none}
+#chatsPage .conversation-tools .mini-button{flex:1;border-radius:9px;padding:8px 10px;color:var(--muted)}
+#chatsPage .conversation-tools .mini-button:focus,#chatsPage .conversation-tools .mini-button:active{background:var(--panel2);color:var(--white)}
+#conversationList{gap:5px}
+#conversationList .conversation-card{position:relative;border-bottom:1px solid var(--border);padding:3px 0}
+#conversationList .list-item{border:0;border-radius:13px;background:transparent;padding:10px 8px;min-height:68px}
+#conversationList .list-item:hover{background:var(--panel)}
+#conversationList .list-item .avatar{width:48px;height:48px;border:1px solid var(--border);background:var(--panel2);color:var(--accent,#7896c5)}
+#conversationList .list-name{font-size:13px}
+#conversationList .list-preview{font-size:11px;max-width:100%}
+#conversationList .list-time{white-space:nowrap}
+.new-chat-option{display:flex;align-items:center;gap:10px;width:100%;padding:10px;border:1px solid var(--border);border-radius:12px;background:var(--bg);color:var(--white);text-align:start}
+.new-chat-option-icon{display:grid;place-items:center;width:36px;height:36px;flex:0 0 36px;border-radius:11px;background:var(--panel2);color:var(--accent,#7896c5);font-size:19px}
+.new-chat-option span:last-child{display:flex;flex-direction:column;gap:3px}
+.new-chat-option strong{font-size:12px}
+.new-chat-option small{color:var(--muted);font-size:10px}
+.new-chat-popover{gap:8px}
+body[data-theme="light"] .welcome-shell{background:radial-gradient(ellipse at 50% 5%,color-mix(in srgb,var(--accent,#7896c5) 13%,transparent),transparent 55%),linear-gradient(155deg,#fff,#f3f6fb)}
+@media(max-width:360px){.welcome-shell{min-height:62dvh;padding:24px 15px 20px}.welcome-shell h2{font-size:22px}.welcome-mark{width:86px;height:86px;border-radius:25px}.welcome-mark img{width:73px;height:73px}}

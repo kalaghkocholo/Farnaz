@@ -562,6 +562,7 @@ function toggleLanguage(){
   Object.entries(labels).forEach(([id,pair])=>{if($(id))$(id).textContent=pair[english?1:0];});
   if($("language"))$("language").textContent=english?"فا":"EN";
   if($("welcomeLanguageButton")){$("welcomeLanguageButton").textContent=english?"فا":"EN";$("welcomeLanguageButton").setAttribute("aria-label",english?"Switch to Persian":"Switch to English");}
+  if($("contactsImportToggle"))$("contactsImportToggle").textContent=$("phoneContactsImport")&&!$("phoneContactsImport").hidden?"×":"＋";
   if($("start"))$("start").textContent=english?"Sign in to Farnaz →":"ورود به فرناز ←";
   ["recipientCountry","profilePhoneCountry"].forEach(id=>{
     const select=$(id);if(!select)return;
@@ -576,8 +577,10 @@ function toggleLanguage(){
   $("attachmentPhotoOption").lastElementChild.textContent=english?"Choose photo":"انتخاب عکس";
   $("attachmentCameraOption").lastElementChild.textContent=english?"Take a photo":"گرفتن عکس با دوربین";
   $("attachmentFileOption").lastElementChild.textContent=english?"Choose file":"انتخاب فایل";
-  $("topNewChatButton").title=english?"New chat":"گفتگوی جدید";
-  $("topNewChatButton").setAttribute("aria-label",english?"New chat":"گفتگوی جدید");
+  const newChatButton=$("topNewChatButton")||document.querySelector(".chats-new-button");
+  if(newChatButton){newChatButton.title=english?"New chat":"گفتگوی جدید";newChatButton.setAttribute("aria-label",english?"New chat":"گفتگوی جدید");}
+  const importToggle=$("contactsImportToggle");
+  if(importToggle){importToggle.setAttribute("aria-label",english?"Add or sync contacts":"افزودن یا همگام‌سازی مخاطب");importToggle.title=importToggle.getAttribute("aria-label");}
   $("newChatPopoverTitle").textContent=english?"Start a new chat":"گفتگوی جدید";
   $("savedContactFilter").placeholder=english?"Search saved contacts by name":"جستجو با نام مخاطب ذخیره‌شده";
   $("savedContactFilter").setAttribute("aria-label",english?"Search saved contacts by name":"جستجو با نام مخاطب ذخیره‌شده");

@@ -32,6 +32,7 @@ function readAppearanceSettings(){
 let appearanceSettings=readAppearanceSettings();
 let privacySettings={presence_visibility:"contacts",last_seen_visibility:"contacts",show_typing:true,show_read_receipts:true,show_space_online_count:true};
 let farnazPresenceChannel=null,farnazPresenceTimer=null,farnazPresenceMap=new Map(),farnazPresenceContactCache=new Map();
+let privateTypingTimer=null,remoteTypingTimer=null;
 function applyAppearanceSettings(){
   const root=document.documentElement;
   let theme=appearanceSettings.theme||"dark";
@@ -614,7 +615,14 @@ async function startFarnazPresence(){
   try{await client.from("profiles").update({last_seen_at:new Date().toISOString()}).eq("id",uid);}catch(_){}
   try{await channel.track({user_id:uid,presence_visibility:privacySettings.presence_visibility||"contacts",last_seen_visibility:privacySettings.last_seen_visibility||"contacts",last_seen_at:new Date().toISOString()});}catch(_){}
  };
- channel.on("presence",{event:"sync"},()=>{
+ channel.on("broadcast",{event:"typing"},event=>{
+  const p=event?.payload||{};
+  if(p.scope!=="private"||String(p.to)!==String(currentUser?.id)||String(p.from)!==String(currentChatUser?.user_id)||privacySettings.show_typing===false)return;
+  const subtitle=$("chatSubtitle");if(!subtitle)return;
+  subtitle.textContent=p.typing?(english?"Typing…":"در حال نوشتن…"):(english?"Private conversation":"گفتگوی خصوصی");
+  if(remoteTypingTimer)clearTimeout(remoteTypingTimer);
+  if(p.typing)remoteTypingTimer=setTimeout(()=>{if(subtitle)subtitle.textContent=english?"Private conversation":"گفتگوی خصوصی";},2200);
+}).channel.on("presence",{event:"sync"},()=>{
   if(farnazPresenceChannel!==channel)return;
   const state=channel.presenceState(),next=new Map();
   for(const entries of Object.values(state||{}))for(const entry of entries||[]){const id=String(entry.user_id||"");if(id)next.set(id,entry);}
@@ -707,6 +715,19 @@ async function logout(){
     setStatus("profileStatus",(english?"Sign out failed: ":"خروج ناموفق بود: ")+e.message,true);
   }finally{$("logoutButton").disabled=false;}
 }
+
+function sendPrivateTyping(typing){
+ if(!farnazPresenceChannel||!currentUser||!currentChatUser||privacySettings.show_typing===false)return;
+ farnazPresenceChannel.send({type:"broadcast",event:"typing",payload:{scope:"private",from:currentUser.id,to:currentChatUser.user_id,typing:!!typing}});
+}
+document.addEventListener("input",event=>{
+ if(!event.target?.matches("#messageText"))return;
+ if(privacySettings.show_typing===false)return;
+ sendPrivateTyping(!!event.target.value.trim());
+ if(privateTypingTimer)clearTimeout(privateTypingTimer);
+ if(event.target.value.trim())privateTypingTimer=setTimeout(()=>sendPrivateTyping(false),1800);
+});
+
 async function stopMessageSubscription(){
   if(!messageSubscription||!farnazClient)return;
   const ch=messageSubscription;messageSubscription=null;

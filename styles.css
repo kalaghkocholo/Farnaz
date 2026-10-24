@@ -1264,78 +1264,17 @@ body[data-theme="light"] .welcome-shell{background:radial-gradient(ellipse at 50
 #headerFButton[hidden]{display:none!important}
 
 
-/* Login screen: language switch stays inside the welcome card. */
-.welcome-language-switch{
-  position:absolute;top:14px;inset-inline-end:14px;z-index:2;
-  min-width:76px;min-height:34px;padding:6px 11px;
-  border:1px solid var(--border);border-radius:10px;
-  background:color-mix(in srgb,var(--panel) 82%,transparent);
-  color:var(--white);font-size:12px;font-weight:650;
-}
-.welcome-shell{padding-top:54px}
-@media(max-width:360px){.welcome-shell{padding-top:48px}}
-
-/* Respect the iPhone safe area for the F shortcut on signed-in pages. */
-.app:not(.chat-mode){padding-top:calc(12px + env(safe-area-inset-top))}
-.app>header .logo.logo-button[hidden]{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important}
-
-
-/* Make the language control unmistakably visible on the first screen. */
-.welcome-shell .welcome-language-switch{
-  display:inline-flex!important;align-items:center;justify-content:center;
-  position:absolute;top:14px;inset-inline-end:14px;z-index:10;
-  min-width:82px;min-height:36px;padding:7px 13px;
-  border:1px solid #7896c5;border-radius:999px;
-  background:#7896c5;color:#101828;
-  font-size:12px;font-weight:750;line-height:1.2;
-  box-shadow:0 4px 14px #0002;
-}
-.welcome-shell{position:relative}
-
-
-/* Stable compact language pill on the welcome screen. */
-.welcome-shell .welcome-language-switch{
+/* Welcome-screen language toggle: positioned independently from the centered card. */
+#homePage > .welcome-language-switch{
   box-sizing:border-box!important;
-  position:absolute!important;
-  top:14px!important;
-  inset-inline-end:14px!important;
-  z-index:10!important;
-  display:inline-flex!important;
-  flex:0 0 auto!important;
-  align-items:center!important;
-  justify-content:center!important;
-  width:auto!important;
-  min-width:0!important;
-  max-width:104px!important;
-  height:34px!important;
-  min-height:34px!important;
-  padding:0 12px!important;
-  margin:0!important;
-  border:1px solid #7896c5!important;
-  border-radius:999px!important;
-  background:#7896c5!important;
-  color:#101828!important;
-  font-family:inherit!important;
-  font-size:12px!important;
-  font-weight:700!important;
-  line-height:1!important;
-  letter-spacing:0!important;
-  white-space:nowrap!important;
-  text-align:center!important;
-  box-shadow:0 4px 14px #0002!important;
-}
-
-
-/* Final welcome language toggle: one compact EN/FA button at top-left. */
-.welcome-shell .welcome-language-switch{
-  box-sizing:border-box!important;
-  position:absolute!important;
-  top:14px!important;
+  position:fixed!important;
+  top:calc(env(safe-area-inset-top, 0px) + 14px)!important;
   left:14px!important;
   right:auto!important;
   inset-inline-start:auto!important;
   inset-inline-end:auto!important;
-  z-index:20!important;
+  transform:none!important;
+  z-index:9999!important;
   display:inline-flex!important;
   align-items:center!important;
   justify-content:center!important;
@@ -1359,16 +1298,4 @@ body[data-theme="light"] .welcome-shell{background:radial-gradient(ellipse at 50
   text-align:center!important;
   box-shadow:0 4px 14px #0002!important;
 }
-
-
-/* Pin EN/FA toggle to the physical left edge of the welcome card. */
-.welcome-shell .welcome-language-switch{
-  position:absolute!important;
-  left:14px!important;
-  right:auto!important;
-  inset-inline-start:14px!important;
-  inset-inline-end:auto!important;
-  transform:none!important;
-  margin-left:0!important;
-  margin-right:auto!important;
-}
+#homePage:not(.active) > .welcome-language-switch{display:none!important}

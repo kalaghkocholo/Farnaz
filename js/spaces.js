@@ -499,8 +499,8 @@ async function loadMessages(id){
   if(pinnedError)throw pinnedError;spacePinnedMessageIds.clear();(pinnedRows||[]).forEach(row=>spacePinnedMessageIds.add(String(row.message_id)));
   const {data:hiddenRows,error:hiddenError}=await getClient().from("space_message_hidden").select("message_id").eq("user_id",currentUser.id);if(hiddenError)throw hiddenError;const hiddenIds=new Set((hiddenRows||[]).map(x=>String(x.message_id)));
   const rows=(data||[]).filter(m=>!hiddenIds.has(String(m.id))).reverse();
-  const ownMessageIds=rows.filter(m=>String(m.sender_id)===String(currentUser?.id)).map(m=>String(m.id));
-  const incomingMessageIds=rows.filter(m=>String(m.sender_id)!==String(currentUser?.id)).map(m=>String(m.id));
+  const ownMessageIds=rows.filter(m=>!String(m.body||"").startsWith("[FARNAZ_SYSTEM]")&&String(m.sender_id)===String(currentUser?.id)).map(m=>String(m.id));
+  const incomingMessageIds=rows.filter(m=>!String(m.body||"").startsWith("[FARNAZ_SYSTEM]")&&String(m.sender_id)!==String(currentUser?.id)).map(m=>String(m.id));
   const receiptRead=ownMessageIds.length?getClient().from("space_message_reads").select("message_id,user_id,read_at").eq("space_id",id).in("message_id",ownMessageIds):Promise.resolve({data:[],error:null});
   const markIncomingRead=(typeof privacySettings==="undefined"||privacySettings.show_read_receipts!==false)&&incomingMessageIds.length?getClient().from("space_message_reads").upsert(incomingMessageIds.map(message_id=>({space_id:id,message_id,user_id:currentUser.id})),{onConflict:"message_id,user_id",ignoreDuplicates:true}).then(({error})=>{if(error)console.warn("Farnaz read receipt could not be saved:",error.message);}):Promise.resolve();
   const [receiptResult]=await Promise.all([receiptRead,markIncomingRead]);
@@ -519,8 +519,8 @@ async function loadMessages(id){
   list.style.setProperty("align-items","stretch","important");
   if(!rows.length){const empty=document.createElement("div");empty.className="space-empty";empty.textContent=tr("هنوز پیامی نیست.","No posts yet.");fragment.appendChild(empty);}
   for(const m of rows){
-   const el=document.createElement("div");el.className="space-message";el.dataset.messageId=String(m.id);el.dataset.messageSide=String(m.sender_id)===String(currentUser?.id)?"own":"contact";if(selectedSpaceMessageIds.has(String(m.id)))el.classList.add("space-message-selected");
-   const isOwnMessage=String(m.sender_id)===String(currentUser?.id);
+   const isSystemNotice=String(m.body||"").startsWith("[FARNAZ_SYSTEM]");const el=document.createElement("div");el.className="space-message"+(isSystemNotice?" space-system-notice":"");el.dataset.messageId=String(m.id);el.dataset.messageSide=isSystemNotice?"system":String(m.sender_id)===String(currentUser?.id)?"own":"contact";if(selectedSpaceMessageIds.has(String(m.id))&&!isSystemNotice)el.classList.add("space-message-selected");
+   const isOwnMessage=!isSystemNotice&&String(m.sender_id)===String(currentUser?.id);
    el.dataset.messageSide=isOwnMessage?"own":"contact";
    if(isOwnMessage)el.classList.add("mine");
    el.style.setProperty("display","block","important");
@@ -528,13 +528,13 @@ async function loadMessages(id){
    el.style.setProperty("max-width","88%","important");
    el.style.setProperty("flex","0 0 auto","important");
    el.style.setProperty("position","relative","important");
-   el.style.setProperty("align-self",isOwnMessage?"flex-end":"flex-start","important");
+   el.style.setProperty("align-self",isSystemNotice?"center":isOwnMessage?"flex-end":"flex-start","important");
    el.style.setProperty("margin-left","0","important");
    el.style.setProperty("margin-right","0","important");
    if(spacePinnedMessageIds.has(String(m.id))){const pin=document.createElement("small");pin.className="space-message-pin-indicator";pin.textContent="📌 "+tr("پیام سنجاق‌شده","Pinned message");pin.style.cssText="display:block;font-size:10px;font-weight:700;color:var(--mint,#50e3c2);margin:0 0 4px";el.appendChild(pin);}
-   const senderName=senderNames.get(String(m.sender_id))||"";
+   const senderName=isSystemNotice?"":senderNames.get(String(m.sender_id))||"";
    if(senderName){const author=document.createElement("small");author.className="space-message-author";author.textContent=String(m.sender_id)===String(currentUser?.id)?tr("شما","You"):senderName;author.style.cssText="display:block;font-weight:700;font-size:11px;opacity:.85;margin:0 0 4px";el.appendChild(author);}
-   if(m.body){const body=document.createElement("div");body.textContent=String(m.body);el.appendChild(body);}
+   if(m.body){const body=document.createElement("div");body.textContent=isSystemNotice?String(m.body).replace(/^\[FARNAZ_SYSTEM\]\s*/,""):String(m.body);el.appendChild(body);}
    if(m.attachment_path){const signedUrl=attachmentUrls.get(String(m.id));if(signedUrl){if((m.message_type||"file")==="image"){const img=document.createElement("img");img.src=signedUrl;img.alt=m.attachment_name||"Photo";img.loading="lazy";img.style.cssText="display:block;max-width:100%;max-height:320px;border-radius:10px;margin-top:5px";el.appendChild(img);}else if((m.attachment_mime||"").startsWith("audio/")){const audio=document.createElement("audio");audio.controls=true;audio.preload="metadata";audio.src=signedUrl;audio.style.cssText="display:block;max-width:240px;margin-top:5px";audio.setAttribute("aria-label",m.attachment_name||"Voice message");el.appendChild(audio);}else{const link=document.createElement("a");link.href=signedUrl;link.target="_blank";link.rel="noopener";link.download=m.attachment_name||"";link.textContent="📎 "+(m.attachment_name||tr("دریافت فایل","Download file"));link.style.cssText="display:block;margin-top:5px;overflow-wrap:anywhere;color:inherit";el.appendChild(link);}}else{const warn=document.createElement("small");warn.textContent=tr("پیوست در دسترس نیست","Attachment unavailable");el.appendChild(warn);}}
    const meta=document.createElement("div");meta.className="space-message-meta";
    const time=document.createElement("small");time.className="space-message-time";

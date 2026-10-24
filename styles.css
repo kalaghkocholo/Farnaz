@@ -1257,3 +1257,6 @@ body[data-theme="light"] .welcome-shell{background:radial-gradient(ellipse at 50
 .app>header .brand-text,.app>header #brand,.app>header #subtitle{display:none!important}
 .app>header .brand-stack{display:flex!important;flex-direction:row!important;align-items:center!important;gap:0!important}
 .app>header .logo.logo-button{display:grid!important;place-items:center!important;width:40px!important;height:40px!important;min-width:40px!important;border-radius:13px!important;font-size:23px!important;font-weight:800!important}
+
+/* Keep the global F mark on app pages, but hide it behind the login/signup dialog. */
+.app.auth-open>header{visibility:hidden!important;pointer-events:none!important}

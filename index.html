@@ -9,7 +9,7 @@
 <link rel="icon" href="./farnaz-icon.svg" type="image/svg+xml">
 <meta name="description" content="فرناز؛ ارتباطی نزدیک‌تر، در هر کجا.">
 <title>فرناز | Farnaz</title>
-<link rel="stylesheet" href="./styles.css?v=20261024-17">
+<link rel="stylesheet" href="./styles.css?v=20261024-18">
 <link rel="stylesheet" href="./spaces.css?v=20261024-10">
 </head>
 <body data-auth-state="guest">
@@ -59,15 +59,18 @@
 <section class="page" id="contactsPage">
   <div class="page-heading"><h2 id="contactsHeading">مخاطبان</h2></div>
   <section class="phone-contacts-import" aria-labelledby="phoneContactsImportTitle">
-    <div class="phone-contacts-import-heading"><span class="phone-contacts-import-icon" aria-hidden="true">▤</span><div><h3 id="phoneContactsImportTitle">همگام‌سازی مخاطبان گوشی</h3><p id="phoneContactsImportIntro">فایل مخاطبان آیفون با پسوند VCF را انتخاب کن. اطلاعات فقط برای حساب خودت ذخیره می‌شود.</p></div></div>
-    <label for="phoneContactsCountry" id="phoneContactsCountryLabel">کد کشور برای شماره‌های محلی</label>
-    <select id="phoneContactsCountry" aria-label="Phone country code" class="phone-contacts-country">
-      <option value="98" selected>ایران (+98)</option><option value="49">آلمان (+49)</option><option value="1">آمریکا / کانادا (+1)</option><option value="44">بریتانیا (+44)</option><option value="90">ترکیه (+90)</option>
-    </select>
-    <input id="phoneContactsFile" type="file" accept=".vcf,text/vcard,text/x-vcard" hidden>
-    <button class="action-button phone-contacts-import-button" id="importPhoneContactsButton" type="button" onclick="document.getElementById('phoneContactsFile').click()">واردکردن / به‌روزرسانی فایل VCF</button>
+    <div class="phone-contacts-import-heading"><span class="phone-contacts-import-icon" aria-hidden="true">▤</span><div><h3 id="phoneContactsImportTitle">همگام‌سازی مخاطبان گوشی</h3><p id="phoneContactsImportIntro">مخاطبان را مستقیم از انتخاب‌گر امن Safari انتخاب کن؛ فایل لازم نیست. اطلاعات انتخاب‌شده فقط برای حساب خودت ذخیره می‌شود.</p></div></div>
+    <button class="action-button phone-contacts-import-button" id="pickPhoneContactsButton" type="button" onclick="syncPhoneContactsFromPicker()">انتخاب مخاطبان از دفترچه تلفن</button>
     <p id="phoneContactsImportStatus" class="status muted-note" role="status"></p>
-    <p class="muted-note" id="phoneContactsPrivacyNote">برای همگام‌سازی دوباره، فایل به‌روز مخاطبان را از آیفون انتخاب کن. حذف فایل یا مخاطب از گوشی، مخاطبان ذخیره‌شده فرناز را خودکار حذف نمی‌کند.</p>
+    <p class="muted-note" id="phoneContactsPrivacyNote">اگر Safari راهنمای فعال‌سازی نشان داد، Contact Picker API را در تنظیمات پیشرفته Safari روشن کن و Safari را دوباره باز کن. در هر بار همگام‌سازی فقط مخاطبانی که خودت انتخاب می‌کنی به فرناز ارسال می‌شوند.</p>
+    <details class="phone-contacts-vcf-fallback"><summary id="phoneContactsVcfFallbackLabel">روش جایگزین: واردکردن فایل VCF</summary>
+      <label for="phoneContactsCountry" id="phoneContactsCountryLabel">کد کشور برای شماره‌های محلی</label>
+      <select id="phoneContactsCountry" aria-label="Phone country code" class="phone-contacts-country">
+        <option value="98" selected>ایران (+98)</option><option value="49">آلمان (+49)</option><option value="1">آمریکا / کانادا (+1)</option><option value="44">بریتانیا (+44)</option><option value="90">ترکیه (+90)</option>
+      </select>
+      <input id="phoneContactsFile" type="file" accept=".vcf,text/vcard,text/x-vcard" hidden>
+      <button class="action-button phone-contacts-import-button" id="importPhoneContactsButton" type="button" onclick="document.getElementById('phoneContactsFile').click()">واردکردن / به‌روزرسانی فایل VCF</button>
+    </details>
   </section>
   <div class="phone-contacts-subheading"><h3 id="savedFarnazContactsTitle">مخاطبان فرناز</h3></div>
   <div class="list" id="savedContactsList"></div>

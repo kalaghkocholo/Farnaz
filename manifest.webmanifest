@@ -1,6 +1,6 @@
 {
   "name": "فرناز | Farnaz",
-  "short_name": "Farnaz",
+  "short_name": "فرناز",
   "description": "ارتباطی نزدیک‌تر، در هر کجا",
   "lang": "fa",
   "dir": "rtl",
@@ -8,9 +8,14 @@
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#101828",
-  "theme_color": "#101828",
+  "background_color": "#080f2b",
+  "theme_color": "#080f2b",
   "icons": [
-    { "src": "./farnaz-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+    {
+      "src": "./farnaz-icon.svg?v=20261024-1",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
   ]
 }

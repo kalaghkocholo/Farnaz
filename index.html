@@ -338,29 +338,45 @@
 (function(){
   const scripts=[
     ["https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2","https://unpkg.com/@supabase/supabase-js@2"],
-    ["./js/core.js?v=20261025-53"],
+    ["./js/core.js?v=20261025-54"],
     ["./js/chat-menu-v5.js?v=20261024-9"],
     ["./js/spaces.js?v=20261025-29"],
     ["./js/calls.js?v=20261024-1"]
   ];
   function load(index){
     if(index>=scripts.length)return;
-    const urls=scripts[index],script=document.createElement("script");
-    let attempt=0;
+    const urls=scripts[index];
+    let attempt=0,settled=false,script=null,timer=null;
+    function finish(success){
+      if(settled)return;
+      settled=true;
+      if(timer)clearTimeout(timer);
+      if(script){script.onload=null;script.onerror=null;if(!success)script.remove();}
+      if(success){load(index+1);return;}
+      next();
+    }
     function next(){
       if(attempt>=urls.length){
         const status=document.getElementById("authStatus");
-        if(status)status.textContent=index===0
-          ?"کتابخانه Supabase از هیچ‌یک از سرورها بارگذاری نشد. اتصال اینترنت یا مسدود بودن CDN را بررسی کن."
-          :"بارگذاری یکی از فایل‌های برنامه ناموفق بود. صفحه را دوباره باز کن.";
+        if(index===0){
+          window.FARNAZ_SUPABASE_LOAD_FAILED=true;
+          if(status)status.textContent="اتصال به کتابخانه ورود برقرار نشد. رابط برنامه باز می‌شود؛ برای ورود، اتصال اینترنت را بررسی و دوباره تلاش کن.";
+          load(index+1);
+        }else{
+          if(status)status.textContent="بارگذاری فایل برنامه ناموفق بود. اتصال اینترنت را بررسی و صفحه را تازه‌سازی کن.";
+        }
         return;
       }
+      settled=false;
+      script=document.createElement("script");
+      script.async=false;
       script.src=urls[attempt++];
+      script.onload=()=>finish(true);
+      script.onerror=()=>finish(false);
+      timer=setTimeout(()=>finish(false),7000);
+      document.body.appendChild(script);
     }
-    script.onload=()=>load(index+1);
-    script.onerror=()=>{script.removeAttribute("src");next();};
     next();
-    document.body.appendChild(script);
   }
   load(0);
 })();

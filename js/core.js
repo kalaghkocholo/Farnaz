@@ -1001,7 +1001,7 @@ function parseVCardContacts(text,countryCode){
     for(const line of lines){
       const colon=line.indexOf(":");if(colon<0)continue;
       const key=line.slice(0,colon).split(";")[0].split(".").pop().toUpperCase();
-      let value=line.slice(colon+1).trim();
+      let value=line.slice(colon+1).trim().replace(/^tel:/i,"");
       value=value.replace(/\\n/gi," ").replace(/\\,/g,",").replace(/\\;/g,";").replace(/\\\\/g,"\\");
       if(key==="FN"&&!name)name=value;
       if(key==="N"&&!name){const parts=value.split(";").map(part=>part.trim()).filter(Boolean);name=[parts[1],parts[0],parts.slice(2).join(" ")].filter(Boolean).join(" ");}

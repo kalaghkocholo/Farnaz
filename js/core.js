@@ -615,7 +615,7 @@ async function startFarnazPresence(){
  const notifyPresence=()=>window.dispatchEvent(new CustomEvent("farnaz-presence-updated",{detail:{userIds:[...farnazPresenceMap.keys()]}}));
  const trackOwn=async()=>{
   if(!currentUser||String(currentUser.id)!==uid||farnazPresenceChannel!==ownChannel)return;
-  if(document.visibilityState!=="visible"){try{await ownChannel.untrack();}catch(_){}return;}
+  if(document.visibilityState!=="visible"||privacySettings.presence_visibility==="nobody"){try{await ownChannel.untrack();}catch(_){}if(document.visibilityState==="visible"){try{await client.rpc("set_farnaz_presence_session",{p_session_id:farnazPresenceSessionId,p_active:true});}catch(_){}}return;}
   const now=new Date().toISOString();
   try{await client.rpc("set_farnaz_presence_session",{p_session_id:farnazPresenceSessionId,p_active:true});}catch(_){}
   try{await ownChannel.track({user_id:uid,online:true,updated_at:now});}catch(_){}

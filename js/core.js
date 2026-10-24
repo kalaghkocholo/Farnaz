@@ -604,14 +604,12 @@ function toggleLanguage(){
   if(currentUser){refreshConversationList();refreshSavedContacts();}
 }
 function renderUser(user,name){
-  const wasGuest=document.body.dataset.authState==="guest";
   currentUser=user;currentProfileName=(name||"").trim();
   document.body.dataset.authState="user";const settingsButton=$("openSettingsButton");if(settingsButton){settingsButton.hidden=false;settingsButton.style.removeProperty("display");}
   $("userName").textContent=currentProfileName||(english?"Farnaz user":"کاربر فرناز");
   $("userEmail").textContent=user.email||"";
   setPhoneDisplay($("userPhone"),currentPhone);
   renderAvatar($("userAvatar"),currentAvatarUrl,$("userName").textContent);
-  if(wasGuest&&$("homePage")?.classList.contains("active"))navigate("chatsPage");
 }
 async function showUser(user){
   const request=++profileRequestNumber;

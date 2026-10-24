@@ -1,1 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#101828"/><path d="M325 126H230c-78 0-125 48-125 126s47 134 125 134c36 0 64-13 85-37v28h72V126h-62v0Zm-82 201c-42 0-68-29-68-75s26-75 68-75 68 29 68 75-26 75-68 75Z" fill="#50e3c2"/><circle cx="383" cy="132" r="25" fill="#50e3c2"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0b1535"/><stop offset="1" stop-color="#050a1b"/></linearGradient>
+    <linearGradient id="ribbon" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e7fbff"/><stop offset=".28" stop-color="#8ceaff"/><stop offset=".62" stop-color="#16bfff"/><stop offset="1" stop-color="#2455ff"/></linearGradient>
+    <linearGradient id="shade" x1="0" y1="0" x2="0.9" y2="1"><stop offset="0" stop-color="#c5f7ff"/><stop offset=".45" stop-color="#279dff"/><stop offset="1" stop-color="#1838c8"/></linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="8"/></filter>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <rect x="8" y="8" width="496" height="496" rx="106" fill="none" stroke="#163e91" stroke-opacity=".52" stroke-width="2"/>
+  <path d="M143 350 C143 286 159 233 205 199 C239 174 287 156 365 129 C355 171 335 202 302 219 C262 240 221 254 196 280 C177 299 169 324 169 356 L169 407 C153 398 143 378 143 350Z" fill="#138dff" opacity=".35" filter="url(#glow)"/>
+  <path d="M154 348 C154 278 184 230 242 198 C277 179 319 165 379 145 C369 183 346 210 312 227 C276 245 234 257 207 283 C187 303 180 327 180 355 L180 407 C161 394 154 372 154 348Z" fill="url(#ribbon)"/>
+  <path d="M154 348 C174 301 214 278 267 264 C300 255 333 253 358 251 C347 281 323 300 286 308 C249 316 218 319 194 342 C176 360 167 384 180 407 C157 393 148 370 154 348Z" fill="url(#shade)"/>
+  <path d="M154 348 C174 301 214 278 267 264 C300 255 333 253 358 251" fill="none" stroke="#e6fcff" stroke-opacity=".85" stroke-width="3" stroke-linecap="round"/>
+  <path d="M242 198 C277 179 319 165 379 145 C369 183 346 210 312 227" fill="none" stroke="#e6fcff" stroke-opacity=".75" stroke-width="3" stroke-linecap="round"/>
+</svg>

@@ -334,10 +334,36 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="./js/core.js?v=20261024-51"></script>
-<script src="./js/chat-menu-v5.js?v=20261024-8"></script>
-<script src="./js/spaces.js?v=20261024-25"></script>
-<script src="./js/calls.js?v=20261024-1"></script>
+<script>
+(function(){
+  const scripts=[
+    ["https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2","https://unpkg.com/@supabase/supabase-js@2"],
+    ["./js/core.js?v=20261024-52"],
+    ["./js/chat-menu-v5.js?v=20261024-8"],
+    ["./js/spaces.js?v=20261024-25"],
+    ["./js/calls.js?v=20261024-1"]
+  ];
+  function load(index){
+    if(index>=scripts.length)return;
+    const urls=scripts[index],script=document.createElement("script");
+    let attempt=0;
+    function next(){
+      if(attempt>=urls.length){
+        const status=document.getElementById("authStatus");
+        if(status)status.textContent=index===0
+          ?"کتابخانه Supabase از هیچ‌یک از سرورها بارگذاری نشد. اتصال اینترنت یا مسدود بودن CDN را بررسی کن."
+          :"بارگذاری یکی از فایل‌های برنامه ناموفق بود. صفحه را دوباره باز کن.";
+        return;
+      }
+      script.src=urls[attempt++];
+    }
+    script.onload=()=>load(index+1);
+    script.onerror=()=>{script.removeAttribute("src");next();};
+    next();
+    document.body.appendChild(script);
+  }
+  load(0);
+})();
+</script>
 </body>
 </html>

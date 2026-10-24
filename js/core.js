@@ -389,6 +389,8 @@ function navigate(pageId){
   document.body.classList.toggle("chat-mode",pageId==="chatPage");
   const brandHeader=document.querySelector(".app>header");
   if(brandHeader)brandHeader.hidden=pageId==="chatPage";
+  const headerFButton=$("headerFButton");
+  if(headerFButton)headerFButton.hidden=pageId==="homePage"||pageId==="chatPage";
   if(pageId!=="chatPage"){document.documentElement.style.removeProperty("--chat-viewport-offset");document.documentElement.style.removeProperty("--chat-viewport-height");}
   document.querySelectorAll(".nav-button").forEach(b=>b.classList.toggle("active",b.dataset.page===pageId));
   $("bottomNav").classList.toggle("visible",pageId!=="homePage"&&pageId!=="chatPage");
@@ -445,6 +447,7 @@ function openAuth(){
   $("authName").required=signup;
   $("authPassword").autocomplete=signup?"new-password":"current-password";
   document.querySelector(".app")?.classList.add("auth-open");
+  if($("headerFButton"))$("headerFButton").hidden=true;
   $("authBox").style.display="flex";setStatus("authStatus","");
   $("authName").value="";$("authEmail").value="";$("authPassword").value="";
   updateAuthTexts();

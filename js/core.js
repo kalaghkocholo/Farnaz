@@ -444,11 +444,12 @@ function openAuth(){
   $("nameField").style.display=signup?"block":"none";
   $("authName").required=signup;
   $("authPassword").autocomplete=signup?"new-password":"current-password";
+  document.querySelector(".app")?.classList.add("auth-open");
   $("authBox").style.display="flex";setStatus("authStatus","");
   $("authName").value="";$("authEmail").value="";$("authPassword").value="";
   updateAuthTexts();
 }
-function closeAuth(){$("authBox").style.display="none";}
+function closeAuth(){$("authBox").style.display="none";document.querySelector(".app")?.classList.remove("auth-open");}
 async function signInSocial(provider="google"){
   const button=$("googleAuth");
   const label=button?.querySelector("span:last-child");

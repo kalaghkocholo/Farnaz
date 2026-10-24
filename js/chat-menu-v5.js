@@ -712,6 +712,49 @@ async function sendMessage(event){
     setStatus("sendMessageStatus",(english?"Could not send: ":"ارسال پیام ناموفق بود: ")+e.message,true);
   }finally{button.disabled=false;}
 }
+function authErrorMessage(error,mode){
+  const message=String(error?.message||error||"").toLowerCase();
+  const code=String(error?.code||"").toLowerCase();
+  const status=Number(error?.status||error?.statusCode||0);
+  if(/invalid login credentials|invalid_credentials|email or password/.test(message+" "+code)){
+    return english
+      ?"Email or password is incorrect. Check both fields, or use Forgot password."
+      :"ایمیل یا رمز عبور صحیح نیست. هر دو را بررسی کن یا از گزینهٔ «فراموشی رمز عبور» استفاده کن.";
+  }
+  if(/email not confirmed|email_not_confirmed/.test(message+" "+code)){
+    return english
+      ?"Your email has not been confirmed. Open the confirmation link sent to your email, then sign in."
+      :"ایمیلت هنوز تأیید نشده است. لینک تأیید ارسال‌شده به ایمیلت را باز کن و سپس وارد شو.";
+  }
+  if(/user already registered|already registered|email_exists/.test(message+" "+code)){
+    return english
+      ?"An account with this email already exists. Switch to Sign in."
+      :"با این ایمیل قبلاً حساب ساخته شده است؛ گزینهٔ «ورود» را انتخاب کن.";
+  }
+  if(/password should be at least|password.*too short|weak_password/.test(message+" "+code)){
+    return english
+      ?"The password does not meet the minimum length requirement."
+      :"رمز عبور کوتاه‌تر از حداقل طول مجاز است.";
+  }
+  if(status===429||/rate limit|too many requests/.test(message)){
+    return english
+      ?"Too many attempts. Wait a little and try again."
+      :"تعداد تلاش‌ها زیاد شده است؛ کمی صبر کن و دوباره تلاش کن.";
+  }
+  if(/network|fetch failed|failed to fetch|load failed|timeout|timed out|offline/.test(message)){
+    return english
+      ?"Connection problem. Check your internet connection and try again."
+      :"ارتباط با سرور برقرار نشد؛ اینترنت را بررسی کن و دوباره تلاش کن.";
+  }
+  if(/invalid email|email address is invalid/.test(message)){
+    return english
+      ?"The email address format is invalid. Check the address."
+      :"قالب ایمیل صحیح نیست؛ آدرس ایمیل را بررسی کن.";
+  }
+  return english
+    ?"We couldn't complete the request. Please check your details and try again."
+    :"درخواست انجام نشد؛ اطلاعات را بررسی کن و دوباره تلاش کن.";
+}
 function startCall(type){
   alert(english?
     (type==="video"?"Video calling is not configured yet.":"Audio calling is not configured yet."):
@@ -721,6 +764,15 @@ $("authForm").addEventListener("submit",async event=>{
   event.preventDefault();
   const button=$("authSubmit"),email=$("authEmail").value.trim();
   const password=$("authPassword").value,name=$("authName").value.trim();
+  if(!email){
+    setStatus("authStatus",english?"Enter your email address.":"ایمیل را وارد کن.",true);$("authEmail").focus();return;
+  }
+  if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)){
+    setStatus("authStatus",english?"The email address format is invalid. Check the address.":"قالب ایمیل صحیح نیست؛ آدرس ایمیل را بررسی کن.",true);$("authEmail").focus();return;
+  }
+  if(!password){
+    setStatus("authStatus",english?"Enter your password.":"رمز عبور را وارد کن.",true);$("authPassword").focus();return;
+  }
   button.disabled=true;setStatus("authStatus",english?"Connecting...":"در حال اتصال...");
   try{
     const client=getClient();let result;
@@ -748,7 +800,7 @@ $("authForm").addEventListener("submit",async event=>{
     navigate("chatsPage");
   }catch(e){
     console.error("Auth:",e);
-    setStatus("authStatus",(english?"Error: ":"خطا: ")+e.message,true);
+    setStatus("authStatus",authErrorMessage(e,authMode),true);
   }finally{button.disabled=false;}
 });
 $("profileForm").addEventListener("submit",saveProfile);

@@ -13,17 +13,13 @@
 <link rel="apple-touch-icon" href="./farnaz-icon.svg?v=20261024-4">
 <meta name="description" content="فرناز؛ ارتباطی نزدیک‌تر، در هر کجا.">
 <title>فرناز | Farnaz</title>
-<link rel="stylesheet" href="./styles.css?v=20261024-22">
+<link rel="stylesheet" href="./styles.css?v=20261024-23">
 <link rel="stylesheet" href="./spaces.css?v=20261024-24">
 </head>
 <body data-auth-state="guest">
 <main class="app">
 <header>
-  <div class="brand-stack"><div class="logo">F</div><button class="icon-button new-chat-button" id="topNewChatButton" type="button" onclick="startNewChat()" aria-label="گفتگوی جدید" title="گفتگوی جدید" aria-controls="newChatPopover" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H6l-3 2v-6.5A7.5 7.5 0 0 1 10.5 7H12"/><path d="M16.5 3.5v7M13 7h7"/></svg></button></div>
-  <div class="brand-text">
-    <h1 id="brand">فرناز</h1>
-    <div class="sub" id="subtitle">ارتباطی نزدیک‌تر، در هر کجا</div>
-  </div>
+  <div class="brand-stack"><button class="logo logo-button" type="button" onclick="navigate('chatsPage')" aria-label="گفتگوها" title="گفتگوها">F</button><button class="icon-button new-chat-button" id="topNewChatButton" type="button" onclick="startNewChat()" aria-label="گفتگوی جدید" title="گفتگوی جدید" aria-controls="newChatPopover" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H6l-3 2v-6.5A7.5 7.5 0 0 1 10.5 7H12"/><path d="M16.5 3.5v7M13 7h7"/></svg></button></div>
   <button class="icon-button" id="openSettingsButton" type="button" hidden style="display:none!important" onclick="navigate('settingsPage')" aria-label="تنظیمات" title="تنظیمات">⚙</button>
 </header>
 <div class="new-chat-popover" id="newChatPopover" hidden>

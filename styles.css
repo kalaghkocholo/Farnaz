@@ -1278,3 +1278,16 @@ body[data-theme="light"] .welcome-shell{background:radial-gradient(ellipse at 50
 /* Respect the iPhone safe area for the F shortcut on signed-in pages. */
 .app:not(.chat-mode){padding-top:calc(12px + env(safe-area-inset-top))}
 .app>header .logo.logo-button[hidden]{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important}
+
+
+/* Make the language control unmistakably visible on the first screen. */
+.welcome-shell .welcome-language-switch{
+  display:inline-flex!important;align-items:center;justify-content:center;
+  position:absolute;top:14px;inset-inline-end:14px;z-index:10;
+  min-width:82px;min-height:36px;padding:7px 13px;
+  border:1px solid #7896c5;border-radius:999px;
+  background:#7896c5;color:#101828;
+  font-size:12px;font-weight:750;line-height:1.2;
+  box-shadow:0 4px 14px #0002;
+}
+.welcome-shell{position:relative}

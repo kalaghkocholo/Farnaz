@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" href="./farnaz-icon.svg?v=20261024-4">
 <meta name="description" content="فرناز؛ ارتباطی نزدیک‌تر، در هر کجا.">
 <title>فرناز | Farnaz</title>
-<link rel="stylesheet" href="./styles.css?v=20261024-41">
+<link rel="stylesheet" href="./styles.css?v=20261024-42">
 <link rel="stylesheet" href="./spaces.css?v=20261024-24">
 </head>
 <body data-auth-state="guest">
@@ -58,7 +58,8 @@
 <!-- صفحه مخاطبان -->
 <section class="page" id="contactsPage">
   <div class="page-heading"><h2 id="contactsHeading">مخاطبان</h2></div>
-  <section class="phone-contacts-import" aria-labelledby="phoneContactsImportTitle">
+  <button class="contacts-import-toggle" id="contactsImportToggle" type="button" aria-expanded="false" aria-controls="phoneContactsImport" onclick="toggleContactsImport()" aria-label="افزودن یا همگام‌سازی مخاطب" title="افزودن یا همگام‌سازی مخاطب">＋</button>
+  <section class="phone-contacts-import" id="phoneContactsImport" aria-labelledby="phoneContactsImportTitle" hidden>
     <div class="phone-contacts-import-heading"><span class="phone-contacts-import-icon" aria-hidden="true">▤</span><div><h3 id="phoneContactsImportTitle">همگام‌سازی مخاطبان گوشی</h3><p id="phoneContactsImportIntro">مخاطبان را مستقیم از انتخاب‌گر امن Safari انتخاب کن؛ فایل لازم نیست. اطلاعات انتخاب‌شده فقط برای حساب خودت ذخیره می‌شود.</p></div></div>
     <button class="action-button phone-contacts-import-button" id="pickPhoneContactsButton" type="button" onclick="syncPhoneContactsFromPicker()">انتخاب مخاطبان از دفترچه تلفن</button>
     <p id="phoneContactsImportStatus" class="status muted-note" role="status"></p>
@@ -293,17 +294,17 @@
 
 <nav class="bottom-nav" id="bottomNav" aria-label="ناوبری اصلی">
   <div class="nav-inner">
-    <button class="nav-button active" data-page="chatsPage" type="button" onclick="navigate('chatsPage')">
-      <span class="nav-icon">▤</span><span id="navChats">گفتگوها</span>
-    </button>
-    <button class="nav-button" data-page="contactsPage" type="button" onclick="navigate('contactsPage')">
-      <span class="nav-icon">♙</span><span id="navContacts">مخاطبان</span>
-    </button>
     <button class="nav-button" data-page="profilePage" type="button" onclick="navigate('profilePage')">
       <span class="nav-icon">◉</span><span id="navProfile">پروفایل</span>
     </button>
+    <button class="nav-button active" data-page="chatsPage" type="button" onclick="navigate('chatsPage')">
+      <span class="nav-icon">▤</span><span id="navChats">گفتگوها</span>
+    </button>
     <button class="nav-button" id="navSpacesBtn" data-page="spacesPage" type="button" onclick="navigate('spacesPage')">
       <span class="nav-icon">◎</span><span id="navSpaces">گروه‌ها</span>
+    </button>
+    <button class="nav-button" data-page="contactsPage" type="button" onclick="navigate('contactsPage')">
+      <span class="nav-icon">♙</span><span id="navContacts">مخاطبان</span>
     </button>
   </div>
 </nav>
@@ -334,7 +335,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="./js/core.js?v=20261024-46"></script>
+<script src="./js/core.js?v=20261024-47"></script>
 <script src="./js/chat-menu-v5.js?v=20261024-7"></script>
 <script src="./js/spaces.js?v=20261024-25"></script>
 <script src="./js/calls.js?v=20261024-1"></script>

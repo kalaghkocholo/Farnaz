@@ -511,6 +511,7 @@ function toggleLanguage(){
 }
 function renderUser(user,name){
   currentUser=user;currentProfileName=(name||"").trim();
+  const settingsButton=$("openSettingsButton");if(settingsButton)settingsButton.hidden=false;
   $("userName").textContent=currentProfileName||(english?"Farnaz user":"کاربر فرناز");
   $("userEmail").textContent=user.email||"";
   $("userPhone").textContent=currentPhone||"";
@@ -549,6 +550,7 @@ async function showUser(user){
 }
 function showGuest(){
   profileRequestNumber++;currentUser=null;currentProfileName="";currentAvatarUrl="";currentPhone="";
+  const settingsButton=$("openSettingsButton");if(settingsButton)settingsButton.hidden=true;
   window.dispatchEvent(new CustomEvent("farnaz-auth-user",{detail:{userId:null}}));
   currentChatUser=null;
   $("bottomNav").classList.remove("visible");

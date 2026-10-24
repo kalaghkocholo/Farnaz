@@ -744,7 +744,7 @@ $("authForm").addEventListener("submit",async event=>{
     }
     if(!result.data.user)throw new Error("اطلاعات حساب دریافت نشد.");
     closeAuth();await showUser(result.data.user);
-    await subscribeToMessages();await refreshConversationList();
+    await subscribeToMessages();
     navigate("chatsPage");
   }catch(e){
     console.error("Auth:",e);
@@ -814,13 +814,13 @@ async function initializeApp(){
     const client=getClient(),{data,error}=await client.auth.getSession();if(error)throw error;
     if(data.session?.user){
       await showUser(data.session.user);await subscribeToMessages();
-      await refreshConversationList();navigate("chatsPage");
+      navigate("chatsPage");
     }else showGuest();
     client.auth.onAuthStateChange((event,session)=>{
       setTimeout(async()=>{
         if(session?.user&&currentUser?.id!==session.user.id){
           await showUser(session.user);await subscribeToMessages();
-          await refreshConversationList();navigate("chatsPage");
+          navigate("chatsPage");
         }else if(event==="SIGNED_OUT"){
           await stopMessageSubscription();showGuest();
         }

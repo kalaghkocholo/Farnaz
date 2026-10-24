@@ -437,6 +437,7 @@ function showConversationActions(card,contactId){
   for(const [label,action] of items){const b=document.createElement("button");b.type="button";b.className="mini-button"+(action==="delete"?" danger":"");b.textContent=label;b.onclick=()=>conversationAction(contactId,action);menu.appendChild(b);}
   card.appendChild(menu);
 }
+function openSignup(){authMode="signup";openAuth();}
 function openAuth(){
   $("authBox").style.display="flex";setStatus("authStatus","");
   $("authName").value="";$("authEmail").value="";$("authPassword").value="";
@@ -559,13 +560,14 @@ function toggleLanguage(){
   if(currentUser){refreshConversationList();refreshSavedContacts();}
 }
 function renderUser(user,name){
+  const wasGuest=document.body.dataset.authState==="guest";
   currentUser=user;currentProfileName=(name||"").trim();
   document.body.dataset.authState="user";const settingsButton=$("openSettingsButton");if(settingsButton){settingsButton.hidden=false;settingsButton.style.removeProperty("display");}
   $("userName").textContent=currentProfileName||(english?"Farnaz user":"کاربر فرناز");
   $("userEmail").textContent=user.email||"";
   setPhoneDisplay($("userPhone"),currentPhone);
   renderAvatar($("userAvatar"),currentAvatarUrl,$("userName").textContent);
-  if($("homePage")?.classList.contains("active"))navigate("chatsPage");
+  if(wasGuest&&$("homePage")?.classList.contains("active"))navigate("chatsPage");
 }
 async function showUser(user){
   const request=++profileRequestNumber;

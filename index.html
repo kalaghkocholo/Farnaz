@@ -58,15 +58,30 @@
 <!-- صفحه مخاطبان -->
 <section class="page" id="contactsPage">
   <div class="page-heading"><h2 id="contactsHeading">مخاطبان</h2></div>
+  <section class="phone-contacts-import" aria-labelledby="phoneContactsImportTitle">
+    <div class="phone-contacts-import-heading"><span class="phone-contacts-import-icon" aria-hidden="true">▤</span><div><h3 id="phoneContactsImportTitle">همگام‌سازی مخاطبان گوشی</h3><p id="phoneContactsImportIntro">فایل مخاطبان آیفون با پسوند VCF را انتخاب کن. اطلاعات فقط برای حساب خودت ذخیره می‌شود.</p></div></div>
+    <label for="phoneContactsCountry" id="phoneContactsCountryLabel">کد کشور برای شماره‌های محلی</label>
+    <select id="phoneContactsCountry" aria-label="Phone country code" class="phone-contacts-country">
+      <option value="98" selected>ایران (+98)</option><option value="49">آلمان (+49)</option><option value="1">آمریکا / کانادا (+1)</option><option value="44">بریتانیا (+44)</option><option value="90">ترکیه (+90)</option>
+    </select>
+    <input id="phoneContactsFile" type="file" accept=".vcf,text/vcard,text/x-vcard" hidden>
+    <button class="action-button phone-contacts-import-button" id="importPhoneContactsButton" type="button" onclick="document.getElementById('phoneContactsFile').click()">واردکردن / به‌روزرسانی فایل VCF</button>
+    <p id="phoneContactsImportStatus" class="status muted-note" role="status"></p>
+    <p class="muted-note" id="phoneContactsPrivacyNote">برای همگام‌سازی دوباره، فایل به‌روز مخاطبان را از آیفون انتخاب کن. حذف فایل یا مخاطب از گوشی، مخاطبان ذخیره‌شده فرناز را خودکار حذف نمی‌کند.</p>
+  </section>
+  <div class="phone-contacts-subheading"><h3 id="savedFarnazContactsTitle">مخاطبان فرناز</h3></div>
   <div class="list" id="savedContactsList"></div>
   <p id="savedContactsStatus" class="status muted-note" role="status"></p>
+  <div class="phone-contacts-subheading"><h3 id="unmatchedPhoneContactsTitle">مخاطبان گوشی که هنوز عضو فرناز نیستند</h3></div>
+  <div class="list" id="unmatchedPhoneContactsList"></div>
+  <p id="unmatchedPhoneContactsStatus" class="status muted-note" role="status"></p>
   <button class="contact-search-fab" id="contactSearchButton" type="button" onclick="toggleContactSearch()" aria-controls="contactSearchPopover" aria-expanded="false">
     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg>
     <span id="contactSearchButtonLabel">جستجوی مخاطب</span>
   </button>
   <div class="contact-search-popover" id="contactSearchPopover" hidden>
     <div class="contact-search-title"><span id="contactSearchTitle">پیدا کردن مخاطب جدید</span><button class="contact-search-close" type="button" onclick="toggleContactSearch(false)" aria-label="بستن">×</button></div>
-    <form id="recipientForm">
+    <form id="recipientForm" onsubmit="findRecipient(event)">
       <label for="recipientValue" id="recipientLabel">ایمیل یا شماره تلفن با کد کشور</label>
       <label for="recipientCountry" id="recipientCountryLabel">کد کشور شماره تلفن</label>
       <select id="recipientCountry" aria-label="Phone country code" style="width:100%;border:1px solid #43516a;border-radius:10px;background:var(--bg);color:var(--white)">

@@ -1354,3 +1354,48 @@ body[data-theme="light"] .welcome-shell{background:radial-gradient(ellipse at 50
   text-align:right!important;
   unicode-bidi:isolate!important;
 }
+
+
+/* iOS home-screen safe-area calibration */
+@media (display-mode: standalone) {
+  html, body {
+    min-height:100%;
+    min-height:100dvh;
+  }
+  body {
+    padding-top:env(safe-area-inset-top, 0px)!important;
+    padding-bottom:env(safe-area-inset-bottom, 0px)!important;
+    box-sizing:border-box!important;
+  }
+  .app:not(.chat-mode):not(.spaces-chat-mode) {
+    height:calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))!important;
+    min-height:0!important;
+    margin-top:0!important;
+    box-sizing:border-box!important;
+  }
+  .app>header {
+    padding-top:max(8px, env(safe-area-inset-top, 0px))!important;
+  }
+  #authBox {
+    top:env(safe-area-inset-top, 0px)!important;
+    bottom:env(safe-area-inset-bottom, 0px)!important;
+    height:auto!important;
+    min-height:0!important;
+    box-sizing:border-box!important;
+    padding-top:12px!important;
+    padding-bottom:12px!important;
+  }
+  body.chat-mode .app.chat-mode,
+  body.spaces-chat-mode .app.spaces-chat-mode {
+    top:env(safe-area-inset-top, 0px)!important;
+    height:calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))!important;
+    max-height:calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))!important;
+    padding-top:0!important;
+    padding-bottom:0!important;
+    transform:none!important;
+  }
+  body.chat-mode .app.chat-mode #chatPage .chat-header,
+  body.spaces-chat-mode .app.spaces-chat-mode #spacesPage .space-detail-head {
+    padding-top:max(8px, env(safe-area-inset-top, 0px))!important;
+  }
+}

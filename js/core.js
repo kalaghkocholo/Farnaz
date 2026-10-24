@@ -758,10 +758,13 @@ async function saveProfile(event){
 }
 async function logout(){
   $("logoutButton").disabled=true;
+  let presenceStopped=false;
   try{
+    await stopFarnazPresence();presenceStopped=true;
     const {error}=await getClient().auth.signOut();if(error)throw error;
     await stopMessageSubscription();showGuest();
   }catch(e){
+    if(presenceStopped&&currentUser)startFarnazPresence().catch(()=>{});
     setStatus("profileStatus",(english?"Sign out failed: ":"خروج ناموفق بود: ")+e.message,true);
   }finally{$("logoutButton").disabled=false;}
 }

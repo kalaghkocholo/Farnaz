@@ -1323,19 +1323,25 @@ body[data-theme="light"] .welcome-shell{background:radial-gradient(ellipse at 50
   text-align:right!important;
   unicode-bidi:isolate!important;
 }
+#contactsPage{position:relative}
 #contactsPage .contacts-import-toggle{
-  position:fixed;z-index:141;
-  right:max(14px,calc((100vw - 560px)/2 + 14px));
-  bottom:calc(82px + env(safe-area-inset-bottom));
-  width:48px;height:48px;border:1px solid var(--border);
-  border-radius:50%;background:var(--panel);color:var(--accent);
-  box-shadow:0 6px 22px #0005;font-size:27px;line-height:1;
+  position:absolute;z-index:141;
+  top:0;left:10px;right:auto;bottom:auto;
+  width:42px;height:42px;border:1px solid var(--border);
+  border-radius:13px;background:var(--panel);color:var(--accent);
+  box-shadow:0 4px 14px #0003;font-size:25px;line-height:1;
   display:grid;place-items:center;
+}
+#contactsPage .contacts-import-toggle[aria-expanded="true"]{
+  top:61px;left:24px;right:auto;bottom:auto;
+  width:36px;height:36px;border-radius:11px;
+  font-size:22px;box-shadow:none;
 }
 #contactsPage .phone-contacts-import[hidden]{display:none!important}
 #contactsPage .phone-contacts-import{
   max-height:calc(100dvh - 170px);overflow:auto;
 }
+#contactsPage .phone-contacts-import:not([hidden]){padding-left:62px}
 .app>header{position:relative}
 .app>header #openSettingsButton:not([hidden]){
   position:absolute!important;left:0!important;right:auto!important;

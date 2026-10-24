@@ -30,6 +30,7 @@ function readAppearanceSettings(){
   }catch(_){return {...APPEARANCE_DEFAULTS};}
 }
 let appearanceSettings=readAppearanceSettings();
+let privacySettings={presence_visibility:"contacts",last_seen_visibility:"contacts",show_typing:true,show_read_receipts:true,show_space_online_count:true};
 function applyAppearanceSettings(){
   const root=document.documentElement;
   let theme=appearanceSettings.theme||"dark";
@@ -555,7 +556,7 @@ async function showUser(user){
   setStatus("profileStatus",english?"Loading profile...":"در حال بارگذاری پروفایل...");
   try{
     const {data,error}=await getClient().from("profiles")
-      .select("id,display_name,avatar_url,phone,show_phone").eq("id",user.id).maybeSingle();
+      .select("id,display_name,avatar_url,phone,show_phone,presence_visibility,last_seen_visibility,show_typing,show_read_receipts,show_space_online_count").eq("id",user.id).maybeSingle();
     if(request!==profileRequestNumber||currentUser?.id!==user.id)return;
     if(error)throw error;
     let profile=data;
@@ -563,10 +564,12 @@ async function showUser(user){
       const fallbackName=(user.user_metadata?.display_name||user.email?.split("@")[0]||"Farnaz user").trim();
       const created=await getClient().from("profiles")
         .upsert({id:user.id,display_name:fallbackName,phone:user.phone||null,show_phone:true},{onConflict:"id"})
-        .select("id,display_name,avatar_url,phone,show_phone").single();
+        .select("id,display_name,avatar_url,phone,show_phone,presence_visibility,last_seen_visibility,show_typing,show_read_receipts,show_space_online_count").single();
       if(created.error)throw created.error;
       profile=created.data;
     }
+    privacySettings={presence_visibility:profile?.presence_visibility||"contacts",last_seen_visibility:profile?.last_seen_visibility||"contacts",show_typing:profile?.show_typing!==false,show_read_receipts:profile?.show_read_receipts!==false,show_space_online_count:profile?.show_space_online_count!==false};
+    applyPrivacySettings();
     currentProfileName=profile?.display_name||user.user_metadata?.display_name||"";
     currentAvatarUrl=profile?.avatar_url||"";currentPhone=profile?.phone||"";
     renderUser(user,currentProfileName);
@@ -595,6 +598,23 @@ function showGuest(){
   $("messageList").replaceChildren();
   document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id==="homePage"));
 }
+
+function applyPrivacySettings(){
+ const values={presenceVisibilitySetting:privacySettings.presence_visibility,lastSeenVisibilitySetting:privacySettings.last_seen_visibility,showTypingSetting:privacySettings.show_typing,showReadReceiptsSetting:privacySettings.show_read_receipts,showSpaceOnlineCountSetting:privacySettings.show_space_online_count};
+ for(const [id,value] of Object.entries(values)){const el=$(id);if(el){if(el.type==="checkbox")el.checked=!!value;else el.value=value;}}
+}
+async function savePrivacySetting(key,value){
+ if(!currentUser)return;
+ const allowed={presence_visibility:["everyone","contacts","nobody"],last_seen_visibility:["everyone","contacts","nobody"]};
+ if(allowed[key]&&!allowed[key].includes(value))return;
+ const previous=privacySettings[key];privacySettings={...privacySettings,[key]:value};
+ const status=$("privacySettingsStatus");if(status)status.textContent=english?"Saving…":"در حال ذخیره…";
+ try{const {error}=await getClient().from("profiles").update({[key]:value}).eq("id",currentUser.id);if(error)throw error;
+  if(status)status.textContent=english?"Privacy settings saved.":"تنظیمات حریم خصوصی ذخیره شد.";
+  window.dispatchEvent(new CustomEvent("farnaz-privacy-updated",{detail:{...privacySettings}}));
+ }catch(error){privacySettings={...privacySettings,[key]:previous};applyPrivacySettings();if(status)status.textContent=(english?"Could not save: ":"ذخیره ناموفق بود: ")+(error?.message||String(error));}
+}
+
 async function saveProfile(event){
   event.preventDefault();if(!currentUser)return;
   const name=$("profileNameInput").value.trim();

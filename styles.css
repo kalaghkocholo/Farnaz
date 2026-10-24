@@ -1264,38 +1264,16 @@ body[data-theme="light"] .welcome-shell{background:radial-gradient(ellipse at 50
 #headerFButton[hidden]{display:none!important}
 
 
-/* Welcome-screen language toggle: positioned independently from the centered card. */
-#homePage > .welcome-language-switch{
-  box-sizing:border-box!important;
+/* One welcome language button, positioned clear of the iPhone status area. */
+#homePage > #welcomeLanguageButton{
   position:fixed!important;
-  top:calc(env(safe-area-inset-top, 0px) + 14px)!important;
-  right:14px!important;
+  top:calc(env(safe-area-inset-top, 0px) + 48px)!important;
+  right:16px!important;
   left:auto!important;
-  inset-inline-end:14px!important;
   inset-inline-start:auto!important;
+  inset-inline-end:16px!important;
   transform:none!important;
   z-index:9999!important;
-  display:inline-flex!important;
-  align-items:center!important;
-  justify-content:center!important;
-  width:42px!important;
-  min-width:42px!important;
-  max-width:42px!important;
-  height:34px!important;
-  min-height:34px!important;
-  padding:0!important;
-  margin:0!important;
-  border:1px solid #7896c5!important;
-  border-radius:10px!important;
-  background:#7896c5!important;
-  color:#101828!important;
-  font-family:inherit!important;
-  font-size:12px!important;
-  font-weight:750!important;
-  line-height:1!important;
-  letter-spacing:0!important;
-  white-space:nowrap!important;
-  text-align:center!important;
-  box-shadow:0 4px 14px #0002!important;
 }
-#homePage:not(.active) > .welcome-language-switch{display:none!important}
+#homePage:not(.active) > #welcomeLanguageButton{display:none!important}
+#homePage .welcome-shell .welcome-language-switch{display:none!important}

@@ -31,6 +31,7 @@ function readAppearanceSettings(){
 }
 let appearanceSettings=readAppearanceSettings();
 let privacySettings={presence_visibility:"contacts",last_seen_visibility:"contacts",show_typing:true,show_read_receipts:true,show_space_online_count:true};
+let farnazPresenceChannel=null,farnazPresenceTimer=null,farnazPresenceMap=new Map(),farnazPresenceContactCache=new Map();
 function applyAppearanceSettings(){
   const root=document.documentElement;
   let theme=appearanceSettings.theme||"dark";
@@ -570,6 +571,7 @@ async function showUser(user){
     }
     privacySettings={presence_visibility:profile?.presence_visibility||"contacts",last_seen_visibility:profile?.last_seen_visibility||"contacts",show_typing:profile?.show_typing!==false,show_read_receipts:profile?.show_read_receipts!==false,show_space_online_count:profile?.show_space_online_count!==false};
     applyPrivacySettings();
+    startFarnazPresence().catch(e=>console.warn("Farnaz presence:",e));
     currentProfileName=profile?.display_name||user.user_metadata?.display_name||"";
     currentAvatarUrl=profile?.avatar_url||"";currentPhone=profile?.phone||"";
     renderUser(user,currentProfileName);
@@ -584,6 +586,7 @@ async function showUser(user){
   }
 }
 function showGuest(){
+  stopFarnazPresence().catch(()=>{});farnazPresenceContactCache.clear();
   profileRequestNumber++;currentUser=null;currentProfileName="";currentAvatarUrl="";currentPhone="";
   document.body.dataset.authState="guest";const settingsButton=$("openSettingsButton");if(settingsButton){settingsButton.hidden=true;settingsButton.style.setProperty("display","none","important");}
   window.dispatchEvent(new CustomEvent("farnaz-auth-user",{detail:{userId:null}}));
@@ -599,6 +602,40 @@ function showGuest(){
   document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id==="homePage"));
 }
 
+
+async function startFarnazPresence(){
+ if(!currentUser)return;
+ const client=getClient(),uid=currentUser.id;
+ if(farnazPresenceChannel){try{await client.removeChannel(farnazPresenceChannel);}catch(_){}farnazPresenceChannel=null;}
+ const channel=client.channel("farnaz-global-presence",{config:{presence:{key:uid}}});
+ farnazPresenceChannel=channel;
+ const publish=async()=>{
+  if(!currentUser||currentUser.id!==uid||farnazPresenceChannel!==channel)return;
+  try{await client.from("profiles").update({last_seen_at:new Date().toISOString()}).eq("id",uid);}catch(_){}
+  try{await channel.track({user_id:uid,presence_visibility:privacySettings.presence_visibility||"contacts",last_seen_visibility:privacySettings.last_seen_visibility||"contacts",last_seen_at:new Date().toISOString()});}catch(_){}
+ };
+ channel.on("presence",{event:"sync"},()=>{
+  if(farnazPresenceChannel!==channel)return;
+  const state=channel.presenceState(),next=new Map();
+  for(const entries of Object.values(state||{}))for(const entry of entries||[]){const id=String(entry.user_id||"");if(id)next.set(id,entry);}
+  farnazPresenceMap=next;window.farnazPresenceMap=next;
+  window.dispatchEvent(new CustomEvent("farnaz-presence-updated",{detail:{userIds:[...next.keys()]}}));
+ }).subscribe(async status=>{if(status==="SUBSCRIBED"){await publish();if(farnazPresenceTimer)clearInterval(farnazPresenceTimer);farnazPresenceTimer=setInterval(publish,60000);}});
+}
+async function stopFarnazPresence(){
+ if(farnazPresenceTimer){clearInterval(farnazPresenceTimer);farnazPresenceTimer=null;}
+ const channel=farnazPresenceChannel;farnazPresenceChannel=null;farnazPresenceMap=new Map();window.farnazPresenceMap=farnazPresenceMap;
+ if(channel&&farnazClient){try{await channel.untrack();await farnazClient.removeChannel(channel);}catch(_){}}
+}
+window.farnazCanSeePresence=async function(userId){
+ const id=String(userId||"");if(!id||id===String(currentUser?.id))return true;
+ const p=farnazPresenceMap.get(id);if(!p)return false;
+ const visibility=p.presence_visibility||"contacts";
+ if(visibility==="everyone")return true;if(visibility==="nobody")return false;
+ if(farnazPresenceContactCache.has(id))return farnazPresenceContactCache.get(id);
+ try{const {data,error}=await getClient().from("contacts").select("contact_user_id").eq("user_id",currentUser.id).eq("contact_user_id",id).maybeSingle();const allowed=!error&&!!data;farnazPresenceContactCache.set(id,allowed);return allowed;}catch(_){return false;}
+};
+
 function applyPrivacySettings(){
  const values={presenceVisibilitySetting:privacySettings.presence_visibility,lastSeenVisibilitySetting:privacySettings.last_seen_visibility,showTypingSetting:privacySettings.show_typing,showReadReceiptsSetting:privacySettings.show_read_receipts,showSpaceOnlineCountSetting:privacySettings.show_space_online_count};
  for(const [id,value] of Object.entries(values)){const el=$(id);if(el){if(el.type==="checkbox")el.checked=!!value;else el.value=value;}}
@@ -612,6 +649,7 @@ async function savePrivacySetting(key,value){
  try{const {error}=await getClient().from("profiles").update({[key]:value}).eq("id",currentUser.id);if(error)throw error;
   if(status)status.textContent=english?"Privacy settings saved.":"تنظیمات حریم خصوصی ذخیره شد.";
   window.dispatchEvent(new CustomEvent("farnaz-privacy-updated",{detail:{...privacySettings}}));
+  if(farnazPresenceChannel)startFarnazPresence().catch(()=>{});
  }catch(error){privacySettings={...privacySettings,[key]:previous};applyPrivacySettings();if(status)status.textContent=(english?"Could not save: ":"ذخیره ناموفق بود: ")+(error?.message||String(error));}
 }
 

@@ -1017,7 +1017,7 @@ function parseVCardContacts(text,countryCode){
 async function syncSelectedPhoneContacts(contacts,button){
   if(!currentUser)return;
   const myId=currentUser.id;
-  const valid=(contacts||[]).filter(c=>c?.phone&&/^\\+[1-9]\\d{7,14}$/.test(c.phone));
+  const valid=(contacts||[]).filter(c=>c?.phone&&/^\+[1-9]\d{7,14}$/.test(c.phone));
   const unique=[...new Map(valid.map(c=>[c.phone,c])).values()];
   if(!unique.length)throw new Error(english?"No valid phone numbers were selected.":"از مخاطبان انتخاب‌شده شماره تلفن معتبری دریافت نشد.");
   const {data,error}=await getClient().rpc("sync_farnaz_phone_contacts",{p_contacts:unique});
@@ -1048,7 +1048,7 @@ async function syncPhoneContactsFromPicker(){
       const name=Array.isArray(item.name)?item.name[0]:item.name;
       for(const tel of Array.isArray(item.tel)?item.tel:[item.tel]){
         const phone=normalizePhone(tel,country);
-        if(/^\\+[1-9]\\d{7,14}$/.test(phone))contacts.push({display_name:String(name||"").trim().slice(0,120)||(english?"Phone contact":"مخاطب گوشی"),phone});
+        if(/^\+[1-9]\d{7,14}$/.test(phone))contacts.push({display_name:String(name||"").trim().slice(0,120)||(english?"Phone contact":"مخاطب گوشی"),phone});
       }
     }
     await syncSelectedPhoneContacts(contacts,button);

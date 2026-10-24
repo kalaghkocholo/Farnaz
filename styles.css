@@ -1180,3 +1180,7 @@ body[data-theme="light"] .message-tools-floating>.mini-button:active{background:
 
 /* Keep Settings unavailable before login even if other header button styles are applied. */
 #openSettingsButton[hidden]{display:none!important}
+
+
+/* Auth state is explicit: never expose Settings on the guest/login screen. */
+body[data-auth-state="guest"] #openSettingsButton{display:none!important;visibility:hidden!important;pointer-events:none!important}

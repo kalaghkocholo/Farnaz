@@ -462,7 +462,9 @@ function toggleLanguage(){
     chatsHeading:["گفتگوها","Chats"],chatsIntro:["گفتگوهای اخیرت را اینجا می‌بینی.","Your recent conversations appear here."],
     contactsHeading:["مخاطبان","Contacts"],
     phoneContactsImportTitle:["همگام‌سازی مخاطبان گوشی","Sync phone contacts"],
-    phoneContactsImportIntro:["فایل مخاطبان آیفون با پسوند VCF را انتخاب کن. اطلاعات فقط برای حساب خودت ذخیره می‌شود.","Choose your iPhone contacts VCF file. Contact data is stored privately for your account."],
+    phoneContactsImportIntro:["مخاطبان را مستقیم از انتخاب‌گر امن Safari انتخاب کن؛ فایل لازم نیست. اطلاعات انتخاب‌شده فقط برای حساب خودت ذخیره می‌شود.","Choose contacts directly in Safari’s secure picker; no file is needed. Selected contact data is stored privately for your account."],
+    pickPhoneContactsButton:["انتخاب مخاطبان از دفترچه تلفن","Choose contacts from address book"],
+    phoneContactsVcfFallbackLabel:["روش جایگزین: واردکردن فایل VCF","Alternative: import a VCF file"],
     phoneContactsCountryLabel:["کد کشور برای شماره‌های محلی","Country code for local numbers"],
     importPhoneContactsButton:["واردکردن / به‌روزرسانی فایل VCF","Import / update VCF file"],
     phoneContactsPrivacyNote:["برای همگام‌سازی دوباره، فایل به‌روز مخاطبان را از آیفون انتخاب کن. حذف فایل یا مخاطب از گوشی، مخاطبان ذخیره‌شده فرناز را خودکار حذف نمی‌کند.","To sync again, select an updated VCF file from your iPhone. Removing a contact from your phone does not automatically delete saved Farnaz contacts."],
@@ -1012,6 +1014,50 @@ function parseVCardContacts(text,countryCode){
   }
   return results;
 }
+async function syncSelectedPhoneContacts(contacts,button){
+  if(!currentUser)return;
+  const myId=currentUser.id;
+  const valid=(contacts||[]).filter(c=>c?.phone&&/^\\+[1-9]\\d{7,14}$/.test(c.phone));
+  const unique=[...new Map(valid.map(c=>[c.phone,c])).values()];
+  if(!unique.length)throw new Error(english?"No valid phone numbers were selected.":"از مخاطبان انتخاب‌شده شماره تلفن معتبری دریافت نشد.");
+  const {data,error}=await getClient().rpc("sync_farnaz_phone_contacts",{p_contacts:unique});
+  if(error)throw error;
+  if(currentUser?.id!==myId)return;
+  const result=Array.isArray(data)?data[0]:(data||{});
+  await refreshSavedContacts();
+  setStatus("phoneContactsImportStatus",english
+    ?`Sync complete: ${result.processed??unique.length} numbers processed, ${result.matched??0} matched with Farnaz accounts, ${result.unmatched??0} not registered.`
+    :`همگام‌سازی انجام شد: ${result.processed??unique.length} شماره پردازش شد؛ ${result.matched??0} مورد با حساب‌های فرناز تطبیق یافت و ${result.unmatched??0} مورد هنوز عضو نیست.`);
+}
+async function syncPhoneContactsFromPicker(){
+  const button=$("pickPhoneContactsButton");
+  if(!currentUser){setStatus("phoneContactsImportStatus",english?"Sign in first.":"ابتدا وارد حساب فرناز شو.",true);return;}
+  if(!window.isSecureContext){setStatus("phoneContactsImportStatus",english?"Contact access requires a secure HTTPS connection.":"دسترسی به مخاطبان به اتصال امن HTTPS نیاز دارد.",true);return;}
+  if(!navigator.contacts?.select){
+    setStatus("phoneContactsImportStatus",english
+      ?"Safari has not enabled Contact Picker API. Open iPhone Settings → Safari → Advanced → Feature Flags, enable Contact Picker API, fully close and reopen Safari, then return and tap this button again."
+      :"قابلیت انتخاب مخاطب Safari هنوز فعال نیست. در آیفون برو به Settings ← Safari ← Advanced ← Feature Flags، گزینه Contact Picker API را روشن کن، Safari را کامل ببند و دوباره باز کن؛ سپس به فرناز برگرد و همین دکمه را بزن.",true);
+    return;
+  }
+  button.disabled=true;
+  setStatus("phoneContactsImportStatus",english?"Choose the contacts you want to share with Farnaz…":"مخاطبانی را که می‌خواهی با فرناز به اشتراک بگذاری انتخاب کن…");
+  try{
+    const picked=await navigator.contacts.select(["name","tel"],{multiple:true});
+    const contacts=[],country=$("phoneContactsCountry")?.value||"98";
+    for(const item of picked||[]){
+      const name=Array.isArray(item.name)?item.name[0]:item.name;
+      for(const tel of Array.isArray(item.tel)?item.tel:[item.tel]){
+        const phone=normalizePhone(tel,country);
+        if(/^\\+[1-9]\\d{7,14}$/.test(phone))contacts.push({display_name:String(name||"").trim().slice(0,120)||(english?"Phone contact":"مخاطب گوشی"),phone});
+      }
+    }
+    await syncSelectedPhoneContacts(contacts,button);
+  }catch(e){
+    if(e?.name==="AbortError"){setStatus("phoneContactsImportStatus",english?"Contact selection cancelled.":"انتخاب مخاطبان لغو شد.");return;}
+    console.error("Phone contact picker:",e);
+    setStatus("phoneContactsImportStatus",(english?"Could not sync selected contacts: ":"همگام‌سازی مخاطبان انتخاب‌شده ناموفق بود: ")+(e?.message||String(e)),true);
+  }finally{button.disabled=false;}
+}
 async function handlePhoneContactsFile(event){
   const input=event?.target||$("phoneContactsFile"),file=input?.files?.[0];if(!file||!currentUser)return;
   const button=$("importPhoneContactsButton"),myId=currentUser.id;
@@ -1020,13 +1066,7 @@ async function handlePhoneContactsFile(event){
     if(file.size>15*1024*1024)throw new Error(english?"VCF file must be 15 MB or smaller.":"حجم فایل VCF باید حداکثر ۱۵ مگابایت باشد.");
     const contacts=parseVCardContacts(await file.text(),$("phoneContactsCountry").value);
     if(!contacts.length)throw new Error(english?"No valid phone numbers were found in this VCF file.":"شماره تلفن معتبری در فایل VCF پیدا نشد.");
-    const {data,error}=await getClient().rpc("sync_farnaz_phone_contacts",{p_contacts:contacts});if(error)throw error;
-    if(currentUser?.id!==myId)return;
-    const result=Array.isArray(data)?data[0]:(data||{});
-    await refreshSavedContacts();
-    setStatus("phoneContactsImportStatus",english
-      ?`Sync complete: ${result.processed??contacts.length} numbers processed, ${result.matched??0} matched with Farnaz accounts, ${result.unmatched??0} not registered.`
-      :`همگام‌سازی انجام شد: ${result.processed??contacts.length} شماره پردازش شد؛ ${result.matched??0} مورد با حساب‌های فرناز تطبیق یافت و ${result.unmatched??0} مورد هنوز عضو نیست.`);
+    await syncSelectedPhoneContacts(contacts,button);
   }catch(e){
     console.error("Phone contacts import:",e);
     setStatus("phoneContactsImportStatus",(english?"Could not sync contacts: ":"همگام‌سازی مخاطبان ناموفق بود: ")+e.message,true);

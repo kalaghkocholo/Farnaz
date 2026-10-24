@@ -535,7 +535,7 @@ function toggleLanguage(){
   };
   Object.entries(labels).forEach(([id,pair])=>{if($(id))$(id).textContent=pair[english?1:0];});
   if($("language"))$("language").textContent=english?"فا":"EN";
-  if($("welcomeLanguageButton"))$("welcomeLanguageButton").textContent=english?"فارسی":"English";
+  if($("welcomeLanguageButton")){$("welcomeLanguageButton").textContent=english?"فا":"EN";$("welcomeLanguageButton").setAttribute("aria-label",english?"Switch to Persian":"Switch to English");}
   ["recipientCountry","profilePhoneCountry"].forEach(id=>{
     const select=$(id);if(!select)return;
     const names=english?["Iran","Germany","United States / Canada","United Kingdom","Turkey"]:["ایران","آلمان","آمریکا / کانادا","بریتانیا","ترکیه"];

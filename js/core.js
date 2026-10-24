@@ -466,6 +466,8 @@ function toggleLanguage(){
     findRecipientBtn:["پیدا کردن مخاطب","Find contact"],foundHeading:["نتیجه جست‌وجو","Search result"],
     savedContactsStatus:["",""],
     profilePhoneCountryLabel:["کد کشور شماره تلفن","Phone country code"],
+    showPhoneSettingLabel:["نمایش شماره موبایل به مخاطبان (پیش‌فرض روشن)","Show my phone number to contacts (on by default)"],
+    showPhoneSettingHint:["اگر خاموشش کنی، شماره‌ات در اطلاعات مخاطب نمایش داده نمی‌شود.","Turn this off to hide your number from contact info."],
     contactNote:["جست‌وجو فقط برای حساب‌های ثبت‌شده در فرناز انجام می‌شود.","Search works for registered Farnaz accounts."],
     profileHeading:["پروفایل من","My profile"],profileIntro:["اطلاعات حساب خود را مدیریت کن.","Manage your account information."],
     profileNameLabel:["نام نمایشی","Display name"],profilePhoneLabel:["شماره موبایل با کد کشور","Phone number with country code"],
@@ -524,15 +526,15 @@ async function showUser(user){
   setStatus("profileStatus",english?"Loading profile...":"در حال بارگذاری پروفایل...");
   try{
     const {data,error}=await getClient().from("profiles")
-      .select("id,display_name,avatar_url,phone").eq("id",user.id).maybeSingle();
+      .select("id,display_name,avatar_url,phone,show_phone").eq("id",user.id).maybeSingle();
     if(request!==profileRequestNumber||currentUser?.id!==user.id)return;
     if(error)throw error;
     let profile=data;
     if(!profile){
       const fallbackName=(user.user_metadata?.display_name||user.email?.split("@")[0]||"Farnaz user").trim();
       const created=await getClient().from("profiles")
-        .upsert({id:user.id,display_name:fallbackName,phone:user.phone||null},{onConflict:"id"})
-        .select("id,display_name,avatar_url,phone").single();
+        .upsert({id:user.id,display_name:fallbackName,phone:user.phone||null,show_phone:true},{onConflict:"id"})
+        .select("id,display_name,avatar_url,phone,show_phone").single();
       if(created.error)throw created.error;
       profile=created.data;
     }
@@ -541,6 +543,7 @@ async function showUser(user){
     renderUser(user,currentProfileName);
     $("profileNameInput").value=currentProfileName;
     $("profilePhoneInput").value=currentPhone;
+    $("showPhoneSetting").checked=profile?.show_phone!==false;
     setPhoneCountry("profilePhoneCountry",currentPhone);
     setStatus("profileStatus",english?"Profile loaded.":"پروفایل بارگذاری شد.");
   }catch(e){
@@ -567,6 +570,7 @@ async function saveProfile(event){
   event.preventDefault();if(!currentUser)return;
   const name=$("profileNameInput").value.trim();
   const phone=normalizePhone($("profilePhoneInput").value,$("profilePhoneCountry").value);
+  const showPhone=$("showPhoneSetting").checked;
   const file=$("avatarFile").files[0];
   const button=$("saveProfileButton");
   if(!name||name.length>60){
@@ -592,8 +596,8 @@ async function saveProfile(event){
       avatarUrl=client.storage.from("avatars").getPublicUrl(path).data.publicUrl;
     }
     const {data,error}=await client.from("profiles")
-      .upsert({id:currentUser.id,display_name:name,phone:phone||null,avatar_url:avatarUrl||null},{onConflict:"id"})
-      .select("id,display_name,phone,avatar_url").single();
+      .upsert({id:currentUser.id,display_name:name,phone:phone||null,avatar_url:avatarUrl||null,show_phone:showPhone},{onConflict:"id"})
+      .select("id,display_name,phone,avatar_url,show_phone").single();
     if(error)throw error;
     currentProfileName=data.display_name||name;currentPhone=data.phone||"";
     currentAvatarUrl=data.avatar_url||"";

@@ -137,9 +137,20 @@ window.addEventListener("storage",event=>{if(event.key===APPEARANCE_KEY){appeara
 if(window.matchMedia){window.matchMedia("(prefers-color-scheme: light)").addEventListener?.("change",()=>{if(appearanceSettings.theme==="system")applyAppearanceSettings();});}
 applyAppearanceSettings();
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",initPhoneContactsImport);else initPhoneContactsImport();
-if("serviceWorker" in navigator && location.protocol!=="file:"){
-  navigator.serviceWorker.register("./service-worker.js").then(reg=>{window.farnazServiceWorkerRegistration=reg;reg.update().catch(()=>{});})
+// Register the offline cache only after the first page load, so cache installation
+// does not compete with the initial CSS, JavaScript, and authentication requests.
+function registerFarnazServiceWorker(){
+  if(!("serviceWorker" in navigator) || location.protocol==="file:")return;
+  navigator.serviceWorker.register("./service-worker.js")
+    .then(reg=>{window.farnazServiceWorkerRegistration=reg;reg.update().catch(()=>{});})
     .catch(error=>console.warn("Farnaz service worker registration:",error));
+}
+if(document.readyState==="complete"){
+  (window.requestIdleCallback||((fn)=>setTimeout(fn,900)))(registerFarnazServiceWorker,{timeout:2500});
+}else{
+  window.addEventListener("load",()=>{
+    (window.requestIdleCallback||((fn)=>setTimeout(fn,900)))(registerFarnazServiceWorker,{timeout:2500});
+  },{once:true});
 }
 window.notifyFarnazIncomingMessage=async function(){
   if(!("Notification" in window)||Notification.permission!=="granted"||!document.hidden)return;

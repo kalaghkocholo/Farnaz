@@ -535,6 +535,7 @@ function toggleLanguage(){
   };
   Object.entries(labels).forEach(([id,pair])=>{if($(id))$(id).textContent=pair[english?1:0];});
   if($("language"))$("language").textContent=english?"فا":"EN";
+  if($("welcomeLanguageButton"))$("welcomeLanguageButton").textContent=english?"فارسی":"English";
   ["recipientCountry","profilePhoneCountry"].forEach(id=>{
     const select=$(id);if(!select)return;
     const names=english?["Iran","Germany","United States / Canada","United Kingdom","Turkey"]:["ایران","آلمان","آمریکا / کانادا","بریتانیا","ترکیه"];
@@ -616,7 +617,7 @@ async function showUser(user){
 function showGuest(){
   stopFarnazPresence().catch(()=>{});farnazPresenceContactCache.clear();
   profileRequestNumber++;currentUser=null;currentProfileName="";currentAvatarUrl="";currentPhone="";
-  document.body.dataset.authState="guest";const settingsButton=$("openSettingsButton");if(settingsButton){settingsButton.hidden=true;settingsButton.style.setProperty("display","none","important");}
+  document.body.dataset.authState="guest";if($("headerFButton"))$("headerFButton").hidden=true;const settingsButton=$("openSettingsButton");if(settingsButton){settingsButton.hidden=true;settingsButton.style.setProperty("display","none","important");}
   window.dispatchEvent(new CustomEvent("farnaz-auth-user",{detail:{userId:null}}));
   currentChatUser=null;
   $("bottomNav").classList.remove("visible");

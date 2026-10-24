@@ -1291,3 +1291,36 @@ body[data-theme="light"] .welcome-shell{background:radial-gradient(ellipse at 50
   box-shadow:0 4px 14px #0002;
 }
 .welcome-shell{position:relative}
+
+
+/* Stable compact language pill on the welcome screen. */
+.welcome-shell .welcome-language-switch{
+  box-sizing:border-box!important;
+  position:absolute!important;
+  top:14px!important;
+  inset-inline-end:14px!important;
+  z-index:10!important;
+  display:inline-flex!important;
+  flex:0 0 auto!important;
+  align-items:center!important;
+  justify-content:center!important;
+  width:auto!important;
+  min-width:0!important;
+  max-width:104px!important;
+  height:34px!important;
+  min-height:34px!important;
+  padding:0 12px!important;
+  margin:0!important;
+  border:1px solid #7896c5!important;
+  border-radius:999px!important;
+  background:#7896c5!important;
+  color:#101828!important;
+  font-family:inherit!important;
+  font-size:12px!important;
+  font-weight:700!important;
+  line-height:1!important;
+  letter-spacing:0!important;
+  white-space:nowrap!important;
+  text-align:center!important;
+  box-shadow:0 4px 14px #0002!important;
+}

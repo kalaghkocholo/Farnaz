@@ -492,15 +492,20 @@ function updateAuthTexts(){
   $("googleAuthLabel").textContent=v?"Continue with Google":"ادامه با Google";
   $("authOrLabel").textContent=v?"or continue with email":"یا با ایمیل";
 }
-/* Keep exactly one language toggle on the welcome screen, even if stale markup remains. */
+/* Keep one welcome language toggle globally; preserve the separate Settings language control. */
 function normalizeWelcomeLanguageButton(){
-  const buttons=Array.from(document.querySelectorAll("#homePage .welcome-language-switch, #homePage #welcomeLanguageButton"));
-  let keep=document.querySelector("#homePage > #welcomeLanguageButton")||buttons[0];
+  const home=document.getElementById("homePage");
+  if(!home)return;
+  const buttons=Array.from(document.querySelectorAll(".welcome-language-switch, #welcomeLanguageButton"));
+  let keep=home.querySelector(":scope > #welcomeLanguageButton")||home.querySelector(".welcome-language-switch");
   if(!keep)return;
   buttons.forEach(button=>{if(button!==keep)button.remove();});
-  if(keep.parentElement!==document.getElementById("homePage"))document.getElementById("homePage").prepend(keep);
+  keep.id="welcomeLanguageButton";
+  keep.classList.add("welcome-language-switch");
+  if(keep.parentElement!==home)home.prepend(keep);
 }
 document.addEventListener("DOMContentLoaded",normalizeWelcomeLanguageButton);
+window.addEventListener("pageshow",normalizeWelcomeLanguageButton);
 setTimeout(normalizeWelcomeLanguageButton,0);
 
 function toggleLanguage(){

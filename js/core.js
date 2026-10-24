@@ -691,7 +691,7 @@ async function saveProfile(event){
       avatarUrl=client.storage.from("avatars").getPublicUrl(path).data.publicUrl;
     }
     const {data,error}=await client.from("profiles")
-      .upsert({id:currentUser.id,display_name:name,phone:phone||null,avatar_url:avatarUrl||null,show_phone:showPhone},{onConflict:"id"})
+      .upsert({id:currentUser.id,display_name:name,phone:phone||null,avatar_url:avatarUrl||null,show_phone:showPhone,presence_visibility:privacySettings.presence_visibility,last_seen_visibility:privacySettings.last_seen_visibility,show_typing:privacySettings.show_typing,show_read_receipts:privacySettings.show_read_receipts,show_space_online_count:privacySettings.show_space_online_count},{onConflict:"id"})
       .select("id,display_name,phone,avatar_url,show_phone").single();
     if(error)throw error;
     currentProfileName=data.display_name||name;currentPhone=data.phone||"";

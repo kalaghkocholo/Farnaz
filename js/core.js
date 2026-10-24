@@ -172,9 +172,13 @@ function getClient(){
     c.supabasePublishableKey,
     {
       auth:{
+        // Keep one stable storage key across reloads and GitHub Pages launches.
+        storageKey:"sb-iemykhluluoymsbqpjsn-auth-token",
+        storage:window.localStorage,
         persistSession:true,
         autoRefreshToken:true,
-        detectSessionInUrl:true
+        detectSessionInUrl:true,
+        flowType:"pkce"
       }
     }
   );

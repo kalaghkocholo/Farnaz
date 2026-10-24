@@ -1,19 +1,40 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Farnaz raven messenger icon">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#07153d"/><stop offset=".55" stop-color="#050d2b"/><stop offset="1" stop-color="#02071b"/></linearGradient>
-    <radialGradient id="glow" cx="48%" cy="46%" r="55%"><stop offset="0" stop-color="#123c9d" stop-opacity=".4"/><stop offset="1" stop-color="#02071b" stop-opacity="0"/></radialGradient>
-    <linearGradient id="top" x1="0" y1=".3" x2="1" y2=".8"><stop offset="0" stop-color="#23f2e5"/><stop offset=".38" stop-color="#16aefa"/><stop offset=".72" stop-color="#5373ff"/><stop offset="1" stop-color="#dc75ff"/></linearGradient>
-    <linearGradient id="lower" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8bdcff"/><stop offset=".3" stop-color="#258bff"/><stop offset=".58" stop-color="#12d7f4"/><stop offset="1" stop-color="#ed83ff"/></linearGradient>
-    <linearGradient id="side" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#003cae"/><stop offset=".5" stop-color="#0863ed"/><stop offset="1" stop-color="#162a8b"/></linearGradient>
-    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="8"/></filter>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#101d49"/><stop offset=".55" stop-color="#070f2c"/><stop offset="1" stop-color="#030718"/></linearGradient>
+    <radialGradient id="halo" cx=".5" cy=".43" r=".6"><stop stop-color="#153d91" stop-opacity=".65"/><stop offset="1" stop-color="#07102c" stop-opacity="0"/></radialGradient>
+    <linearGradient id="feather" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#31f4e6"/><stop offset=".4" stop-color="#138dff"/><stop offset=".72" stop-color="#5c63ff"/><stop offset="1" stop-color="#d66cff"/></linearGradient>
+    <linearGradient id="wing" x1="0" y1="0" x2=".9" y2="1"><stop stop-color="#1be8e5"/><stop offset=".5" stop-color="#1768ff"/><stop offset="1" stop-color="#7c42f5"/></linearGradient>
+    <linearGradient id="beak" x1="0" y1="0" x2="1" y2=".4"><stop stop-color="#38e9f4"/><stop offset="1" stop-color="#ba75ff"/></linearGradient>
+    <linearGradient id="bubble" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#32e7e3"/><stop offset="1" stop-color="#3887ff"/></linearGradient>
+    <filter id="softGlow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="7"/></filter>
   </defs>
   <rect width="512" height="512" rx="104" fill="url(#bg)"/>
-  <rect width="512" height="512" rx="104" fill="url(#glow)"/>
-  <path d="M132 302 C125 225 160 145 232 119 C282 101 365 105 424 77 C421 128 396 168 352 179 C304 191 250 174 211 199 C169 225 150 267 132 302Z" fill="#102d9e" opacity=".75" filter="url(#shadow)"/>
-  <path d="M128 302 C121 226 158 147 231 119 C283 99 366 105 424 77 C421 129 396 169 352 180 C302 192 250 174 210 199 C170 224 149 267 128 302Z" fill="url(#top)"/>
-  <path d="M128 302 C135 258 162 222 201 202 C244 180 294 187 338 178 C284 199 246 224 218 261 C190 297 179 351 178 404 C150 382 134 345 128 302Z" fill="url(#side)"/>
-  <path d="M123 337 C155 281 204 249 267 244 C326 239 379 247 401 217 C398 266 370 295 328 301 C277 308 225 294 188 332 C156 365 143 407 143 438 C124 417 117 376 123 337Z" fill="url(#lower)"/>
-  <path d="M143 438 C144 395 160 359 188 332 C225 294 277 308 328 301 C288 322 258 351 241 389 C226 424 226 451 209 469 C183 497 150 473 143 438Z" fill="url(#side)"/>
-  <path d="M135 286 C145 221 177 164 235 137 C283 115 357 118 410 91" fill="none" stroke="#b8fff9" stroke-opacity=".45" stroke-width="2.5" stroke-linecap="round"/>
-  <path d="M132 352 C157 300 205 268 264 257" fill="none" stroke="#ffffff" stroke-opacity=".38" stroke-width="2" stroke-linecap="round"/>
+  <rect width="512" height="512" rx="104" fill="url(#halo)"/>
+  <!-- chat bubble integrated into the raven silhouette -->
+  <path d="M89 128 Q89 101 117 101 H203 Q229 101 229 128 V165 Q229 190 203 190 H153 L127 211 L132 190 H117 Q89 190 89 165Z" fill="#0e2b65" stroke="url(#bubble)" stroke-width="5" opacity=".98"/>
+  <path d="M112 131 H199 M112 151 H179" stroke="#79f6f1" stroke-width="7" stroke-linecap="round" opacity=".9"/>
+  <!-- subtle call signal -->
+  <path d="M347 129 Q370 151 347 174 M369 110 Q405 151 369 193" fill="none" stroke="#5f8dff" stroke-width="7" stroke-linecap="round" opacity=".95"/>
+  <path d="M347 129 Q370 151 347 174 M369 110 Q405 151 369 193" fill="none" stroke="#55e8f3" stroke-width="2" stroke-linecap="round" opacity=".8"/>
+  <!-- tail and layered body feathers -->
+  <path d="M253 289 C203 316 151 365 119 419 C178 402 231 375 276 336Z" fill="url(#wing)" opacity=".95"/>
+  <path d="M282 302 C232 350 211 394 204 440 C253 413 295 371 316 327Z" fill="url(#feather)"/>
+  <path d="M226 286 C176 308 141 337 111 375 C170 365 217 344 259 314Z" fill="#1269df"/>
+  <!-- raven head, crest, and neck -->
+  <path d="M148 284 C166 233 197 184 243 158 C272 142 303 139 330 149 C352 157 366 174 378 192 L428 222 L373 229 C366 257 350 281 325 300 C301 320 272 334 244 333 C208 332 174 314 148 284Z" fill="#081944"/>
+  <path d="M148 284 C171 229 204 181 248 159 C274 146 300 143 326 151 C288 162 261 184 244 211 C222 247 215 291 232 329 C199 322 170 306 148 284Z" fill="url(#feather)"/>
+  <path d="M204 246 C231 204 263 179 307 167 C332 160 354 171 372 192 C344 184 321 191 303 207 C280 227 267 257 263 288 C242 285 220 269 204 246Z" fill="url(#wing)"/>
+  <!-- sharp beak -->
+  <path d="M345 202 C375 199 405 210 436 229 L378 239 C365 232 354 219 345 202Z" fill="url(#beak)"/>
+  <path d="M367 229 L425 230 L379 239Z" fill="#7667f6"/>
+  <!-- eye -->
+  <path d="M302 196 Q322 180 343 196 Q325 215 302 196Z" fill="#04091d"/>
+  <circle cx="326" cy="196" r="6.5" fill="#67fff6"/>
+  <circle cx="328" cy="194" r="2.2" fill="#ffffff"/>
+  <!-- wing strokes hint at messaging motion -->
+  <path d="M143 332 C180 291 215 269 250 260" fill="none" stroke="#9afbf6" stroke-width="4" stroke-linecap="round" opacity=".8"/>
+  <path d="M163 358 C202 323 230 308 258 300" fill="none" stroke="#9cb6ff" stroke-width="3" stroke-linecap="round" opacity=".72"/>
+  <!-- small luminous accents -->
+  <circle cx="104" cy="235" r="3" fill="#38e6ee"/>
+  <circle cx="414" cy="282" r="3" fill="#a56aff"/>
 </svg>

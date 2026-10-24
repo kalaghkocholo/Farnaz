@@ -492,6 +492,17 @@ function updateAuthTexts(){
   $("googleAuthLabel").textContent=v?"Continue with Google":"ادامه با Google";
   $("authOrLabel").textContent=v?"or continue with email":"یا با ایمیل";
 }
+/* Keep exactly one language toggle on the welcome screen, even if stale markup remains. */
+function normalizeWelcomeLanguageButton(){
+  const buttons=Array.from(document.querySelectorAll("#homePage .welcome-language-switch, #homePage #welcomeLanguageButton"));
+  let keep=document.querySelector("#homePage > #welcomeLanguageButton")||buttons[0];
+  if(!keep)return;
+  buttons.forEach(button=>{if(button!==keep)button.remove();});
+  if(keep.parentElement!==document.getElementById("homePage"))document.getElementById("homePage").prepend(keep);
+}
+document.addEventListener("DOMContentLoaded",normalizeWelcomeLanguageButton);
+setTimeout(normalizeWelcomeLanguageButton,0);
+
 function toggleLanguage(){
   english=!english;
   document.documentElement.lang=english?"en":"fa";

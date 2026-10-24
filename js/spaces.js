@@ -224,6 +224,10 @@ async function openSpaceInfo(){
    const add=document.createElement("button");add.type="button";add.className="space-primary";add.textContent=tr("＋ افزودن عضو","＋ Add member");add.onclick=async()=>{await contacts("spaceAddContacts");q("spaceAddDialog").querySelector("h3").textContent=tr("افزودن اعضا","Add members");q("saveAddContacts").textContent=tr("افزودن انتخاب‌شده‌ها","Add selected");q("spaceAddStatus").textContent="";q("spaceInfoDialog").hidden=true;q("spaceAddDialog").hidden=false;};actions.appendChild(add);
    const share=document.createElement("button");share.type="button";share.className="space-secondary";share.textContent=tr("لینک و کد دعوت","Invite link & code");share.onclick=openInviteDialog;actions.appendChild(share);
   }
+  if(mine.role==="member"&&active.members_can_add_members===true){
+   const inviteMember=document.createElement("button");inviteMember.type="button";inviteMember.className="space-primary";inviteMember.textContent=tr("＋ افزودن عضو","＋ Add member");inviteMember.onclick=async()=>{await contacts("spaceAddContacts");q("spaceAddDialog").querySelector("h3").textContent=tr("افزودن اعضا","Add members");q("saveAddContacts").textContent=tr("افزودن انتخاب‌شده‌ها","Add selected");q("spaceAddStatus").textContent="";q("spaceInfoDialog").hidden=true;q("spaceAddDialog").hidden=false;};actions.appendChild(inviteMember);
+  }
+  if(active.member_list_visibility==="managers"&&mine.role==="member"){q("spaceMemberHeading").textContent=tr("اعضای گروه","Group members");q("spaceMemberList").replaceChildren();q("spaceInfoStatus").textContent=tr("فهرست اعضا فقط برای مدیران قابل مشاهده است.","Only managers can view the member list.");return;}
   const {data:members,error}=await getClient().rpc("get_space_member_profiles",{p_space_id:spaceId});
   if(error){q("spaceInfoStatus").textContent=tr("دریافت فهرست اعضا ناموفق بود: ","Could not load members: ")+error.message;return;}
   const list=q("spaceMemberList");list.replaceChildren();

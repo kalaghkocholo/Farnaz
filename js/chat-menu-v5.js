@@ -767,7 +767,7 @@ $("authForm").addEventListener("submit",async event=>{
   if(!email){
     setStatus("authStatus",english?"Enter your email address.":"ایمیل را وارد کن.",true);$("authEmail").focus();return;
   }
-  if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)){
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
     setStatus("authStatus",english?"The email address format is invalid. Check the address.":"قالب ایمیل صحیح نیست؛ آدرس ایمیل را بررسی کن.",true);$("authEmail").focus();return;
   }
   if(!password){

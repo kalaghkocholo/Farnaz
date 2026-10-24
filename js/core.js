@@ -1022,6 +1022,7 @@ async function refreshPrivatePresence(contactId){
  }catch(_){subtitle.textContent=currentChatPresenceLabel;}
 }
 
+window.addEventListener("farnaz-presence-updated",()=>{if(currentChatUser&&!remoteTypingTimer)refreshPrivatePresence(currentChatUser.user_id);});
 function openChat(contact,fromPage="chatsPage"){
   ensureContactInfoDialog();
   currentChatUser=contact;previousPage=fromPage;

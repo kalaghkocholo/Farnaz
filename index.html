@@ -9,7 +9,7 @@
 <link rel="icon" href="./farnaz-icon.svg" type="image/svg+xml">
 <meta name="description" content="فرناز؛ ارتباطی نزدیک‌تر، در هر کجا.">
 <title>فرناز | Farnaz</title>
-<link rel="stylesheet" href="./styles.css?v=20261024-19">
+<link rel="stylesheet" href="./styles.css?v=20261024-20">
 <link rel="stylesheet" href="./spaces.css?v=20261024-10">
 </head>
 <body data-auth-state="guest">
@@ -216,6 +216,16 @@
     <div class="setting-row"><div class="setting-copy"><strong id="notificationsLabel">اعلان پیام‌ها</strong><small id="notificationsHint">اجازه نمایش اعلان روی این دستگاه؛ اعلان پس از بسته‌شدن برنامه به پیکربندی Push سرور هم نیاز دارد.</small></div><button class="setting-control" type="button" id="enableNotificationsButton" onclick="enableFarnazNotifications()">فعال‌سازی اعلان</button></div>
     <p id="notificationsStatus" class="status muted-note" role="status"></p>
   </div>
+  
+  <div class="settings-card" id="privacySettingsCard">
+    <h3 id="privacyTitle">حضور و حریم خصوصی</h3>
+    <div class="setting-row"><div class="setting-copy"><strong>نمایش آنلاین بودن</strong><small>چه کسانی وضعیت آنلاین تو را ببینند؟</small></div><select class="setting-control" id="presenceVisibilitySetting" onchange="savePrivacySetting('presence_visibility',this.value)"><option value="everyone">همه</option><option value="contacts" selected>فقط مخاطبانم</option><option value="nobody">هیچ‌کس</option></select></div>
+    <div class="setting-row"><div class="setting-copy"><strong>آخرین بازدید</strong><small>چه کسانی زمان آخرین حضورت را ببینند؟</small></div><select class="setting-control" id="lastSeenVisibilitySetting" onchange="savePrivacySetting('last_seen_visibility',this.value)"><option value="everyone">همه</option><option value="contacts" selected>فقط مخاطبانم</option><option value="nobody">هیچ‌کس</option></select></div>
+    <label class="privacy-toggle"><input id="showTypingSetting" type="checkbox" checked onchange="savePrivacySetting('show_typing',this.checked)"><span><strong>نمایش «در حال نوشتن…»</strong><small>وضعیت نوشتن در گفتگوها نمایش داده شود.</small></span></label>
+    <label class="privacy-toggle"><input id="showReadReceiptsSetting" type="checkbox" checked onchange="savePrivacySetting('show_read_receipts',this.checked)"><span><strong>رسید خواندن پیام‌ها</strong><small>اجازه بده دیگران خوانده‌شدن پیام را ببینند.</small></span></label>
+    <label class="privacy-toggle"><input id="showSpaceOnlineCountSetting" type="checkbox" checked onchange="savePrivacySetting('show_space_online_count',this.checked)"><span><strong>تعداد اعضای آنلاین گروه</strong><small>نمایش تعداد آنلاین‌ها در گروه‌ها فعال باشد.</small></span></label>
+    <p id="privacySettingsStatus" class="status muted-note" role="status"></p>
+  </div>
   <div class="settings-card">
     <h3 id="languageTitle">زبان</h3>
     <div class="setting-row">
@@ -324,9 +334,9 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="./js/core.js?v=20261024-22"></script>
+<script src="./js/core.js?v=20261024-23"></script>
 <script src="./js/chat-menu-v5.js?v=20261024-7"></script>
-<script src="./js/spaces.js?v=20261024-16"></script>
+<script src="./js/spaces.js?v=20261024-17"></script>
 <script src="./js/calls.js?v=20261024-1"></script>
 </body>
 </html>

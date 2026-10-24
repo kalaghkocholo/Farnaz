@@ -31,7 +31,7 @@ function readAppearanceSettings(){
 }
 let appearanceSettings=readAppearanceSettings();
 let privacySettings={presence_visibility:"contacts",last_seen_visibility:"contacts",show_typing:true,show_read_receipts:true,show_space_online_count:true};
-let farnazPresenceChannel=null,farnazPresenceTimer=null,farnazPresenceMap=new Map(),farnazPresenceContactCache=new Map();
+let farnazPresenceChannel=null,farnazPresenceTimer=null,farnazPresenceMap=new Map(),farnazPresenceContactCache=new Map(),farnazPresenceChannels=new Map(),farnazTypingChannel=null,farnazVisibilityHandler=null;
 let privateTypingTimer=null,remoteTypingTimer=null;
 function applyAppearanceSettings(){
   const root=document.documentElement;
@@ -606,42 +606,90 @@ function showGuest(){
 
 async function startFarnazPresence(){
  if(!currentUser)return;
- const client=getClient(),uid=currentUser.id;
- if(farnazPresenceChannel){try{await client.removeChannel(farnazPresenceChannel);}catch(_){}farnazPresenceChannel=null;}
- const channel=client.channel("farnaz-global-presence",{config:{presence:{key:uid}}});
- farnazPresenceChannel=channel;
- const publish=async()=>{
-  if(!currentUser||currentUser.id!==uid||farnazPresenceChannel!==channel)return;
-  try{await client.from("profiles").update({last_seen_at:new Date().toISOString()}).eq("id",uid);}catch(_){}
-  try{await channel.track({user_id:uid,presence_visibility:privacySettings.presence_visibility||"contacts",last_seen_visibility:privacySettings.last_seen_visibility||"contacts",last_seen_at:new Date().toISOString()});}catch(_){}
+ const client=getClient(),uid=String(currentUser.id);
+ await stopFarnazPresence();
+ const ownTopic="farnaz-presence:"+uid;
+ const ownChannel=client.channel(ownTopic,{config:{private:true,presence:{key:uid}}});
+ farnazPresenceChannel=ownChannel;
+ const notifyPresence=()=>window.dispatchEvent(new CustomEvent("farnaz-presence-updated",{detail:{userIds:[...farnazPresenceMap.keys()]}}));
+ const trackOwn=async()=>{
+  if(!currentUser||String(currentUser.id)!==uid||farnazPresenceChannel!==ownChannel)return;
+  if(document.visibilityState!=="visible"){try{await ownChannel.untrack();}catch(_){}return;}
+  const now=new Date().toISOString();
+  try{await client.from("profiles").update({last_seen_at:now}).eq("id",uid);}catch(_){}
+  try{await ownChannel.track({user_id:uid,online:true,updated_at:now});}catch(_){}
  };
- channel.on("broadcast",{event:"typing"},event=>{
+ ownChannel.subscribe(async status=>{
+  if(status==="SUBSCRIBED")await trackOwn();
+ });
+ if(farnazPresenceTimer)clearInterval(farnazPresenceTimer);
+ farnazPresenceTimer=setInterval(trackOwn,60000);
+ try{
+  const {data,error}=await client.rpc("get_farnaz_mutual_contact_ids");
+  if(error)throw error;
+  for(const row of data||[]){
+   const contactId=String(row.contact_user_id||"");
+   if(!contactId||contactId===uid)continue;
+   const ch=client.channel("farnaz-presence:"+contactId,{config:{private:true,presence:{key:contactId}}});
+   farnazPresenceChannels.set(contactId,ch);
+   ch.on("presence",{event:"sync"},()=>{
+    if(farnazPresenceChannels.get(contactId)!==ch)return;
+    const state=ch.presenceState()||{};
+    const entries=Object.values(state).flat();
+    const entry=entries.find(x=>String(x.user_id||"")===contactId&&x.online===true);
+    if(entry)farnazPresenceMap.set(contactId,entry);else farnazPresenceMap.delete(contactId);
+    window.farnazPresenceMap=farnazPresenceMap;notifyPresence();
+   }).subscribe();
+  }
+ }catch(e){console.warn("Could not subscribe to mutual-contact presence:",e);}
+ if(farnazVisibilityHandler)document.removeEventListener("visibilitychange",farnazVisibilityHandler);
+ farnazVisibilityHandler=()=>{
+  if(document.visibilityState==="visible"){
+   startFarnazPresence().catch(e=>console.warn("Farnaz presence resume:",e));
+   return;
+  }
+  if(farnazPresenceTimer){clearInterval(farnazPresenceTimer);farnazPresenceTimer=null;}
+  try{client.from("profiles").update({last_seen_at:new Date().toISOString()}).eq("id",uid);}catch(_){}
+  try{ownChannel.untrack();}catch(_){}
+  for(const [id,ch] of farnazPresenceChannels){client.removeChannel(ch).catch(()=>{});farnazPresenceChannels.delete(id);farnazPresenceMap.delete(id);}
+  if(farnazTypingChannel){try{farnazTypingChannel.send({type:"broadcast",event:"typing",payload:{from:uid,typing:false}});}catch(_){}client.removeChannel(farnazTypingChannel).catch(()=>{});farnazTypingChannel=null;}
+  window.farnazPresenceMap=farnazPresenceMap;notifyPresence();
+ };
+ document.addEventListener("visibilitychange",farnazVisibilityHandler);
+}
+async function startPrivateTypingChannel(contactId){
+ if(!currentUser||!contactId)return;
+ const client=getClient(),uid=String(currentUser.id),other=String(contactId);
+ if(farnazTypingChannel){const old=farnazTypingChannel;farnazTypingChannel=null;try{await client.removeChannel(old);}catch(_){}}
+ if(uid===other)return;
+ const pair=[uid,other].sort();
+ const ch=client.channel("farnaz-typing:"+pair.join(":"),{config:{private:true}});
+ farnazTypingChannel=ch;
+ ch.on("broadcast",{event:"typing"},event=>{
   const p=event?.payload||{};
-  if(p.scope!=="private"||String(p.to)!==String(currentUser?.id)||String(p.from)!==String(currentChatUser?.user_id)||privacySettings.show_typing===false)return;
+  if(String(p.from)===uid||String(currentChatUser?.user_id)!==other||privacySettings.show_typing===false)return;
   const subtitle=$("chatSubtitle");if(!subtitle)return;
   subtitle.textContent=p.typing?(english?"Typing…":"در حال نوشتن…"):currentChatPresenceLabel;
   if(remoteTypingTimer)clearTimeout(remoteTypingTimer);
   if(p.typing)remoteTypingTimer=setTimeout(()=>{if(subtitle)subtitle.textContent=currentChatPresenceLabel;},2200);
-}).channel.on("presence",{event:"sync"},()=>{
-  if(farnazPresenceChannel!==channel)return;
-  const state=channel.presenceState(),next=new Map();
-  for(const entries of Object.values(state||{}))for(const entry of entries||[]){const id=String(entry.user_id||"");if(id)next.set(id,entry);}
-  farnazPresenceMap=next;window.farnazPresenceMap=next;
-  window.dispatchEvent(new CustomEvent("farnaz-presence-updated",{detail:{userIds:[...next.keys()]}}));
- }).subscribe(async status=>{if(status==="SUBSCRIBED"){await publish();if(farnazPresenceTimer)clearInterval(farnazPresenceTimer);farnazPresenceTimer=setInterval(publish,60000);}});
+ }).subscribe();
 }
 async function stopFarnazPresence(){
  if(farnazPresenceTimer){clearInterval(farnazPresenceTimer);farnazPresenceTimer=null;}
- const channel=farnazPresenceChannel;farnazPresenceChannel=null;farnazPresenceMap=new Map();window.farnazPresenceMap=farnazPresenceMap;
- if(channel&&farnazClient){try{await channel.untrack();await farnazClient.removeChannel(channel);}catch(_){}}
+ if(farnazVisibilityHandler){document.removeEventListener("visibilitychange",farnazVisibilityHandler);farnazVisibilityHandler=null;}
+ const client=farnazClient;
+ const own=farnazPresenceChannel;farnazPresenceChannel=null;
+ if(own&&client){try{await own.untrack();await client.removeChannel(own);}catch(_){}}
+ if(client){
+  for(const ch of farnazPresenceChannels.values()){try{await client.removeChannel(ch);}catch(_){}}
+  if(farnazTypingChannel){try{await client.removeChannel(farnazTypingChannel);}catch(_){}}
+ }
+ farnazPresenceChannels.clear();farnazTypingChannel=null;farnazPresenceMap=new Map();window.farnazPresenceMap=farnazPresenceMap;notifyFarnazPresenceChanged();
 }
+function notifyFarnazPresenceChanged(){window.dispatchEvent(new CustomEvent("farnaz-presence-updated",{detail:{userIds:[...farnazPresenceMap.keys()]}}));}
 window.farnazCanSeePresence=async function(userId){
  const id=String(userId||"");if(!id||id===String(currentUser?.id))return true;
- const p=farnazPresenceMap.get(id);if(!p)return false;
- const visibility=p.presence_visibility||"contacts";
- if(visibility==="everyone")return true;if(visibility==="nobody")return false;
- if(farnazPresenceContactCache.has(id))return farnazPresenceContactCache.get(id);
- try{const {data,error}=await getClient().from("contacts").select("contact_user_id").eq("user_id",currentUser.id).eq("contact_user_id",id).maybeSingle();const allowed=!error&&!!data;farnazPresenceContactCache.set(id,allowed);return allowed;}catch(_){return false;}
+ return farnazPresenceMap.has(id);
 };
 
 function applyPrivacySettings(){
@@ -717,8 +765,8 @@ async function logout(){
 }
 
 function sendPrivateTyping(typing){
- if(!farnazPresenceChannel||!currentUser||!currentChatUser||privacySettings.show_typing===false)return;
- farnazPresenceChannel.send({type:"broadcast",event:"typing",payload:{scope:"private",from:currentUser.id,to:currentChatUser.user_id,typing:!!typing}});
+ if(!farnazTypingChannel||!currentUser||!currentChatUser||privacySettings.show_typing===false)return;
+ farnazTypingChannel.send({type:"broadcast",event:"typing",payload:{from:currentUser.id,typing:!!typing}});
 }
 document.addEventListener("input",event=>{
  if(!event.target?.matches("#messageText"))return;
@@ -1025,7 +1073,7 @@ async function refreshPrivatePresence(contactId){
 window.addEventListener("farnaz-presence-updated",()=>{if(currentChatUser&&!remoteTypingTimer)refreshPrivatePresence(currentChatUser.user_id);});
 function openChat(contact,fromPage="chatsPage"){
   ensureContactInfoDialog();
-  currentChatUser=contact;previousPage=fromPage;
+  currentChatUser=contact;previousPage=fromPage;startPrivateTypingChannel(contact.user_id).catch(()=>{});
   $("conversationTitle").textContent=contact.display_name||(english?"Farnaz user":"مخاطب فرناز");
   $("chatSubtitle").textContent=english?"Private conversation":"گفتگوی خصوصی";
   renderAvatar($("chatAvatar"),contact.avatar_url||"",$("conversationTitle").textContent);

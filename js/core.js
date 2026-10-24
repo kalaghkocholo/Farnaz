@@ -831,7 +831,7 @@ async function openSearchedMessage(messageId,createdAt,contactId){
     const ownIds=messages.filter(m=>String(m.sender_id)===String(myId)).map(m=>String(m.id));
     const received=messages.filter(m=>String(m.receiver_id)===String(myId)&&String(m.sender_id)!==String(myId)).map(m=>({message_id:m.id,sender_id:m.sender_id,receiver_id:m.receiver_id,reader_id:myId}));
     const receiptPromise=ownIds.length?client.from("message_read_receipts").select("message_id,reader_id,read_at").in("message_id",ownIds):Promise.resolve({data:[],error:null});
-    const readPromise=received.length?client.from("message_read_receipts").upsert(received,{onConflict:"message_id,reader_id",ignoreDuplicates:true}).then(({error})=>{if(error)console.warn("Could not save read receipts:",error.message);}):Promise.resolve();
+    const readPromise=(typeof privacySettings==="undefined"||privacySettings.show_read_receipts!==false)&&received.length?client.from("message_read_receipts").upsert(received,{onConflict:"message_id,reader_id",ignoreDuplicates:true}).then(({error})=>{if(error)console.warn("Could not save read receipts:",error.message);}):Promise.resolve();
     const [receipts]=await Promise.all([receiptPromise,readPromise]);
     if(request!==chatRequestNumber||currentUser?.id!==myId||String(currentChatUser?.user_id)!==String(contactId))return;
     readReceiptMessageIds=new Set((receipts?.data||[]).filter(r=>String(r.reader_id)!==String(myId)).map(r=>String(r.message_id)));

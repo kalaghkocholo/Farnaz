@@ -1248,3 +1248,7 @@ body[data-auth-state="guest"] #openSettingsButton{display:none!important;visibil
 .new-chat-popover{gap:8px}
 body[data-theme="light"] .welcome-shell{background:radial-gradient(ellipse at 50% 5%,color-mix(in srgb,var(--accent,#7896c5) 13%,transparent),transparent 55%),linear-gradient(155deg,#fff,#f3f6fb)}
 @media(max-width:360px){.welcome-shell{min-height:62dvh;padding:24px 15px 20px}.welcome-shell h2{font-size:22px}.welcome-mark{width:86px;height:86px;border-radius:25px}.welcome-mark img{width:73px;height:73px}}
+
+/* Header F mark is a compact, accessible button. */
+.logo-button{border:0;padding:0;cursor:pointer;font-family:inherit;line-height:1}
+.logo-button:focus-visible{outline:2px solid var(--white);outline-offset:3px}

@@ -133,6 +133,7 @@ function applySettingsLanguage(){
 window.addEventListener("storage",event=>{if(event.key===APPEARANCE_KEY){appearanceSettings=readAppearanceSettings();applyAppearanceSettings();}});
 if(window.matchMedia){window.matchMedia("(prefers-color-scheme: light)").addEventListener?.("change",()=>{if(appearanceSettings.theme==="system")applyAppearanceSettings();});}
 applyAppearanceSettings();
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",initPhoneContactsImport);else initPhoneContactsImport();
 if("serviceWorker" in navigator && location.protocol!=="file:"){
   navigator.serviceWorker.register("./service-worker.js").then(reg=>{window.farnazServiceWorkerRegistration=reg;reg.update().catch(()=>{});})
     .catch(error=>console.warn("Farnaz service worker registration:",error));
@@ -460,6 +461,13 @@ function toggleLanguage(){
     f4:["گروه‌ها و کانال‌ها","Groups & channels"],f4d:["گفت‌وگوهای جمعی و اطلاع‌رسانی در یک جا.","Group conversations and updates in one place."],
     chatsHeading:["گفتگوها","Chats"],chatsIntro:["گفتگوهای اخیرت را اینجا می‌بینی.","Your recent conversations appear here."],
     contactsHeading:["مخاطبان","Contacts"],
+    phoneContactsImportTitle:["همگام‌سازی مخاطبان گوشی","Sync phone contacts"],
+    phoneContactsImportIntro:["فایل مخاطبان آیفون با پسوند VCF را انتخاب کن. اطلاعات فقط برای حساب خودت ذخیره می‌شود.","Choose your iPhone contacts VCF file. Contact data is stored privately for your account."],
+    phoneContactsCountryLabel:["کد کشور برای شماره‌های محلی","Country code for local numbers"],
+    importPhoneContactsButton:["واردکردن / به‌روزرسانی فایل VCF","Import / update VCF file"],
+    phoneContactsPrivacyNote:["برای همگام‌سازی دوباره، فایل به‌روز مخاطبان را از آیفون انتخاب کن. حذف فایل یا مخاطب از گوشی، مخاطبان ذخیره‌شده فرناز را خودکار حذف نمی‌کند.","To sync again, select an updated VCF file from your iPhone. Removing a contact from your phone does not automatically delete saved Farnaz contacts."],
+    savedFarnazContactsTitle:["مخاطبان فرناز","Farnaz contacts"],
+    unmatchedPhoneContactsTitle:["مخاطبان گوشی که هنوز عضو فرناز نیستند","Phone contacts not on Farnaz yet"],
     contactsIntro:["مخاطبان ذخیره‌شده را انتخاب کن یا از جست‌وجوی پایین حساب جدیدی پیدا کن.","Choose a saved contact or find a new account using the search control below."],
     recipientLabel:["ایمیل یا شماره تلفن با کد کشور","Email or phone with country code"],
     recipientCountryLabel:["کد کشور شماره تلفن","Phone country code"],
@@ -925,42 +933,107 @@ function makeContactButton(contact,preview="",timeText="",fromPage="chatsPage"){
   button.addEventListener("click",()=>{if(button.dataset.suppressOpen==="1"){button.dataset.suppressOpen="0";return;}openChat(contact,fromPage);});
   return button;
 }
+async function refreshUnmatchedPhoneContacts(){
+  const list=$("unmatchedPhoneContactsList");if(!list||!currentUser)return;
+  const myId=currentUser.id;list.replaceChildren();
+  try{
+    const {data,error}=await retryRead("phone contacts",()=>getClient().from("user_phone_contacts")
+      .select("id,display_name,phone,matched_user_id,updated_at")
+      .eq("user_id",myId).is("matched_user_id",null).order("display_name",{ascending:true}).limit(5000));
+    if(currentUser?.id!==myId)return;
+    if(error)throw error;
+    for(const item of data||[]){
+      const row=document.createElement("div");row.className="phone-contact-row";
+      const avatar=document.createElement("div");avatar.className="avatar";avatar.textContent=initials(item.display_name);
+      const details=document.createElement("div");details.className="phone-contact-details";
+      const name=document.createElement("strong");name.textContent=item.display_name||(english?"Phone contact":"مخاطب گوشی");
+      const phone=document.createElement("span");phone.textContent=item.phone||"";
+      const state=document.createElement("small");state.textContent=english?"Not on Farnaz yet":"هنوز در فرناز ثبت‌نام نکرده";
+      details.append(name,phone,state);row.append(avatar,details);list.appendChild(row);
+    }
+    setStatus("unmatchedPhoneContactsStatus",data?.length?(english?"These contacts are saved privately for your account.":"این مخاطبان به‌صورت خصوصی برای حساب خودت ذخیره شده‌اند."):(english?"No unmatched phone contacts. Import a VCF file to begin.":"مخاطب گوشیِ تطبیق‌نیافته‌ای نیست؛ برای شروع فایل VCF را وارد کن."));
+  }catch(e){
+    console.error("Unmatched phone contacts:",e);
+    setStatus("unmatchedPhoneContactsStatus",(english?"Could not load phone contacts: ":"بارگذاری مخاطبان گوشی ناموفق بود: ")+e.message,true);
+  }
+}
 async function refreshSavedContacts(){
   const list=$("savedContactsList");if(!list||!currentUser)return;
-  const myId=currentUser.id;
-  list.replaceChildren();
+  const myId=currentUser.id;list.replaceChildren();
   setStatus("savedContactsStatus",english?"Loading saved contacts...":"در حال بارگذاری مخاطبان ذخیره‌شده...");
   try{
-    const {data,error}=await retryRead("saved contacts",()=>getClient().from("contacts")
-      .select("contact_user_id,created_at")
-      .eq("user_id",myId).order("created_at",{ascending:false}));
-    if(currentUser?.id!==myId)return;
-    if(!data?.length){
-      $("newChatContactsList")?.replaceChildren();filterSavedContactsForNewChat();
-      setStatus("savedContactsStatus",english?"No saved contacts yet. Search using the button below.":"هنوز مخاطبی ذخیره نشده؛ از دکمه جست‌وجوی پایین استفاده کن.");
-      return;
-    }
-    const profiles=await Promise.all(data.map(async item=>{
-      try{return await getContactProfile(item.contact_user_id);}
-      catch(e){console.warn("Saved contact profile:",e);return null;}
-    }));
+    const {data,error}=await retryRead("saved contacts",()=>getClient().from("contacts").select("contact_user_id,created_at").eq("user_id",myId).order("created_at",{ascending:false}));
+    if(currentUser?.id!==myId)return;if(error)throw error;
+    let phoneData=[];
+    try{
+      const phoneResult=await retryRead("phone contact names",()=>getClient().from("user_phone_contacts").select("display_name,matched_user_id").eq("user_id",myId).not("matched_user_id","is",null).limit(5000));
+      phoneData=phoneResult.data||[];
+    }catch(e){console.warn("Imported phone contact names:",e);}
+    const importedNames=new Map();
+    for(const item of phoneData){if(item.matched_user_id&&!importedNames.has(String(item.matched_user_id)))importedNames.set(String(item.matched_user_id),item.display_name);}
+    const profiles=await Promise.all((data||[]).map(async item=>{try{return await getContactProfile(item.contact_user_id);}catch(e){console.warn("Saved contact profile:",e);return null;}}));
     if(currentUser?.id!==myId)return;
     const dropdownList=$("newChatContactsList");if(dropdownList)dropdownList.replaceChildren();
     const seenContacts=new Set();
-    data.forEach((item,i)=>{
+    (data||[]).forEach((item,i)=>{
       const contactId=String(item.contact_user_id||"");if(!contactId||seenContacts.has(contactId))return;seenContacts.add(contactId);
       const p=profiles[i]||{};
-      const contact={user_id:contactId,display_name:p.display_name||(english?"Farnaz user":"کاربر فرناز"),avatar_url:p.avatar_url||"",phone:p.phone||""};
-      list.appendChild(makeContactButton(contact,p.phone||(english?"Saved contact":"مخاطب ذخیره‌شده"),
-        new Date(item.created_at).toLocaleDateString(english?"en":"fa-IR"),"contactsPage"));
-      if(dropdownList){const quick=makeContactButton(contact,p.phone||(english?"Saved contact":"مخاطب ذخیره‌شده"),"","chatsPage");quick.dataset.contactName=contact.display_name;dropdownList.appendChild(quick);}
+      const contact={user_id:contactId,display_name:importedNames.get(contactId)||p.display_name||(english?"Farnaz user":"کاربر فرناز"),avatar_url:p.avatar_url||"",phone:p.phone||""};
+      list.appendChild(makeContactButton(contact,p.phone||(english?"Farnaz member":"عضو فرناز"),item.created_at?new Date(item.created_at).toLocaleDateString(english?"en":"fa-IR"):"","contactsPage"));
+      if(dropdownList){const quick=makeContactButton(contact,p.phone||(english?"Farnaz member":"عضو فرناز"),"","chatsPage");quick.dataset.contactName=contact.display_name;dropdownList.appendChild(quick);}
     });
     filterSavedContactsForNewChat();
-    setStatus("savedContactsStatus","");
+    setStatus("savedContactsStatus",(data||[]).length?"":(english?"No saved Farnaz contacts yet.":"هنوز مخاطب عضو فرنازی ذخیره نشده است."));
+    await refreshUnmatchedPhoneContacts();
   }catch(e){
     console.error("Saved contacts:",e);
     setStatus("savedContactsStatus",(english?"Could not load saved contacts: ":"بارگذاری مخاطبان ناموفق بود: ")+e.message,true);
+    await refreshUnmatchedPhoneContacts();
   }
+}
+function parseVCardContacts(text,countryCode){
+  const normalized=String(text||"").replace(/\r\n/g,"\n").replace(/\r/g,"\n");
+  const unfolded=normalized.replace(/\n[ \t]/g,"");
+  const cards=unfolded.split(/BEGIN:VCARD/i).slice(1),results=[],seen=new Set();
+  for(const rawCard of cards){
+    const body=rawCard.split(/END:VCARD/i)[0]||"",lines=body.split("\n");
+    let name="";const phones=[];
+    for(const line of lines){
+      const colon=line.indexOf(":");if(colon<0)continue;
+      const key=line.slice(0,colon).split(";")[0].split(".").pop().toUpperCase();
+      let value=line.slice(colon+1).trim();
+      value=value.replace(/\\n/gi," ").replace(/\\,/g,",").replace(/\\;/g,";").replace(/\\\\/g,"\\");
+      if(key==="FN"&&!name)name=value;
+      if(key==="N"&&!name){const parts=value.split(";").map(part=>part.trim()).filter(Boolean);name=[parts[1],parts[0],parts.slice(2).join(" ")].filter(Boolean).join(" ");}
+      if(key==="TEL"&&value){const phone=normalizePhone(value,countryCode);if(/^\+[1-9]\d{7,14}$/.test(phone))phones.push(phone);}
+    }
+    if(!name)name=english?"Phone contact":"مخاطب گوشی";
+    for(const phone of phones){if(seen.has(phone))continue;seen.add(phone);results.push({display_name:name.slice(0,120),phone});}
+  }
+  return results;
+}
+async function handlePhoneContactsFile(event){
+  const input=event?.target||$("phoneContactsFile"),file=input?.files?.[0];if(!file||!currentUser)return;
+  const button=$("importPhoneContactsButton"),myId=currentUser.id;
+  button.disabled=true;setStatus("phoneContactsImportStatus",english?"Reading VCF file…":"در حال خواندن فایل VCF…");
+  try{
+    if(file.size>15*1024*1024)throw new Error(english?"VCF file must be 15 MB or smaller.":"حجم فایل VCF باید حداکثر ۱۵ مگابایت باشد.");
+    const contacts=parseVCardContacts(await file.text(),$("phoneContactsCountry").value);
+    if(!contacts.length)throw new Error(english?"No valid phone numbers were found in this VCF file.":"شماره تلفن معتبری در فایل VCF پیدا نشد.");
+    const {data,error}=await getClient().rpc("sync_farnaz_phone_contacts",{p_contacts:contacts});if(error)throw error;
+    if(currentUser?.id!==myId)return;
+    const result=Array.isArray(data)?data[0]:(data||{});
+    await refreshSavedContacts();
+    setStatus("phoneContactsImportStatus",english
+      ?`Sync complete: ${result.processed??contacts.length} numbers processed, ${result.matched??0} matched with Farnaz accounts, ${result.unmatched??0} not registered.`
+      :`همگام‌سازی انجام شد: ${result.processed??contacts.length} شماره پردازش شد؛ ${result.matched??0} مورد با حساب‌های فرناز تطبیق یافت و ${result.unmatched??0} مورد هنوز عضو نیست.`);
+  }catch(e){
+    console.error("Phone contacts import:",e);
+    setStatus("phoneContactsImportStatus",(english?"Could not sync contacts: ":"همگام‌سازی مخاطبان ناموفق بود: ")+e.message,true);
+  }finally{button.disabled=false;if(input)input.value="";}
+}
+function initPhoneContactsImport(){
+  const input=$("phoneContactsFile");if(input&&!input.dataset.bound){input.dataset.bound="1";input.addEventListener("change",handlePhoneContactsFile);}
 }
 let conversationListRequestNumber=0;
 async function refreshConversationList(){

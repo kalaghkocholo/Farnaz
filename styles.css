@@ -1295,3 +1295,49 @@ body[data-theme="light"] .welcome-shell{background:radial-gradient(ellipse at 50
 }
 #homePage:not(.active) > #welcomeLanguageButton{display:none!important}
 #homePage .welcome-shell .welcome-language-switch{display:none!important}
+
+
+/* Phase 1 fixes: search/composer surfaces, contacts import toggle, avatars and nav. */
+#chatsPage .conversation-search{
+  background:var(--bg)!important;
+  border-color:var(--border)!important;
+}
+#chatsPage .conversation-search input{
+  background:transparent!important;
+}
+.app.chat-mode>#chatPage .composer-shell{
+  background:var(--bg)!important;
+}
+.app.chat-mode>#chatPage .send-row textarea{
+  background:transparent!important;
+}
+.nav-inner{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+#savedContactsList .avatar,
+#unmatchedPhoneContactsList .avatar{
+  width:48px!important;height:48px!important;min-width:48px!important;
+  font-size:18px!important;flex:0 0 48px!important;
+}
+#profilePage #userPhone,
+#profilePage .profile-phone{
+  direction:ltr!important;
+  text-align:right!important;
+  unicode-bidi:isolate!important;
+}
+#contactsPage .contacts-import-toggle{
+  position:fixed;z-index:141;
+  right:max(14px,calc((100vw - 560px)/2 + 14px));
+  bottom:calc(82px + env(safe-area-inset-bottom));
+  width:48px;height:48px;border:1px solid var(--border);
+  border-radius:50%;background:var(--panel);color:var(--accent);
+  box-shadow:0 6px 22px #0005;font-size:27px;line-height:1;
+  display:grid;place-items:center;
+}
+#contactsPage .phone-contacts-import[hidden]{display:none!important}
+#contactsPage .phone-contacts-import{
+  max-height:calc(100dvh - 170px);overflow:auto;
+}
+.app>header{position:relative}
+.app>header #openSettingsButton:not([hidden]){
+  position:absolute!important;left:0!important;right:auto!important;
+  top:4px!important;margin:0!important;z-index:5;
+}

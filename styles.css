@@ -549,7 +549,7 @@ body[data-font-color="white"][data-theme] .bottom-nav .nav-button { color:#fffff
   background:var(--their-message-bg,color-mix(in srgb,var(--accent) 15%,var(--panel2)))!important;
   color:var(--their-message-ink,var(--white))!important;
 }
-.message p{color:inherit!important}
+
 .message time{color:inherit!important;opacity:.78}
 .message .message-quote{color:inherit!important;opacity:.88}
 

@@ -1269,10 +1269,10 @@ body[data-theme="light"] .welcome-shell{background:radial-gradient(ellipse at 50
   box-sizing:border-box!important;
   position:fixed!important;
   top:calc(env(safe-area-inset-top, 0px) + 14px)!important;
-  left:14px!important;
-  right:auto!important;
+  right:14px!important;
+  left:auto!important;
+  inset-inline-end:14px!important;
   inset-inline-start:auto!important;
-  inset-inline-end:auto!important;
   transform:none!important;
   z-index:9999!important;
   display:inline-flex!important;

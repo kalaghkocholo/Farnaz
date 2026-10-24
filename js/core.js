@@ -707,7 +707,7 @@ async function savePrivacySetting(key,value){
  try{const {error}=await getClient().from("profiles").update({[key]:value}).eq("id",currentUser.id);if(error)throw error;
   if(status)status.textContent=english?"Privacy settings saved.":"تنظیمات حریم خصوصی ذخیره شد.";
   window.dispatchEvent(new CustomEvent("farnaz-privacy-updated",{detail:{...privacySettings}}));
-  if(farnazPresenceChannel)startFarnazPresence().catch(()=>{});
+  if(farnazPresenceChannel)startFarnazPresence().then(()=>{if(currentChatUser&&privacySettings.show_typing!==false)startPrivateTypingChannel(currentChatUser.user_id).catch(()=>{});}).catch(()=>{});
  }catch(error){privacySettings={...privacySettings,[key]:previous};applyPrivacySettings();if(status)status.textContent=(english?"Could not save: ":"ذخیره ناموفق بود: ")+(error?.message||String(error));}
 }
 

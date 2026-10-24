@@ -321,6 +321,19 @@ function startNewChat(){
   toggleContactSearch(false);
   toggleNewChatPopover();
 }
+function createGroupFromHome(){
+  if(!currentUser){openAuth();return;}
+  toggleNewChatPopover(false);
+  navigate("spacesPage");
+  window.setTimeout(()=>{const createButton=$("createSpaceBtn");if(createButton)createButton.click();},80);
+}
+function applyConversationSearch(){
+  const query=($("conversationSearch")?.value||"").trim().toLocaleLowerCase();
+  $("conversationList")?.querySelectorAll(".conversation-card").forEach(card=>{
+    const text=(card.textContent||"").toLocaleLowerCase();
+    card.hidden=!!query&&!text.includes(query);
+  });
+}
 function toggleNewChatPopover(force){
   const panel=$("newChatPopover"),button=$("topNewChatButton");
   if(!panel||!button)return;
@@ -380,6 +393,7 @@ function navigate(pageId){
   document.querySelectorAll(".nav-button").forEach(b=>b.classList.toggle("active",b.dataset.page===pageId));
   $("bottomNav").classList.toggle("visible",pageId!=="homePage"&&pageId!=="chatPage");
   $("topNewChatButton").classList.toggle("visible",pageId==="chatsPage");
+  if(pageId==="chatsPage")applyConversationSearch();
   if(pageId!=="chatsPage")toggleNewChatPopover(false);
   if(pageId!=="contactsPage")toggleContactSearch(false);
   if(pageId==="chatsPage")refreshConversationList();
@@ -399,6 +413,7 @@ function openAdjacentConversation(direction){
 /* Horizontal swipe navigation disabled: keep private chat stationary on mobile. */
 
 function setConversationView(view){conversationView=view;refreshConversationList();}
+$("conversationSearch")?.addEventListener("input",applyConversationSearch);
 function prefFor(id){return conversationPrefs.get(id)||{pinned:false,archived:false,hidden_at:null};}
 async function saveConversationPref(contactId,patch){
   const next={...prefFor(contactId),...patch,user_id:currentUser.id,contact_user_id:contactId,updated_at:new Date().toISOString()};
@@ -550,6 +565,7 @@ function renderUser(user,name){
   $("userEmail").textContent=user.email||"";
   setPhoneDisplay($("userPhone"),currentPhone);
   renderAvatar($("userAvatar"),currentAvatarUrl,$("userName").textContent);
+  if($("homePage")?.classList.contains("active"))navigate("chatsPage");
 }
 async function showUser(user){
   const request=++profileRequestNumber;
@@ -1294,6 +1310,7 @@ async function refreshConversationList(){
       btn.addEventListener("touchend",e=>{if(Math.abs(e.changedTouches[0].clientX-sx)>65){btn.dataset.suppressOpen="1";showConversationActions(card,c.user_id);}},{passive:true});
       card.appendChild(btn);list.appendChild(card);
     });
+    applyConversationSearch();
   }catch(e){
     console.error("Inbox load:",e);
     setStatus("inboxStatus",(english?"Could not load conversations: ":"بارگذاری گفتگوها ناموفق بود: ")+e.message,true);

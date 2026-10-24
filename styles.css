@@ -1184,3 +1184,9 @@ body[data-theme="light"] .message-tools-floating>.mini-button:active{background:
 
 /* Auth state is explicit: never expose Settings on the guest/login screen. */
 body[data-auth-state="guest"] #openSettingsButton{display:none!important;visibility:hidden!important;pointer-events:none!important}
+
+
+/* Profile phone visibility preference */
+.profile-phone-visibility{display:flex;align-items:center;gap:10px;margin-top:12px;cursor:pointer;line-height:1.6}
+.profile-phone-visibility input{width:20px;height:20px;flex:0 0 auto;accent-color:var(--accent,#50e3c2)}
+#showPhoneSettingHint{margin:5px 0 12px}

@@ -221,6 +221,10 @@ const authChecks = [
     "js/core.js must retain the email/password sign-in path"],
   [coreSource.includes("client.auth.getSession()") && coreSource.includes("window.FarnazBoot=()=>"),
     "js/core.js must restore the saved session from the app boot entry point"],
+  [coreSource.includes('retryRead("create current user profile"') && coreSource.includes('withTimeout(operation(),9000,label)'),
+    "js/core.js must bound the initial profile creation request"],
+  [coreSource.includes("could not restore your saved session") && coreSource.includes("setConnectionBanner("),
+    "js/core.js must visibly report a failed saved-session restore"],
   [chatSource.includes("window.loadPrivateMessages") || chatSource.includes("loadPrivateMessages"),
     "js/chat-menu-v5.js must retain the explicit private-message loader"],
 ];

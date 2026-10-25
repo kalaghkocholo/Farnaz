@@ -908,6 +908,7 @@ async function savePrivacySetting(key,value){
  const status=$("privacySettingsStatus");if(status)status.textContent=english?"Saving…":"در حال ذخیره…";
  try{const {error}=await getClient().from("profiles").update({[key]:value}).eq("id",currentUser.id);if(error)throw error;
   if(status)status.textContent=english?"Privacy settings saved.":"تنظیمات حریم خصوصی ذخیره شد.";
+  try{const cached=await window.FarnazLocalStore?.getSnapshot(currentUser.id,"profile");if(cached)await window.FarnazLocalStore.saveSnapshot(currentUser.id,"profile",{...cached,[key]:value});}catch(cacheError){console.warn("Cached privacy settings update:",cacheError);}
   window.dispatchEvent(new CustomEvent("farnaz-privacy-updated",{detail:{...privacySettings}}));
   if(farnazPresenceChannel)startFarnazPresence().then(()=>{if(currentChatUser&&privacySettings.show_typing!==false)startPrivateTypingChannel(currentChatUser.user_id).catch(()=>{});}).catch(()=>{});
  }catch(error){privacySettings={...privacySettings,[key]:previous};applyPrivacySettings();if(status)status.textContent=(english?"Could not save: ":"ذخیره ناموفق بود: ")+(error?.message||String(error));}
@@ -960,6 +961,7 @@ async function saveProfile(event){
       console.warn("Auth metadata update:",metadataError);
     }
     renderUser(currentUser,currentProfileName);$("avatarFile").value="";
+    try{await window.FarnazLocalStore?.saveSnapshot(currentUser.id,"profile",{...data,presence_visibility:privacySettings.presence_visibility,last_seen_visibility:privacySettings.last_seen_visibility,show_typing:privacySettings.show_typing,show_read_receipts:privacySettings.show_read_receipts,show_space_online_count:privacySettings.show_space_online_count});}catch(cacheError){console.warn("Cached profile update:",cacheError);}
     setStatus("profileStatus",english?"Profile saved.":"پروفایل ذخیره شد.");
   }catch(e){
     console.error("Profile save:",e);

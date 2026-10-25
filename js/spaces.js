@@ -100,9 +100,30 @@ function buildSpaceSwipeActions(space,role,shell,card){
 }
 async function refresh(){
  if(!currentUser)return;if(active&&q("spaceDetail")&&!q("spaceDetail").hidden)return;
- q("spaceList").replaceChildren();q("spacesStatus").textContent=tr("در حال بارگذاری…","Loading…");
- try{const {data,error}=await withTimeout(getClient().from("spaces").select("*").order("created_at",{ascending:false}).limit(200),9000,"فهرست گروه‌ها و کانال‌ها");if(error)throw error;spaces=data||[];
- const {data:mem}=await withTimeout(getClient().from("space_members").select("space_id,role").eq("user_id",currentUser.id),9000,"عضویت‌های گروه‌ها");const mm=new Map((mem||[]).map(x=>[x.space_id,x.role]));const f=document.querySelector("[data-filter].active")?.dataset.filter||"all";const archivedIds=getSpaceSet("archived"),pinnedIds=getSpaceSet("pinned");let rows=spaces.filter(s=>f==="archived"?archivedIds.has(String(s.id)):!archivedIds.has(String(s.id))&&(f==="all"||s.type===f));rows.sort((a,b)=>(pinnedIds.has(String(b.id))?1:0)-(pinnedIds.has(String(a.id))?1:0));q("spaceList").replaceChildren();
+ const myId=currentUser.id;
+ q("spacesStatus").textContent=tr("در حال بارگذاری…","Loading…");
+ let cached=null;
+ try{cached=await window.FarnazLocalStore?.getSnapshot(myId,"spaces");}catch(cacheError){console.warn("Cached spaces read:",cacheError);}
+ if(currentUser?.id!==myId)return;
+ if(cached&&Array.isArray(cached.spaces)){
+  spaces=cached.spaces;
+  const cachedRoles=new Map((cached.memberships||[]).map(x=>[String(x.space_id),x.role]));
+  renderSpacesList(spaces,cachedRoles,true);
+ }
+ try{
+  const {data,error}=await withTimeout(getClient().from("spaces").select("*").order("created_at",{ascending:false}).limit(200),9000,"فهرست گروه‌ها و کانال‌ها");if(error)throw error;spaces=data||[];
+  const {data:mem,error:memberError}=await withTimeout(getClient().from("space_members").select("space_id,role").eq("user_id",myId),9000,"عضویت‌های گروه‌ها");if(memberError)throw memberError;
+  const memberships=mem||[];
+  try{await window.FarnazLocalStore?.saveSnapshot(myId,"spaces",{spaces,memberships});}catch(cacheError){console.warn("Cached spaces save:",cacheError);}
+  renderSpacesList(spaces,new Map(memberships.map(x=>[String(x.space_id),x.role])),false);
+ }catch(e){
+  if(currentUser?.id!==myId)return;
+  if(cached&&Array.isArray(cached.spaces)){q("spacesStatus").textContent=tr("گروه‌ها و کانال‌های ذخیره‌شده نمایش داده می‌شوند؛ همگام‌سازی انجام نشد.","Showing saved groups and channels; refresh failed.");}
+  else q("spacesStatus").textContent=tr("بارگذاری ناموفق بود: ","Could not load: ")+e.message;
+ }
+}
+function renderSpacesList(spaceRows,mm,fromCache){
+ const f=document.querySelector("[data-filter].active")?.dataset.filter||"all";const archivedIds=getSpaceSet("archived"),pinnedIds=getSpaceSet("pinned");let rows=(spaceRows||[]).filter(s=>f==="archived"?archivedIds.has(String(s.id)):!archivedIds.has(String(s.id))&&(f==="all"||s.type===f));rows.sort((a,b)=>(pinnedIds.has(String(b.id))?1:0)-(pinnedIds.has(String(a.id))?1:0));q("spaceList").replaceChildren();
  if(!rows.length){const e=document.createElement("div");e.className="space-empty";e.textContent=f==="archived"?tr("آرشیو خالی است.","Archive is empty."):tr("هنوز گروه یا کانالی نداری؛ از دکمه ایجاد شروع کن.","No groups or channels yet. Create one to get started.");q("spaceList").appendChild(e);}
  for(const s of rows){
  const role=mm.get(s.id)||null,muted=isSpaceMuted(s.id),pinned=isSpacePinned(s.id),archived=isSpaceArchived(s.id);

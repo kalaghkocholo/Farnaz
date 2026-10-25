@@ -1552,6 +1552,10 @@ async function findRecipient(event){
         // Authentication succeeded: enter the app before loading optional profile/chat data.
         // A later conversation or realtime failure must not be reported as a failed login.
         const authenticatedUser=result.data.user;
+        // Set the authenticated user before navigating. navigate() deliberately
+        // opens the auth form when currentUser is empty; navigating first used to
+        // reopen the form and erase the email/password immediately after login.
+        currentUser=authenticatedUser;
         closeAuth();
         navigate("chatsPage");
         // Authentication has succeeded. Keep profile and inbox initialization

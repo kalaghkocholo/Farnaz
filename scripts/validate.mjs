@@ -139,7 +139,7 @@ if (!loader) {
         errors.push("service-worker.js shell URL/version does not exactly match a dynamically loaded script: " + url);
       }
     }
-    for (const match of html.matchAll(/<link\\b[^>]*rel=["']stylesheet["'][^>]*href=["'](\\.\\/[^"']+)["'][^>]*>/gi)) {
+    for (const match of html.matchAll(/<link\b[^>]*rel=["']stylesheet["'][^>]*href=["'](\.\/[^"']+)["'][^>]*>/gi)) {
       const url = match[1];
       if (!shellUrls.has(url)) {
         errors.push("service-worker.js shell URL/version does not exactly match a stylesheet: " + url);

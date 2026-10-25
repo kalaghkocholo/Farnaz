@@ -176,6 +176,7 @@ async function farnazNetworkFetch(input,init){
   const isRestRequest=/\/rest\/v1\//i.test(requestUrl);
   const needsRequestTimeout=isStorageUpload||isProfileRequest||isAuthRequest||isRestRequest;
   const requestTimeoutMs=isAuthRequest?15000:(isRestRequest?15000:25000);
+  const isPasswordLogin=/\/auth\/v1\/token\?grant_type=password(?:&|$)/i.test(requestUrl);
   const canRetry=isStorageUpload||(!(init?.body&&typeof init.body!=="string"&&!(init.body instanceof URLSearchParams)) &&
     !(typeof Request!=="undefined"&&input instanceof Request&&input.bodyUsed));
   let lastError;
@@ -214,7 +215,14 @@ async function farnazNetworkFetch(input,init){
       }
       const message=String(error?.message||error||"");
       const networkFailure=error instanceof TypeError||/network|fetch failed|load failed|connection|timeout/i.test(message);
-      // Do not automatically replay auth requests on flaky networks.
+      // A password sign-in is safe to retry after a transport-level failure:
+      // Supabase may have completed the request while Safari lost the response.
+      // Do not replay sign-up, which could turn a successful first attempt into
+      // a misleading "user already exists" error.
+      if(isPasswordLogin&&networkFailure&&attempt<2){
+        await new Promise(resolve=>setTimeout(resolve,attempt===0?500:1200));
+        continue;
+      }
       if(isAuthRequest||!canRetry||!networkFailure||attempt===2)throw error;
       await new Promise(resolve=>setTimeout(resolve,attempt===0?450:1100));
     }

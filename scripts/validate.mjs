@@ -154,10 +154,6 @@ if (!loader) {
         errors.push("service-worker.js shell URL/version does not exactly match a dynamically loaded script: " + match[1]);
       }
     }
-      if (!shellUrls.has(match[1])) {
-      errors.push("service-worker.js shell URL/version does not exactly match a dynamically loaded script: " + match[1]);
-      }
-      }
     for (const path of loadedLocalPaths) {
       if (!shellPaths.has(path)) {
         errors.push("service-worker.js shell is missing a dynamically loaded script: " + path);
@@ -168,7 +164,6 @@ if (!loader) {
       if (!shellUrls.has(url)) {
         errors.push("service-worker.js shell URL/version does not exactly match a dynamically loaded script: " + url);
       }
-    }
     }
   }
 }

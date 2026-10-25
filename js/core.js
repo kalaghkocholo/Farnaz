@@ -767,6 +767,11 @@ function showGuest(){
   document.body.dataset.authState="guest";if($("headerFButton"))$("headerFButton").hidden=true;const settingsButton=$("openSettingsButton");if(settingsButton){settingsButton.hidden=true;settingsButton.style.setProperty("display","none","important");}
   window.dispatchEvent(new CustomEvent("farnaz-auth-user",{detail:{userId:null}}));
   currentChatUser=null;
+  // Clear any in-flight profile/connection status so a cancelled request cannot
+  // leave a stale "Loading profile…" message after logout or account switching.
+  setStatus("profileStatus","");
+  setStatus("authStatus","");
+  setConnectionBanner("",false);
   $("bottomNav").classList.remove("visible");
   $("userName").textContent=english?"Farnaz user":"کاربر فرناز";
   $("userEmail").textContent="";$("userPhone").textContent="";

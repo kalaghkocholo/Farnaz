@@ -1,10 +1,12 @@
 "use strict";
 (function(){
   const DB_NAME="farnaz-local-v1";
-  const DB_VERSION=1;
+  const DB_VERSION=2;
   const STORE_MESSAGES="chatMessages";
   const STORE_DRAFTS="drafts";
   const STORE_TEMP="tempFiles";
+  const STORE_SNAPSHOTS="snapshots";
+  const STORE_SPACE_MESSAGES="spaceMessages";
   let opening=null;
 
   function openDB(){
@@ -17,6 +19,8 @@
         if(!db.objectStoreNames.contains(STORE_MESSAGES))db.createObjectStore(STORE_MESSAGES,{keyPath:"key"});
         if(!db.objectStoreNames.contains(STORE_DRAFTS))db.createObjectStore(STORE_DRAFTS,{keyPath:"key"});
         if(!db.objectStoreNames.contains(STORE_TEMP))db.createObjectStore(STORE_TEMP,{keyPath:"key"});
+        if(!db.objectStoreNames.contains(STORE_SNAPSHOTS))db.createObjectStore(STORE_SNAPSHOTS,{keyPath:"key"});
+        if(!db.objectStoreNames.contains(STORE_SPACE_MESSAGES))db.createObjectStore(STORE_SPACE_MESSAGES,{keyPath:"key"});
       };
       request.onsuccess=()=>resolve(request.result);
       request.onerror=()=>{opening=null;reject(request.error||new Error("Local storage unavailable"));};
@@ -119,7 +123,7 @@
   async function clearUser(userId){
     if(!userId)return false;
     const db=await openDB();if(!db)return false;
-    const names=[STORE_MESSAGES,STORE_DRAFTS,STORE_TEMP];
+    const names=[STORE_MESSAGES,STORE_DRAFTS,STORE_TEMP,STORE_SNAPSHOTS,STORE_SPACE_MESSAGES];
     return new Promise((resolve,reject)=>{
       const tx=db.transaction(names,"readwrite");
       for(const name of names){
@@ -136,6 +140,32 @@
       tx.onabort=()=>reject(tx.error||new Error("Local account cleanup aborted"));
     });
   }
+  async function getSnapshot(userId,kind){
+    if(!userId||!kind)return null;
+    const record=await read(STORE_SNAPSHOTS,keyFor(userId,kind));
+    return record&&Object.prototype.hasOwnProperty.call(record,"data")?record.data:null;
+  }
+  async function saveSnapshot(userId,kind,data){
+    if(!userId||!kind||data===undefined)return false;
+    return write(STORE_SNAPSHOTS,{key:keyFor(userId,kind),userId:String(userId),kind:String(kind),data,updatedAt:Date.now()});
+  }
+  async function getSpaceMessages(userId,spaceId){
+    if(!userId||!spaceId)return [];
+    const record=await read(STORE_SPACE_MESSAGES,keyFor(userId,spaceId));
+    return Array.isArray(record?.messages)?record.messages:[];
+  }
+  async function saveSpaceMessages(userId,spaceId,messages){
+    if(!userId||!spaceId||!Array.isArray(messages))return false;
+    const unique=new Map();
+    for(const message of messages){if(message?.id)unique.set(String(message.id),message);}
+    const safe=[...unique.values()].sort((a,b)=>new Date(a.created_at||0)-new Date(b.created_at||0)).slice(-200).map(m=>({
+      id:m.id,space_id:m.space_id,sender_id:m.sender_id,body:typeof m.body==="string"?m.body:null,
+      created_at:m.created_at,edited_at:m.edited_at||null,message_type:m.message_type||"text",
+      attachment_path:m.attachment_path||null,attachment_name:m.attachment_name||null,
+      attachment_mime:m.attachment_mime||null,attachment_size:Number(m.attachment_size)||null
+    }));
+    return write(STORE_SPACE_MESSAGES,{key:keyFor(userId,spaceId),userId:String(userId),spaceId:String(spaceId),messages:safe,updatedAt:Date.now()});
+  }
   async function requestPersistentStorage(){
     try{
       if(!navigator.storage?.persist)return false;
@@ -145,6 +175,7 @@
 
   window.FarnazLocalStore=Object.freeze({
     getMessages,saveMessages,getDraft,saveDraft,clearDraft,
+    getSnapshot,saveSnapshot,getSpaceMessages,saveSpaceMessages,
     saveTemporaryFile,getTemporaryFile,clearUser,requestPersistentStorage
   });
 })();

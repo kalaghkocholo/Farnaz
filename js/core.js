@@ -936,16 +936,23 @@ async function saveProfile(event){
   }finally{button.disabled=false;}
 }
 async function logout(){
-  $("logoutButton").disabled=true;
-  let presenceStopped=false;
+  const button=$("logoutButton");
+  if(button)button.disabled=true;
   try{
-    await stopFarnazPresence();presenceStopped=true;
-    const {error}=await getClient().auth.signOut();if(error)throw error;
-    await stopMessageSubscription();showGuest();
+    // Sign out locally first. Realtime/presence cleanup must never block logout.
+    const client=getClient();
+    const {error}=await client.auth.signOut({scope:"local"});
+    if(error)throw error;
+    showGuest();
+    setStatus("authStatus",english?"You have signed out.":"با موفقیت از حساب خارج شدی.",false);
+    // Cleanup is best-effort and deliberately runs after the UI has returned to guest.
+    void stopMessageSubscription().catch(e=>console.warn("Message channel cleanup after logout:",e));
   }catch(e){
-    if(presenceStopped&&currentUser)startFarnazPresence().catch(()=>{});
-    setStatus("profileStatus",(english?"Sign out failed: ":"خروج ناموفق بود: ")+e.message,true);
-  }finally{$("logoutButton").disabled=false;}
+    console.error("Farnaz logout failed:",e);
+    setStatus("profileStatus",(english?"Sign out failed: ":"خروج ناموفق بود: ")+(e?.message||String(e)),true);
+  }finally{
+    if(button)button.disabled=false;
+  }
 }
 
 function sendPrivateTyping(typing){

@@ -176,8 +176,8 @@ async function farnazNetworkFetch(input,init){
   const isRestRequest=/\/rest\/v1\//i.test(requestUrl);
   const needsRequestTimeout=isStorageUpload||isProfileRequest||isAuthRequest||isRestRequest;
   const requestTimeoutMs=isAuthRequest?15000:(isRestRequest?15000:25000);
-  const canRetry=!(init?.body&&typeof init.body!=="string"&&!(init.body instanceof URLSearchParams)) &&
-    !(typeof Request!=="undefined"&&input instanceof Request&&input.bodyUsed);
+  const canRetry=isStorageUpload||(!(init?.body&&typeof init.body!=="string"&&!(init.body instanceof URLSearchParams)) &&
+    !(typeof Request!=="undefined"&&input instanceof Request&&input.bodyUsed));
   let lastError;
   for(let attempt=0;attempt<3;attempt++){
     let timeoutId=null;
@@ -202,8 +202,12 @@ async function farnazNetworkFetch(input,init){
       if(timeoutId)clearTimeout(timeoutId);
       lastError=error;
       if(error?.name==="AbortError"||error?.name==="TimeoutError"){
+        if(isStorageUpload&&attempt<2){
+          await new Promise(resolve=>setTimeout(resolve,500));
+          continue;
+        }
         if(isAuthRequest)throw new Error(english?"The server did not respond within 15 seconds. Check your connection and try again.":"سرور طی ۱۵ ثانیه پاسخ نداد. اتصال اینترنت را بررسی کن و دوباره تلاش کن.");
-        if(isStorageUpload)throw new Error("بارگذاری عکس پس از ۲۵ ثانیه پاسخ نگرفت. اتصال شبکه را بررسی کن و دوباره ذخیره را بزن.");
+        if(isStorageUpload)throw new Error("بارگذاری عکس پس از دو تلاش ۲۵ ثانیه‌ای پاسخ نگرفت. اتصال شبکه را بررسی کن و دوباره ذخیره را بزن.");
         if(isProfileRequest)throw new Error("بارگذاری مشخصات پس از ۱۵ ثانیه پاسخ نگرفت. اتصال شبکه را بررسی کن و دوباره تلاش کن.");
         if(isRestRequest)throw new Error(english?"Supabase data request timed out after 15 seconds. Check the connection and retry.":"درخواست دریافت اطلاعات از سوپابیس پس از ۱۵ ثانیه پاسخ نگرفت؛ اتصال را بررسی کن و دوباره تلاش کن.");
         throw error;
@@ -872,7 +876,7 @@ async function saveProfile(event){
       setStatus("profileStatus",english?"Uploading profile photo...":"در حال بارگذاری عکس پروفایل...");
       const ext=file.type==="image/png"?"png":file.type==="image/webp"?"webp":"jpg";
       const path=currentUser.id+"/avatar-"+Date.now()+"."+ext;
-      const {error}=await client.storage.from("avatars").upload(path,file,{contentType:file.type,upsert:false});
+      const {error}=await client.storage.from("avatars").upload(path,file,{contentType:file.type,upsert:true});
       if(error)throw error;
       avatarUrl=client.storage.from("avatars").getPublicUrl(path).data.publicUrl;
     }

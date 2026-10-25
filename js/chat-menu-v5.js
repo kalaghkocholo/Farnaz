@@ -819,8 +819,12 @@ $("messageText").addEventListener("keydown",e=>{
   if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("sendMessageForm").requestSubmit();}
 });
 
-async function initializeApp(){
+async async function initializeApp(){
   try{
+    // The Supabase SDK is loaded from CDN asynchronously; wait for it before restoring the saved session.
+    const sdkDeadline=Date.now()+20000;
+    while(!window.supabase?.createClient&&Date.now()<sdkDeadline)await new Promise(resolve=>setTimeout(resolve,200));
+    if(!window.supabase?.createClient)throw new Error(english?"Supabase login library did not load. Refresh and try again.":"کتابخانه ورود سوپابیس بارگذاری نشد؛ صفحه را تازه‌سازی کن.");
     const client=getClient(),{data,error}=await client.auth.getSession();if(error)throw error;
     if(data.session?.user){
       await showUser(data.session.user);await subscribeToMessages();

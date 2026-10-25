@@ -29,16 +29,19 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          VERSION="$(npm view @supabase/supabase-js version)"
+          VERSION="2.118.0"
           test -n "$VERSION"
           TARBALL="$(npm pack "@supabase/supabase-js@$VERSION" --silent)"
           mkdir -p /tmp/farnaz-supabase-package
           tar -xzf "$TARBALL" -C /tmp/farnaz-supabase-package
           SOURCE="/tmp/farnaz-supabase-package/package/dist/umd/supabase.js"
+          LICENSE_SOURCE="/tmp/farnaz-supabase-package/package/LICENSE"
           test -s "$SOURCE"
+          test -s "$LICENSE_SOURCE"
           grep -q "createClient" "$SOURCE"
           mkdir -p vendor
           cp "$SOURCE" vendor/supabase.js
+          cp "$LICENSE_SOURCE" vendor/SUPABASE-LICENSE.txt
           printf '%s\n' "$VERSION" > vendor/supabase-version.txt
           test -s vendor/supabase.js
           echo "Vendored @supabase/supabase-js@$VERSION ($(wc -c < vendor/supabase.js) bytes)"
@@ -49,7 +52,7 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add vendor/supabase.js vendor/supabase-version.txt
+          git add vendor/supabase.js vendor/supabase-version.txt vendor/SUPABASE-LICENSE.txt
           if git diff --cached --quiet; then
             echo "Vendor files are already current."
             exit 0

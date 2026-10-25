@@ -68,7 +68,7 @@ if (!supabaseSdk.includes("createClient")) {
 if (!html.includes('script.src="./vendor/supabase.js"')) {
   errors.push("index.html must load the locally vendored Supabase SDK");
 }
-if (/https:\/\/(?:cdn\.jsdelivr\.net|unpkg\.com)\/.*supabase-js/i.test(html)) {
+if (html.includes("cdn.jsdelivr.net/npm/@supabase/supabase-js") || html.includes("unpkg.com/@supabase/supabase-js")) {
   errors.push("index.html must not depend on a remote Supabase SDK CDN");
 }
 

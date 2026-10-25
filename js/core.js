@@ -167,15 +167,37 @@ window.notifyFarnazIncomingMessage=async function(){
 
 async function farnazNetworkFetch(input,init){
   const nativeFetch=window.fetch.bind(window);
+  const requestUrl=typeof input==="string"?input:(input?.url||"");
+  const isStorageUpload=/\/storage\/v1\//i.test(requestUrl)&&/\/object(?:\/|$)/i.test(requestUrl);
   const canRetry=!(init?.body&&typeof init.body!=="string"&&!(init.body instanceof URLSearchParams)) &&
     !(typeof Request!=="undefined"&&input instanceof Request&&input.bodyUsed);
   let lastError;
   for(let attempt=0;attempt<3;attempt++){
+    let timeoutId=null;
+    let controller=null;
     try{
       const requestInput=(typeof Request!=="undefined"&&input instanceof Request)?input.clone():input;
-      return await nativeFetch(requestInput,init);
+      let requestInit=init;
+      if(isStorageUpload&&typeof AbortController!=="undefined"){
+        controller=new AbortController();
+        const originalSignal=init?.signal||(typeof Request!=="undefined"&&input instanceof Request?input.signal:null);
+        if(originalSignal){
+          if(originalSignal.aborted)controller.abort(originalSignal.reason);
+          else originalSignal.addEventListener("abort",()=>controller.abort(originalSignal.reason),{once:true});
+        }
+        timeoutId=setTimeout(()=>controller.abort(new DOMException("بارگذاری عکس بیش از 25 ثانیه طول کشید.","TimeoutError")),25000);
+        requestInit={...(init||{}),signal:controller.signal};
+      }
+      const response=await nativeFetch(requestInput,requestInit);
+      if(timeoutId)clearTimeout(timeoutId);
+      return response;
     }catch(error){
+      if(timeoutId)clearTimeout(timeoutId);
       lastError=error;
+      if(error?.name==="AbortError"||error?.name==="TimeoutError"){
+        if(isStorageUpload)throw new Error("بارگذاری عکس پس از ۲۵ ثانیه پاسخ نگرفت. اتصال شبکه را بررسی کن و دوباره ذخیره را بزن.");
+        throw error;
+      }
       const message=String(error?.message||error||"");
       const networkFailure=error instanceof TypeError||/network|fetch failed|load failed|connection|timeout/i.test(message);
       if(!canRetry||!networkFailure||attempt===2)throw error;
@@ -832,16 +854,18 @@ async function saveProfile(event){
   if(file&&file.size>3*1024*1024){
     setStatus("profileStatus",english?"Image must be 3 MB or smaller.":"حجم عکس باید حداکثر ۳ مگابایت باشد.",true);return;
   }
-  button.disabled=true;setStatus("profileStatus",english?"Saving profile...":"در حال ذخیره پروفایل...");
+  button.disabled=true;setStatus("profileStatus",english?"Preparing to save profile...":"آماده‌سازی ذخیره پروفایل...");
   try{
     const client=getClient();let avatarUrl=currentAvatarUrl;
     if(file){
+      setStatus("profileStatus",english?"Uploading profile photo...":"در حال بارگذاری عکس پروفایل...");
       const ext=file.type==="image/png"?"png":file.type==="image/webp"?"webp":"jpg";
       const path=currentUser.id+"/avatar-"+Date.now()+"."+ext;
       const {error}=await client.storage.from("avatars").upload(path,file,{contentType:file.type,upsert:false});
       if(error)throw error;
       avatarUrl=client.storage.from("avatars").getPublicUrl(path).data.publicUrl;
     }
+    setStatus("profileStatus",english?"Saving profile details...":"در حال ذخیره مشخصات پروفایل...");
     const {data,error}=await client.from("profiles")
       .upsert({id:currentUser.id,display_name:name,phone:phone||null,avatar_url:avatarUrl||null,show_phone:showPhone,presence_visibility:privacySettings.presence_visibility,last_seen_visibility:privacySettings.last_seen_visibility,show_typing:privacySettings.show_typing,show_read_receipts:privacySettings.show_read_receipts,show_space_online_count:privacySettings.show_space_online_count},{onConflict:"id"})
       .select("id,display_name,phone,avatar_url,show_phone").single();
@@ -849,13 +873,17 @@ async function saveProfile(event){
     currentProfileName=data.display_name||name;currentPhone=data.phone||"";
     currentAvatarUrl=data.avatar_url||"";
     setPhoneCountry("profilePhoneCountry",currentPhone);
+    setStatus("profileStatus",english?"Updating account details...":"در حال به‌روزرسانی مشخصات حساب...");
     const {error:metadataError}=await client.auth.updateUser({data:{display_name:currentProfileName}});
     if(metadataError)console.warn("Auth metadata update:",metadataError);
     renderUser(currentUser,currentProfileName);$("avatarFile").value="";
     setStatus("profileStatus",english?"Profile saved.":"پروفایل ذخیره شد.");
   }catch(e){
     console.error("Profile save:",e);
-    setStatus("profileStatus",(english?"Could not save profile: ":"ذخیره پروفایل ناموفق بود: ")+e.message,true);
+    const reason=e?.name==="AbortError"||e?.name==="TimeoutError"
+      ?(english?"Photo upload timed out. Check your connection and try again.":"بارگذاری عکس به پایان مهلت رسید. اتصال را بررسی کن و دوباره تلاش کن.")
+      :(e?.message||String(e));
+    setStatus("profileStatus",(english?"Could not save profile: ":"ذخیره پروفایل ناموفق بود: ")+reason,true);
   }finally{button.disabled=false;}
 }
 async function logout(){

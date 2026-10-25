@@ -724,6 +724,8 @@ async function showUser(user){
   }
 }
 function showGuest(){
+  const previousUserId=currentUser?.id;
+  if(previousUserId)window.FarnazLocalStore?.clearUser(previousUserId).catch(cacheError=>console.warn("Could not clear local account data:",cacheError));
   stopFarnazPresence().catch(()=>{});farnazPresenceContactCache.clear();
   profileRequestNumber++;currentUser=null;currentProfileName="";currentAvatarUrl="";currentPhone="";
   document.body.dataset.authState="guest";if($("headerFButton"))$("headerFButton").hidden=true;const settingsButton=$("openSettingsButton");if(settingsButton){settingsButton.hidden=true;settingsButton.style.setProperty("display","none","important");}
@@ -1243,7 +1245,22 @@ async function refreshPrivatePresence(contactId){
 window.addEventListener("farnaz-presence-updated",()=>{if(currentChatUser&&!remoteTypingTimer)refreshPrivatePresence(currentChatUser.user_id);});
 function openChat(contact,fromPage="chatsPage"){
   ensureContactInfoDialog();
+  const nextContactId=String(contact.user_id||""),previousContactId=String(currentChatUser?.user_id||""),draftInput=$("messageText");
+  if(currentUser&&previousContactId&&previousContactId!==nextContactId&&draftInput){
+    if(window.farnazDraftSaveTimer)clearTimeout(window.farnazDraftSaveTimer);
+    window.FarnazLocalStore?.saveDraft(currentUser.id,previousContactId,draftInput.value).catch(cacheError=>console.warn("Could not preserve previous draft:",cacheError));
+  }
+  const switchingContacts=previousContactId!==nextContactId;
   currentChatUser=contact;previousPage=fromPage;startPrivateTypingChannel(contact.user_id).catch(()=>{});
+  if(switchingContacts&&draftInput){
+    draftInput.value="";draftInput.style.height="auto";
+    const draftUserId=currentUser?.id,draftContactId=nextContactId;
+    window.FarnazLocalStore?.getDraft(draftUserId,draftContactId).then(draft=>{
+      if(currentUser?.id===draftUserId&&String(currentChatUser?.user_id)===draftContactId&&draftInput&&!draftInput.value){
+        draftInput.value=draft||"";draftInput.style.height="auto";draftInput.style.height=Math.min(draftInput.scrollHeight,112)+"px";
+      }
+    }).catch(cacheError=>console.warn("Could not restore draft:",cacheError));
+  }
   $("conversationTitle").textContent=contact.display_name||(english?"Farnaz user":"مخاطب فرناز");
   $("chatSubtitle").textContent=english?"Private conversation":"گفتگوی خصوصی";
   renderAvatar($("chatAvatar"),contact.avatar_url||"",$("conversationTitle").textContent);

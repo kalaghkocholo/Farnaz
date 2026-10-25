@@ -221,6 +221,8 @@ const authChecks = [
     "js/core.js must retain the email/password sign-in path"],
   [coreSource.includes("client.auth.getSession()") && coreSource.includes("window.FarnazBoot=()=>"),
     "js/core.js must restore the saved session from the app boot entry point"],
+  [coreSource.includes('withTimeout(client.auth.getSession(),9000,"saved session restore")'),
+    "js/core.js must bound saved-session restoration so startup cannot wait indefinitely"],
   [coreSource.includes('retryRead("create current user profile"') && coreSource.includes('withTimeout(operation(),9000,label)'),
     "js/core.js must bound the initial profile creation request"],
   [coreSource.includes("could not restore your saved session") && coreSource.includes("setConnectionBanner("),

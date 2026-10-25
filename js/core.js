@@ -708,6 +708,21 @@ async function showUser(user){
   currentUser=user;renderUser(user,user.user_metadata?.display_name||"");
   window.dispatchEvent(new CustomEvent("farnaz-auth-user",{detail:{userId:user.id}}));
   setStatus("profileStatus",english?"Loading profile...":"در حال بارگذاری پروفایل...");
+  let cachedProfile=null;
+  try{cachedProfile=await window.FarnazLocalStore?.getSnapshot(user.id,"profile");}catch(cacheError){console.warn("Cached profile read:",cacheError);}
+  if(request!==profileRequestNumber||currentUser?.id!==user.id)return;
+  if(cachedProfile){
+    privacySettings={presence_visibility:cachedProfile.presence_visibility||"contacts",last_seen_visibility:cachedProfile.last_seen_visibility||"contacts",show_typing:cachedProfile.show_typing!==false,show_read_receipts:cachedProfile.show_read_receipts!==false,show_space_online_count:cachedProfile.show_space_online_count!==false};
+    applyPrivacySettings();
+    currentProfileName=cachedProfile.display_name||user.user_metadata?.display_name||"";
+    currentAvatarUrl=cachedProfile.avatar_url||"";currentPhone=cachedProfile.phone||"";
+    renderUser(user,currentProfileName);
+    if($("profileNameInput"))$("profileNameInput").value=currentProfileName;
+    setPhoneCountry("profilePhoneCountry",currentPhone);
+    if($("profilePhoneInput"))$("profilePhoneInput").value=formatContactPhone(currentPhone);
+    if($("showPhoneSetting"))$("showPhoneSetting").checked=cachedProfile.show_phone!==false;
+    setStatus("profileStatus",english?"Showing saved profile while refreshing…":"نمایش پروفایل ذخیره‌شده؛ در حال همگام‌سازی…");
+  }
   try{
     const {data,error}=await retryRead("current user profile",()=>getClient().from("profiles")
       .select("id,display_name,avatar_url,phone,show_phone,presence_visibility,last_seen_visibility,show_typing,show_read_receipts,show_space_online_count").eq("id",user.id).maybeSingle());
@@ -732,9 +747,14 @@ async function showUser(user){
     setPhoneCountry("profilePhoneCountry",currentPhone);
     $("profilePhoneInput").value=formatContactPhone(currentPhone);
     $("showPhoneSetting").checked=profile?.show_phone!==false;
+    try{await window.FarnazLocalStore?.saveSnapshot(user.id,"profile",profile);}catch(cacheError){console.warn("Cached profile save:",cacheError);}
     setStatus("profileStatus",english?"Profile loaded.":"پروفایل بارگذاری شد.");
   }catch(e){
     console.error("Profile read:",e);
+    if(cachedProfile){
+      setStatus("profileStatus",english?"Showing saved profile; server refresh failed.":"پروفایل ذخیره‌شده نمایش داده می‌شود؛ به‌روزرسانی سرور ناموفق بود.");
+      return;
+    }
     setStatus("profileStatus",(english?"Could not load profile: ":"بارگذاری پروفایل ناموفق بود: ")+e.message,true);
   }
 }

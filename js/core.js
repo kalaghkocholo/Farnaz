@@ -169,6 +169,8 @@ async function farnazNetworkFetch(input,init){
   const nativeFetch=window.fetch.bind(window);
   const requestUrl=typeof input==="string"?input:(input?.url||"");
   const isStorageUpload=/\/storage\/v1\//i.test(requestUrl)&&/\/object(?:\/|$)/i.test(requestUrl);
+  const isProfileRequest=/\/rest\/v1\/profiles(?:\?|$)/i.test(requestUrl)||/\/auth\/v1\/user(?:\?|$)/i.test(requestUrl);
+  const needsRequestTimeout=isStorageUpload||isProfileRequest;
   const canRetry=!(init?.body&&typeof init.body!=="string"&&!(init.body instanceof URLSearchParams)) &&
     !(typeof Request!=="undefined"&&input instanceof Request&&input.bodyUsed);
   let lastError;
@@ -178,14 +180,14 @@ async function farnazNetworkFetch(input,init){
     try{
       const requestInput=(typeof Request!=="undefined"&&input instanceof Request)?input.clone():input;
       let requestInit=init;
-      if(isStorageUpload&&typeof AbortController!=="undefined"){
+      if(needsRequestTimeout&&typeof AbortController!=="undefined"){
         controller=new AbortController();
         const originalSignal=init?.signal||(typeof Request!=="undefined"&&input instanceof Request?input.signal:null);
         if(originalSignal){
           if(originalSignal.aborted)controller.abort(originalSignal.reason);
           else originalSignal.addEventListener("abort",()=>controller.abort(originalSignal.reason),{once:true});
         }
-        timeoutId=setTimeout(()=>controller.abort(new DOMException("بارگذاری عکس بیش از 25 ثانیه طول کشید.","TimeoutError")),25000);
+        timeoutId=setTimeout(()=>controller.abort(new DOMException("درخواست ذخیره پس از 25 ثانیه پاسخ نگرفت.","TimeoutError")),25000);
         requestInit={...(init||{}),signal:controller.signal};
       }
       const response=await nativeFetch(requestInput,requestInit);
@@ -196,6 +198,7 @@ async function farnazNetworkFetch(input,init){
       lastError=error;
       if(error?.name==="AbortError"||error?.name==="TimeoutError"){
         if(isStorageUpload)throw new Error("بارگذاری عکس پس از ۲۵ ثانیه پاسخ نگرفت. اتصال شبکه را بررسی کن و دوباره ذخیره را بزن.");
+        if(isProfileRequest)throw new Error("ذخیره مشخصات پس از ۲۵ ثانیه پاسخ نگرفت. اتصال شبکه را بررسی کن و دوباره تلاش کن.");
         throw error;
       }
       const message=String(error?.message||error||"");
@@ -874,8 +877,13 @@ async function saveProfile(event){
     currentAvatarUrl=data.avatar_url||"";
     setPhoneCountry("profilePhoneCountry",currentPhone);
     setStatus("profileStatus",english?"Updating account details...":"در حال به‌روزرسانی مشخصات حساب...");
-    const {error:metadataError}=await client.auth.updateUser({data:{display_name:currentProfileName}});
-    if(metadataError)console.warn("Auth metadata update:",metadataError);
+    try{
+      const {error:metadataError}=await client.auth.updateUser({data:{display_name:currentProfileName}});
+      if(metadataError)console.warn("Auth metadata update:",metadataError);
+    }catch(metadataError){
+      // The profile row is already saved; account metadata is secondary and must not block success.
+      console.warn("Auth metadata update:",metadataError);
+    }
     renderUser(currentUser,currentProfileName);$("avatarFile").value="";
     setStatus("profileStatus",english?"Profile saved.":"پروفایل ذخیره شد.");
   }catch(e){

@@ -138,10 +138,26 @@ function renderSpacesList(spaceRows,mm,fromCache){
   q("spacesStatus").textContent="";
 }
 async function open(id){
- try{const latest=await getClient().from("spaces").select("*").eq("id",id).single();if(latest.error)throw latest.error;const s=latest.data;active=s;spaces=spaces.map(x=>x.id===s.id?s:x);
+ try{
+  let s,cachedSpace=false,cachedSpacesSnapshot=null;
+  try{const latest=await withTimeout(getClient().from("spaces").select("*").eq("id",id).single(),8000,"اطلاعات گروه یا کانال");if(latest.error)throw latest.error;s=latest.data;}
+  catch(fetchError){
+   cachedSpacesSnapshot=await window.FarnazLocalStore?.getSnapshot(currentUser.id,"spaces").catch(()=>null);
+   s=cachedSpacesSnapshot?.spaces?.find(item=>String(item.id)===String(id));
+   if(!s)throw fetchError;
+   cachedSpace=true;
+  }
+  active=s;spaces=spaces.map(x=>x.id===s.id?s:x);
  document.querySelector(".app")?.classList.add("spaces-chat-mode");document.body.classList.add("spaces-chat-mode");q("bottomNav")?.classList.remove("visible");q("spaceList").hidden=true;document.querySelector(".spaces-head").hidden=true;document.querySelector(".spaces-tabs").hidden=true;document.querySelector(".spaces-actions").hidden=true;q("spacesStatus").hidden=true;q("spaceDetail").hidden=false;q("spaceDetail").querySelector(".space-call-actions").hidden=true;
  q("spaceName").textContent=s.name;if(["group","channel"].includes(s.type)){q("spaceName").setAttribute("role","button");q("spaceName").tabIndex=0;q("spaceName").setAttribute("aria-label",s.type==="channel"?tr("باز کردن اطلاعات کانال","Open channel information"):tr("باز کردن اطلاعات گروه","Open group information"));q("spaceName").style.cursor="pointer";}else{q("spaceName").removeAttribute("role");q("spaceName").removeAttribute("tabindex");q("spaceName").removeAttribute("aria-label");q("spaceName").style.cursor="default";}renderSpaceAvatar(q("spaceIcon"),s.avatar_url,s.type==="group"?"👥":"📣",true);q("spaceIcon").style.cursor=["group","channel"].includes(s.type)?"pointer":"default";q("spaceDescription").textContent=s.description||"";q("spaceDescription").hidden=!q("spaceDescription").textContent.trim();
- const {data:membership}=await getClient().from("space_members").select("role").eq("space_id",s.id).eq("user_id",currentUser.id).maybeSingle();const joined=!!membership,manager=membership&&["owner","admin"].includes(membership.role);
+ let membership=null;
+ try{const result=await withTimeout(getClient().from("space_members").select("role").eq("space_id",s.id).eq("user_id",currentUser.id).maybeSingle(),7000,"عضویت در گروه یا کانال");if(result.error)throw result.error;membership=result.data;}
+ catch(membershipError){
+  if(!cachedSpace)throw membershipError;
+  membership=(cachedSpacesSnapshot?.memberships||[]).find(item=>String(item.space_id)===String(s.id))||null;
+  q("spaceMessageStatus").textContent=tr("نمایش اطلاعات ذخیره‌شده؛ بعضی قابلیت‌ها تا اتصال اینترنت در دسترس نیستند.","Showing saved details; some features need an internet connection.");
+ }
+ const joined=!!membership,manager=membership&&["owner","admin"].includes(membership.role);
  q("spaceMeta").textContent=(s.type==="group"?tr("گروه","Group"):s.is_public?tr("کانال عمومی","Public channel"):tr("کانال خصوصی","Private channel"))+(membership?" · "+(membership.role==="owner"?tr("سازنده","Owner"):membership.role==="admin"?tr("مدیر","Admin"):tr("عضو","Member")):"");if(["group","channel"].includes(s.type)){q("spaceMeta").setAttribute("role","button");q("spaceMeta").tabIndex=0;q("spaceMeta").setAttribute("aria-label",s.type==="channel"?tr("باز کردن اطلاعات کانال","Open channel information"):tr("باز کردن اطلاعات گروه","Open group information"));q("spaceMeta").style.cursor="pointer";}else{q("spaceMeta").removeAttribute("role");q("spaceMeta").removeAttribute("tabindex");q("spaceMeta").removeAttribute("aria-label");q("spaceMeta").style.cursor="default";}
  const acts=q("spaceActions");acts.replaceChildren();
  if(s.type==="channel"&&s.is_public&&!joined){const b=document.createElement("button");b.className="space-primary";b.textContent=tr("عضویت در کانال","Join channel");b.onclick=async()=>{const r=await getClient().from("space_members").insert({space_id:s.id,user_id:currentUser.id,role:"member"});if(r.error)q("spaceMessageStatus").textContent=r.error.message;else{await open(s.id);refresh();}};acts.appendChild(b);}

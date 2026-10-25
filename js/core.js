@@ -1770,7 +1770,9 @@ async function findRecipient(event){
           await subscribeToMessages();
           // Reconcile inbox and contacts after auth and realtime setup. The
           // navigation-triggered refresh may have been superseded during startup.
-          await Promise.allSettled([refreshConversationList(),refreshSavedContacts()]);
+          const initialDataResults=await Promise.allSettled([refreshConversationList(),refreshSavedContacts()]);
+          const initialDataFailure=initialDataResults.find(result=>result.status==="rejected");
+          if(initialDataFailure)throw initialDataFailure.reason;
           setConnectionBanner("",false);
         }catch(connectionError){
           console.error("Post-login realtime initialization:",connectionError);
@@ -1824,7 +1826,9 @@ async function findRecipient(event){
       try{
         await subscribeToMessages();
         // Reconcile inbox and contacts after restoring the saved session.
-        await Promise.allSettled([refreshConversationList(),refreshSavedContacts()]);
+        const initialDataResults=await Promise.allSettled([refreshConversationList(),refreshSavedContacts()]);
+        const initialDataFailure=initialDataResults.find(result=>result.status==="rejected");
+        if(initialDataFailure)throw initialDataFailure.reason;
         setConnectionBanner("",false);
       }catch(connectionError){
         console.error("Restored-session initialization:",connectionError);

@@ -1843,6 +1843,9 @@ async function findRecipient(event){
         message:String(error?.message||error||"Unknown error")
       });
       document.body.dataset.authState="guest";
+      setConnectionBanner(english
+        ?"Farnaz could not restore your saved session. Check your connection and try signing in again."
+        :"بازیابی نشست ورود کامل نشد. اتصال را بررسی کن و دوباره برای ورود تلاش کن.");
       if(/refresh token.*(invalid|not found|expired)|invalid refresh token|session not found/i.test(String(error?.message||""))){
         try{if(client)await client.auth.signOut({scope:"local"});}catch(_){}
       }

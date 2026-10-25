@@ -136,7 +136,7 @@ async function loadMessages(older=false,preserveScroll=false){
       else console.warn("Could not load hidden-message preferences:",hidden.error);
     }catch(hiddenError){console.warn("Could not load hidden-message preferences:",hiddenError);}
     const visibleRows=rows.filter(m=>!hiddenIds.has(m.id));
-    window.FarnazLocalStore?.saveMessages(myId,contactId,visibleRows).catch(cacheError=>console.warn("Could not cache messages:",cacheError));
+    window.FarnazLocalStore?.saveMessages(myId,contactId,visibleRows,older).catch(cacheError=>console.warn("Could not cache messages:",cacheError));
     await loadMessageDecorations(visibleRows,myId,contactId);
     if(request!==chatRequestNumber||currentUser?.id!==myId||currentChatUser?.user_id!==contactId)return;
     const ownIds=visibleRows.filter(m=>String(m.sender_id)===String(myId)).map(m=>String(m.id));

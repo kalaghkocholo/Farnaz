@@ -1,5 +1,5 @@
 "use strict";
-const CACHE_NAME="farnaz-shell-v77";
+const CACHE_NAME="farnaz-shell-v78";
 const APP_BASE=new URL("./",self.location.href);
 const SHELL=["./","./index.html","./styles.css","./spaces.css","./js/core.js","./js/chat-menu-v5.js","./js/spaces.js","./js/calls.js","./manifest.webmanifest","./farnaz-icon.svg?v=20261024-4"];
 self.addEventListener("install",event=>{
@@ -14,26 +14,29 @@ self.addEventListener("fetch",event=>{
   const url=new URL(req.url);
   if(url.origin!==self.location.origin||!url.pathname.startsWith(APP_BASE.pathname))return;
   if(req.mode==="navigate"){
-    event.respondWith(fetch(req).then(response=>{
-      if(response.ok){const copy=response.clone();caches.open(CACHE_NAME).then(cache=>cache.put(new URL("./index.html",APP_BASE).href,copy));}
-      return response;
-    }).catch(async()=>await caches.match(req,{ignoreSearch:true})||await caches.match(new URL("./index.html",APP_BASE).href)));
+    event.respondWith((async()=>{
+      const cached=await caches.match(new URL("./index.html",APP_BASE).href);
+      const refresh=fetch(req).then(response=>{
+        if(response.ok){const copy=response.clone();caches.open(CACHE_NAME).then(cache=>cache.put(new URL("./index.html",APP_BASE).href,copy));}
+        return response;
+      });
+      if(cached){event.waitUntil(refresh.then(()=>{}).catch(()=>{}));return cached;}
+      try{return await refresh;}catch(_){return await caches.match(req,{ignoreSearch:true})||Response.error();}
+    })());
     return;
   }
   const isCodeAsset=/\.(?:html|css|js)$/i.test(url.pathname)||url.search.length>0;
   event.respondWith((async()=>{
     const cached=await caches.match(req);
-    if(isCodeAsset){
-      try{
-        const response=await fetch(req);
-        if(response.ok&&response.type==="basic")caches.open(CACHE_NAME).then(cache=>cache.put(req,response.clone()));
-        return response;
-      }catch(_){return cached||Response.error();}
+    const refresh=fetch(req).then(response=>{
+      if(response.ok&&response.type==="basic")caches.open(CACHE_NAME).then(cache=>cache.put(req,response.clone()));
+      return response;
+    });
+    if(cached){
+      if(isCodeAsset)event.waitUntil(refresh.then(()=>{}).catch(()=>{}));
+      return cached;
     }
-    if(cached)return cached;
-    const response=await fetch(req);
-    if(response.ok&&response.type==="basic")caches.open(CACHE_NAME).then(cache=>cache.put(req,response.clone()));
-    return response;
+    try{return await refresh;}catch(_){return Response.error();}
   })());
 });
 self.addEventListener("push",event=>{

@@ -266,7 +266,7 @@ function isTransientError(error){
   const message=String(error?.message||error||"").toLowerCase();
   if(status===401||status===403||code.startsWith("23")||code.startsWith("42"))return false;
   return status===408||status===425||status===429||status>=500||
-    /network|fetch failed|failed to fetch|timeout|timed out|temporar|connection reset|connection closed|load failed|offline|gateway|too many requests/.test(message);
+    /network|fetch failed|failed to fetch|timeout|timed out|temporar|connection reset|connection closed|load failed|offline|gateway|too many requests|پاسخ نگرفت|مهلت انتظار|زمان.?تمام|طول کشید/.test(message);
 }
 const recoveryDelay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function retryRead(label,operation,maxAttempts=3){
@@ -682,8 +682,8 @@ async function showUser(user){
   window.dispatchEvent(new CustomEvent("farnaz-auth-user",{detail:{userId:user.id}}));
   setStatus("profileStatus",english?"Loading profile...":"در حال بارگذاری پروفایل...");
   try{
-    const {data,error}=await getClient().from("profiles")
-      .select("id,display_name,avatar_url,phone,show_phone,presence_visibility,last_seen_visibility,show_typing,show_read_receipts,show_space_online_count").eq("id",user.id).maybeSingle();
+    const {data,error}=await retryRead("current user profile",()=>getClient().from("profiles")
+      .select("id,display_name,avatar_url,phone,show_phone,presence_visibility,last_seen_visibility,show_typing,show_read_receipts,show_space_online_count").eq("id",user.id).maybeSingle());
     if(request!==profileRequestNumber||currentUser?.id!==user.id)return;
     if(error)throw error;
     let profile=data;

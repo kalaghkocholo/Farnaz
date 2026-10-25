@@ -29,16 +29,26 @@ self.addEventListener("fetch",event=>{
     return;
   }
   const isCodeAsset=/\.(?:html|css|js)$/i.test(url.pathname)||url.search.length>0;
-  const cachedAsset=caches.match(req);
-  const refreshAsset=fetch(req).then(response=>{
+  if(isCodeAsset){
+    const cachedAsset=caches.match(req);
+    const refreshAsset=fetch(req).then(response=>{
+      if(response.ok&&response.type==="basic")caches.open(CACHE_NAME).then(cache=>cache.put(req,response.clone()));
+      return response;
+    });
+    event.waitUntil(refreshAsset.then(()=>{}).catch(()=>{}));
+    event.respondWith((async()=>{
+      const cached=await cachedAsset;
+      if(cached)return cached;
+      try{return await refreshAsset;}catch(_){return Response.error();}
+    })());
+    return;
+  }
+  event.respondWith((async()=>{
+    const cached=await caches.match(req);
+    if(cached)return cached;
+    const response=await fetch(req);
     if(response.ok&&response.type==="basic")caches.open(CACHE_NAME).then(cache=>cache.put(req,response.clone()));
     return response;
-  });
-  if(isCodeAsset)event.waitUntil(refreshAsset.then(()=>{}).catch(()=>{}));
-  event.respondWith((async()=>{
-    const cached=await cachedAsset;
-    if(cached)return cached;
-    try{return await refreshAsset;}catch(_){return Response.error();}
   })());
 });
 self.addEventListener("push",event=>{

@@ -1577,7 +1577,7 @@ async function refreshConversationList(){
       if(pref.hidden_at&&new Date(m.created_at)<=new Date(pref.hidden_at))continue;
       conversations.set(id,{user_id:id,lastMessage:m.body||((m.message_type||"text")==="image"?(english?"📷 Photo":"📷 عکس"):""),created_at:m.created_at,lastSender:m.sender_id,pref});
     }
-    const entries=[...conversations.values()].filter(c=>conversationView==="archived"?prefFor(c.user_id).archived:!prefFor(c.user_id).archived);
+    const entries=[...conversations.values()];
     let profilesById=new Map();
     try{profilesById=await getContactProfiles(entries.map(c=>c.user_id));}catch(e){console.warn("Conversation contact profiles:",e);}
     if(currentUser?.id!==myId||request!==conversationListRequestNumber)return;

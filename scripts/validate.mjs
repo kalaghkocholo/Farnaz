@@ -124,12 +124,25 @@ if (!loader) {
   if (!shell) {
     errors.push("service-worker.js: shell asset list was not found");
   } else {
-    const shellPaths = new Set(
-      [...shell[1].matchAll(/["'](\.\/[^"']+)["']/g)].map((match) => match[1].split(/[?#]/, 1)[0])
+    const shellUrls = new Set(
+      [...shell[1].matchAll(/["'](\.\/[^"']+)["']/g)].map((match) => match[1])
     );
+    const shellPaths = new Set([...shellUrls].map((url) => url.split(/[?#]/, 1)[0]));
     for (const path of loadedLocalPaths) {
       if (!shellPaths.has(path)) {
         errors.push("service-worker.js shell is missing a dynamically loaded script: " + path);
+      }
+    }
+    for (const match of loader[1].matchAll(/["'](\.\/[^"']+\.js(?:\?[^"']*)?)["']/g)) {
+      const url = match[1];
+      if (!shellUrls.has(url)) {
+        errors.push("service-worker.js shell URL/version does not exactly match a dynamically loaded script: " + url);
+      }
+    }
+    for (const match of html.matchAll(/<link\\b[^>]*rel=["']stylesheet["'][^>]*href=["'](\\.\\/[^"']+)["'][^>]*>/gi)) {
+      const url = match[1];
+      if (!shellUrls.has(url)) {
+        errors.push("service-worker.js shell URL/version does not exactly match a stylesheet: " + url);
       }
     }
   }

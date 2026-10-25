@@ -373,23 +373,29 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
 
   function loadLocalScripts(){
     const core=document.createElement("script");
-    core.src="./js/core.js?v=20261025-72";
+    core.src="./js/core.js?v=20261025-73";
     core.onload=()=>{
+      // Preserve the module dependency order. Loading these modules in parallel
+      // allowed spaces/calls to initialize before chat navigation/auth handlers.
       const featureScripts=[
         "./js/chat-menu-v5.js?v=20261025-13",
         "./js/spaces.js?v=20261025-29",
         "./js/calls.js?v=20261024-1"
       ];
-      featureScripts.forEach(src=>{
+      let featureIndex=0;
+      const loadNextFeature=()=>{
+        if(featureIndex>=featureScripts.length)return;
         const script=document.createElement("script");
-        script.src=src;
+        script.src=featureScripts[featureIndex++];
+        script.onload=loadNextFeature;
         script.onerror=()=>{
           window.FARNAZ_APP_LOAD_FAILED=true;
           const status=document.getElementById("authStatus");
           if(status)status.textContent="بارگذاری بخشی از برنامه ناموفق بود. صفحه را تازه‌سازی کن و اتصال را بررسی کن.";
         };
         document.body.appendChild(script);
-      });
+      };
+      loadNextFeature();
     };
     core.onerror=()=>{
       window.FARNAZ_APP_LOAD_FAILED=true;

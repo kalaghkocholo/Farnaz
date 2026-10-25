@@ -365,28 +365,29 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
 <script src="./js/local-store.js?v=20261025-1"></script>
 <script>
 (function(){
-  // Load core first because the feature modules depend on its functions.
-  // Once core is ready, load independent feature modules in parallel.
+  function showSdkError(message){
+    window.FARNAZ_SUPABASE_LOAD_FAILED=true;
+    const status=document.getElementById("authStatus");
+    if(status)status.textContent=message;
+  }
+
   function loadLocalScripts(){
     const core=document.createElement("script");
-    core.src="./js/core.js?v=20261025-71";
+    core.src="./js/core.js?v=20261025-72";
     core.onload=()=>{
       const featureScripts=[
         "./js/chat-menu-v5.js?v=20261025-13",
         "./js/spaces.js?v=20261025-29",
         "./js/calls.js?v=20261024-1"
       ];
-      let remaining=featureScripts.length;
-      const failed=()=>{
-        window.FARNAZ_APP_LOAD_FAILED=true;
-        const status=document.getElementById("authStatus");
-        if(status)status.textContent="بارگذاری بخشی از برنامه ناموفق بود. صفحه را تازه‌سازی کن و اتصال را بررسی کن.";
-      };
       featureScripts.forEach(src=>{
         const script=document.createElement("script");
         script.src=src;
-        script.onload=()=>{remaining--;};
-        script.onerror=failed;
+        script.onerror=()=>{
+          window.FARNAZ_APP_LOAD_FAILED=true;
+          const status=document.getElementById("authStatus");
+          if(status)status.textContent="بارگذاری بخشی از برنامه ناموفق بود. صفحه را تازه‌سازی کن و اتصال را بررسی کن.";
+        };
         document.body.appendChild(script);
       });
     };
@@ -399,61 +400,25 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
   }
 
   function loadSupabaseSdk(){
-    const urls=[
-      "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js",
-      "https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"
-    ];
-    let settled=false,failed=0;
-    const pending=[];
-    let timeout=null;
-    function finish(success){
-      if(settled)return;
-      if(success&&!window.supabase?.createClient)return;
-      settled=true;
-      if(timeout)clearTimeout(timeout);
-      pending.forEach(script=>{
-        script.onload=null;
-        script.onerror=null;
-        if(success&&script!==document.currentScript&&script!==window.__farnazSupabaseWinner)script.remove();
-      });
-      window.FARNAZ_SUPABASE_LOAD_FAILED=!success;
-      const status=document.getElementById("authStatus");
-      if(!success&&status)status.textContent="اتصال به کتابخانه ورود برقرار نشد. صفحه و رابط برنامه فعال‌اند؛ اتصال را بررسی و دوباره تلاش کن.";
-      if(success&&status&&status.textContent.includes("کتابخانه ورود"))status.textContent="";
-    }
-    urls.forEach(url=>{
-      const script=document.createElement("script");
-      script.src=url;
-      script.async=true;
-      script.onload=()=>{
-        if(window.supabase?.createClient){
-          window.__farnazSupabaseWinner=script;
-          finish(true);
-        }else{
-          failed++;
-          script.remove();
-          if(failed===urls.length)finish(false);
-        }
-      };
-      script.onerror=()=>{
-        failed++;
-        script.remove();
-        if(failed===urls.length)finish(false);
-      };
-      pending.push(script);
-      document.head.appendChild(script);
-    });
-    // Report a slow CDN promptly; do not block loading the rest of the app.
-    timeout=setTimeout(()=>{
-      if(settled)return;
-      window.FARNAZ_SUPABASE_LOAD_FAILED=true;
-      const status=document.getElementById("authStatus");
-      if(status)status.textContent="بارگذاری کتابخانه ورود طول کشیده؛ رابط برنامه فعال است و اتصال همچنان در حال تلاش است.";
-    },12000);
+    const script=document.createElement("script");
+    script.src="./vendor/supabase.js";
+    script.async=true;
+    script.onload=()=>{
+      if(!window.supabase||typeof window.supabase.createClient!=="function"){
+        showSdkError("کتابخانهٔ داخلی ورود بارگذاری شد، اما آماده نیست. صفحه را تازه‌سازی کن.");
+        return;
+      }
+      window.FARNAZ_SUPABASE_LOAD_FAILED=false;
+      loadLocalScripts();
+    };
+    script.onerror=()=>{
+      showSdkError("کتابخانهٔ داخلی ورود بارگذاری نشد. اتصال را بررسی و صفحه را دوباره باز کن.");
+    };
+    document.head.appendChild(script);
   }
 
-  // Start the independent local UI chain immediately, while both CDN mirrors race.
-  loadLocalScripts();
+  // Load the locally hosted SDK before the app core to eliminate CDN dependence
+  // and prevent an auth tap from racing SDK initialization.
   loadSupabaseSdk();
 })();
 </script>

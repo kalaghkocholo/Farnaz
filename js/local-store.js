@@ -62,7 +62,9 @@
   }
   async function saveMessages(userId,contactId,messages){
     if(!userId||!contactId||!Array.isArray(messages))return false;
-    const safeMessages=messages.slice(-50).map(m=>({
+    const uniqueMessages=new Map();
+    for(const message of messages){if(message?.id)uniqueMessages.set(String(message.id),message);}
+    const safeMessages=[...uniqueMessages.values()].slice(-50).map(m=>({
       id:m.id,sender_id:m.sender_id,receiver_id:m.receiver_id,
       body:typeof m.body==="string"?m.body:null,created_at:m.created_at,
       message_type:m.message_type||"text",attachment_path:m.attachment_path||null,

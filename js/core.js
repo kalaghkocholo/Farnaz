@@ -1471,15 +1471,22 @@ async function refreshConversationList(){
       if(pref.hidden_at&&new Date(m.created_at)<=new Date(pref.hidden_at))continue;
       conversations.set(id,{user_id:id,lastMessage:m.body||((m.message_type||"text")==="image"?(english?"📷 Photo":"📷 عکس"):""),created_at:m.created_at,lastSender:m.sender_id});
     }
-    list.replaceChildren();
     const entries=[...conversations.values()].filter(c=>conversationView==="archived"?prefFor(c.user_id).archived:!prefFor(c.user_id).archived)
       .sort((a,b)=>Number(prefFor(b.user_id).pinned)-Number(prefFor(a.user_id).pinned)||new Date(b.created_at)-new Date(a.created_at));
-    if(!entries.length){setStatus("inboxStatus",conversationView==="archived"?(english?"No archived conversations.":"گفتگوی آرشیوشده‌ای وجود ندارد."):(english?"No conversations yet. Start one from Contacts.":"هنوز گفتگویی نداری؛ از بخش مخاطبان گفتگوی جدید بساز."));return;}
-    setStatus("inboxStatus","");
+    if(!entries.length){
+      list.replaceChildren();
+      setStatus("inboxStatus",conversationView==="archived"?(english?"No archived conversations.":"گفتگوی آرشیوشده‌ای وجود ندارد."):(english?"No conversations yet. Start one from Contacts.":"هنوز گفتگویی نداری؛ از بخش مخاطبان گفتگوی جدید بساز."));
+      return;
+    }
+    // Keep the loading status and existing rows visible while contact profiles load.
+    // Clearing the list before these RPCs completed made a successful inbox query
+    // look like an empty conversation list on slow mobile connections.
     const profiles=await Promise.all(entries.map(async c=>{
       try{return await getContactProfile(c.user_id);}catch(e){console.warn("Contact profile:",e);return null;}
     }));
     if(currentUser?.id!==myId||request!==conversationListRequestNumber)return;
+    list.replaceChildren();
+    setStatus("inboxStatus","");
     entries.forEach((c,i)=>{
       const p=profiles[i]||{};
       const name=p.display_name||(english?"Farnaz user":"مخاطب فرناز");

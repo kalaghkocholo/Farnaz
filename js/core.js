@@ -1823,6 +1823,9 @@ async function findRecipient(event){
       client=getClient();
       const {data,error}=await withTimeout(client.auth.getSession(),9000,"saved session restore");
       if(error)throw error;
+      // A user may finish manual sign-in while this boot-time read is pending.
+      // Never let a late restore overwrite the newer authenticated identity.
+      if(currentUser)return;
       const session=data?.session;
       if(!session?.user){
         document.body.dataset.authState="guest";

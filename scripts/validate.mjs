@@ -134,20 +134,25 @@ if (!loader) {
         errors.push("service-worker.js shell references missing local asset: " + url);
       }
     }
-    for (const match of html.matchAll(/<script\\b[^>]*src=["'](\\.\\/[^"']+)["'][^>]*>/gi)) {
-      if (!shellUrls.has(match[1])) {
-        errors.push("service-worker.js shell URL/version does not exactly match a script: " + match[1]);
-      }
+    for (const match of html.matchAll(/<script\b[^>]*>/gi)) {
+    const src = match[0].match(/\bsrc=["']([^"']+)["']/i)?.[1];
+    if (src?.startsWith("./") && !shellUrls.has(src)) {
+    errors.push("service-worker.js shell URL/version does not exactly match a script: " + src);
     }
-    for (const match of html.matchAll(/<link\\b[^>]*rel=["']preload["'][^>]*as=["']script["'][^>]*href=["'](\\.\\/[^"']+)["'][^>]*>/gi)) {
-      if (!shellUrls.has(match[1])) {
-        errors.push("service-worker.js shell URL/version does not exactly match a script preload: " + match[1]);
-      }
     }
-    for (const match of html.matchAll(/script\\.src=["'](\\.\\/[^"']+)["']/g)) {
-      if (!shellUrls.has(match[1])) {
-        errors.push("service-worker.js shell URL/version does not exactly match a dynamically loaded script: " + match[1]);
-      }
+    for (const match of html.matchAll(/<link\b[^>]*>/gi)) {
+    const tag = match[0];
+    const rel = tag.match(/\brel=["']([^"']+)["']/i)?.[1]?.toLowerCase();
+    const as = tag.match(/\bas=["']([^"']+)["']/i)?.[1]?.toLowerCase();
+    const href = tag.match(/\bhref=["']([^"']+)["']/i)?.[1];
+    if (href?.startsWith("./") && (rel === "stylesheet" || (rel === "preload" && as === "script")) && !shellUrls.has(href)) {
+    errors.push("service-worker.js shell URL/version does not exactly match a stylesheet/script preload: " + href);
+    }
+    }
+    for (const match of html.matchAll(/script\.src=["'](\.\/[^"']+)["']/g)) {
+    if (!shellUrls.has(match[1])) {
+    errors.push("service-worker.js shell URL/version does not exactly match a dynamically loaded script: " + match[1]);
+    }
     }
     for (const path of loadedLocalPaths) {
       if (!shellPaths.has(path)) {

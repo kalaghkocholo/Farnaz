@@ -1408,9 +1408,9 @@ async function refreshSavedContacts(){
     }catch(e){console.warn("Imported phone contact names:",e);}
     const importedNames=new Map();
     for(const item of phoneData){if(item.matched_user_id&&!importedNames.has(String(item.matched_user_id)))importedNames.set(String(item.matched_user_id),item.display_name);}
-    let profilesById=new Map();
+    let profilesById=new Map(),profilesLoaded=true;
     try{profilesById=await getContactProfiles((data||[]).map(item=>item.contact_user_id));}
-    catch(e){console.warn("Saved contact profiles:",e);}
+    catch(e){profilesLoaded=false;console.warn("Saved contact profiles:",e);}
     if(currentUser?.id!==myId||request!==savedContactsRequestNumber)return;
     const snapshot=[];
     const seenContacts=new Set();
@@ -1421,7 +1421,7 @@ async function refreshSavedContacts(){
       snapshot.push({contact,subtitle:p.phone?formatContactPhone(p.phone):(english?"Farnaz member":"عضو فرناز"),date:item.created_at?new Date(item.created_at).toLocaleDateString(english?"en":"fa-IR"):""});
     });
     renderSavedContactsSnapshot(snapshot);
-    try{await window.FarnazLocalStore?.saveSnapshot(myId,"contacts",snapshot);}catch(cacheError){console.warn("Cached contacts save:",cacheError);}
+    if(profilesLoaded){try{await window.FarnazLocalStore?.saveSnapshot(myId,"contacts",snapshot);}catch(cacheError){console.warn("Cached contacts save:",cacheError);}}
     setStatus("savedContactsStatus",snapshot.length?"":(english?"No saved Farnaz contacts yet.":"هنوز مخاطب عضو فرنازی ذخیره نشده است."));
     await refreshUnmatchedPhoneContacts();
   }catch(e){
@@ -1578,12 +1578,12 @@ async function refreshConversationList(){
       conversations.set(id,{user_id:id,lastMessage:m.body||((m.message_type||"text")==="image"?(english?"📷 Photo":"📷 عکس"):""),created_at:m.created_at,lastSender:m.sender_id,pref});
     }
     const entries=[...conversations.values()];
-    let profilesById=new Map();
-    try{profilesById=await getContactProfiles(entries.map(c=>c.user_id));}catch(e){console.warn("Conversation contact profiles:",e);}
+    let profilesById=new Map(),profilesLoaded=true;
+    try{profilesById=await getContactProfiles(entries.map(c=>c.user_id));}catch(e){profilesLoaded=false;console.warn("Conversation contact profiles:",e);}
     if(currentUser?.id!==myId||request!==conversationListRequestNumber)return;
     const snapshot=entries.map(c=>({...c,pref:prefFor(c.user_id),profile:profilesById.get(String(c.user_id))||{}}));
     renderConversationSnapshot(snapshot,myId);
-    try{await window.FarnazLocalStore?.saveSnapshot(myId,"inbox",snapshot);}catch(cacheError){console.warn("Cached inbox save:",cacheError);}
+    if(profilesLoaded){try{await window.FarnazLocalStore?.saveSnapshot(myId,"inbox",snapshot);}catch(cacheError){console.warn("Cached inbox save:",cacheError);}}
   }catch(e){
     console.error("Inbox load:",e);
     if(currentUser?.id!==myId||request!==conversationListRequestNumber)return;

@@ -1427,11 +1427,13 @@ async function refreshSavedContacts(){
     if(profilesLoaded){try{await window.FarnazLocalStore?.saveSnapshot(myId,"contacts",snapshot);}catch(cacheError){console.warn("Cached contacts save:",cacheError);}}
     setStatus("savedContactsStatus",snapshot.length?"":(english?"No saved Farnaz contacts yet.":"هنوز مخاطب عضو فرنازی ذخیره نشده است."));
     await refreshUnmatchedPhoneContacts();
+    return true;
   }catch(e){
     if(currentUser?.id!==myId||request!==savedContactsRequestNumber)return;
     console.error("Saved contacts:",e);
     setStatus("savedContactsStatus",(english?"Could not load saved contacts: ":"بارگذاری مخاطبان ناموفق بود: ")+e.message,true);
     await refreshUnmatchedPhoneContacts();
+    return false;
   }
 }
 function parseVCardContacts(text,countryCode){
@@ -1587,6 +1589,7 @@ async function refreshConversationList(){
     const snapshot=entries.map(c=>({...c,pref:prefFor(c.user_id),profile:profilesById.get(String(c.user_id))||{}}));
     renderConversationSnapshot(snapshot,myId);
     if(profilesLoaded){try{await window.FarnazLocalStore?.saveSnapshot(myId,"inbox",snapshot);}catch(cacheError){console.warn("Cached inbox save:",cacheError);}}
+    return true;
   }catch(e){
     console.error("Inbox load:",e);
     if(currentUser?.id!==myId||request!==conversationListRequestNumber)return;
@@ -1594,6 +1597,7 @@ async function refreshConversationList(){
       renderConversationSnapshot(cachedSnapshot,myId);
       setStatus("inboxStatus",english?"Showing saved conversations; refresh failed.":"گفتگوهای ذخیره‌شده نمایش داده می‌شوند؛ به‌روزرسانی ناموفق بود.");
     }else setStatus("inboxStatus",(english?"Could not load conversations: ":"بارگذاری گفتگوها ناموفق بود: ")+e.message,true);
+    return false;
   }
 }
 async function findRecipient(event){
@@ -1771,7 +1775,7 @@ async function findRecipient(event){
           // Reconcile inbox and contacts after auth and realtime setup. The
           // navigation-triggered refresh may have been superseded during startup.
           const initialDataResults=await Promise.allSettled([refreshConversationList(),refreshSavedContacts()]);
-          const initialDataFailure=initialDataResults.find(result=>result.status==="rejected");
+          const initialDataFailure=initialDataResults.find(result=>result.status==="rejected"||result.value===false);
           if(initialDataFailure)throw initialDataFailure.reason;
           setConnectionBanner("",false);
         }catch(connectionError){
@@ -1827,7 +1831,7 @@ async function findRecipient(event){
         await subscribeToMessages();
         // Reconcile inbox and contacts after restoring the saved session.
         const initialDataResults=await Promise.allSettled([refreshConversationList(),refreshSavedContacts()]);
-        const initialDataFailure=initialDataResults.find(result=>result.status==="rejected");
+        const initialDataFailure=initialDataResults.find(result=>result.status==="rejected"||result.value===false);
         if(initialDataFailure)throw initialDataFailure.reason;
         setConnectionBanner("",false);
       }catch(connectionError){

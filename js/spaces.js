@@ -135,8 +135,7 @@ function renderSpacesList(spaceRows,mm,fromCache){
  const sm=document.createElement("small");sm.textContent=(s.type==="group"?tr("گروه","Group"):s.is_public?tr("کانال عمومی","Public channel"):tr("کانال خصوصی","Private channel"))+" · "+(role?tr("عضو","Joined"):s.type==="channel"&&s.is_public?tr("برای عضویت باز کن","Open to join"):tr("خصوصی","Private"))+(muted?" · 🔕 "+tr("سایلنت","Muted"):"")+(archived?" · 🗃️ "+tr("آرشیوشده","Archived"):"");
  copy.append(n,sm);const swipeHint=document.createElement("span");swipeHint.className="space-swipe-hint";swipeHint.textContent="←";swipeHint.setAttribute("aria-hidden","true");b.append(i,copy,swipeHint);shell.appendChild(b);buildSpaceSwipeActions(s,role,shell,b);q("spaceList").appendChild(shell);
 }
- q("spacesStatus").textContent="";
- }catch(e){q("spacesStatus").textContent=tr("بارگذاری ناموفق بود: ","Could not load: ")+e.message;}
+  q("spacesStatus").textContent="";
 }
 async function open(id){
  try{const latest=await getClient().from("spaces").select("*").eq("id",id).single();if(latest.error)throw latest.error;const s=latest.data;active=s;spaces=spaces.map(x=>x.id===s.id?s:x);

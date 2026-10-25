@@ -13,7 +13,18 @@
     if(!("indexedDB" in window))return Promise.resolve(null);
     if(opening)return opening;
     opening=new Promise((resolve,reject)=>{
-      const request=indexedDB.open(DB_NAME,DB_VERSION);
+      let settled=false;
+      const finish=(error,db)=>{
+        if(settled){if(db)db.close();return;}
+        settled=true;clearTimeout(timer);
+        if(error){opening=null;reject(error);return;}
+        db.onversionchange=()=>{db.close();opening=null;};
+        resolve(db);
+      };
+      const timer=setTimeout(()=>finish(new Error("Local storage open timed out")),3500);
+      let request;
+      try{request=indexedDB.open(DB_NAME,DB_VERSION);}
+      catch(error){finish(error);return;}
       request.onupgradeneeded=()=>{
         const db=request.result;
         if(!db.objectStoreNames.contains(STORE_MESSAGES))db.createObjectStore(STORE_MESSAGES,{keyPath:"key"});
@@ -22,9 +33,9 @@
         if(!db.objectStoreNames.contains(STORE_SNAPSHOTS))db.createObjectStore(STORE_SNAPSHOTS,{keyPath:"key"});
         if(!db.objectStoreNames.contains(STORE_SPACE_MESSAGES))db.createObjectStore(STORE_SPACE_MESSAGES,{keyPath:"key"});
       };
-      request.onsuccess=()=>{const db=request.result;db.onversionchange=()=>{db.close();opening=null;};resolve(db);};
-      request.onerror=()=>{opening=null;reject(request.error||new Error("Local storage unavailable"));};
-      request.onblocked=()=>{opening=null;reject(new Error("Local storage upgrade is blocked"));};
+      request.onsuccess=()=>finish(null,request.result);
+      request.onerror=()=>finish(request.error||new Error("Local storage unavailable"));
+      request.onblocked=()=>finish(new Error("Local storage upgrade is blocked"));
     });
     return opening;
   }
@@ -33,29 +44,53 @@
   async function read(storeName,key){
     const db=await openDB();if(!db)return null;
     return new Promise((resolve,reject)=>{
-      const tx=db.transaction(storeName,"readonly"),request=tx.objectStore(storeName).get(key);
-      request.onsuccess=()=>resolve(request.result||null);
-      request.onerror=()=>reject(request.error||new Error("Local read failed"));
+      let settled=false;
+      const finish=(error,value)=>{
+        if(settled)return;settled=true;clearTimeout(timer);
+        if(error)reject(error);else resolve(value||null);
+      };
+      const timer=setTimeout(()=>finish(new Error("Local read timed out")),2500);
+      let tx,request;
+      try{tx=db.transaction(storeName,"readonly");request=tx.objectStore(storeName).get(key);}
+      catch(error){finish(error);return;}
+      request.onsuccess=()=>finish(null,request.result||null);
+      request.onerror=()=>finish(request.error||new Error("Local read failed"));
+      tx.onerror=()=>finish(tx.error||new Error("Local read transaction failed"));
+      tx.onabort=()=>finish(tx.error||new Error("Local read transaction aborted"));
     });
   }
   async function write(storeName,value){
     const db=await openDB();if(!db)return false;
     return new Promise((resolve,reject)=>{
-      const tx=db.transaction(storeName,"readwrite");
-      tx.objectStore(storeName).put(value);
-      tx.oncomplete=()=>resolve(true);
-      tx.onerror=()=>reject(tx.error||new Error("Local write failed"));
-      tx.onabort=()=>reject(tx.error||new Error("Local write aborted"));
+      let settled=false;
+      const finish=(error,result)=>{
+        if(settled)return;settled=true;clearTimeout(timer);
+        if(error)reject(error);else resolve(result);
+      };
+      const timer=setTimeout(()=>finish(new Error("Local write timed out")),2500);
+      let tx;
+      try{tx=db.transaction(storeName,"readwrite");tx.objectStore(storeName).put(value);}
+      catch(error){finish(error);return;}
+      tx.oncomplete=()=>finish(null,true);
+      tx.onerror=()=>finish(tx.error||new Error("Local write failed"));
+      tx.onabort=()=>finish(tx.error||new Error("Local write aborted"));
     });
   }
   async function remove(storeName,key){
     const db=await openDB();if(!db)return false;
     return new Promise((resolve,reject)=>{
-      const tx=db.transaction(storeName,"readwrite");
-      tx.objectStore(storeName).delete(key);
-      tx.oncomplete=()=>resolve(true);
-      tx.onerror=()=>reject(tx.error||new Error("Local delete failed"));
-      tx.onabort=()=>reject(tx.error||new Error("Local delete aborted"));
+      let settled=false;
+      const finish=(error,result)=>{
+        if(settled)return;settled=true;clearTimeout(timer);
+        if(error)reject(error);else resolve(result);
+      };
+      const timer=setTimeout(()=>finish(new Error("Local delete timed out")),2500);
+      let tx;
+      try{tx=db.transaction(storeName,"readwrite");tx.objectStore(storeName).delete(key);}
+      catch(error){finish(error);return;}
+      tx.oncomplete=()=>finish(null,true);
+      tx.onerror=()=>finish(tx.error||new Error("Local delete failed"));
+      tx.onabort=()=>finish(tx.error||new Error("Local delete aborted"));
     });
   }
 

@@ -1533,16 +1533,20 @@ async function findRecipient(event){
         const authenticatedUser=result.data.user;
         closeAuth();
         navigate("chatsPage");
-        await showUser(authenticatedUser);
+        // Authentication has succeeded. Keep profile and inbox initialization
+        // outside the authentication error path so they cannot undo a valid login.
+        setStatus("authStatus","");
+        setConnectionBanner(english?"Signed in. Loading your conversations…":"ورود موفق بود؛ در حال بارگذاری گفتگوها…");
         try{
+          await showUser(authenticatedUser);
           await subscribeToMessages();
           await refreshConversationList();
           setConnectionBanner("",false);
         }catch(connectionError){
-          console.error("Post-login connection:",connectionError);
+          console.error("Post-login initialization:",connectionError);
           setConnectionBanner(english
-            ?"Signed in. Some conversations could not load yet; Farnaz will retry."
-            :"ورود موفق بود؛ بارگذاری گفتگوها کامل نشد. فرناز دوباره تلاش می‌کند.");
+            ?"You are signed in, but some account data could not load. Check your connection; Farnaz will retry."
+            :"ورود موفق است، اما بارگذاری بخشی از اطلاعات حساب انجام نشد. اتصال را بررسی کن؛ فرناز دوباره تلاش می‌کند.");
           scheduleReconnect();
         }
       }catch(error){

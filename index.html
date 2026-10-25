@@ -336,59 +336,82 @@
 
 <script>
 (function(){
-  // Load the local UI/auth functions first so the welcome buttons respond
-  // immediately, while the external Supabase SDK is being fetched.
-  const scripts=[
-    ["./js/core.js?v=20261025-60"],
-    ["https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js","https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"],
-    ["./js/chat-menu-v5.js?v=20261024-10"],
-    ["./js/spaces.js?v=20261025-29"],
-    ["./js/calls.js?v=20261024-1"]
-  ];
-  function load(index){
-    if(index>=scripts.length)return;
-    const urls=scripts[index];
-    let attempt=0,settled=false,script=null,timer=null;
-    function finish(success){
-      if(settled)return;
-      settled=true;
-      if(timer)clearTimeout(timer);
-      if(script){script.onload=null;script.onerror=null;if(!success)script.remove();}
-      if(success){load(index+1);return;}
-      next();
-    }
+  // Load the UI/auth code first. CDN availability must not block the local UI.
+  function loadLocalScripts(){
+    const localScripts=[
+      "./js/core.js?v=20261025-61",
+      "./js/chat-menu-v5.js?v=20261024-10",
+      "./js/spaces.js?v=20261025-29",
+      "./js/calls.js?v=20261024-1"
+    ];
+    let index=0;
     function next(){
-      if(attempt>=urls.length){
+      if(index>=localScripts.length)return;
+      const script=document.createElement("script");
+      script.src=localScripts[index++];
+      script.onload=next;
+      script.onerror=()=>{
+        window.FARNAZ_APP_LOAD_FAILED=true;
         const status=document.getElementById("authStatus");
-        if(index===1){
-          window.FARNAZ_SUPABASE_LOAD_FAILED=true;
-          if(status)status.textContent="کتابخانه ورود بارگذاری نشد. رابط برنامه فعال است؛ اتصال اینترنت را بررسی کن و دوباره تلاش کن.";
-          load(index+1);
-        }else{
-          window.FARNAZ_APP_LOAD_FAILED=true;
-          if(status)status.textContent="بارگذاری یکی از فایل‌های برنامه ناموفق بود. اتصال اینترنت را بررسی و صفحه را تازه‌سازی کن.";
-        }
-        return;
-      }
-      settled=false;
-      script=document.createElement("script");
-      script.async=false;
-      script.src=urls[attempt++];
-      script.onload=()=>{
-        if(index===1&&!window.supabase?.createClient){
-          finish(false);
-          return;
-        }
-        finish(true);
+        if(status)status.textContent="بارگذاری یکی از فایل‌های برنامه ناموفق بود. صفحه را تازه‌سازی کن و اتصال را بررسی کن.";
       };
-      script.onerror=()=>finish(false);
-      // Mobile networks and CDN responses can take longer than four seconds.
-      if(index===1)timer=setTimeout(()=>finish(false),25000);
       document.body.appendChild(script);
     }
     next();
   }
-  load(0);
+
+  function loadSupabaseSdk(){
+    const urls=[
+      "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js",
+      "https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"
+    ];
+    let settled=false,failed=0;
+    const pending=[];
+    let timeout=null;
+    function finish(success){
+      if(settled)return;
+      if(success&&!window.supabase?.createClient)return;
+      settled=true;
+      if(timeout)clearTimeout(timeout);
+      pending.forEach(script=>{
+        script.onload=null;
+        script.onerror=null;
+        if(success&&script!==document.currentScript&&script!==window.__farnazSupabaseWinner)script.remove();
+      });
+      window.FARNAZ_SUPABASE_LOAD_FAILED=!success;
+      const status=document.getElementById("authStatus");
+      if(!success&&status)status.textContent="اتصال به کتابخانه ورود برقرار نشد. صفحه و رابط برنامه فعال‌اند؛ اتصال را بررسی و دوباره تلاش کن.";
+      if(success&&status&&status.textContent.includes("کتابخانه ورود"))status.textContent="";
+    }
+    urls.forEach(url=>{
+      const script=document.createElement("script");
+      script.src=url;
+      script.async=true;
+      script.onload=()=>{
+        if(window.supabase?.createClient){
+          window.__farnazSupabaseWinner=script;
+          finish(true);
+        }else{
+          failed++;
+          script.remove();
+          if(failed===urls.length)finish(false);
+        }
+      };
+      script.onerror=()=>{
+        failed++;
+        script.remove();
+        if(failed===urls.length)finish(false);
+      };
+      pending.push(script);
+      document.head.appendChild(script);
+    });
+    // Report a slow CDN promptly; do not block loading the rest of the app.
+    timeout=setTimeout(()=>finish(false),12000);
+  }
+
+  // Start the independent local UI chain immediately, while both CDN mirrors race.
+  loadLocalScripts();
+  loadSupabaseSdk();
 })();
 </script>
 </body>

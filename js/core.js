@@ -165,6 +165,26 @@ window.notifyFarnazIncomingMessage=async function(){
 
 
 
+async function farnazNetworkFetch(input,init){
+  const nativeFetch=window.fetch.bind(window);
+  const canRetry=!(init?.body&&typeof init.body!=="string"&&!(init.body instanceof URLSearchParams)) &&
+    !(typeof Request!=="undefined"&&input instanceof Request&&input.bodyUsed);
+  let lastError;
+  for(let attempt=0;attempt<3;attempt++){
+    try{
+      const requestInput=(typeof Request!=="undefined"&&input instanceof Request)?input.clone():input;
+      return await nativeFetch(requestInput,init);
+    }catch(error){
+      lastError=error;
+      const message=String(error?.message||error||"");
+      const networkFailure=error instanceof TypeError||/network|fetch failed|load failed|connection|timeout/i.test(message);
+      if(!canRetry||!networkFailure||attempt===2)throw error;
+      await new Promise(resolve=>setTimeout(resolve,attempt===0?450:1100));
+    }
+  }
+  throw lastError;
+}
+
 function getClient(){
   if(farnazClient)return farnazClient;
 
@@ -182,6 +202,7 @@ function getClient(){
     c.supabaseUrl,
     c.supabasePublishableKey,
     {
+      global:{fetch:farnazNetworkFetch},
       auth:{
         // Keep one stable storage key across reloads and GitHub Pages launches.
         storageKey:"sb-iemykhluluoymsbqpjsn-auth-token",

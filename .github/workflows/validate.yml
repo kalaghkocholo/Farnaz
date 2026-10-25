@@ -23,6 +23,7 @@ jobs:
           node-version: 22
       - name: Validate JavaScript syntax
         run: |
+          node --check vendor/supabase.js
           node --check js/local-store.js
           node --check js/core.js
           node --check js/chat-menu-v5.js

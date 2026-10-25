@@ -755,10 +755,29 @@ window.addEventListener("farnaz-auth-user",event=>{
   },400);
 });
 
+let farnazPresenceStartPromise=null,farnazPresenceStartUserId=null;
 async function startFarnazPresence(){
  if(!currentUser)return;
+ const uid=String(currentUser.id);
+ const existing=farnazPresenceChannel;
+ if(existing&&farnazPresenceStartUserId===uid&&(existing.state==="joining"||existing.state==="joined"))return;
+ if(farnazPresenceStartPromise){
+  try{await farnazPresenceStartPromise;}catch(_){}
+  if(!currentUser||String(currentUser.id)!==uid)return;
+  const active=farnazPresenceChannel;
+  if(active&&farnazPresenceStartUserId===uid&&(active.state==="joining"||active.state==="joined"))return;
+ }
+ const task=startFarnazPresenceNow(uid);
+ farnazPresenceStartPromise=task;
+ farnazPresenceStartUserId=uid;
+ try{await task;}finally{if(farnazPresenceStartPromise===task)farnazPresenceStartPromise=null;}
+}
+async function startFarnazPresenceNow(expectedUid){
+ if(!currentUser||String(currentUser.id)!==expectedUid)return;
  const client=getClient(),uid=String(currentUser.id);
+ if(uid!==expectedUid)return;
  await stopFarnazPresence();
+ if(!currentUser||String(currentUser.id)!==uid)return;
  if(!farnazPresenceSessionId)farnazPresenceSessionId=crypto.randomUUID();
  const ownTopic="farnaz-presence:"+uid;
  const ownChannel=client.channel(ownTopic,{config:{private:true,presence:{key:uid+":"+farnazPresenceSessionId}}});

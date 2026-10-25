@@ -340,7 +340,7 @@
   // immediately, while the external Supabase SDK is being fetched.
   const scripts=[
     ["./js/core.js?v=20261025-57"],
-    ["https://unpkg.com/@supabase/supabase-js@2","https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"],
+    ["https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js","https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"],
     ["./js/chat-menu-v5.js?v=20261024-10"],
     ["./js/spaces.js?v=20261025-29"],
     ["./js/calls.js?v=20261024-1"]
@@ -383,7 +383,7 @@
       };
       script.onerror=()=>finish(false);
       // Mobile networks and CDN responses can take longer than four seconds.
-      if(index===1)timer=setTimeout(()=>finish(false),15000);
+      if(index===1)timer=setTimeout(()=>finish(false),25000);
       document.body.appendChild(script);
     }
     next();

@@ -544,7 +544,7 @@ async function loadMessages(id){
   let hiddenIds=new Set();
   if(!fromLocalCache){
    try{const {data:hiddenRows,error:hiddenError}=await withTimeout(getClient().from("space_message_hidden").select("message_id").eq("user_id",currentUser.id),7000,"پیام‌های مخفی‌شده");if(hiddenError)throw hiddenError;hiddenIds=new Set((hiddenRows||[]).map(x=>String(x.id||x.message_id)));}
-   catch(e){console.warn("Hidden space messages could not load:",e);}
+   catch(e){console.warn("Hidden space messages could not load:",e);const cachedVisible=await window.FarnazLocalStore?.getSpaceMessages(currentUser.id,id).catch(()=>[]);if(cachedVisible?.length){data=cachedVisible;fromLocalCache=true;}else throw e;}
    try{const {data:pinnedRows,error:pinnedError}=await withTimeout(getClient().from("space_message_pins").select("message_id").eq("space_id",id),7000,"پیام‌های سنجاق‌شده");if(pinnedError)throw pinnedError;spacePinnedMessageIds.clear();(pinnedRows||[]).forEach(row=>spacePinnedMessageIds.add(String(row.message_id)));}
    catch(e){console.warn("Pinned space messages could not load:",e);}
   }

@@ -1514,10 +1514,45 @@ function initPhoneContactsImport(){
   const input=$("phoneContactsFile");if(input&&!input.dataset.bound){input.dataset.bound="1";input.addEventListener("change",handlePhoneContactsFile);}
 }
 let conversationListRequestNumber=0;
+function renderConversationSnapshot(snapshot,myId){
+  const list=$("conversationList");if(!list||!Array.isArray(snapshot))return;
+  const visible=snapshot.filter(c=>conversationView==="archived"?!!c.pref?.archived:!c.pref?.archived)
+    .sort((a,b)=>Number(!!b.pref?.pinned)-Number(!!a.pref?.pinned)||new Date(b.created_at)-new Date(a.created_at));
+  list.replaceChildren();
+  if(!visible.length){
+    setStatus("inboxStatus",conversationView==="archived"?(english?"No archived conversations.":"گفتگوی آرشیوشده‌ای وجود ندارد."):(english?"No conversations yet. Start one from Contacts.":"هنوز گفتگویی نداری؛ از بخش مخاطبان گفتگوی جدید بساز."));
+    return;
+  }
+  for(const c of visible){
+    const p=c.profile||{},pref=c.pref||{};
+    const name=p.display_name||(english?"Farnaz user":"مخاطب فرناز");
+    const preview=(c.lastSender===myId?(english?"You: ":"شما: "):"")+(pref.pinned?"📌 ":"")+(pref.archived?"🗄 ":"")+c.lastMessage;
+    const contact={user_id:c.user_id,display_name:name,avatar_url:p.avatar_url||""};
+    const card=document.createElement("div");card.className="conversation-card"+(pref.pinned?" pinned":"")+(pref.archived?" archived":"");
+    const btn=makeContactButton(contact,preview,new Date(c.created_at).toLocaleString(english?"en":"fa-IR"));
+    btn.addEventListener("contextmenu",e=>{e.preventDefault();showConversationActions(card,c.user_id);});
+    let hold;btn.addEventListener("pointerdown",()=>{hold=setTimeout(()=>{btn.dataset.suppressOpen="1";showConversationActions(card,c.user_id);},550);});
+    ["pointerup","pointercancel","pointerleave"].forEach(ev=>btn.addEventListener(ev,()=>clearTimeout(hold)));
+    let sx=0;btn.addEventListener("touchstart",e=>{sx=e.changedTouches[0].clientX;},{passive:true});
+    btn.addEventListener("touchend",e=>{if(Math.abs(e.changedTouches[0].clientX-sx)>65){btn.dataset.suppressOpen="1";showConversationActions(card,c.user_id);}},{passive:true});
+    card.appendChild(btn);list.appendChild(card);
+  }
+  setStatus("inboxStatus","");
+  applyConversationSearch();
+}
 async function refreshConversationList(){
   if(!currentUser)return;
-  const request=++conversationListRequestNumber;
-  const myId=currentUser.id;
+  const request=++conversationListRequestNumber,myId=currentUser.id;
+  const list=$("conversationList");if(!list)return;
+  let cachedSnapshot=null;
+  try{
+    cachedSnapshot=await window.FarnazLocalStore?.getSnapshot(myId,"inbox");
+    if(currentUser?.id===myId&&request===conversationListRequestNumber&&Array.isArray(cachedSnapshot)&&cachedSnapshot.length){
+      conversationPrefs=new Map(cachedSnapshot.map(c=>[String(c.user_id),c.pref||{}]));
+      renderConversationSnapshot(cachedSnapshot,myId);
+      setStatus("inboxStatus",english?"Showing saved conversations while refreshing…":"نمایش گفتگوهای ذخیره‌شده؛ در حال همگام‌سازی…");
+    }
+  }catch(cacheError){console.warn("Cached inbox read:",cacheError);}
   try{
     const prefResult=await retryRead("conversation preferences",()=>getClient().from("conversation_preferences").select("*").eq("user_id",myId));
     if(currentUser?.id!==myId||request!==conversationListRequestNumber)return;
@@ -1526,8 +1561,6 @@ async function refreshConversationList(){
     console.warn("Conversation preferences:",prefError);
     if(!conversationPrefs.size)setConnectionBanner(english?"Some conversation settings could not load. Retrying…":"بخشی از تنظیمات گفتگو بارگذاری نشد؛ دوباره تلاش می‌کنیم.");
   }
-
-  const list=$("conversationList");if(!list||!currentUser||request!==conversationListRequestNumber)return;
   setStatus("inboxStatus",english?"Loading conversations...":"در حال بارگذاری گفتگوها...");
   try{
     const {data,error}=await retryRead("conversation list",()=>getClient().from("messages")
@@ -1535,49 +1568,29 @@ async function refreshConversationList(){
       .or("sender_id.eq."+myId+",receiver_id.eq."+myId)
       .order("created_at",{ascending:false}).limit(1000));
     if(currentUser?.id!==myId||request!==conversationListRequestNumber)return;
+    if(error)throw error;
     const conversations=new Map();
     for(const m of data||[]){
       const id=String(m.sender_id===myId?m.receiver_id:m.sender_id||"");
       if(!id||id===myId||conversations.has(id))continue;
       const pref=prefFor(id);
       if(pref.hidden_at&&new Date(m.created_at)<=new Date(pref.hidden_at))continue;
-      conversations.set(id,{user_id:id,lastMessage:m.body||((m.message_type||"text")==="image"?(english?"📷 Photo":"📷 عکس"):""),created_at:m.created_at,lastSender:m.sender_id});
+      conversations.set(id,{user_id:id,lastMessage:m.body||((m.message_type||"text")==="image"?(english?"📷 Photo":"📷 عکس"):""),created_at:m.created_at,lastSender:m.sender_id,pref});
     }
-    const entries=[...conversations.values()].filter(c=>conversationView==="archived"?prefFor(c.user_id).archived:!prefFor(c.user_id).archived)
-      .sort((a,b)=>Number(prefFor(b.user_id).pinned)-Number(prefFor(a.user_id).pinned)||new Date(b.created_at)-new Date(a.created_at));
-    if(!entries.length){
-      list.replaceChildren();
-      setStatus("inboxStatus",conversationView==="archived"?(english?"No archived conversations.":"گفتگوی آرشیوشده‌ای وجود ندارد."):(english?"No conversations yet. Start one from Contacts.":"هنوز گفتگویی نداری؛ از بخش مخاطبان گفتگوی جدید بساز."));
-      return;
-    }
-    // Keep the loading status and existing rows visible while contact profiles load.
-    // Clearing the list before these RPCs completed made a successful inbox query
-    // look like an empty conversation list on slow mobile connections.
+    const entries=[...conversations.values()].filter(c=>conversationView==="archived"?prefFor(c.user_id).archived:!prefFor(c.user_id).archived);
     let profilesById=new Map();
-    try{profilesById=await getContactProfiles(entries.map(c=>c.user_id));}
-    catch(e){console.warn("Conversation contact profiles:",e);}
+    try{profilesById=await getContactProfiles(entries.map(c=>c.user_id));}catch(e){console.warn("Conversation contact profiles:",e);}
     if(currentUser?.id!==myId||request!==conversationListRequestNumber)return;
-    list.replaceChildren();
-    setStatus("inboxStatus","");
-    entries.forEach(c=>{
-      const p=profilesById.get(String(c.user_id))||{};
-      const name=p.display_name||(english?"Farnaz user":"مخاطب فرناز");
-      const pref=prefFor(c.user_id);
-      const preview=(c.lastSender===myId?(english?"You: ":"شما: "):"")+(pref.pinned?"📌 ":"")+(pref.archived?"🗄 ":"")+c.lastMessage;
-      const contact={user_id:c.user_id,display_name:name,avatar_url:p.avatar_url||""};
-      const card=document.createElement("div");card.className="conversation-card"+(pref.pinned?" pinned":"")+(pref.archived?" archived":"");
-      const btn=makeContactButton(contact,preview,new Date(c.created_at).toLocaleString(english?"en":"fa-IR"));
-      btn.addEventListener("contextmenu",e=>{e.preventDefault();showConversationActions(card,c.user_id);});
-      let hold;btn.addEventListener("pointerdown",()=>{hold=setTimeout(()=>{btn.dataset.suppressOpen="1";showConversationActions(card,c.user_id);},550);});
-      ["pointerup","pointercancel","pointerleave"].forEach(ev=>btn.addEventListener(ev,()=>clearTimeout(hold)));
-      let sx=0;btn.addEventListener("touchstart",e=>{sx=e.changedTouches[0].clientX;},{passive:true});
-      btn.addEventListener("touchend",e=>{if(Math.abs(e.changedTouches[0].clientX-sx)>65){btn.dataset.suppressOpen="1";showConversationActions(card,c.user_id);}},{passive:true});
-      card.appendChild(btn);list.appendChild(card);
-    });
-    applyConversationSearch();
+    const snapshot=entries.map(c=>({...c,pref:prefFor(c.user_id),profile:profilesById.get(String(c.user_id))||{}}));
+    renderConversationSnapshot(snapshot,myId);
+    try{await window.FarnazLocalStore?.saveSnapshot(myId,"inbox",snapshot);}catch(cacheError){console.warn("Cached inbox save:",cacheError);}
   }catch(e){
     console.error("Inbox load:",e);
-    setStatus("inboxStatus",(english?"Could not load conversations: ":"بارگذاری گفتگوها ناموفق بود: ")+e.message,true);
+    if(currentUser?.id!==myId||request!==conversationListRequestNumber)return;
+    if(Array.isArray(cachedSnapshot)&&cachedSnapshot.length){
+      renderConversationSnapshot(cachedSnapshot,myId);
+      setStatus("inboxStatus",english?"Showing saved conversations; refresh failed.":"گفتگوهای ذخیره‌شده نمایش داده می‌شوند؛ به‌روزرسانی ناموفق بود.");
+    }else setStatus("inboxStatus",(english?"Could not load conversations: ":"بارگذاری گفتگوها ناموفق بود: ")+e.message,true);
   }
 }
 async function findRecipient(event){

@@ -57,6 +57,25 @@ function checkBalancedCss(path, source) {
 }
 
 const html = read("index.html");
+const supabaseSdk = read("vendor/supabase.js");
+const supabaseSdkVersion = read("vendor/supabase-version.txt").trim();
+const supabaseSdkLicense = read("vendor/SUPABASE-LICENSE.txt");
+if (!/^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/.test(supabaseSdkVersion)) {
+  errors.push("vendor/supabase-version.txt does not contain a valid pinned SDK version");
+}
+if (!supabaseSdkLicense.includes("MIT License")) {
+  errors.push("vendor/SUPABASE-LICENSE.txt is missing the SDK license notice");
+}
+if (!supabaseSdk.includes("createClient")) {
+  errors.push("vendor/supabase.js does not appear to contain the Supabase browser SDK");
+}
+if (!html.includes('script.src="./vendor/supabase.js"')) {
+  errors.push("index.html must load the locally vendored Supabase SDK");
+}
+if (html.includes("cdn.jsdelivr.net/npm/@supabase/supabase-js") || html.includes("unpkg.com/@supabase/supabase-js")) {
+  errors.push("index.html must not depend on a remote Supabase SDK CDN");
+}
+
 const clientFiles = [
   "js/local-store.js",
   "js/core.js",

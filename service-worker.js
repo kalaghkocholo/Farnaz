@@ -14,29 +14,31 @@ self.addEventListener("fetch",event=>{
   const url=new URL(req.url);
   if(url.origin!==self.location.origin||!url.pathname.startsWith(APP_BASE.pathname))return;
   if(req.mode==="navigate"){
+    const cachedPage=caches.match(new URL("./index.html",APP_BASE).href);
+    const refreshPage=fetch(req).then(response=>{
+      if(response.ok){const copy=response.clone();caches.open(CACHE_NAME).then(cache=>cache.put(new URL("./index.html",APP_BASE).href,copy));}
+      return response;
+    });
+    // Register background refresh while the fetch event is still active.
+    event.waitUntil(refreshPage.then(()=>{}).catch(()=>{}));
     event.respondWith((async()=>{
-      const cached=await caches.match(new URL("./index.html",APP_BASE).href);
-      const refresh=fetch(req).then(response=>{
-        if(response.ok){const copy=response.clone();caches.open(CACHE_NAME).then(cache=>cache.put(new URL("./index.html",APP_BASE).href,copy));}
-        return response;
-      });
-      if(cached){event.waitUntil(refresh.then(()=>{}).catch(()=>{}));return cached;}
-      try{return await refresh;}catch(_){return await caches.match(req,{ignoreSearch:true})||Response.error();}
+      const cached=await cachedPage;
+      if(cached)return cached;
+      try{return await refreshPage;}catch(_){return await caches.match(req,{ignoreSearch:true})||Response.error();}
     })());
     return;
   }
-  const isCodeAsset=/\.(?:html|css|js)$/i.test(url.pathname)||url.search.length>0;
+  const isCodeAsset=/\\.(?:html|css|js)$/i.test(url.pathname)||url.search.length>0;
+  const cachedAsset=caches.match(req);
+  const refreshAsset=fetch(req).then(response=>{
+    if(response.ok&&response.type==="basic")caches.open(CACHE_NAME).then(cache=>cache.put(req,response.clone()));
+    return response;
+  });
+  if(isCodeAsset)event.waitUntil(refreshAsset.then(()=>{}).catch(()=>{}));
   event.respondWith((async()=>{
-    const cached=await caches.match(req);
-    const refresh=fetch(req).then(response=>{
-      if(response.ok&&response.type==="basic")caches.open(CACHE_NAME).then(cache=>cache.put(req,response.clone()));
-      return response;
-    });
-    if(cached){
-      if(isCodeAsset)event.waitUntil(refresh.then(()=>{}).catch(()=>{}));
-      return cached;
-    }
-    try{return await refresh;}catch(_){return Response.error();}
+    const cached=await cachedAsset;
+    if(cached)return cached;
+    try{return await refreshAsset;}catch(_){return Response.error();}
   })());
 });
 self.addEventListener("push",event=>{

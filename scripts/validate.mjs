@@ -58,6 +58,7 @@ function checkBalancedCss(path, source) {
 
 const html = read("index.html");
 const clientFiles = [
+  "js/local-store.js",
   "js/core.js",
   "js/chat-menu-v5.js",
   "js/spaces.js",
@@ -84,7 +85,7 @@ for (const match of html.matchAll(/<(?:script|link)\b[^>]*>/gi)) {
 
 // The app's real script dependencies are injected by a runtime loader, so the
 // ordinary <script src> scan above cannot see them. Validate those paths too.
-const loader = html.match(/const scripts\s*=\s*\[([\s\S]*?)\n\s*\];/);
+const loader = html.match(/const (?:featureScripts|scripts)\s*=\s*\[([\s\S]*?)\n\s*\];/);
 if (!loader) {
   errors.push("index.html: dynamic script loader list was not found");
 } else {
@@ -132,7 +133,7 @@ try {
 } catch (error) {
   errors.push("manifest.webmanifest is not valid JSON: " + error.message);
 }
-for (const path of ["js/core.js", "js/chat-menu-v5.js", "js/spaces.js", "js/calls.js", "service-worker.js"]) {
+for (const path of ["js/local-store.js", "js/core.js", "js/chat-menu-v5.js", "js/spaces.js", "js/calls.js", "service-worker.js"]) {
   const source = sources[path];
   if (/sb_secret_[A-Za-z0-9_-]{16,}/i.test(source)) {
     errors.push(path + ": possible Supabase secret key found in client code");

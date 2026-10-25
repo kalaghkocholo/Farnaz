@@ -195,6 +195,39 @@ for (const path of ["js/local-store.js", "js/core.js", "js/chat-menu-v5.js", "js
   }
 }
 
+const coreSource = sources["js/core.js"];
+const chatSource = sources["js/chat-menu-v5.js"];
+const loaderChecks = [
+  [html.includes('script.src="./js/supabase-sdk.js"') && html.includes('script.onload=()=>{') && html.includes("loadLocalScripts();"),
+    "index.html must wait for the local Supabase SDK before loading the app core"],
+  [html.includes('core.src="./js/core.js?v=20261025-87"') && html.includes("core.onload=()=>{") && html.includes("core.onerror=()=>{"),
+    "index.html must handle both successful and failed core-script loading"],
+  [html.includes("script.onload=loadNextFeature;") && html.includes("if(typeof window.FarnazBoot===\"function\")window.FarnazBoot();"),
+    "index.html must load feature scripts sequentially and boot only after the loader sequence"],
+  [html.includes('script.onerror=()=>{') && html.includes("window.FARNAZ_APP_LOAD_FAILED=true;"),
+    "index.html must report a failed feature-script load"],
+];
+for (const [passed, message] of loaderChecks) {
+  if (!passed) errors.push(message);
+}
+
+const authChecks = [
+  [coreSource.includes('storageKey:"sb-iemykhluluoymsbqpjsn-auth-token"') &&
+   coreSource.includes("persistSession:true") &&
+   coreSource.includes("autoRefreshToken:true") &&
+   coreSource.includes("storage:window.localStorage"),
+    "js/core.js must keep the explicit persisted Supabase session configuration"],
+  [coreSource.includes("client.auth.signInWithPassword({email,password})"),
+    "js/core.js must retain the email/password sign-in path"],
+  [coreSource.includes("client.auth.getSession()") && coreSource.includes("window.FarnazBoot=()=>"),
+    "js/core.js must restore the saved session from the app boot entry point"],
+  [chatSource.includes("window.loadPrivateMessages") || chatSource.includes("loadPrivateMessages"),
+    "js/chat-menu-v5.js must retain the explicit private-message loader"],
+];
+for (const [passed, message] of authChecks) {
+  if (!passed) errors.push(message);
+}
+
 if (errors.length) {
   console.error("Farnaz validation failed:");
   for (const error of errors) console.error("- " + error);

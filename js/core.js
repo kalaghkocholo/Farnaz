@@ -756,16 +756,14 @@ window.addEventListener("farnaz-auth-user",event=>{
 });
 
 let farnazPresenceStartPromise=null,farnazPresenceStartUserId=null;
-async function startFarnazPresence(){
+async function startFarnazPresence(forceRestart=false){
  if(!currentUser)return;
  const uid=String(currentUser.id);
  const existing=farnazPresenceChannel;
- if(existing&&farnazPresenceStartUserId===uid&&(existing.state==="joining"||existing.state==="joined"))return;
+ if(!forceRestart&&existing&&farnazPresenceStartUserId===uid&&(existing.state==="joining"||existing.state==="joined"))return;
  if(farnazPresenceStartPromise){
   try{await farnazPresenceStartPromise;}catch(_){}
-  if(!currentUser||String(currentUser.id)!==uid)return;
-  const active=farnazPresenceChannel;
-  if(active&&farnazPresenceStartUserId===uid&&(active.state==="joining"||active.state==="joined"))return;
+  return;
  }
  const task=startFarnazPresenceNow(uid);
  farnazPresenceStartPromise=task;
@@ -816,7 +814,7 @@ async function startFarnazPresenceNow(expectedUid){
  if(farnazVisibilityHandler)document.removeEventListener("visibilitychange",farnazVisibilityHandler);
  farnazVisibilityHandler=()=>{
   if(document.visibilityState==="visible"){
-   startFarnazPresence().catch(e=>console.warn("Farnaz presence resume:",e));
+   startFarnazPresence(true).catch(e=>console.warn("Farnaz presence resume:",e));
    return;
   }
   if(farnazPresenceTimer){clearInterval(farnazPresenceTimer);farnazPresenceTimer=null;}

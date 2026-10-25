@@ -203,11 +203,13 @@ async function farnazNetworkFetch(input,init){
       if(timeoutId)clearTimeout(timeoutId);
       lastError=error;
       if(error?.name==="AbortError"||error?.name==="TimeoutError"){
-        if(isStorageUpload&&attempt<2){
-          await new Promise(resolve=>setTimeout(resolve,500));
+        // Safari can time out while Supabase is healthy or while the response is
+        // delayed in transit. Password sign-in is safe to retry; sign-up is not.
+        if((isStorageUpload||isPasswordLogin)&&attempt<2){
+          await new Promise(resolve=>setTimeout(resolve,isPasswordLogin?(attempt===0?500:1200):500));
           continue;
         }
-        if(isAuthRequest)throw new Error(english?"The server did not respond within 15 seconds. Check your connection and try again.":"سرور طی ۱۵ ثانیه پاسخ نداد. اتصال اینترنت را بررسی کن و دوباره تلاش کن.");
+        if(isAuthRequest)throw new Error(english?"The server did not respond after retries. Check your connection and try again.":"سرور پس از چند تلاش پاسخ نداد. اتصال اینترنت را بررسی کن و دوباره تلاش کن.");
         if(isStorageUpload)throw new Error("بارگذاری عکس پس از دو تلاش ۲۵ ثانیه‌ای پاسخ نگرفت. اتصال شبکه را بررسی کن و دوباره ذخیره را بزن.");
         if(isProfileRequest)throw new Error("بارگذاری مشخصات پس از ۱۵ ثانیه پاسخ نگرفت. اتصال شبکه را بررسی کن و دوباره تلاش کن.");
         if(isRestRequest)throw new Error(english?"Supabase data request timed out after 15 seconds. Check the connection and retry.":"درخواست دریافت اطلاعات از سوپابیس پس از ۱۵ ثانیه پاسخ نگرفت؛ اتصال را بررسی کن و دوباره تلاش کن.");

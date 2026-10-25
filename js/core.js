@@ -1729,8 +1729,9 @@ async function findRecipient(event){
   // Restore the persisted Supabase session on app launch. Persisting a session is
   // not enough by itself: currentUser starts as null on every page reload.
   async function restoreSavedSession(){
-    const client=getClient();
+    let client=null;
     try{
+      client=getClient();
       const {data,error}=await client.auth.getSession();
       if(error)throw error;
       const session=data?.session;
@@ -1765,7 +1766,7 @@ async function findRecipient(event){
       });
       document.body.dataset.authState="guest";
       if(/refresh token.*(invalid|not found|expired)|invalid refresh token|session not found/i.test(String(error?.message||""))){
-        try{await client.auth.signOut({scope:"local"});}catch(_){}
+        try{if(client)await client.auth.signOut({scope:"local"});}catch(_){}
       }
     }
   }

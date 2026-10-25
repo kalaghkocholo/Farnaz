@@ -1768,8 +1768,9 @@ async function findRecipient(event){
         void showUser(authenticatedUser);
         try{
           await subscribeToMessages();
-          void refreshSavedContacts();
-          // navigate("chatsPage") already starts the conversation-list request.
+          // Reconcile inbox and contacts after auth and realtime setup. The
+          // navigation-triggered refresh may have been superseded during startup.
+          await Promise.allSettled([refreshConversationList(),refreshSavedContacts()]);
           setConnectionBanner("",false);
         }catch(connectionError){
           console.error("Post-login realtime initialization:",connectionError);
@@ -1822,7 +1823,8 @@ async function findRecipient(event){
       void showUser(session.user);
       try{
         await subscribeToMessages();
-        void refreshSavedContacts();
+        // Reconcile inbox and contacts after restoring the saved session.
+        await Promise.allSettled([refreshConversationList(),refreshSavedContacts()]);
         setConnectionBanner("",false);
       }catch(connectionError){
         console.error("Restored-session initialization:",connectionError);

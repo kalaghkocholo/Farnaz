@@ -1565,7 +1565,13 @@ async function findRecipient(event){
       const password=$("authPassword").value,name=$("authName").value.trim();
       if(!button)return;
       button.disabled=true;
+      const authStartedAt=performance.now();
       setStatus("authStatus",english?"Connecting to server…":"در حال اتصال به سرور…");
+      const slowAuthTimer=setTimeout(()=>{
+        if(button.disabled)setStatus("authStatus",english
+          ?"The connection is taking longer than expected. Keep this page open…"
+          :"اتصال بیشتر از حد معمول طول کشیده؛ صفحه را باز نگه دار…");
+      },5000);
       try{
         const client=getClient();
         let result;
@@ -1588,6 +1594,7 @@ async function findRecipient(event){
           result=await client.auth.signInWithPassword({email,password});
           if(result.error)throw result.error;
         }
+        console.info("Farnaz auth response time (ms):",Math.round(performance.now()-authStartedAt));
         if(!result.data.user)throw new Error("اطلاعات حساب دریافت نشد.");
         // Authentication succeeded: enter the app before loading optional profile/chat data.
         // A later conversation or realtime failure must not be reported as a failed login.
@@ -1605,7 +1612,8 @@ async function findRecipient(event){
         try{
           await showUser(authenticatedUser);
           await subscribeToMessages();
-          await refreshConversationList();
+          // navigate("chatsPage") already starts the conversation-list request.
+          // Avoid issuing a duplicate inbox query during login.
           setConnectionBanner("",false);
         }catch(connectionError){
           console.error("Post-login initialization:",connectionError);
@@ -1624,6 +1632,7 @@ async function findRecipient(event){
             ?(english?"The request could not reach Supabase. Check the connection and try again.":"درخواست به سوپابیس نرسید؛ اتصال را بررسی کن و دوباره تلاش کن.")
             :message),true);
       }finally{
+        clearTimeout(slowAuthTimer);
         button.disabled=false;
       }
     });

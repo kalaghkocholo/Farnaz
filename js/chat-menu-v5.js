@@ -550,7 +550,8 @@ async function subscribeToMessages(){
       const m=payload.old;
       if(m?.id){$("messageList").querySelector('[data-message-id="'+m.id+'"]')?.remove();}
     })
-    .subscribe(status=>{
+    .subscribe((status,err)=>{
+      if(status!=="SUBSCRIBED")console.warn("Farnaz inbox realtime status:",status,err?.message||err||"No error details provided");
       if(status==="SUBSCRIBED"){
         reconnectAttempts=0;
         if(reconnectTimer){clearTimeout(reconnectTimer);reconnectTimer=null;}

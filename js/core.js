@@ -732,9 +732,9 @@ async function showUser(user){
     let profile=data;
     if(!profile){
       const fallbackName=(user.user_metadata?.display_name||user.email?.split("@")[0]||"Farnaz user").trim();
-      const created=await getClient().from("profiles")
+      const created=await retryRead("create current user profile",()=>getClient().from("profiles")
         .upsert({id:user.id,display_name:fallbackName,phone:user.phone||null,show_phone:true},{onConflict:"id"})
-        .select("id,display_name,avatar_url,phone,show_phone,presence_visibility,last_seen_visibility,show_typing,show_read_receipts,show_space_online_count").single();
+        .select("id,display_name,avatar_url,phone,show_phone,presence_visibility,last_seen_visibility,show_typing,show_read_receipts,show_space_online_count").single(),2);
       if(created.error)throw created.error;
       profile=created.data;
     }

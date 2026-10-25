@@ -513,9 +513,29 @@ async function forwardSelectedMessages(){
     exitMessageSelection();alert(english?"Messages forwarded.":"پیام‌ها فوروارد شدند.");
   }catch(e){alert((english?"Forward failed: ":"فوروارد ناموفق بود: ")+e.message);}
 }
+let messageSubscriptionSetupPromise=null,messageSubscriptionUserId=null;
 async function subscribeToMessages(){
+  const requestedUserId=String(currentUser?.id||"");
+  if(!requestedUserId)return;
+  const activeState=messageSubscription?.state;
+  if(messageSubscription&&messageSubscriptionUserId===requestedUserId&&
+     (activeState==="joining"||activeState==="joined"))return;
+  // Serialize reconnects: visibilitychange + online + auth restoration can fire
+  // together on iOS. Concurrent teardown/setup used to orphan realtime channels.
+  if(messageSubscriptionSetupPromise){
+    try{await messageSubscriptionSetupPromise;}catch(_){}
+    const settledState=messageSubscription?.state;
+    if(messageSubscription&&messageSubscriptionUserId===String(currentUser?.id||"")&&
+       (settledState==="joining"||settledState==="joined"))return;
+  }
+  const setup=subscribeToMessagesNow();
+  messageSubscriptionSetupPromise=setup;
+  try{await setup;}finally{if(messageSubscriptionSetupPromise===setup)messageSubscriptionSetupPromise=null;}
+}
+async function subscribeToMessagesNow(){
   await stopMessageSubscription();if(!currentUser)return;
   const myId=currentUser.id,client=getClient();
+  messageSubscriptionUserId=String(myId);
   messageSubscription=client.channel("farnaz-inbox-"+myId)
     .on("postgres_changes",{event:"INSERT",schema:"public",table:"messages"},async payload=>{
       if(currentUser?.id!==myId)return;

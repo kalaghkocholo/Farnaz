@@ -227,7 +227,7 @@ const authChecks = [
     "js/core.js must bound the initial profile creation request"],
   [coreSource.includes("could not restore your saved session") && coreSource.includes("setConnectionBanner("),
     "js/core.js must visibly report a failed saved-session restore"],
-  [(coreSource.match(/const initialDataFailure=initialDataResults\.find\(result=>result\.status===\"rejected\"\)/g)||[]).length===2,
+  [coreSource.includes('result.status==="rejected"||result.value===false') && (coreSource.match(/const initialDataFailure/g)||[]).length===2,
     "js/core.js must not silently hide failed inbox/contact initialization after login or session restore"],
   [chatSource.includes("window.loadPrivateMessages") || chatSource.includes("loadPrivateMessages"),
     "js/chat-menu-v5.js must retain the explicit private-message loader"],

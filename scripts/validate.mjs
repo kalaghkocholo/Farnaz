@@ -200,7 +200,7 @@ const chatSource = sources["js/chat-menu-v5.js"];
 const loaderChecks = [
   [html.includes('script.src="./js/supabase-sdk.js"') && html.includes('script.onload=()=>{') && html.includes("loadLocalScripts();"),
     "index.html must wait for the local Supabase SDK before loading the app core"],
-  [html.includes('core.src="./js/core.js?v=20261025-93"') && html.includes("core.onload=()=>{") && html.includes("core.onerror=()=>{"),
+  [html.includes('core.src="./js/core.js?v=20261025-94"') && html.includes("core.onload=()=>{") && html.includes("core.onerror=()=>{"),
     "index.html must handle both successful and failed core-script loading"],
   [html.includes("script.onload=loadNextFeature;") && html.includes("if(typeof window.FarnazBoot===\"function\")window.FarnazBoot();"),
     "index.html must load feature scripts sequentially and boot only after the loader sequence"],
@@ -223,6 +223,14 @@ const authChecks = [
     "js/core.js must restore the saved session from the app boot entry point"],
   [coreSource.includes('withTimeout(client.auth.getSession(),9000,"saved session restore")'),
     "js/core.js must bound saved-session restoration so startup cannot wait indefinitely"],
+  [coreSource.includes("async function restoreSavedSession(attempt=0)") &&
+   coreSource.includes('transientRestoreFailure=error?.name==="TimeoutError"||error?.name==="TypeError"||isTransientError(error)') &&
+   coreSource.includes("await restoreSavedSession(attempt+1)"),
+    "js/core.js must retry transient saved-session restoration failures before falling back to guest"],
+  [coreSource.includes('async function logout()') && coreSource.includes('client.auth.signOut({scope:"local"})'),
+    "js/core.js must retain a local-only logout path"],
+  [coreSource.includes('setStatus("profileStatus","");') && coreSource.includes('setConnectionBanner("",false);'),
+    "js/core.js must clear stale profile/connection loading status when returning to guest"],
   [coreSource.includes('retryRead("create current user profile"') && coreSource.includes('withTimeout(operation(),9000,label)'),
     "js/core.js must bound the initial profile creation request"],
   [coreSource.includes("could not restore your saved session") && coreSource.includes("setConnectionBanner("),

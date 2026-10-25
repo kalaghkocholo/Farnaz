@@ -401,7 +401,7 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
 
   function loadSupabaseSdk(){
     const script=document.createElement("script");
-    script.src="./vendor/supabase.js";
+    script.src="./js/supabase-sdk.js";
     script.async=true;
     script.onload=()=>{
       if(!window.supabase||typeof window.supabase.createClient!=="function"){

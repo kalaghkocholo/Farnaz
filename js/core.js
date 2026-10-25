@@ -1809,7 +1809,10 @@ async function findRecipient(event){
   }
   // Restore the persisted Supabase session on app launch. Persisting a session is
   // not enough by itself: currentUser starts as null on every page reload.
-  async function restoreSavedSession(){
+  async function restoreSavedSession(attempt=0){
+    // A single boot-time timeout must not permanently strand a valid local session
+    // behind the guest screen. A manual sign-in takes precedence over this retry.
+    if(currentUser)return;
     let client=null;
     try{
       client=getClient();
@@ -1842,6 +1845,18 @@ async function findRecipient(event){
         scheduleReconnect();
       }
     }catch(error){
+      // Retry transient startup failures before falling back to the guest screen.
+      // getSession() can time out while Safari is waking a suspended PWA.
+      const transientRestoreFailure=error?.name==="TimeoutError"||error?.name==="TypeError"||isTransientError(error);
+      if(transientRestoreFailure&&attempt<2&&!currentUser){
+        console.warn("Retrying saved-session restoration:",attempt+1);
+        setConnectionBanner(english
+          ?"Waking up your saved session… retrying connection."
+          :"در حال بازیابی نشست ذخیره‌شده؛ اتصال دوباره بررسی می‌شود…");
+        await recoveryDelay(700*(attempt+1));
+        if(!currentUser)await restoreSavedSession(attempt+1);
+        return;
+      }
       // Do not erase a potentially valid session on a transient network failure.
       // A later explicit sign-in can still use the existing credentials.
       console.warn("Farnaz saved-session restore failed:",{

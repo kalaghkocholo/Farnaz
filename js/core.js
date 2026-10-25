@@ -1528,11 +1528,23 @@ async function findRecipient(event){
           if(result.error)throw result.error;
         }
         if(!result.data.user)throw new Error("اطلاعات حساب دریافت نشد.");
+        // Authentication succeeded: enter the app before loading optional profile/chat data.
+        // A later conversation or realtime failure must not be reported as a failed login.
+        const authenticatedUser=result.data.user;
         closeAuth();
-        await showUser(result.data.user);
-        await subscribeToMessages();
-        await refreshConversationList();
         navigate("chatsPage");
+        await showUser(authenticatedUser);
+        try{
+          await subscribeToMessages();
+          await refreshConversationList();
+          setConnectionBanner("",false);
+        }catch(connectionError){
+          console.error("Post-login connection:",connectionError);
+          setConnectionBanner(english
+            ?"Signed in. Some conversations could not load yet; Farnaz will retry."
+            :"ورود موفق بود؛ بارگذاری گفتگوها کامل نشد. فرناز دوباره تلاش می‌کند.");
+          scheduleReconnect();
+        }
       }catch(error){
         console.error("Farnaz authentication error:",error);
         const message=String(error?.message||error||"Unknown error");

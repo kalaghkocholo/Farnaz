@@ -1494,5 +1494,58 @@ async function findRecipient(event){
     wrapped.__keyboardViewportWrapped=true;
     window.navigate=wrapped;
   }
+  
+  // Keep email sign-up/sign-in wired to the active core script loaded by index.html.
+  const authForm=$("authForm");
+  if(authForm){
+    authForm.addEventListener("submit",async event=>{
+      event.preventDefault();
+      const button=$("authSubmit"),email=$("authEmail").value.trim();
+      const password=$("authPassword").value,name=$("authName").value.trim();
+      if(!button)return;
+      button.disabled=true;
+      setStatus("authStatus",english?"Connecting to server…":"در حال اتصال به سرور…");
+      try{
+        const client=getClient();
+        let result;
+        if(authMode==="signup"){
+          result=await client.auth.signUp({
+            email,password,
+            options:{
+              emailRedirectTo:"https://kalaghkocholo.github.io/Farnaz/",
+              data:{display_name:name}
+            }
+          });
+          if(result.error)throw result.error;
+          if(!result.data.session){
+            setStatus("authStatus",english
+              ?"Sign-up submitted. Confirm your email, then sign in."
+              :"ثبت‌نام انجام شد. ایمیلت را تأیید کن و سپس وارد شو.");
+            return;
+          }
+        }else{
+          result=await client.auth.signInWithPassword({email,password});
+          if(result.error)throw result.error;
+        }
+        if(!result.data.user)throw new Error("اطلاعات حساب دریافت نشد.");
+        closeAuth();
+        await showUser(result.data.user);
+        await subscribeToMessages();
+        await refreshConversationList();
+        navigate("chatsPage");
+      }catch(error){
+        console.error("Farnaz authentication error:",error);
+        const message=String(error?.message||error||"Unknown error");
+        const isNetwork=/failed to fetch|fetch failed|network|load failed|timeout|connection/i.test(message);
+        setStatus("authStatus",
+          (english?"Sign-up/sign-in failed: ":"ثبت‌نام یا ورود ناموفق بود: ")+
+          (isNetwork
+            ?(english?"The request could not reach Supabase. Check the connection and try again.":"درخواست به سوپابیس نرسید؛ اتصال را بررسی کن و دوباره تلاش کن.")
+            :message),true);
+      }finally{
+        button.disabled=false;
+      }
+    });
+  }
   document.addEventListener("DOMContentLoaded",()=>{if(activeChat())syncViewport();});
 })();

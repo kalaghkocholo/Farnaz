@@ -128,6 +128,27 @@ if (!loader) {
       [...shell[1].matchAll(/["'](\.\/[^"']+)["']/g)].map((match) => match[1])
     );
     const shellPaths = new Set([...shellUrls].map((url) => url.split(/[?#]/, 1)[0]));
+    for (const url of shellUrls) {
+      const localPath = decodeURIComponent(url.split(/[?#]/, 1)[0]).replace(/^\.\//, "");
+      if (!localPath || !existsSync(resolve(root, localPath))) {
+        errors.push("service-worker.js shell references missing local asset: " + url);
+      }
+    }
+    for (const match of html.matchAll(/<script\\b[^>]*src=["'](\\.\\/[^"']+)["'][^>]*>/gi)) {
+      if (!shellUrls.has(match[1])) {
+        errors.push("service-worker.js shell URL/version does not exactly match a script: " + match[1]);
+      }
+    }
+    for (const match of html.matchAll(/<link\\b[^>]*rel=["']preload["'][^>]*as=["']script["'][^>]*href=["'](\\.\\/[^"']+)["'][^>]*>/gi)) {
+      if (!shellUrls.has(match[1])) {
+        errors.push("service-worker.js shell URL/version does not exactly match a script preload: " + match[1]);
+      }
+    }
+    for (const match of html.matchAll(/script\\.src=["'](\\.\\/[^"']+)["']/g)) {
+      if (!shellUrls.has(match[1])) {
+        errors.push("service-worker.js shell URL/version does not exactly match a dynamically loaded script: " + match[1]);
+      }
+    }
     for (const path of loadedLocalPaths) {
       if (!shellPaths.has(path)) {
         errors.push("service-worker.js shell is missing a dynamically loaded script: " + path);

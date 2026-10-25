@@ -171,8 +171,11 @@ async function farnazNetworkFetch(input,init){
   const isStorageUpload=/\/storage\/v1\//i.test(requestUrl)&&/\/object(?:\/|$)/i.test(requestUrl);
   const isAuthRequest=/\/auth\/v1\/(?:token|signup)(?:\?|\/|$)/i.test(requestUrl);
   const isProfileRequest=/\/rest\/v1\/profiles(?:\?|$)/i.test(requestUrl)||/\/auth\/v1\/user(?:\?|$)/i.test(requestUrl);
-  const needsRequestTimeout=isStorageUpload||isProfileRequest||isAuthRequest;
-  const requestTimeoutMs=isAuthRequest?15000:25000;
+  // Bound every Supabase REST request. An unanswered inbox/contact query must not
+  // leave the app's recovery banner and all screens waiting forever.
+  const isRestRequest=/\/rest\/v1\//i.test(requestUrl);
+  const needsRequestTimeout=isStorageUpload||isProfileRequest||isAuthRequest||isRestRequest;
+  const requestTimeoutMs=isAuthRequest?15000:(isRestRequest?15000:25000);
   const canRetry=!(init?.body&&typeof init.body!=="string"&&!(init.body instanceof URLSearchParams)) &&
     !(typeof Request!=="undefined"&&input instanceof Request&&input.bodyUsed);
   let lastError;
@@ -201,7 +204,8 @@ async function farnazNetworkFetch(input,init){
       if(error?.name==="AbortError"||error?.name==="TimeoutError"){
         if(isAuthRequest)throw new Error(english?"The server did not respond within 15 seconds. Check your connection and try again.":"سرور طی ۱۵ ثانیه پاسخ نداد. اتصال اینترنت را بررسی کن و دوباره تلاش کن.");
         if(isStorageUpload)throw new Error("بارگذاری عکس پس از ۲۵ ثانیه پاسخ نگرفت. اتصال شبکه را بررسی کن و دوباره ذخیره را بزن.");
-        if(isProfileRequest)throw new Error("ذخیره مشخصات پس از ۲۵ ثانیه پاسخ نگرفت. اتصال شبکه را بررسی کن و دوباره تلاش کن.");
+        if(isProfileRequest)throw new Error("بارگذاری مشخصات پس از ۱۵ ثانیه پاسخ نگرفت. اتصال شبکه را بررسی کن و دوباره تلاش کن.");
+        if(isRestRequest)throw new Error(english?"Supabase data request timed out after 15 seconds. Check the connection and retry.":"درخواست دریافت اطلاعات از سوپابیس پس از ۱۵ ثانیه پاسخ نگرفت؛ اتصال را بررسی کن و دوباره تلاش کن.");
         throw error;
       }
       const message=String(error?.message||error||"");
@@ -926,7 +930,14 @@ document.addEventListener("input",event=>{
 async function stopMessageSubscription(){
   if(!messageSubscription||!farnazClient)return;
   const ch=messageSubscription;messageSubscription=null;
-  try{await farnazClient.removeChannel(ch);}catch(e){console.warn(e);}
+  // A suspended mobile realtime socket can make removeChannel never settle.
+  // Continue app initialization after a short grace period instead of deadlocking.
+  try{
+    await Promise.race([
+      farnazClient.removeChannel(ch),
+      new Promise(resolve=>setTimeout(resolve,2000))
+    ]);
+  }catch(e){console.warn("Could not close previous realtime channel:",e);}
 }
 async function getContactProfile(id){
   const {data,error}=await getClient().rpc("get_farnaz_user_profile",{search_user_id:id});

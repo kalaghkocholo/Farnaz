@@ -283,7 +283,20 @@ function isTransientError(error){
     /network|fetch failed|failed to fetch|timeout|timed out|temporar|connection reset|connection closed|load failed|offline|gateway|too many requests|پاسخ نگرفت|مهلت انتظار|زمان.?تمام|طول کشید/.test(message);
 }
 const recoveryDelay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-async function retryRead(label,operation,maxAttempts=3){
+function withTimeout(operation,timeoutMs=9000,label="درخواست"){
+  let timer;
+  const timeout=new Promise((_,reject)=>{
+    timer=setTimeout(()=>{
+      const error=new Error(english
+        ?(label+" did not respond within "+Math.round(timeoutMs/1000)+" seconds.")
+        :(label+" پس از "+Math.round(timeoutMs/1000)+" ثانیه پاسخ نداد."));
+      error.name="TimeoutError";
+      reject(error);
+    },timeoutMs);
+  });
+  return Promise.race([Promise.resolve(operation),timeout]).finally(()=>clearTimeout(timer));
+}
+async function retryRead(label,operation,maxAttempts=2){
   let lastError;
   for(let attempt=1;attempt<=maxAttempts;attempt++){
     try{
@@ -291,7 +304,7 @@ async function retryRead(label,operation,maxAttempts=3){
         setConnectionBanner(english?"You are offline. Farnaz will reconnect automatically.":"اتصال اینترنت قطع است؛ فرناز پس از وصل‌شدن خودکار تلاش می‌کند.");
         throw new Error("NETWORK_OFFLINE");
       }
-      const result=await operation();
+      const result=await withTimeout(operation(),9000,label);
       if(result?.error)throw result.error;
       if(Array.isArray(result)){
         const failed=result.find(item=>item?.error);
@@ -1698,17 +1711,19 @@ async function findRecipient(event){
         // outside the authentication error path so they cannot undo a valid login.
         setStatus("authStatus","");
         setConnectionBanner(english?"Signed in. Loading your conversations…":"ورود موفق بود؛ در حال بارگذاری گفتگوها…");
+        // Profile data is independent from authentication. Do not let a slow
+        // profile query block realtime or other screens after successful sign-in.
+        void showUser(authenticatedUser);
         try{
-          await showUser(authenticatedUser);
           await subscribeToMessages();
+          void refreshSavedContacts();
           // navigate("chatsPage") already starts the conversation-list request.
-          // Avoid issuing a duplicate inbox query during login.
           setConnectionBanner("",false);
         }catch(connectionError){
-          console.error("Post-login initialization:",connectionError);
+          console.error("Post-login realtime initialization:",connectionError);
           setConnectionBanner(english
-            ?"You are signed in, but some account data could not load. Check your connection; Farnaz will retry."
-            :"ورود موفق است، اما بارگذاری بخشی از اطلاعات حساب انجام نشد. اتصال را بررسی کن؛ فرناز دوباره تلاش می‌کند.");
+            ?"You are signed in, but live updates could not start. Farnaz will retry."
+            :"ورود موفق است، اما اتصال زنده برقرار نشد؛ فرناز دوباره تلاش می‌کند.");
           scheduleReconnect();
         }
       }catch(error){
@@ -1751,9 +1766,11 @@ async function findRecipient(event){
       closeAuth();
       navigate("chatsPage");
       setConnectionBanner(english?"Restoring your session…":"در حال بازیابی نشست ورود…");
+      // Profile loading is independent; it must not hold session restoration.
+      void showUser(session.user);
       try{
-        await showUser(session.user);
         await subscribeToMessages();
+        void refreshSavedContacts();
         setConnectionBanner("",false);
       }catch(connectionError){
         console.error("Restored-session initialization:",connectionError);

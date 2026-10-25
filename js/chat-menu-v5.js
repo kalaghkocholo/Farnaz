@@ -761,49 +761,6 @@ function startCall(type){
     (type==="video"?"Video calling is not configured yet.":"Audio calling is not configured yet."):
     (type==="video"?"تماس تصویری هنوز راه‌اندازی نشده است.":"تماس صوتی هنوز راه‌اندازی نشده است."));
 }
-$("authForm").addEventListener("submit",async event=>{
-  event.preventDefault();
-  const button=$("authSubmit"),email=$("authEmail").value.trim();
-  const password=$("authPassword").value,name=$("authName").value.trim();
-  if(!email){
-    setStatus("authStatus",english?"Enter your email address.":"ایمیل را وارد کن.",true);$("authEmail").focus();return;
-  }
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
-    setStatus("authStatus",english?"The email address format is invalid. Check the address.":"قالب ایمیل صحیح نیست؛ آدرس ایمیل را بررسی کن.",true);$("authEmail").focus();return;
-  }
-  if(!password){
-    setStatus("authStatus",english?"Enter your password.":"رمز عبور را وارد کن.",true);$("authPassword").focus();return;
-  }
-  button.disabled=true;setStatus("authStatus",english?"Connecting...":"در حال اتصال...");
-  try{
-    const client=getClient();let result;
-    if(authMode==="signup"){
-      result=await client.auth.signUp({
-        email,password,
-        options:{
-          emailRedirectTo:"https://kalaghkocholo.github.io/Farnaz/",
-          data:{display_name:name}
-        }
-      });
-      if(result.error)throw result.error;
-      if(!result.data.session){
-        setStatus("authStatus",english?
-          "Sign-up submitted. Confirm your email, then sign in.":
-          "ثبت‌نام انجام شد. ایمیلت را تأیید کن و سپس وارد شو.");return;
-      }
-    }else{
-      result=await client.auth.signInWithPassword({email,password});
-      if(result.error)throw result.error;
-    }
-    if(!result.data.user)throw new Error("اطلاعات حساب دریافت نشد.");
-    closeAuth();await showUser(result.data.user);
-    await subscribeToMessages();
-    navigate("chatsPage");
-  }catch(e){
-    console.error("Auth:",e);
-    setStatus("authStatus",authErrorMessage(e,authMode),true);
-  }finally{button.disabled=false;}
-});
 $("profileForm").addEventListener("submit",saveProfile);
 $("recipientForm").addEventListener("submit",findRecipient);
 document.addEventListener("click",event=>{

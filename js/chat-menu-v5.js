@@ -89,10 +89,25 @@ async function loadMessages(older=false,preserveScroll=false){
   const wasNearBottom=scrollList.scrollHeight-scrollList.scrollTop-scrollList.clientHeight<100;
   const request=++chatRequestNumber,myId=currentUser.id,contactId=currentChatUser.user_id;
   if(!older)readReceiptMessageIds=new Set();
+  let displayedCachedMessages=false;
   if(!older){
     $("messageList").replaceChildren();messageLoadedCount=50;messageHasMore=false;
     selectedMessageIds.clear();messageSelectionMode=false;updateSelectionToolbar();
     $("loadOlderButton").hidden=true;
+    messageReactionMap=new Map();pinnedMessageIds=new Set();currentPinnedMessage=null;updatePinnedMessageBanner();
+    try{
+      const cached=await window.FarnazLocalStore?.getMessages(myId,contactId);
+      if(request===chatRequestNumber&&currentUser?.id===myId&&String(currentChatUser?.user_id)===String(contactId)&&cached?.length){
+        displayedCachedMessages=true;
+        await renderMessages(cached,myId,true);
+      }
+    }catch(cacheError){console.warn("Could not read cached messages:",cacheError);}
+  }
+  if(!older&&typeof navigator!=="undefined"&&navigator.onLine===false){
+    setStatus("sendMessageStatus",displayedCachedMessages
+      ?(english?"Showing saved messages offline.":"پیام‌های ذخیره‌شده نمایش داده می‌شوند؛ اینترنت قطع است.")
+      :(english?"Offline. No saved messages for this chat yet.":"اینترنت قطع است و هنوز پیامی از این گفتگو ذخیره نشده است."),!displayedCachedMessages);
+    return;
   }
   setStatus("sendMessageStatus",english?"Loading messages...":"در حال بارگذاری پیام‌ها...");
   try{
@@ -121,6 +136,7 @@ async function loadMessages(older=false,preserveScroll=false){
       else console.warn("Could not load hidden-message preferences:",hidden.error);
     }catch(hiddenError){console.warn("Could not load hidden-message preferences:",hiddenError);}
     const visibleRows=rows.filter(m=>!hiddenIds.has(m.id));
+    window.FarnazLocalStore?.saveMessages(myId,contactId,visibleRows).catch(cacheError=>console.warn("Could not cache messages:",cacheError));
     await loadMessageDecorations(visibleRows,myId,contactId);
     if(request!==chatRequestNumber||currentUser?.id!==myId||currentChatUser?.user_id!==contactId)return;
     const ownIds=visibleRows.filter(m=>String(m.sender_id)===String(myId)).map(m=>String(m.id));
@@ -141,10 +157,14 @@ async function loadMessages(older=false,preserveScroll=false){
     setStatus("sendMessageStatus","");
   }catch(e){
     console.error("Load messages:",e);
-    setStatus("sendMessageStatus",(english?"Could not load messages: ":"دریافت پیام‌ها ناموفق بود: ")+e.message,true);
+    if(displayedCachedMessages){
+      setStatus("sendMessageStatus",english?"Showing saved messages; could not sync with the server.":"پیام‌های ذخیره‌شده نمایش داده می‌شوند؛ همگام‌سازی با سرور انجام نشد.");
+    }else{
+      setStatus("sendMessageStatus",(english?"Could not load messages: ":"دریافت پیام‌ها ناموفق بود: ")+e.message,true);
+    }
   }
 }
-async function makeMessageElement(m,myId){
+async function makeMessageElement(m,myId,fromCache=false){
   const item=document.createElement("article");
   const isOwnMessage=String(m.sender_id)===String(myId);
   item.className="message "+(isOwnMessage?"my-message":"their-message");
@@ -173,12 +193,16 @@ async function makeMessageElement(m,myId){
     const pin=document.createElement("div");pin.className="message-pin-indicator";
     pin.textContent=english?"📌 Pinned":"📌 سنجاق‌شده";item.appendChild(pin);
   }
-  if(m.reply_to_id){
+  if(m.reply_to_id&&!fromCache){
     try{const {data}=await getClient().from("messages").select("body,attachment_name").eq("id",m.reply_to_id).maybeSingle();
       if(data){const q=document.createElement("div");q.className="message-quote";q.textContent=(english?"Replying to: ":"در پاسخ به: ")+(data.body||data.attachment_name||"");item.appendChild(q);}}catch(e){console.warn(e);}
   }
   if(m.body){const body=document.createElement("p");body.textContent=m.body;item.appendChild(body);}
-  if(m.attachment_path){
+  if(m.attachment_path&&fromCache){
+    const n=document.createElement("small");
+    n.textContent=english?"Attachment saved on server; connect to view it.":"پیوست روی سرور است؛ برای مشاهده به اینترنت وصل شو.";
+    item.appendChild(n);
+  }else if(m.attachment_path){
     const {data,error}=await getClient().storage.from("chat-attachments").createSignedUrl(m.attachment_path,3600);
     if(!error&&data?.signedUrl){
       if((m.message_type||"image")==="image"){const img=document.createElement("img");img.src=data.signedUrl;img.alt=m.attachment_name||"Photo";img.loading="lazy";item.appendChild(img);}
@@ -252,10 +276,10 @@ async function makeMessageElement(m,myId){
   item.addEventListener("touchcancel",cancelTouchHold);
   return item;
 }
-async function renderMessages(messages,myId){
+async function renderMessages(messages,myId,fromCache=false){
   const list=$("messageList");list.replaceChildren();
   if(!messages.length){const empty=document.createElement("div");empty.className="empty-state";empty.textContent=english?"No messages yet. Say hello!":"هنوز پیامی ردوبدل نشده؛ سلام کن!";list.appendChild(empty);}
-  for(const m of messages)list.appendChild(await makeMessageElement(m,myId));
+  for(const m of messages)list.appendChild(await makeMessageElement(m,myId,fromCache));
   list.scrollTop=list.scrollHeight;
 }
 async function prependMessages(messages,myId){
@@ -701,10 +725,15 @@ async function sendMessage(event){
         list.querySelector(".empty-state")?.remove();
         list.appendChild(await makeMessageElement(sentMessage,currentUser.id));
         list.scrollTop=list.scrollHeight;
+        window.FarnazLocalStore?.getMessages(currentUser.id,receiverId)
+          .then(cached=>window.FarnazLocalStore.saveMessages(currentUser.id,receiverId,[...cached,sentMessage]))
+          .catch(cacheError=>console.warn("Could not update message cache:",cacheError));
       }
       cancelReply();if(isAudio)discardRecordedVoice();
     }
     input.value="";input.style.height="auto";$("attachmentFile").value="";$("cameraFile").value="";$("photoFile").value="";
+    if(window.farnazDraftSaveTimer)clearTimeout(window.farnazDraftSaveTimer);
+    window.FarnazLocalStore?.clearDraft(currentUser.id,currentChatUser?.user_id).catch(cacheError=>console.warn("Could not clear sent draft:",cacheError));
     setStatus("sendMessageStatus",english?"Message sent.":"پیام ارسال شد.");
     // Do not reload the chat after sending: the new message was appended above.
     await refreshConversationList();
@@ -814,12 +843,19 @@ $("authBox").addEventListener("click",e=>{if(e.target.id==="authBox")closeAuth()
 $("authBox").addEventListener("keydown",e=>{if(e.key==="Escape")closeAuth();});
 $("messageText").addEventListener("input",()=>{
   const el=$("messageText");el.style.height="auto";el.style.height=Math.min(el.scrollHeight,112)+"px";
+  if(window.farnazDraftSaveTimer)clearTimeout(window.farnazDraftSaveTimer);
+  const userId=currentUser?.id,contactId=currentChatUser?.user_id,value=el.value;
+  if(userId&&contactId){
+    window.farnazDraftSaveTimer=setTimeout(()=>{
+      window.FarnazLocalStore?.saveDraft(userId,contactId,value).catch(cacheError=>console.warn("Could not save draft:",cacheError));
+    },250);
+  }
 });
 $("messageText").addEventListener("keydown",e=>{
   if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("sendMessageForm").requestSubmit();}
 });
 
-async async function initializeApp(){
+async function initializeApp(){
   try{
     // The Supabase SDK is loaded from CDN asynchronously; wait for it before restoring the saved session.
     const sdkDeadline=Date.now()+20000;

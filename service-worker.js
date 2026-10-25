@@ -14,6 +14,14 @@ self.addEventListener("fetch",event=>{
   const url=new URL(req.url);
   if(url.origin!==self.location.origin||!url.pathname.startsWith(APP_BASE.pathname))return;
   if(req.mode==="navigate"){
+    // Explicit versioned links must bypass the cached HTML so a new build can be tested immediately.
+    if(url.search){
+      event.respondWith(fetch(req).then(response=>{
+        if(response.ok){const copy=response.clone();caches.open(CACHE_NAME).then(cache=>cache.put(new URL("./index.html",APP_BASE).href,copy));}
+        return response;
+      }).catch(async()=>await caches.match(new URL("./index.html",APP_BASE).href)||Response.error()));
+      return;
+    }
     const cachedPage=caches.match(new URL("./index.html",APP_BASE).href);
     const refreshPage=fetch(req).then(response=>{
       if(response.ok){const copy=response.clone();caches.open(CACHE_NAME).then(cache=>cache.put(new URL("./index.html",APP_BASE).href,copy));}

@@ -1807,7 +1807,7 @@ async function findRecipient(event){
     let client=null;
     try{
       client=getClient();
-      const {data,error}=await client.auth.getSession();
+      const {data,error}=await withTimeout(client.auth.getSession(),9000,"saved session restore");
       if(error)throw error;
       const session=data?.session;
       if(!session?.user){

@@ -22,7 +22,7 @@
         if(!db.objectStoreNames.contains(STORE_SNAPSHOTS))db.createObjectStore(STORE_SNAPSHOTS,{keyPath:"key"});
         if(!db.objectStoreNames.contains(STORE_SPACE_MESSAGES))db.createObjectStore(STORE_SPACE_MESSAGES,{keyPath:"key"});
       };
-      request.onsuccess=()=>{const db=request.result;db.onversionchange=()=>db.close();resolve(db);};
+      request.onsuccess=()=>{const db=request.result;db.onversionchange=()=>{db.close();opening=null;};resolve(db);};
       request.onerror=()=>{opening=null;reject(request.error||new Error("Local storage unavailable"));};
       request.onblocked=()=>{opening=null;reject(new Error("Local storage upgrade is blocked"));};
     });

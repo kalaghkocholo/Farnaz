@@ -406,7 +406,12 @@
       document.head.appendChild(script);
     });
     // Report a slow CDN promptly; do not block loading the rest of the app.
-    timeout=setTimeout(()=>finish(false),12000);
+    timeout=setTimeout(()=>{
+      if(settled)return;
+      window.FARNAZ_SUPABASE_LOAD_FAILED=true;
+      const status=document.getElementById("authStatus");
+      if(status)status.textContent="بارگذاری کتابخانه ورود طول کشیده؛ رابط برنامه فعال است و اتصال همچنان در حال تلاش است.";
+    },12000);
   }
 
   // Start the independent local UI chain immediately, while both CDN mirrors race.

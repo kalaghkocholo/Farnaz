@@ -1846,6 +1846,13 @@ async function findRecipient(event){
       }
     }
   }
-  void restoreSavedSession();
+  // The HTML loader calls this only after all required feature modules are ready.
+  // This prevents the restored-session event from firing before spaces/calls listeners exist.
+  let farnazBootStarted=false;
+  window.FarnazBoot=()=>{
+    if(farnazBootStarted)return;
+    farnazBootStarted=true;
+    void restoreSavedSession();
+  };
   document.addEventListener("DOMContentLoaded",()=>{if(activeChat())syncViewport();});
 })();

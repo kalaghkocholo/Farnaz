@@ -101,8 +101,8 @@ function buildSpaceSwipeActions(space,role,shell,card){
 async function refresh(){
  if(!currentUser)return;if(active&&q("spaceDetail")&&!q("spaceDetail").hidden)return;
  q("spaceList").replaceChildren();q("spacesStatus").textContent=tr("در حال بارگذاری…","Loading…");
- try{const {data,error}=await getClient().from("spaces").select("*").order("created_at",{ascending:false}).limit(200);if(error)throw error;spaces=data||[];
- const {data:mem}=await getClient().from("space_members").select("space_id,role").eq("user_id",currentUser.id);const mm=new Map((mem||[]).map(x=>[x.space_id,x.role]));const f=document.querySelector("[data-filter].active")?.dataset.filter||"all";const archivedIds=getSpaceSet("archived"),pinnedIds=getSpaceSet("pinned");let rows=spaces.filter(s=>f==="archived"?archivedIds.has(String(s.id)):!archivedIds.has(String(s.id))&&(f==="all"||s.type===f));rows.sort((a,b)=>(pinnedIds.has(String(b.id))?1:0)-(pinnedIds.has(String(a.id))?1:0));q("spaceList").replaceChildren();
+ try{const {data,error}=await withTimeout(getClient().from("spaces").select("*").order("created_at",{ascending:false}).limit(200),9000,"فهرست گروه‌ها و کانال‌ها");if(error)throw error;spaces=data||[];
+ const {data:mem}=await withTimeout(getClient().from("space_members").select("space_id,role").eq("user_id",currentUser.id),9000,"عضویت‌های گروه‌ها");const mm=new Map((mem||[]).map(x=>[x.space_id,x.role]));const f=document.querySelector("[data-filter].active")?.dataset.filter||"all";const archivedIds=getSpaceSet("archived"),pinnedIds=getSpaceSet("pinned");let rows=spaces.filter(s=>f==="archived"?archivedIds.has(String(s.id)):!archivedIds.has(String(s.id))&&(f==="all"||s.type===f));rows.sort((a,b)=>(pinnedIds.has(String(b.id))?1:0)-(pinnedIds.has(String(a.id))?1:0));q("spaceList").replaceChildren();
  if(!rows.length){const e=document.createElement("div");e.className="space-empty";e.textContent=f==="archived"?tr("آرشیو خالی است.","Archive is empty."):tr("هنوز گروه یا کانالی نداری؛ از دکمه ایجاد شروع کن.","No groups or channels yet. Create one to get started.");q("spaceList").appendChild(e);}
  for(const s of rows){
  const role=mm.get(s.id)||null,muted=isSpaceMuted(s.id),pinned=isSpacePinned(s.id),archived=isSpaceArchived(s.id);
@@ -493,7 +493,7 @@ async function loadMessages(id){
  const token=++messageLoadToken;const list=q("spaceMessages");if(!list)return;
  const wasNearBottom=list.scrollHeight-list.scrollTop-list.clientHeight<70;
  try{
-  const {data,error}=await getClient().from("space_messages").select("id,sender_id,body,created_at,edited_at,message_type,attachment_path,attachment_name,attachment_mime,attachment_size").eq("space_id",id).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(200);
+  const {data,error}=await withTimeout(getClient().from("space_messages").select("id,sender_id,body,created_at,edited_at,message_type,attachment_path,attachment_name,attachment_mime,attachment_size").eq("space_id",id).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(200),9000,"پیام‌های گروه یا کانال");
   if(error)throw error;if(token!==messageLoadToken||active?.id!==id)return;
   const {data:pinnedRows,error:pinnedError}=await getClient().from("space_message_pins").select("message_id").eq("space_id",id);
   if(pinnedError)throw pinnedError;spacePinnedMessageIds.clear();(pinnedRows||[]).forEach(row=>spacePinnedMessageIds.add(String(row.message_id)));

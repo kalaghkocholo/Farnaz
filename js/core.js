@@ -1707,17 +1707,68 @@ async function findRecipient(event){
       }catch(error){
         console.error("Farnaz authentication error:",error);
         const message=String(error?.message||error||"Unknown error");
-        const isNetwork=/failed to fetch|fetch failed|network|load failed|timeout|connection/i.test(message);
-        setStatus("authStatus",
-          (english?"Sign-up/sign-in failed: ":"ثبت‌نام یا ورود ناموفق بود: ")+
-          (isNetwork
-            ?(english?"The request could not reach Supabase. Check the connection and try again.":"درخواست به سوپابیس نرسید؛ اتصال را بررسی کن و دوباره تلاش کن.")
-            :message),true);
+        const code=String(error?.code||"").toLowerCase();
+        const status=Number(error?.status||error?.statusCode||0);
+        const isCredentialsError=code==="invalid_credentials"||/invalid login credentials|invalid email or password/i.test(message);
+        const isNetwork=error?.name==="TypeError"||error?.name==="TimeoutError"||
+          /failed to fetch|fetch failed|network|load failed|timeout|connection|did not respond|request could not reach|aborted/i.test(message);
+        const safeMessage=isCredentialsError
+          ?(english?"Email or password is incorrect. Check both and try again.":"ایمیل یا رمز عبور درست نیست؛ هر دو را بررسی کن و دوباره تلاش کن.")
+          :isNetwork
+            ?(english?"Could not complete the request to Supabase. Check your connection and retry.":"درخواست به سوپابیس کامل نشد؛ اتصال را بررسی کن و دوباره تلاش کن.")
+            :(status===429
+              ?(english?"Too many attempts. Wait a little and try again.":"تعداد تلاش‌ها زیاد بوده؛ کمی صبر کن و دوباره تلاش کن.")
+              :message);
+        setStatus("authStatus",(english?"Sign-up/sign-in failed: ":"ثبت‌نام یا ورود ناموفق بود: ")+safeMessage,true);
       }finally{
         clearTimeout(slowAuthTimer);
         button.disabled=false;
       }
     });
   }
+  // Restore the persisted Supabase session on app launch. Persisting a session is
+  // not enough by itself: currentUser starts as null on every page reload.
+  async function restoreSavedSession(){
+    const client=getClient();
+    try{
+      const {data,error}=await client.auth.getSession();
+      if(error)throw error;
+      const session=data?.session;
+      if(!session?.user){
+        document.body.dataset.authState="guest";
+        return;
+      }
+      currentUser=session.user;
+      document.body.dataset.authState="authenticated";
+      closeAuth();
+      navigate("chatsPage");
+      setConnectionBanner(english?"Restoring your session…":"در حال بازیابی نشست ورود…");
+      try{
+        await showUser(session.user);
+        await subscribeToMessages();
+        setConnectionBanner("",false);
+      }catch(connectionError){
+        console.error("Restored-session initialization:",connectionError);
+        setConnectionBanner(english
+          ?"You are signed in, but some account data could not load. Check your connection; Farnaz will retry."
+          :"نشست ورود بازیابی شد، اما بارگذاری بخشی از اطلاعات حساب ناموفق بود. اتصال را بررسی کن؛ فرناز دوباره تلاش می‌کند.");
+        scheduleReconnect();
+      }
+    }catch(error){
+      // Do not erase a potentially valid session on a transient network failure.
+      // A later explicit sign-in can still use the existing credentials.
+      console.warn("Farnaz saved-session restore failed:",{
+        name:error?.name||"Error",
+        status:error?.status||error?.statusCode||null,
+        code:error?.code||null,
+        message:String(error?.message||error||"Unknown error")
+      });
+      document.body.dataset.authState="guest";
+      if(/refresh token.*(invalid|not found|expired)|invalid refresh token|session not found/i.test(String(error?.message||""))){
+        try{await client.auth.signOut({scope:"local"});}catch(_){}
+      }
+    }
+  }
+  void restoreSavedSession();
   document.addEventListener("DOMContentLoaded",()=>{if(activeChat())syncViewport();});
 })();

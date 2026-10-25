@@ -60,18 +60,34 @@
     const record=await read(STORE_MESSAGES,keyFor(userId,contactId));
     return Array.isArray(record?.messages)?record.messages:[];
   }
-  async function saveMessages(userId,contactId,messages){
+  async function saveMessages(userId,contactId,messages,mergeExisting=false){
     if(!userId||!contactId||!Array.isArray(messages))return false;
-    const uniqueMessages=new Map();
-    for(const message of messages){if(message?.id)uniqueMessages.set(String(message.id),message);}
-    const safeMessages=[...uniqueMessages.values()].slice(-50).map(m=>({
-      id:m.id,sender_id:m.sender_id,receiver_id:m.receiver_id,
-      body:typeof m.body==="string"?m.body:null,created_at:m.created_at,
-      message_type:m.message_type||"text",attachment_path:m.attachment_path||null,
-      attachment_name:m.attachment_name||null,attachment_mime:m.attachment_mime||null,
-      reply_to_id:m.reply_to_id||null,edited_at:m.edited_at||null
-    }));
-    return write(STORE_MESSAGES,{key:keyFor(userId,contactId),userId:String(userId),contactId:String(contactId),messages:safeMessages,updatedAt:Date.now()});
+    const db=await openDB();if(!db)return false;
+    const key=keyFor(userId,contactId);
+    return new Promise((resolve,reject)=>{
+      const tx=db.transaction(STORE_MESSAGES,"readwrite");
+      const store=tx.objectStore(STORE_MESSAGES);
+      const request=store.get(key);
+      request.onsuccess=()=>{
+        const uniqueMessages=new Map();
+        if(mergeExisting&&Array.isArray(request.result?.messages)){
+          for(const message of request.result.messages){if(message?.id)uniqueMessages.set(String(message.id),message);}
+        }
+        for(const message of messages){if(message?.id)uniqueMessages.set(String(message.id),message);}
+        const safeMessages=[...uniqueMessages.values()].sort((a,b)=>new Date(a.created_at||0)-new Date(b.created_at||0)).slice(-50).map(m=>({
+          id:m.id,sender_id:m.sender_id,receiver_id:m.receiver_id,
+          body:typeof m.body==="string"?m.body:null,created_at:m.created_at,
+          message_type:m.message_type||"text",attachment_path:m.attachment_path||null,
+          attachment_name:m.attachment_name||null,attachment_mime:m.attachment_mime||null,
+          reply_to_id:m.reply_to_id||null,edited_at:m.edited_at||null
+        }));
+        store.put({key,userId:String(userId),contactId:String(contactId),messages:safeMessages,updatedAt:Date.now()});
+      };
+      request.onerror=()=>{try{tx.abort();}catch(_){};reject(request.error||new Error("Local message cache read failed"));};
+      tx.oncomplete=()=>resolve(true);
+      tx.onerror=()=>reject(tx.error||new Error("Local message cache write failed"));
+      tx.onabort=()=>reject(tx.error||new Error("Local message cache write aborted"));
+    });
   }
   async function getDraft(userId,contactId){
     if(!userId||!contactId)return "";

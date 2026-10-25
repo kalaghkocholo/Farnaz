@@ -169,8 +169,10 @@ async function farnazNetworkFetch(input,init){
   const nativeFetch=window.fetch.bind(window);
   const requestUrl=typeof input==="string"?input:(input?.url||"");
   const isStorageUpload=/\/storage\/v1\//i.test(requestUrl)&&/\/object(?:\/|$)/i.test(requestUrl);
+  const isAuthRequest=/\/auth\/v1\/(?:token|signup)(?:\?|\/|$)/i.test(requestUrl);
   const isProfileRequest=/\/rest\/v1\/profiles(?:\?|$)/i.test(requestUrl)||/\/auth\/v1\/user(?:\?|$)/i.test(requestUrl);
-  const needsRequestTimeout=isStorageUpload||isProfileRequest;
+  const needsRequestTimeout=isStorageUpload||isProfileRequest||isAuthRequest;
+  const requestTimeoutMs=isAuthRequest?15000:25000;
   const canRetry=!(init?.body&&typeof init.body!=="string"&&!(init.body instanceof URLSearchParams)) &&
     !(typeof Request!=="undefined"&&input instanceof Request&&input.bodyUsed);
   let lastError;
@@ -187,7 +189,7 @@ async function farnazNetworkFetch(input,init){
           if(originalSignal.aborted)controller.abort(originalSignal.reason);
           else originalSignal.addEventListener("abort",()=>controller.abort(originalSignal.reason),{once:true});
         }
-        timeoutId=setTimeout(()=>controller.abort(new DOMException("درخواست ذخیره پس از 25 ثانیه پاسخ نگرفت.","TimeoutError")),25000);
+        timeoutId=setTimeout(()=>controller.abort(new DOMException("درخواست پس از مهلت انتظار پاسخ نگرفت.","TimeoutError")),requestTimeoutMs);
         requestInit={...(init||{}),signal:controller.signal};
       }
       const response=await nativeFetch(requestInput,requestInit);
@@ -197,13 +199,15 @@ async function farnazNetworkFetch(input,init){
       if(timeoutId)clearTimeout(timeoutId);
       lastError=error;
       if(error?.name==="AbortError"||error?.name==="TimeoutError"){
+        if(isAuthRequest)throw new Error(english?"The server did not respond within 15 seconds. Check your connection and try again.":"سرور طی ۱۵ ثانیه پاسخ نداد. اتصال اینترنت را بررسی کن و دوباره تلاش کن.");
         if(isStorageUpload)throw new Error("بارگذاری عکس پس از ۲۵ ثانیه پاسخ نگرفت. اتصال شبکه را بررسی کن و دوباره ذخیره را بزن.");
         if(isProfileRequest)throw new Error("ذخیره مشخصات پس از ۲۵ ثانیه پاسخ نگرفت. اتصال شبکه را بررسی کن و دوباره تلاش کن.");
         throw error;
       }
       const message=String(error?.message||error||"");
       const networkFailure=error instanceof TypeError||/network|fetch failed|load failed|connection|timeout/i.test(message);
-      if(!canRetry||!networkFailure||attempt===2)throw error;
+      // Do not automatically replay auth requests on flaky networks.
+      if(isAuthRequest||!canRetry||!networkFailure||attempt===2)throw error;
       await new Promise(resolve=>setTimeout(resolve,attempt===0?450:1100));
     }
   }

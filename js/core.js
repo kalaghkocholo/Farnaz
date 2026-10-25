@@ -978,6 +978,16 @@ async function getContactProfile(id){
   return Array.isArray(data)?(data[0]||null):(data||null);
 }
 
+// Fetch contact profiles in one authorized RPC instead of one network request
+// per contact. This keeps the inbox responsive on mobile/slow connections.
+async function getContactProfiles(ids){
+  const unique=[...new Set((ids||[]).map(id=>String(id||"")).filter(Boolean))];
+  if(!unique.length)return new Map();
+  const {data,error}=await getClient().rpc("get_farnaz_user_profiles",{search_user_ids:unique});
+  if(error)throw error;
+  return new Map((data||[]).filter(p=>p?.user_id).map(p=>[String(p.user_id),p]));
+}
+
 let contactInfoDialog=null,contactInfoBlocked=false,contactInfoRequest=0;
 /* Click is wired directly in index.html; avoid a second delegated click path. */
 document.addEventListener("keydown",event=>{
@@ -1325,13 +1335,14 @@ async function refreshUnmatchedPhoneContacts(){
     setStatus("unmatchedPhoneContactsStatus",(english?"Could not load phone contacts: ":"بارگذاری مخاطبان گوشی ناموفق بود: ")+e.message,true);
   }
 }
+let savedContactsRequestNumber=0;
 async function refreshSavedContacts(){
   const list=$("savedContactsList");if(!list||!currentUser)return;
-  const myId=currentUser.id;list.replaceChildren();
+  const request=++savedContactsRequestNumber,myId=currentUser.id;
   setStatus("savedContactsStatus",english?"Loading saved contacts...":"در حال بارگذاری مخاطبان ذخیره‌شده...");
   try{
     const {data,error}=await retryRead("saved contacts",()=>getClient().from("contacts").select("contact_user_id,created_at").eq("user_id",myId).order("created_at",{ascending:false}));
-    if(currentUser?.id!==myId)return;if(error)throw error;
+    if(currentUser?.id!==myId||request!==savedContactsRequestNumber)return;if(error)throw error;
     let phoneData=[];
     try{
       const phoneResult=await retryRead("phone contact names",()=>getClient().from("user_phone_contacts").select("display_name,matched_user_id").eq("user_id",myId).not("matched_user_id","is",null).limit(5000));
@@ -1339,13 +1350,17 @@ async function refreshSavedContacts(){
     }catch(e){console.warn("Imported phone contact names:",e);}
     const importedNames=new Map();
     for(const item of phoneData){if(item.matched_user_id&&!importedNames.has(String(item.matched_user_id)))importedNames.set(String(item.matched_user_id),item.display_name);}
-    const profiles=await Promise.all((data||[]).map(async item=>{try{return await getContactProfile(item.contact_user_id);}catch(e){console.warn("Saved contact profile:",e);return null;}}));
-    if(currentUser?.id!==myId)return;
+    let profilesById=new Map();
+    try{profilesById=await getContactProfiles((data||[]).map(item=>item.contact_user_id));}
+    catch(e){console.warn("Saved contact profiles:",e);}
+    if(currentUser?.id!==myId||request!==savedContactsRequestNumber)return;
+    // Keep existing rows visible until the replacement data is ready.
+    list.replaceChildren();
     const dropdownList=$("newChatContactsList");if(dropdownList)dropdownList.replaceChildren();
     const seenContacts=new Set();
-    (data||[]).forEach((item,i)=>{
+    (data||[]).forEach(item=>{
       const contactId=String(item.contact_user_id||"");if(!contactId||seenContacts.has(contactId))return;seenContacts.add(contactId);
-      const p=profiles[i]||{};
+      const p=profilesById.get(contactId)||{};
       const contact={user_id:contactId,display_name:importedNames.get(contactId)||p.display_name||(english?"Farnaz user":"کاربر فرناز"),avatar_url:p.avatar_url||"",phone:p.phone||""};
       list.appendChild(makeContactButton(contact,p.phone?formatContactPhone(p.phone):(english?"Farnaz member":"عضو فرناز"),item.created_at?new Date(item.created_at).toLocaleDateString(english?"en":"fa-IR"):"","contactsPage"));
       if(dropdownList){const quick=makeContactButton(contact,p.phone?formatContactPhone(p.phone):(english?"Farnaz member":"عضو فرناز"),"","chatsPage");quick.dataset.contactName=contact.display_name;dropdownList.appendChild(quick);}
@@ -1354,6 +1369,7 @@ async function refreshSavedContacts(){
     setStatus("savedContactsStatus",(data||[]).length?"":(english?"No saved Farnaz contacts yet.":"هنوز مخاطب عضو فرنازی ذخیره نشده است."));
     await refreshUnmatchedPhoneContacts();
   }catch(e){
+    if(currentUser?.id!==myId||request!==savedContactsRequestNumber)return;
     console.error("Saved contacts:",e);
     setStatus("savedContactsStatus",(english?"Could not load saved contacts: ":"بارگذاری مخاطبان ناموفق بود: ")+e.message,true);
     await refreshUnmatchedPhoneContacts();
@@ -1481,14 +1497,14 @@ async function refreshConversationList(){
     // Keep the loading status and existing rows visible while contact profiles load.
     // Clearing the list before these RPCs completed made a successful inbox query
     // look like an empty conversation list on slow mobile connections.
-    const profiles=await Promise.all(entries.map(async c=>{
-      try{return await getContactProfile(c.user_id);}catch(e){console.warn("Contact profile:",e);return null;}
-    }));
+    let profilesById=new Map();
+    try{profilesById=await getContactProfiles(entries.map(c=>c.user_id));}
+    catch(e){console.warn("Conversation contact profiles:",e);}
     if(currentUser?.id!==myId||request!==conversationListRequestNumber)return;
     list.replaceChildren();
     setStatus("inboxStatus","");
-    entries.forEach((c,i)=>{
-      const p=profiles[i]||{};
+    entries.forEach(c=>{
+      const p=profilesById.get(String(c.user_id))||{};
       const name=p.display_name||(english?"Farnaz user":"مخاطب فرناز");
       const pref=prefFor(c.user_id);
       const preview=(c.lastSender===myId?(english?"You: ":"شما: "):"")+(pref.pinned?"📌 ":"")+(pref.archived?"🗄 ":"")+c.lastMessage;

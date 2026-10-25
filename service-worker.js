@@ -1,7 +1,7 @@
 "use strict";
-const CACHE_NAME="farnaz-shell-v97";
+const CACHE_NAME="farnaz-shell-v98";
 const APP_BASE=new URL("./",self.location.href);
-const SHELL=["./","./index.html","./styles.css","./spaces.css","./js/local-store.js","./js/supabase-sdk.js","./js/core.js","./js/chat-menu-v5.js","./js/spaces.js","./js/calls.js","./manifest.webmanifest","./farnaz-icon.svg?v=20261024-4"];
+const SHELL=["./","./index.html","./styles.css","./spaces.css","./js/local-store.js?v=20261025-2","./js/supabase-sdk.js","./js/core.js","./js/chat-menu-v5.js","./js/spaces.js","./js/calls.js","./manifest.webmanifest","./farnaz-icon.svg?v=20261024-4"];
 self.addEventListener("install",event=>{
   event.waitUntil(caches.open(CACHE_NAME).then(cache=>cache.addAll(SHELL.map(path=>new URL(path,APP_BASE).href))).then(()=>self.skipWaiting()));
 });

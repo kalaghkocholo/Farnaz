@@ -875,32 +875,7 @@ $("messageText").addEventListener("keydown",e=>{
   if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("sendMessageForm").requestSubmit();}
 });
 
-async function initializeApp(){
-  try{
-    // The Supabase SDK is loaded from CDN asynchronously; wait for it before restoring the saved session.
-    const sdkDeadline=Date.now()+20000;
-    while(!window.supabase?.createClient&&Date.now()<sdkDeadline)await new Promise(resolve=>setTimeout(resolve,200));
-    if(!window.supabase?.createClient)throw new Error(english?"Supabase login library did not load. Refresh and try again.":"کتابخانه ورود سوپابیس بارگذاری نشد؛ صفحه را تازه‌سازی کن.");
-    const client=getClient(),{data,error}=await client.auth.getSession();if(error)throw error;
-    if(data.session?.user){
-      await showUser(data.session.user);await subscribeToMessages();
-      navigate("chatsPage");
-    }else showGuest();
-    client.auth.onAuthStateChange((event,session)=>{
-      setTimeout(async()=>{
-        if(session?.user&&currentUser?.id!==session.user.id){
-          await showUser(session.user);await subscribeToMessages();
-          navigate("chatsPage");
-        }else if(event==="SIGNED_OUT"){
-          await stopMessageSubscription();showGuest();
-        }
-      },0);
-    });
-  }catch(e){
-    console.error("Initialization:",e);
-    setStatus("authStatus",(english?"Account loading failed: ":"بارگذاری حساب ناموفق بود: ")+e.message,true);
-  }
-}
+// Authentication/session restoration is owned by js/core.js. Keep this module focused on chat features.
 window.addEventListener("offline",()=>{
   setConnectionBanner(english?"You are offline. Messages will reload when you reconnect.":"اینترنت قطع است؛ پس از اتصال، پیام‌ها دوباره بارگذاری می‌شوند.");
 });
@@ -914,4 +889,4 @@ document.addEventListener("visibilitychange",()=>{
     recoverConnection();
   }
 });
-initializeApp();
+

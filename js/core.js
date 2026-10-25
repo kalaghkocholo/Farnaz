@@ -1376,10 +1376,28 @@ async function refreshUnmatchedPhoneContacts(){
   }
 }
 let savedContactsRequestNumber=0;
+function renderSavedContactsSnapshot(entries){
+  const list=$("savedContactsList");if(!list)return;
+  list.replaceChildren();
+  const dropdownList=$("newChatContactsList");if(dropdownList)dropdownList.replaceChildren();
+  for(const entry of entries||[]){
+    const contact=entry?.contact;if(!contact?.user_id)continue;
+    list.appendChild(makeContactButton(contact,entry.subtitle||"",entry.date||"","contactsPage"));
+    if(dropdownList){const quick=makeContactButton(contact,entry.subtitle||"","","chatsPage");quick.dataset.contactName=contact.display_name||"";dropdownList.appendChild(quick);}
+  }
+  filterSavedContactsForNewChat();
+}
 async function refreshSavedContacts(){
   const list=$("savedContactsList");if(!list||!currentUser)return;
   const request=++savedContactsRequestNumber,myId=currentUser.id;
   setStatus("savedContactsStatus",english?"Loading saved contacts...":"در حال بارگذاری مخاطبان ذخیره‌شده...");
+  try{
+    const cached=await window.FarnazLocalStore?.getSnapshot(myId,"contacts");
+    if(currentUser?.id===myId&&request===savedContactsRequestNumber&&Array.isArray(cached)&&cached.length){
+      renderSavedContactsSnapshot(cached);
+      setStatus("savedContactsStatus",english?"Showing saved contacts while refreshing…":"نمایش مخاطبان ذخیره‌شده؛ در حال همگام‌سازی…");
+    }
+  }catch(cacheError){console.warn("Cached contacts read:",cacheError);}
   try{
     const {data,error}=await retryRead("saved contacts",()=>getClient().from("contacts").select("contact_user_id,created_at").eq("user_id",myId).order("created_at",{ascending:false}));
     if(currentUser?.id!==myId||request!==savedContactsRequestNumber)return;if(error)throw error;
@@ -1394,19 +1412,17 @@ async function refreshSavedContacts(){
     try{profilesById=await getContactProfiles((data||[]).map(item=>item.contact_user_id));}
     catch(e){console.warn("Saved contact profiles:",e);}
     if(currentUser?.id!==myId||request!==savedContactsRequestNumber)return;
-    // Keep existing rows visible until the replacement data is ready.
-    list.replaceChildren();
-    const dropdownList=$("newChatContactsList");if(dropdownList)dropdownList.replaceChildren();
+    const snapshot=[];
     const seenContacts=new Set();
     (data||[]).forEach(item=>{
       const contactId=String(item.contact_user_id||"");if(!contactId||seenContacts.has(contactId))return;seenContacts.add(contactId);
       const p=profilesById.get(contactId)||{};
       const contact={user_id:contactId,display_name:importedNames.get(contactId)||p.display_name||(english?"Farnaz user":"کاربر فرناز"),avatar_url:p.avatar_url||"",phone:p.phone||""};
-      list.appendChild(makeContactButton(contact,p.phone?formatContactPhone(p.phone):(english?"Farnaz member":"عضو فرناز"),item.created_at?new Date(item.created_at).toLocaleDateString(english?"en":"fa-IR"):"","contactsPage"));
-      if(dropdownList){const quick=makeContactButton(contact,p.phone?formatContactPhone(p.phone):(english?"Farnaz member":"عضو فرناز"),"","chatsPage");quick.dataset.contactName=contact.display_name;dropdownList.appendChild(quick);}
+      snapshot.push({contact,subtitle:p.phone?formatContactPhone(p.phone):(english?"Farnaz member":"عضو فرناز"),date:item.created_at?new Date(item.created_at).toLocaleDateString(english?"en":"fa-IR"):""});
     });
-    filterSavedContactsForNewChat();
-    setStatus("savedContactsStatus",(data||[]).length?"":(english?"No saved Farnaz contacts yet.":"هنوز مخاطب عضو فرنازی ذخیره نشده است."));
+    renderSavedContactsSnapshot(snapshot);
+    try{await window.FarnazLocalStore?.saveSnapshot(myId,"contacts",snapshot);}catch(cacheError){console.warn("Cached contacts save:",cacheError);}
+    setStatus("savedContactsStatus",snapshot.length?"":(english?"No saved Farnaz contacts yet.":"هنوز مخاطب عضو فرنازی ذخیره نشده است."));
     await refreshUnmatchedPhoneContacts();
   }catch(e){
     if(currentUser?.id!==myId||request!==savedContactsRequestNumber)return;

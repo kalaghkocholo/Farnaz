@@ -513,18 +513,39 @@ async function loadMessages(id){
  const token=++messageLoadToken;const list=q("spaceMessages");if(!list)return;
  const wasNearBottom=list.scrollHeight-list.scrollTop-list.clientHeight<70;
  try{
-  const {data,error}=await withTimeout(getClient().from("space_messages").select("id,sender_id,body,created_at,edited_at,message_type,attachment_path,attachment_name,attachment_mime,attachment_size").eq("space_id",id).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(200),9000,"پیام‌های گروه یا کانال");
-  if(error)throw error;if(token!==messageLoadToken||active?.id!==id)return;
-  const {data:pinnedRows,error:pinnedError}=await getClient().from("space_message_pins").select("message_id").eq("space_id",id);
-  if(pinnedError)throw pinnedError;spacePinnedMessageIds.clear();(pinnedRows||[]).forEach(row=>spacePinnedMessageIds.add(String(row.message_id)));
-  const {data:hiddenRows,error:hiddenError}=await getClient().from("space_message_hidden").select("message_id").eq("user_id",currentUser.id);if(hiddenError)throw hiddenError;const hiddenIds=new Set((hiddenRows||[]).map(x=>String(x.message_id)));
-  const rows=(data||[]).filter(m=>!hiddenIds.has(String(m.id))).reverse();
+  let data=[],fromLocalCache=false;
+  try{
+   const result=await withTimeout(getClient().from("space_messages").select("id,space_id,sender_id,body,created_at,edited_at,message_type,attachment_path,attachment_name,attachment_mime,attachment_size").eq("space_id",id).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(200),9000,"پیام‌های گروه یا کانال");
+   if(result.error)throw result.error;
+   data=(result.data||[]).reverse();
+  }catch(fetchError){
+   const cached=await window.FarnazLocalStore?.getSpaceMessages(currentUser.id,id).catch(()=>[]);
+   if(!cached?.length)throw fetchError;
+   data=cached;fromLocalCache=true;
+   q("spaceMessageStatus").textContent=tr("پیام‌های ذخیره‌شده نمایش داده می‌شوند؛ اتصال را بررسی کن.","Showing saved messages; check your connection.");
+  }
+  if(token!==messageLoadToken||active?.id!==id)return;
+  let hiddenIds=new Set();
+  if(!fromLocalCache){
+   try{const {data:hiddenRows,error:hiddenError}=await withTimeout(getClient().from("space_message_hidden").select("message_id").eq("user_id",currentUser.id),7000,"پیام‌های مخفی‌شده");if(hiddenError)throw hiddenError;hiddenIds=new Set((hiddenRows||[]).map(x=>String(x.id||x.message_id)));}
+   catch(e){console.warn("Hidden space messages could not load:",e);}
+   try{const {data:pinnedRows,error:pinnedError}=await withTimeout(getClient().from("space_message_pins").select("message_id").eq("space_id",id),7000,"پیام‌های سنجاق‌شده");if(pinnedError)throw pinnedError;spacePinnedMessageIds.clear();(pinnedRows||[]).forEach(row=>spacePinnedMessageIds.add(String(row.message_id)));}
+   catch(e){console.warn("Pinned space messages could not load:",e);}
+  }
+  const rows=(data||[]).filter(m=>!hiddenIds.has(String(m.id)));
   const ownMessageIds=rows.filter(m=>!String(m.body||"").startsWith("[FARNAZ_SYSTEM]")&&String(m.sender_id)===String(currentUser?.id)).map(m=>String(m.id));
   const incomingMessageIds=rows.filter(m=>!String(m.body||"").startsWith("[FARNAZ_SYSTEM]")&&String(m.sender_id)!==String(currentUser?.id)).map(m=>String(m.id));
-  const receiptRead=ownMessageIds.length?getClient().from("space_message_reads").select("message_id,user_id,read_at").eq("space_id",id).in("message_id",ownMessageIds):Promise.resolve({data:[],error:null});
-  const markIncomingRead=(typeof privacySettings==="undefined"||privacySettings.show_read_receipts!==false)&&incomingMessageIds.length?getClient().from("space_message_reads").upsert(incomingMessageIds.map(message_id=>({space_id:id,message_id,user_id:currentUser.id})),{onConflict:"message_id,user_id",ignoreDuplicates:true}).then(({error})=>{if(error)console.warn("Farnaz read receipt could not be saved:",error.message);}):Promise.resolve();
-  const [receiptResult]=await Promise.all([receiptRead,markIncomingRead]);
+  let receiptResult={data:[],error:null};
+  if(!fromLocalCache){
+   try{
+    const receiptRead=ownMessageIds.length?withTimeout(getClient().from("space_message_reads").select("message_id,user_id,read_at").eq("space_id",id).in("message_id",ownMessageIds),7000,"وضعیت خواندن پیام‌ها"):Promise.resolve({data:[],error:null});
+    const markIncomingRead=(typeof privacySettings==="undefined"||privacySettings.show_read_receipts!==false)&&incomingMessageIds.length?getClient().from("space_message_reads").upsert(incomingMessageIds.map(message_id=>({space_id:id,message_id,user_id:currentUser.id})),{onConflict:"message_id,user_id",ignoreDuplicates:true}).then(({error})=>{if(error)console.warn("Farnaz read receipt could not be saved:",error.message);}):Promise.resolve();
+    [receiptResult]=await Promise.all([receiptRead,markIncomingRead]);
+    if(receiptResult.error)throw receiptResult.error;
+   }catch(e){console.warn("Space read receipts unavailable:",e);}
+  }
   const readByMessage=new Set((receiptResult?.data||[]).filter(r=>String(r.user_id)!==String(currentUser?.id)).map(r=>String(r.message_id)));
+  if(!fromLocalCache){try{await window.FarnazLocalStore?.saveSpaceMessages(currentUser.id,id,rows);}catch(cacheError){console.warn("Cached space messages save:",cacheError);}}
   const senderIds=[...new Set(rows.map(m=>m.sender_id).filter(Boolean).map(String))];
   const senderEntries=await Promise.all(senderIds.map(async senderId=>{try{return [senderId,await getCachedSpaceSenderName(senderId)];}catch(_){return [senderId,""];}}));
   const senderNames=new Map(senderEntries);

@@ -706,6 +706,7 @@ function renderUser(user,name){
 async function showUser(user){
   const request=++profileRequestNumber;
   currentUser=user;renderUser(user,user.user_metadata?.display_name||"");
+  if(!window.__farnazPersistenceRequested){window.__farnazPersistenceRequested=true;void window.FarnazLocalStore?.requestPersistentStorage().catch(error=>console.warn("Persistent storage request:",error));}
   window.dispatchEvent(new CustomEvent("farnaz-auth-user",{detail:{userId:user.id}}));
   setStatus("profileStatus",english?"Loading profile...":"در حال بارگذاری پروفایل...");
   let cachedProfile=null;

@@ -67,7 +67,7 @@ async function toggleMessageReaction(messageId,emoji){
       ?await client.from("message_reactions").delete().eq("message_id",messageId).eq("user_id",currentUser.id)
       :await client.from("message_reactions").upsert({message_id:messageId,user_id:currentUser.id,emoji},{onConflict:"message_id,user_id"});
     if(result.error)throw result.error;
-    await loadMessages(false,true);
+    await loadPrivateMessages(false,true);
   }catch(e){console.error("Message reaction failed:",e);setStatus("sendMessageStatus",(english?"Could not save reaction: ":"ذخیره واکنش ناموفق بود: ")+e.message,true);}
 }
 async function toggleMessagePin(messageId){
@@ -78,11 +78,11 @@ async function toggleMessagePin(messageId){
       ?await client.from("message_pins").delete().eq("message_id",messageId)
       :await client.from("message_pins").insert({message_id:messageId,pinned_by:currentUser.id});
     if(result.error)throw result.error;
-    await loadMessages(false,true);
+    await loadPrivateMessages(false,true);
   }catch(e){console.error("Pin message failed:",e);setStatus("sendMessageStatus",(english?"Could not update pinned message: ":"تغییر سنجاق پیام ناموفق بود: ")+e.message,true);}
 }
 
-async function loadMessages(older=false,preserveScroll=false){
+async function loadPrivateMessages(older=false,preserveScroll=false){
   if(!currentUser||!currentChatUser)return;
   const scrollList=$("messageList");
   const oldScrollTop=scrollList.scrollTop;
@@ -306,7 +306,7 @@ async function prependMessages(messages,myId){
 async function loadOlderMessages(){
   if(!messageHasMore)return;
   $("loadOlderButton").hidden=true;
-  await loadMessages(true);
+  await loadPrivateMessages(true);
 }
 function clearMessageActionOverlay(){
   document.querySelectorAll(".message-action-backdrop,.message-action-clone").forEach(node=>node.remove());
@@ -444,7 +444,7 @@ async function deleteMessage(m){
   try{
     if(all){const {error}=await getClient().from("messages").delete().eq("id",m.id).eq("sender_id",currentUser.id);if(error)throw error;}
     else{const {error}=await getClient().from("message_hidden").upsert({user_id:currentUser.id,message_id:m.id},{onConflict:"user_id,message_id"});if(error)throw error;}
-    await loadMessages(false);await refreshConversationList();
+    await loadPrivateMessages(false);await refreshConversationList();
   }catch(e){alert((english?"Delete failed: ":"حذف پیام ناموفق بود: ")+e.message);}
 }
 function toggleMessageSelection(id,item){if(selectedMessageIds.has(id))selectedMessageIds.delete(id);else selectedMessageIds.add(id);item?.classList.toggle("selected",selectedMessageIds.has(id));updateSelectionToolbar();}
@@ -475,7 +475,7 @@ async function deleteSelectedMessages(){
       const {error}=await client.from("message_hidden").upsert(rows,{onConflict:"user_id,message_id"});
       if(error)throw error;
     }
-    exitMessageSelection();await loadMessages(false);await refreshConversationList();
+    exitMessageSelection();await loadPrivateMessages(false);await refreshConversationList();
   }catch(e){alert((english?"Delete failed: ":"حذف ناموفق بود: ")+e.message);}
 }
 async function forwardSelectedMessages(){
@@ -582,11 +582,11 @@ async function subscribeToMessagesNow(){
       if(currentUser?.id!==myId||!currentChatUser||!document.body.classList.contains("chat-mode"))return;
       const row=payload.new||payload.old;if(!row?.message_id)return;
       const item=$("messageList").querySelector('[data-message-id="'+row.message_id+'"]');
-      if(item)loadMessages(false,true);
+      if(item)loadPrivateMessages(false,true);
     })
     .on("postgres_changes",{event:"*",schema:"public",table:"message_pins"},payload=>{
       if(currentUser?.id!==myId||!currentChatUser||!document.body.classList.contains("chat-mode"))return;
-      loadMessages(false,true);
+      loadPrivateMessages(false,true);
     })
     .on("postgres_changes",{event:"DELETE",schema:"public",table:"messages"},payload=>{
       if(currentUser?.id!==myId)return;
@@ -761,54 +761,6 @@ async function sendMessage(event){
     console.error("Send message:",e);
     setStatus("sendMessageStatus",(english?"Could not send: ":"ارسال پیام ناموفق بود: ")+e.message,true);
   }finally{button.disabled=false;}
-}
-function authErrorMessage(error,mode){
-  const message=String(error?.message||error||"").toLowerCase();
-  const code=String(error?.code||"").toLowerCase();
-  const status=Number(error?.status||error?.statusCode||0);
-  if(/invalid login credentials|invalid_credentials|email or password/.test(message+" "+code)){
-    return english
-      ?"Email or password is incorrect. Check both fields, or use Forgot password."
-      :"ایمیل یا رمز عبور صحیح نیست. هر دو را بررسی کن یا از گزینهٔ «فراموشی رمز عبور» استفاده کن.";
-  }
-  if(/email not confirmed|email_not_confirmed/.test(message+" "+code)){
-    return english
-      ?"Your email has not been confirmed. Open the confirmation link sent to your email, then sign in."
-      :"ایمیلت هنوز تأیید نشده است. لینک تأیید ارسال‌شده به ایمیلت را باز کن و سپس وارد شو.";
-  }
-  if(/user already registered|already registered|email_exists/.test(message+" "+code)){
-    return english
-      ?"An account with this email already exists. Switch to Sign in."
-      :"با این ایمیل قبلاً حساب ساخته شده است؛ گزینهٔ «ورود» را انتخاب کن.";
-  }
-  if(/password should be at least|password.*too short|weak_password/.test(message+" "+code)){
-    return english
-      ?"The password does not meet the minimum length requirement."
-      :"رمز عبور کوتاه‌تر از حداقل طول مجاز است.";
-  }
-  if(status===429||/rate limit|too many requests/.test(message)){
-    return english
-      ?"Too many attempts. Wait a little and try again."
-      :"تعداد تلاش‌ها زیاد شده است؛ کمی صبر کن و دوباره تلاش کن.";
-  }
-  if(/network|fetch failed|failed to fetch|load failed|timeout|timed out|offline/.test(message)){
-    return english
-      ?"Connection problem. Check your internet connection and try again."
-      :"ارتباط با سرور برقرار نشد؛ اینترنت را بررسی کن و دوباره تلاش کن.";
-  }
-  if(/invalid email|email address is invalid/.test(message)){
-    return english
-      ?"The email address format is invalid. Check the address."
-      :"قالب ایمیل صحیح نیست؛ آدرس ایمیل را بررسی کن.";
-  }
-  return english
-    ?"We couldn't complete the request. Please check your details and try again."
-    :"درخواست انجام نشد؛ اطلاعات را بررسی کن و دوباره تلاش کن.";
-}
-function startCall(type){
-  alert(english?
-    (type==="video"?"Video calling is not configured yet.":"Audio calling is not configured yet."):
-    (type==="video"?"تماس تصویری هنوز راه‌اندازی نشده است.":"تماس صوتی هنوز راه‌اندازی نشده است."));
 }
 $("profileForm").addEventListener("submit",saveProfile);
 $("recipientForm").addEventListener("submit",findRecipient);

@@ -337,8 +337,8 @@ async function recoverConnection(){
     await subscribeToMessages();
     // Reconcile the active private chat after downtime so messages missed while
     // Realtime was disconnected are restored without forcing the view to bottom.
-    if(currentChatUser&&document.body.classList.contains("chat-mode")&&typeof loadMessages==="function"){
-      await loadMessages(false,true);
+    if(currentChatUser&&document.body.classList.contains("chat-mode")&&typeof loadPrivateMessages==="function"){
+      await loadPrivateMessages(false,true);
     }
     await retryRead("conversation refresh",()=>refreshConversationList(),2);
     // Reconnecting the realtime channel must never rebuild the open chat history.
@@ -1337,7 +1337,7 @@ function openChat(contact,fromPage="chatsPage"){
   $("chatSubtitle").textContent=english?"Private conversation":"گفتگوی خصوصی";
   renderAvatar($("chatAvatar"),contact.avatar_url||"",$("conversationTitle").textContent);
   setStatus("sendMessageStatus","");
-  currentChatPresenceLabel=english?"Private conversation":"گفتگوی خصوصی";navigate("chatPage");refreshPrivatePresence(contact.user_id);loadMessages();
+  currentChatPresenceLabel=english?"Private conversation":"گفتگوی خصوصی";navigate("chatPage");refreshPrivatePresence(contact.user_id);loadPrivateMessages();
 }
 function makeContactButton(contact,preview="",timeText="",fromPage="chatsPage"){
   const button=document.createElement("button");

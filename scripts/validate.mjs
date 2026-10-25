@@ -200,7 +200,7 @@ const chatSource = sources["js/chat-menu-v5.js"];
 const loaderChecks = [
   [html.includes('script.src="./js/supabase-sdk.js"') && html.includes('script.onload=()=>{') && html.includes("loadLocalScripts();"),
     "index.html must wait for the local Supabase SDK before loading the app core"],
-  [html.includes('core.src="./js/core.js?v=20261025-94"') && html.includes("core.onload=()=>{") && html.includes("core.onerror=()=>{"),
+  [html.includes('core.src="./js/core.js?v=20261025-95"') && html.includes("core.onload=()=>{") && html.includes("core.onerror=()=>{"),
     "index.html must handle both successful and failed core-script loading"],
   [html.includes("script.onload=loadNextFeature;") && html.includes("if(typeof window.FarnazBoot===\"function\")window.FarnazBoot();"),
     "index.html must load feature scripts sequentially and boot only after the loader sequence"],
@@ -227,6 +227,9 @@ const authChecks = [
    coreSource.includes('transientRestoreFailure=error?.name==="TimeoutError"||error?.name==="TypeError"||isTransientError(error)') &&
    coreSource.includes("await restoreSavedSession(attempt+1)"),
     "js/core.js must retry transient saved-session restoration failures before falling back to guest"],
+  [coreSource.includes("// Never let a late restore overwrite the newer authenticated identity.") &&
+   coreSource.includes("if(currentUser)return;"),
+    "js/core.js must prevent a late boot-time session read from overwriting a manual sign-in"],
   [coreSource.includes('async function logout()') && coreSource.includes('client.auth.signOut({scope:"local"})'),
     "js/core.js must retain a local-only logout path"],
   [coreSource.includes('setStatus("profileStatus","");') && coreSource.includes('setConnectionBanner("",false);'),

@@ -296,7 +296,8 @@ const authChecks = [
     "js/core.js must not automatically replay potentially non-idempotent Supabase POST writes after transport failures"],
   [chatSource.includes('const senderId=String(currentUser.id),receiverId=String(currentChatUser.user_id);') &&
    chatSource.includes('const row={sender_id:senderId,receiver_id:receiverId') &&
-   chatSource.includes('if(String(currentChatUser?.user_id||"")===receiverId){\\n      input.value='),
+   chatSource.includes('if(String(currentChatUser?.user_id||"")===receiverId){') &&
+   chatSource.includes('input.value="";input.style.height="auto";'),
     "js/chat-menu-v5.js must bind private message writes and composer cleanup to the initiating account/chat"],
   [sources["js/spaces.js"].includes('const senderId=String(currentUser.id),spaceId=String(active.id),editId=editingSpaceMessageId;') &&
    sources["js/spaces.js"].includes('.insert({space_id:spaceId,sender_id:senderId') &&

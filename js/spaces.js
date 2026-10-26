@@ -1,7 +1,7 @@
 (function(){
 "use strict";
 const q=id=>document.getElementById(id);
-let active=null,sub=null,spaces=[];let spaceTypingTimer=null,spaceRemoteTypingTimer=null;
+let active=null,sub=null,spaces=[];let spaceTypingTimer=null,spaceRemoteTypingTimer=null,spaceOpenToken=0,spaceRefreshToken=0;
 const spacePinnedMessageIds=new Set();
 const tr=(fa,en)=>typeof english!=="undefined"&&english?en:fa;
 function build(){
@@ -100,25 +100,32 @@ function buildSpaceSwipeActions(space,role,shell,card){
 }
 async function refresh(){
  if(!currentUser)return;if(active&&q("spaceDetail")&&!q("spaceDetail").hidden)return;
- const myId=currentUser.id;
+ const myId=String(currentUser.id),request=++spaceRefreshToken;
  q("spacesStatus").textContent=tr("در حال بارگذاری…","Loading…");
  let cached=null;
  try{cached=await window.FarnazLocalStore?.getSnapshot(myId,"spaces");}catch(cacheError){console.warn("Cached spaces read:",cacheError);}
- if(currentUser?.id!==myId)return;
+ if(String(currentUser?.id||"")!==myId||request!==spaceRefreshToken)return;
  if(cached&&Array.isArray(cached.spaces)){
   spaces=cached.spaces;
   const cachedRoles=new Map((cached.memberships||[]).map(x=>[String(x.space_id),x.role]));
   renderSpacesList(spaces,cachedRoles,true);
  }
  try{
-  const {data,error}=await withTimeout(getClient().from("spaces").select("*").order("created_at",{ascending:false}).limit(200),9000,"فهرست گروه‌ها و کانال‌ها");if(error)throw error;spaces=data||[];
-  const {data:mem,error:memberError}=await withTimeout(getClient().from("space_members").select("space_id,role").eq("user_id",myId),9000,"عضویت‌های گروه‌ها");if(memberError)throw memberError;
+  const {data,error}=await withTimeout(getClient().from("spaces").select("*").order("created_at",{ascending:false}).limit(200),9000,"فهرست گروه‌ها و کانال‌ها");
+  if(error)throw error;
+  if(String(currentUser?.id||"")!==myId||request!==spaceRefreshToken)return;
+  const nextSpaces=data||[];
+  const {data:mem,error:memberError}=await withTimeout(getClient().from("space_members").select("space_id,role").eq("user_id",myId),9000,"عضویت‌های گروه‌ها");
+  if(memberError)throw memberError;
+  if(String(currentUser?.id||"")!==myId||request!==spaceRefreshToken)return;
   const memberships=mem||[];
-  try{await window.FarnazLocalStore?.saveSnapshot(myId,"spaces",{spaces,memberships});}catch(cacheError){console.warn("Cached spaces save:",cacheError);}
+  try{await window.FarnazLocalStore?.saveSnapshot(myId,"spaces",{spaces:nextSpaces,memberships});}catch(cacheError){console.warn("Cached spaces save:",cacheError);}
+  if(String(currentUser?.id||"")!==myId||request!==spaceRefreshToken)return;
+  spaces=nextSpaces;
   renderSpacesList(spaces,new Map(memberships.map(x=>[String(x.space_id),x.role])),false);
  }catch(e){
-  if(currentUser?.id!==myId)return;
-  if(cached&&Array.isArray(cached.spaces)){q("spacesStatus").textContent=tr("گروه‌ها و کانال‌های ذخیره‌شده نمایش داده می‌شوند؛ همگام‌سازی انجام نشد.","Showing saved groups and channels; refresh failed.");}
+  if(String(currentUser?.id||"")!==myId||request!==spaceRefreshToken)return;
+  if(cached&&Array.isArray(cached.spaces))q("spacesStatus").textContent=tr("گروه‌ها و کانال‌های ذخیره‌شده نمایش داده می‌شوند؛ همگام‌سازی انجام نشد.","Showing saved groups and channels; refresh failed.");
   else q("spacesStatus").textContent=tr("بارگذاری ناموفق بود: ","Could not load: ")+e.message;
  }
 }

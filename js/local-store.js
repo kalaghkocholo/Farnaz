@@ -170,7 +170,7 @@
     if(!userId||!fileId)return null;
     const record=await read(STORE_TEMP,keyFor(userId,fileId));
     if(!record)return null;
-    if(record.expiresAt<=Date.now()){await remove(STORE_TEMP,record.key);return null;}
+    if(record.expiresAt<=Date.now()){await remove(STORE_TEMP,record.key,userId);return null;}
     return record.blob||null;
   }
   function clearUser(userId){
@@ -187,7 +187,20 @@
         const db=await openDB();if(!db)return false;
         const names=[STORE_MESSAGES,STORE_DRAFTS,STORE_TEMP,STORE_SNAPSHOTS,STORE_SPACE_MESSAGES];
         return await new Promise((resolve,reject)=>{
-          const tx=db.transaction(names,"readwrite");
+          let settled=false;
+          let tx;
+          const finish=(error,result)=>{
+            if(settled)return;
+            settled=true;
+            clearTimeout(timer);
+            if(error)reject(error);else resolve(result);
+          };
+          const timer=setTimeout(()=>{
+            try{tx?.abort();}catch(_){}
+            finish(new Error("Local account cleanup timed out"));
+          },5000);
+          try{tx=db.transaction(names,"readwrite");}
+          catch(error){finish(error);return;}
           for(const name of names){
             const request=tx.objectStore(name).openCursor();
             request.onsuccess=()=>{
@@ -196,10 +209,11 @@
               if(String(cursor.value?.userId)===id)cursor.delete();
               cursor.continue();
             };
+            request.onerror=()=>{try{tx.abort();}catch(_){};finish(request.error||new Error("Local account cleanup cursor failed"));};
           }
-          tx.oncomplete=()=>resolve(true);
-          tx.onerror=()=>reject(tx.error||new Error("Local account cleanup failed"));
-          tx.onabort=()=>reject(tx.error||new Error("Local account cleanup aborted"));
+          tx.oncomplete=()=>finish(null,true);
+          tx.onerror=()=>finish(tx.error||new Error("Local account cleanup failed"));
+          tx.onabort=()=>finish(tx.error||new Error("Local account cleanup aborted"));
         });
       }finally{
         if(clearingUsers.get(id)===gate)clearingUsers.delete(id);

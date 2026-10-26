@@ -1,6 +1,6 @@
 (function(){
 "use strict";
-let signedInUserId=null,inboxChannel=null,activeCall=null,userSwitchSequence=0;
+let signedInUserId=null,inboxChannel=null,activeCall=null,userSwitchSequence=0,callStartInProgress=false;
 const processedSignals=new Set(),pendingIncomingSessions=new Set();
 const byId=id=>document.getElementById(id);
 const tr=(fa,en)=>typeof english!=="undefined"&&english?en:fa;
@@ -159,21 +159,31 @@ async function handleSignal(signal){
   }
 }
 async function acceptIncoming(){
-  if(!activeCall||activeCall.role!=="receiver")return;
+  const call=activeCall;
+  if(!call||call.role!=="receiver")return;
   byId("farnazCallAccept").disabled=true;
   try{
     byId("farnazCallAccept").hidden=true;byId("farnazCallReject").hidden=true;byId("farnazCallHangup").hidden=false;
     setCallStatus(tr("در حال دسترسی به میکروفن و دوربین…","Requesting microphone and camera…"));
-    await preparePeer(activeCall.session,"receiver");
-    const {error}=await getClient().from("call_sessions").update({status:"active"}).eq("id",activeCall.session.id);
+    await preparePeer(call.session,"receiver");
+    if(activeCall!==call)return;
+    const {error}=await getClient().from("call_sessions").update({status:"active"}).eq("id",call.session.id);
+    if(activeCall!==call)return;
     if(error)throw error;
-  }catch(e){console.error("Accept call:",e);setCallStatus(tr("شروع تماس ناموفق بود: ","Could not start call: ")+e.message);}
+  }catch(e){if(activeCall===call){console.error("Accept call:",e);setCallStatus(tr("شروع تماس ناموفق بود: ","Could not start call: ")+e.message);}}
   finally{byId("farnazCallAccept").disabled=false;}
 }
 async function rejectIncoming(){
-  if(!activeCall)return;
-  try{await sendSignal("reject");await getClient().from("call_sessions").update({status:"rejected"}).eq("id",activeCall.session.id);}catch(e){console.warn(e);}
-  await cleanupCall(false);const d=byId("farnazCallDialog");if(d)d.hidden=true;
+  const call=activeCall;if(!call)return;
+  try{
+    await sendSignal("reject");if(activeCall!==call)return;
+    await getClient().from("call_sessions").update({status:"rejected"}).eq("id",call.session.id);
+    if(activeCall!==call)return;
+  }catch(e){console.warn(e);}
+  if(activeCall!==call)return;
+  await cleanupCall(false);
+  if(activeCall)return;
+  const d=byId("farnazCallDialog");if(d)d.hidden=true;
 }
 async function cleanupCall(updateStatus){
   const call=activeCall;activeCall=null;

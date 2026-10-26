@@ -1683,6 +1683,7 @@ async function refreshConversationList(){
 async function findRecipient(event){
   event.preventDefault();
   if(!currentUser){openAuth();return;}
+  const myId=String(currentUser.id);
   const value=$("recipientValue").value.trim();
   if(!value){setStatus("recipientStatus",english?"Enter an email or phone number.":"ایمیل یا شماره را وارد کن.",true);return;}
   const button=$("findRecipientBtn");button.disabled=true;
@@ -1699,20 +1700,24 @@ async function findRecipient(event){
       ({data,error}=await client.rpc("find_farnaz_user_by_phone",{search_phone:phone}));
     }
     if(error)throw error;
+    if(String(currentUser?.id)!==myId)return;
     if(!data||!data.length){
       setStatus("recipientStatus",english?"No account found. Check the details.":"حسابی پیدا نشد؛ اطلاعات را بررسی کن.");return;
     }
     const r=data[0];
     const id=r.user_id||r.id;
     if(!id)throw new Error(english?"Search did not return a user ID.":"جست‌وجو شناسهٔ کاربر را برنگرداند.");
-    if(id===currentUser.id){
+    if(String(id)===myId){
       setStatus("recipientStatus",english?"You cannot message yourself.":"نمی‌توانی به حساب خودت پیام بدهی.",true);return;
     }
+    if(String(currentUser?.id)!==myId)return;
     const {error:saveError}=await client.from("contacts")
-      .upsert({user_id:currentUser.id,contact_user_id:id},{onConflict:"user_id,contact_user_id",ignoreDuplicates:true});
+      .upsert({user_id:myId,contact_user_id:id},{onConflict:"user_id,contact_user_id",ignoreDuplicates:true});
     if(saveError)throw saveError;
+    if(String(currentUser?.id)!==myId)return;
     let profile=null;
     try{profile=await getContactProfile(id);}catch(e){console.warn(e);}
+    if(String(currentUser?.id)!==myId)return;
     const contact={
       user_id:id,
       display_name:r.display_name||profile?.display_name||(english?"Farnaz user":"کاربر فرناز"),
@@ -1726,6 +1731,7 @@ async function findRecipient(event){
     previousPage="contactsPage";
     await refreshSavedContacts();
   }catch(e){
+    if(String(currentUser?.id)!==myId)return;
     console.error("Find recipient:",e);
     setStatus("recipientStatus",(english?"Search failed: ":"جست‌وجوی مخاطب ناموفق بود: ")+e.message,true);
   }finally{button.disabled=false;}

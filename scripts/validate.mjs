@@ -261,6 +261,8 @@ const authChecks = [
     "js/local-store.js must serialize per-user cache writes with logout cleanup to prevent a quick re-login from losing new cache data"],
   [coreSource.includes('retryRead("create current user profile"') && coreSource.includes('withTimeout(operation(),timeoutMs,label)') && coreSource.includes('timeoutMs=9000'),
     "js/core.js must bound the initial profile creation request"],
+  [coreSource.includes('label==="current user profile"||label==="create current user profile"') && coreSource.includes('Profile connection interrupted; retrying automatically…') && coreSource.includes('ارتباط پروفایل قطع شده؛ تلاش مجدد خودکار…'),
+    "js/core.js must show profile retry progress instead of leaving the profile status apparently frozen"],
   [coreSource.includes("could not restore your saved session") && coreSource.includes("setConnectionBanner("),
     "js/core.js must visibly report a failed saved-session restore"],
   [coreSource.includes('if(!session?.user){') && coreSource.includes('setConnectionBanner("",false);') && coreSource.includes('setStatus("profileStatus","");'),

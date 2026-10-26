@@ -197,13 +197,13 @@ for (const path of ["js/local-store.js", "js/core.js", "js/chat-menu-v5.js", "js
 
 const coreSource = sources["js/core.js"];
 const chatSource = sources["js/chat-menu-v5.js"];
-if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v125"') || !sources["service-worker.js"].includes('core.js?v=20261026-4')) {
+if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v126"') || !sources["service-worker.js"].includes('core.js?v=20261026-5')) {
   errors.push("service-worker.js must use the current shell cache and core asset versions");
 }
 const loaderChecks = [
   [html.includes('script.src="./js/supabase-sdk.js"') && html.includes('script.onload=()=>{') && html.includes("loadLocalScripts();"),
     "index.html must wait for the local Supabase SDK before loading the app core"],
-  [html.includes('core.src="./js/core.js?v=20261026-4"') && html.includes("core.onload=()=>{") && html.includes("core.onerror=()=>{"),
+  [html.includes('core.src="./js/core.js?v=20261026-5"') && html.includes("core.onload=()=>{") && html.includes("core.onerror=()=>{"),
     "index.html must handle both successful and failed core-script loading"],
   [html.includes("script.onload=loadNextFeature;") && html.includes("if(typeof window.FarnazBoot===\"function\")window.FarnazBoot();"),
     "index.html must load feature scripts sequentially and boot only after the loader sequence"],
@@ -248,6 +248,10 @@ const authChecks = [
     "js/core.js must ignore stale profile failures after logout or account switching"],
   [coreSource.includes("// Logout/account switching may happen while profile creation is pending.") && coreSource.includes("// A completed cache write must not let a stale profile request update the UI after logout.") ,
     "js/core.js must re-check the profile request after awaited profile creation and cache writes"],
+  [coreSource.includes("let unmatchedPhoneContactsRequestNumber=0;") && coreSource.includes("request!==unmatchedPhoneContactsRequestNumber") && coreSource.includes("// Invalidate every in-flight list request before clearing the signed-in UI."),
+    "js/core.js must invalidate stale contact/list requests after logout"],
+  [coreSource.includes("// The account or a newer contacts refresh may have changed during the cache write.") && coreSource.includes("if(currentUser?.id!==myId||request!==savedContactsRequestNumber)return;"),
+    "js/core.js must guard contacts UI updates after awaited cache writes"],
   [coreSource.includes('retryRead("create current user profile"') && coreSource.includes('withTimeout(operation(),timeoutMs,label)') && coreSource.includes('timeoutMs=9000'),
     "js/core.js must bound the initial profile creation request"],
   [coreSource.includes("could not restore your saved session") && coreSource.includes("setConnectionBanner("),

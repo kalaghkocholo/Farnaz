@@ -19,10 +19,34 @@ function build(){
 
 }
 async function contacts(containerId){
- const box=q(containerId);box.textContent=tr("در حال بارگذاری…","Loading…");if(!currentUser)return;
- try{const {data,error}=await getClient().from("contacts").select("contact_user_id").eq("user_id",currentUser.id);if(error)throw error;box.replaceChildren();if(!data?.length){box.textContent=tr("مخاطب ذخیره‌شده‌ای نداری؛ ابتدا از بخش مخاطبین افراد را اضافه کن.","No saved contacts. Add contacts from Contacts first.");return;}
- for(const row of data){let prof={};try{prof=await getContactProfile(row.contact_user_id)||{};}catch(_){}const label=document.createElement("label");label.className="space-contact";const cb=document.createElement("input");cb.type="checkbox";cb.value=row.contact_user_id;const name=document.createElement("span");name.textContent=prof.display_name||tr("کاربر فرناز","Farnaz user");label.append(cb,name);box.appendChild(label);}
- }catch(e){box.textContent=tr("خطا در دریافت مخاطبین: ","Could not load contacts: ")+e.message;}
+ const box=q(containerId);if(!box)return;
+ if(!currentUser){box.textContent=tr("ابتدا وارد حساب شو.","Sign in first.");return;}
+ const myId=String(currentUser.id),request=String(Number(box.dataset.loadRequest||0)+1);
+ box.dataset.loadRequest=request;
+ box.textContent=tr("در حال بارگذاری…","Loading…");
+ const isCurrent=()=>String(currentUser?.id||"")===myId&&box.dataset.loadRequest===request;
+ try{
+  const {data,error}=await getClient().from("contacts").select("contact_user_id").eq("user_id",myId);
+  if(!isCurrent())return;
+  if(error)throw error;
+  const rows=data||[];
+  if(!rows.length){box.textContent=tr("مخاطب ذخیره‌شده‌ای نداری؛ ابتدا از بخش مخاطبین افراد را اضافه کن.","No saved contacts. Add contacts from Contacts first.");return;}
+  const profiles=await getContactProfiles(rows.map(row=>row.contact_user_id));
+  if(!isCurrent())return;
+  const fragment=document.createDocumentFragment();
+  for(const row of rows){
+   const prof=profiles.get(String(row.contact_user_id))||{};
+   const label=document.createElement("label");label.className="space-contact";
+   const cb=document.createElement("input");cb.type="checkbox";cb.value=row.contact_user_id;
+   const name=document.createElement("span");name.textContent=prof.display_name||tr("کاربر فرناز","Farnaz user");
+   label.append(cb,name);fragment.appendChild(label);
+  }
+  box.replaceChildren(fragment);
+ }catch(e){
+  if(!isCurrent())return;
+  console.warn("Space contact picker:",e);
+  box.textContent=tr("خطا در دریافت مخاطبین: ","Could not load contacts: ")+(e?.message||String(e));
+ }
 }
 function selected(box){return [...(q(box)?.querySelectorAll('input[type="checkbox"]:checked')||[])].map(x=>x.value).filter(x=>x!==currentUser?.id);}
 function syncType(){const g=q("spaceType").value==="group";q("spacePrivacyWrap").hidden=g;q("spaceContactsWrap").hidden=!g;}

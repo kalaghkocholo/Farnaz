@@ -285,6 +285,16 @@ const authChecks = [
    chatSource.includes("},12000);") &&
    chatSource.includes("client.removeChannel(channel)"),
     "js/chat-menu-v5.js must wait for confirmed Realtime subscription and clean up failed setup"],
+  [coreSource.includes('const profilePrivacy={...privacySettings};') &&
+   coreSource.includes('.upsert({id:userId,display_name:name') &&
+   coreSource.includes('if(String(currentUser?.id)!==userId)return;') &&
+   coreSource.includes('const path=userId+"/avatar-"'),
+    "js/core.js must keep profile/photo writes bound to the account that started the save"],
+  [coreSource.includes('async function findRecipient(event)') &&
+   coreSource.includes('const myId=String(currentUser.id);') &&
+   coreSource.includes('.upsert({user_id:myId,contact_user_id:id}') &&
+   coreSource.includes('if(String(currentUser?.id)!==myId)return;'),
+    "js/core.js must keep recipient search and contact creation bound to the initiating account"],
 ];
 for (const [passed, message] of authChecks) {
   if (!passed) errors.push(message);

@@ -536,7 +536,16 @@ async function subscribeToMessagesNow(){
   await stopMessageSubscription();if(!currentUser)return;
   const myId=currentUser.id,client=getClient();
   messageSubscriptionUserId=String(myId);
-  messageSubscription=client.channel("farnaz-inbox-"+myId)
+  let resolveSubscription,rejectSubscription,subscriptionSettled=false;
+  const subscriptionReady=new Promise((resolve,reject)=>{resolveSubscription=resolve;rejectSubscription=reject;});
+  const subscriptionTimeout=setTimeout(()=>{
+    if(subscriptionSettled)return;
+    subscriptionSettled=true;
+    rejectSubscription(new Error(english
+      ?"Live message channel did not confirm within 12 seconds."
+      :"کانال پیام زنده طی ۱۲ ثانیه اتصال را تأیید نکرد."));
+  },12000);
+  const channel=client.channel("farnaz-inbox-"+myId)
     .on("postgres_changes",{event:"INSERT",schema:"public",table:"messages"},async payload=>{
       if(currentUser?.id!==myId)return;
       const m=payload.new;
@@ -594,19 +603,32 @@ async function subscribeToMessagesNow(){
       const m=payload.old;
       if(m?.id){$("messageList").querySelector('[data-message-id="'+m.id+'"]')?.remove();}
     })
-    .subscribe((status,err)=>{
-      if(status!=="SUBSCRIBED")console.warn("Farnaz inbox realtime status:",status,err?.message||err||"No error details provided");
-      if(status==="SUBSCRIBED"){
-        reconnectAttempts=0;
-        if(reconnectTimer){clearTimeout(reconnectTimer);reconnectTimer=null;}
-        setConnectionBanner("",false);
-        setStatus("inboxStatus",english?"Connected":"متصل");
-      }else if(status==="CHANNEL_ERROR"||status==="TIMED_OUT"||status==="CLOSED"){
-        setConnectionBanner(english?"Live connection interrupted. Reconnecting automatically…":"ارتباط زنده قطع شد؛ در حال اتصال مجدد…");
-        setStatus("inboxStatus",english?"Live updates interrupted; retrying…":"به‌روزرسانی زنده قطع شد؛ تلاش مجدد…");
-        scheduleReconnect();
-      }
-    });
+    ;
+  messageSubscription=channel;
+  channel.subscribe((status,err)=>{
+    if(status!=="SUBSCRIBED")console.warn("Farnaz inbox realtime status:",status,err?.message||err||"No error details provided");
+    if(status==="SUBSCRIBED"){
+      if(!subscriptionSettled){subscriptionSettled=true;clearTimeout(subscriptionTimeout);resolveSubscription();}
+      reconnectAttempts=0;
+      if(reconnectTimer){clearTimeout(reconnectTimer);reconnectTimer=null;}
+      setConnectionBanner("",false);
+      setStatus("inboxStatus",english?"Connected":"متصل");
+    }else if(status==="CHANNEL_ERROR"||status==="TIMED_OUT"||status==="CLOSED"){
+      if(!subscriptionSettled){subscriptionSettled=true;clearTimeout(subscriptionTimeout);rejectSubscription(err||new Error("Realtime channel status: "+status));}
+      setConnectionBanner(english?"Live connection interrupted. Reconnecting automatically…":"ارتباط زنده قطع شد؛ در حال اتصال مجدد…");
+      setStatus("inboxStatus",english?"Live updates interrupted; retrying…":"به‌روزرسانی زنده قطع شد؛ تلاش مجدد…");
+      scheduleReconnect();
+    }
+  });
+  try{
+    await subscriptionReady;
+  }catch(error){
+    clearTimeout(subscriptionTimeout);
+    if(messageSubscription===channel){messageSubscription=null;messageSubscriptionUserId=null;}
+    try{await Promise.race([client.removeChannel(channel),new Promise(resolve=>setTimeout(resolve,1500))]);}
+    catch(cleanupError){console.warn("Failed realtime setup cleanup:",cleanupError);}
+    throw error;
+  }
 }
 function stopAudioRecordingTracks(){
   if(recordingStream){recordingStream.getTracks().forEach(track=>track.stop());recordingStream=null;}

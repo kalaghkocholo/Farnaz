@@ -542,7 +542,9 @@ function bindSpaceMessageActions(element,message){
  ["pointerup","pointercancel","pointerleave"].forEach(type=>element.addEventListener(type,cancel));
 }
 async function loadMessages(id){
- const token=++messageLoadToken;const list=q("spaceMessages");if(!list)return;
+ if(!currentUser)return;
+ const myId=String(currentUser.id),token=++messageLoadToken;const list=q("spaceMessages");if(!list)return;
+ const isCurrent=()=>token===messageLoadToken&&String(currentUser?.id||"")===myId&&String(active?.id||"")===String(id);
  const wasNearBottom=list.scrollHeight-list.scrollTop-list.clientHeight<70;
  try{
   let data=[],fromLocalCache=false;
@@ -551,17 +553,17 @@ async function loadMessages(id){
    if(result.error)throw result.error;
    data=(result.data||[]).reverse();
   }catch(fetchError){
-   const cached=await window.FarnazLocalStore?.getSpaceMessages(currentUser.id,id).catch(()=>[]);
+   const cached=await window.FarnazLocalStore?.getSpaceMessages(myId,id).catch(()=>[]);
    if(!cached?.length)throw fetchError;
    data=cached;fromLocalCache=true;
    q("spaceMessageStatus").textContent=tr("پیام‌های ذخیره‌شده نمایش داده می‌شوند؛ اتصال را بررسی کن.","Showing saved messages; check your connection.");
   }
-  if(token!==messageLoadToken||active?.id!==id)return;
+  if(!isCurrent())return;
   let hiddenIds=new Set();
   if(!fromLocalCache){
-   try{const {data:hiddenRows,error:hiddenError}=await withTimeout(getClient().from("space_message_hidden").select("message_id").eq("user_id",currentUser.id),7000,"پیام‌های مخفی‌شده");if(hiddenError)throw hiddenError;hiddenIds=new Set((hiddenRows||[]).map(x=>String(x.id||x.message_id)));}
-   catch(e){console.warn("Hidden space messages could not load:",e);const cachedVisible=await window.FarnazLocalStore?.getSpaceMessages(currentUser.id,id).catch(()=>[]);if(cachedVisible?.length){data=cachedVisible;fromLocalCache=true;}else throw e;}
-   try{const {data:pinnedRows,error:pinnedError}=await withTimeout(getClient().from("space_message_pins").select("message_id").eq("space_id",id),7000,"پیام‌های سنجاق‌شده");if(pinnedError)throw pinnedError;spacePinnedMessageIds.clear();(pinnedRows||[]).forEach(row=>spacePinnedMessageIds.add(String(row.message_id)));}
+   try{const {data:hiddenRows,error:hiddenError}=await withTimeout(getClient().from("space_message_hidden").select("message_id").eq("user_id",myId),7000,"پیام‌های مخفی‌شده");if(hiddenError)throw hiddenError;if(!isCurrent())return;hiddenIds=new Set((hiddenRows||[]).map(x=>String(x.id||x.message_id)));}
+   catch(e){if(!isCurrent())return;console.warn("Hidden space messages could not load:",e);const cachedVisible=await window.FarnazLocalStore?.getSpaceMessages(myId,id).catch(()=>[]);if(!isCurrent())return;if(cachedVisible?.length){data=cachedVisible;fromLocalCache=true;}else throw e;}
+   try{const {data:pinnedRows,error:pinnedError}=await withTimeout(getClient().from("space_message_pins").select("message_id").eq("space_id",id),7000,"پیام‌های سنجاق‌شده");if(pinnedError)throw pinnedError;if(!isCurrent())return;spacePinnedMessageIds.clear();}(pinnedRows||[]).forEach(row=>spacePinnedMessageIds.add(String(row.message_id)));}
    catch(e){console.warn("Pinned space messages could not load:",e);}
   }
   const rows=(data||[]).filter(m=>!hiddenIds.has(String(m.id)));
@@ -571,19 +573,21 @@ async function loadMessages(id){
   if(!fromLocalCache){
    try{
     const receiptRead=ownMessageIds.length?withTimeout(getClient().from("space_message_reads").select("message_id,user_id,read_at").eq("space_id",id).in("message_id",ownMessageIds),7000,"وضعیت خواندن پیام‌ها"):Promise.resolve({data:[],error:null});
-    const markIncomingRead=(typeof privacySettings==="undefined"||privacySettings.show_read_receipts!==false)&&incomingMessageIds.length?getClient().from("space_message_reads").upsert(incomingMessageIds.map(message_id=>({space_id:id,message_id,user_id:currentUser.id})),{onConflict:"message_id,user_id",ignoreDuplicates:true}).then(({error})=>{if(error)console.warn("Farnaz read receipt could not be saved:",error.message);}):Promise.resolve();
+    const markIncomingRead=(typeof privacySettings==="undefined"||privacySettings.show_read_receipts!==false)&&incomingMessageIds.length?getClient().from("space_message_reads").upsert(incomingMessageIds.map(message_id=>({space_id:id,message_id,user_id:myId})),{onConflict:"message_id,user_id",ignoreDuplicates:true}).then(({error})=>{if(error)console.warn("Farnaz read receipt could not be saved:",error.message);}):Promise.resolve();
     [receiptResult]=await Promise.all([receiptRead,markIncomingRead]);
+    if(!isCurrent())return;
     if(receiptResult.error)throw receiptResult.error;
-   }catch(e){console.warn("Space read receipts unavailable:",e);}
+   }catch(e){if(!isCurrent())return;console.warn("Space read receipts unavailable:",e);}
   }
   const readByMessage=new Set((receiptResult?.data||[]).filter(r=>String(r.user_id)!==String(currentUser?.id)).map(r=>String(r.message_id)));
-  if(!fromLocalCache){try{await window.FarnazLocalStore?.saveSpaceMessages(currentUser.id,id,rows);}catch(cacheError){console.warn("Cached space messages save:",cacheError);}}
+  if(!fromLocalCache){try{await window.FarnazLocalStore?.saveSpaceMessages(myId,id,rows);}catch(cacheError){console.warn("Cached space messages save:",cacheError);}}
+  if(!isCurrent())return;
   const senderIds=[...new Set(rows.map(m=>m.sender_id).filter(Boolean).map(String))];
   const senderEntries=await Promise.all(senderIds.map(async senderId=>{try{return [senderId,await getCachedSpaceSenderName(senderId)];}catch(_){return [senderId,""];}}));
   const senderNames=new Map(senderEntries);
   const attachmentEntries=await Promise.all(rows.filter(m=>m.attachment_path).map(async m=>{try{return [String(m.id),await getCachedSpaceAttachmentUrl(m.attachment_path)];}catch(_){return [String(m.id),null];}}));
   const attachmentUrls=new Map(attachmentEntries);
-  if(token!==messageLoadToken||active?.id!==id)return;
+  if(!isCurrent())return;
   const fragment=document.createDocumentFragment();
   // Force a physical left-to-right flex stack for group messages.
   list.style.setProperty("display","flex","important");

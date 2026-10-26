@@ -290,6 +290,10 @@ const authChecks = [
    coreSource.includes('if(String(currentUser?.id)!==userId)return;') &&
    coreSource.includes('const path=userId+"/avatar-"'),
     "js/core.js must keep profile/photo writes bound to the account that started the save"],
+  [coreSource.includes('const requestMethod=String(init?.method||') &&
+   coreSource.includes('const canRetry=isStorageUpload||["GET","HEAD","OPTIONS"].includes(requestMethod);') &&
+   coreSource.includes("retrying those requests can duplicate messages or side effects."),
+    "js/core.js must not automatically replay potentially non-idempotent Supabase POST writes after transport failures"],
   [coreSource.includes('async function findRecipient(event)') &&
    coreSource.includes('const myId=String(currentUser.id);') &&
    coreSource.includes('.upsert({user_id:myId,contact_user_id:id}') &&

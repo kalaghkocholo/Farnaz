@@ -913,6 +913,7 @@ async function startPrivateTypingChannel(contactId){
  if(!currentUser||!contactId)return;
  const client=getClient(),uid=String(currentUser.id),other=String(contactId);
  if(farnazTypingChannel){const old=farnazTypingChannel;farnazTypingChannel=null;try{await client.removeChannel(old);}catch(_){}}
+ if(!currentUser||String(currentUser.id)!==uid||String(currentChatUser?.user_id)!==other)return;
  if(uid===other)return;
  const pair=[uid,other].sort();
  const ch=client.channel("farnaz-typing:"+pair.join(":"),{config:{private:true}});
@@ -1358,7 +1359,7 @@ async function loadContactInfoMedia(contactId,request){
 }
 async function toggleContactBlock(){
   if(!currentUser||!currentChatUser)return;
-  const contactId=currentChatUser.user_id,name=currentChatUser.display_name||(english?"this contact":"این مخاطب");
+  const userId=String(currentUser.id),contactId=String(currentChatUser.user_id),name=currentChatUser.display_name||(english?"this contact":"این مخاطب");
   if(contactInfoBlocked){
     if(!confirm(contactInfoText("مسدودسازی این مخاطب برداشته شود؟","Unblock this contact?")))return;
   }else if(!confirm(contactInfoText("با مسدود کردن "+name+"، تبادل پیام و شروع تماس بین دو حساب متوقف می‌شود. ادامه می‌دهی؟","Blocking "+name+" prevents messaging and starting calls between both accounts. Continue?")))return;
@@ -1369,22 +1370,27 @@ async function toggleContactBlock(){
       ?await client.from("blocked_contacts").delete().eq("blocker_id",currentUser.id).eq("blocked_user_id",contactId)
       :await client.from("blocked_contacts").insert({blocker_id:currentUser.id,blocked_user_id:contactId});
     if(result.error)throw result.error;
+    if(String(currentUser?.id)!==userId||String(currentChatUser?.user_id)!==contactId)return;
     contactInfoBlocked=!contactInfoBlocked;
     button.textContent=contactInfoBlocked?contactInfoText("رفع مسدودسازی","Unblock contact"):contactInfoText("مسدود کردن مخاطب","Block contact");
     $("chatSubtitle").textContent=contactInfoBlocked?contactInfoText("مخاطب مسدود شده است","Contact blocked"):contactInfoText("گفتگوی خصوصی","Private conversation");
     $("contactInfoStatus").textContent=contactInfoBlocked?contactInfoText("مخاطب مسدود شد؛ پیام و تماس جدید مجاز نیست.","Contact blocked. New messages and calls are disabled."):contactInfoText("مسدودسازی برداشته شد.","Contact unblocked.");
   }catch(error){
+    if(String(currentUser?.id)!==userId||String(currentChatUser?.user_id)!==contactId)return;
     $("contactInfoStatus").textContent=(english?"Could not update block status: ":"تغییر وضعیت مسدودسازی ناموفق بود: ")+error.message;
   }finally{button.disabled=false;}
 }
 async function deleteContactConversation(){
   if(!currentUser||!currentChatUser)return;
+  const userId=String(currentUser.id),contactId=String(currentChatUser.user_id);
   if(!confirm(contactInfoText("این گفتگو فقط از فهرست شما حذف می‌شود؛ پیام‌ها و فایل‌ها برای طرف مقابل باقی می‌مانند. ادامه می‌دهی؟","This removes the conversation from your list only. Messages and files remain for the other person. Continue?")))return;
   $("contactInfoDelete").disabled=true;
   try{
-    await saveConversationPref(currentChatUser.user_id,{hidden_at:new Date().toISOString(),archived:false,pinned:false});
+    await saveConversationPref(contactId,{hidden_at:new Date().toISOString(),archived:false,pinned:false});
+    if(String(currentUser?.id)!==userId||String(currentChatUser?.user_id)!==contactId)return;
     closeContactInfo();backFromChat();
   }catch(error){
+    if(String(currentUser?.id)!==userId||String(currentChatUser?.user_id)!==contactId)return;
     $("contactInfoStatus").textContent=(english?"Could not delete conversation: ":"حذف گفتگو ناموفق بود: ")+error.message;
   }finally{$("contactInfoDelete").disabled=false;}
 }
@@ -1392,14 +1398,16 @@ async function deleteContactConversation(){
 
 async function refreshPrivatePresence(contactId){
  const subtitle=$("chatSubtitle");if(!subtitle||!currentUser||!contactId)return;
+ const userId=String(currentUser.id),otherId=String(contactId);
  currentChatPresenceLabel=english?"Private conversation":"گفتگوی خصوصی";subtitle.textContent=currentChatPresenceLabel;
  try{
-  const {data,error}=await getClient().rpc("get_farnaz_presence_status",{p_user_id:contactId});if(error)throw error;
-  const row=Array.isArray(data)?data[0]:data;if(!row||String(currentChatUser?.user_id)!==String(contactId))return;
+  const {data,error}=await getClient().rpc("get_farnaz_presence_status",{p_user_id:otherId});if(error)throw error;
+  if(String(currentUser?.id)!==userId||String(currentChatUser?.user_id)!==otherId)return;
+  const row=Array.isArray(data)?data[0]:data;if(!row)return;
   if(row.can_see_online&&row.is_online)currentChatPresenceLabel=english?"Online":"آنلاین";
   else if(row.can_see_last_seen&&row.last_seen_at){const when=new Date(row.last_seen_at);currentChatPresenceLabel=(english?"Last seen ":"آخرین بازدید: ")+when.toLocaleString(english?"en":"fa-IR",{dateStyle:"short",timeStyle:"short"});}
   subtitle.textContent=currentChatPresenceLabel;
- }catch(_){subtitle.textContent=currentChatPresenceLabel;}
+ }catch(_){if(String(currentUser?.id)===userId&&String(currentChatUser?.user_id)===otherId)subtitle.textContent=currentChatPresenceLabel;}
 }
 
 window.addEventListener("farnaz-presence-updated",()=>{if(currentChatUser&&!remoteTypingTimer)refreshPrivatePresence(currentChatUser.user_id);});

@@ -271,13 +271,15 @@ function renderSpaceAdminSettings(mine,isChannel){
 }
 
 async function openSpaceInfo(){
-  if(!active||!["group","channel"].includes(active.type))return;
-  const spaceId=active.id,isChannel=active.type==="channel";
+  if(!active||!currentUser||!["group","channel"].includes(active.type))return;
+  const spaceId=active.id,myId=String(currentUser.id),isChannel=active.type==="channel";
+  const isCurrent=()=>String(currentUser?.id||"")===myId&&String(active?.id||"")===String(spaceId);
   q("spaceInfoDialog").hidden=false;q("spaceInfoTitle").textContent=isChannel?tr("اطلاعات کانال","Channel information"):tr("اطلاعات گروه","Group information");q("spaceInfoStatus").textContent=isChannel?tr("در حال بارگذاری اطلاعات کانال…","Loading channel information…"):tr("در حال بارگذاری اعضا…","Loading members…");
   q("spaceInfoName").textContent=active.name||"";q("spaceInfoDescription").textContent=active.description||"";
   renderSpaceAvatar(q("spaceInfoAvatar"),active.avatar_url,isChannel?"📣":"👥",true);
   const actions=q("spaceInfoActions");actions.replaceChildren();
-  const {data:mine,error:mineError}=await getClient().from("space_members").select("role").eq("space_id",spaceId).eq("user_id",currentUser.id).maybeSingle();
+  const {data:mine,error:mineError}=await getClient().from("space_members").select("role").eq("space_id",spaceId).eq("user_id",myId).maybeSingle();
+  if(!isCurrent())return;
   if(mineError){q("spaceInfoStatus").textContent=mineError.message;return;}
   if(!mine&&!isChannel){q("spaceInfoStatus").textContent=tr("برای مشاهده اعضا باید عضو این گروه باشی.","You must be a group member to view this roster.");return;}
   renderSpaceAdminSettings(mine,isChannel);
@@ -286,7 +288,7 @@ async function openSpaceInfo(){
    const detail=q("spaceMemberList");detail.replaceChildren();
    const visibility=document.createElement("p");visibility.className="space-muted";visibility.textContent=active.is_public?tr("کانال عمومی","Public channel"):tr("کانال خصوصی با کد دعوت","Private channel");
    const count=document.createElement("p");count.className="space-muted";count.textContent=tr("در حال دریافت تعداد اعضا…","Loading subscriber count…");detail.append(visibility,count);const onlineCount=document.createElement("p");onlineCount.className="space-muted";onlineCount.hidden=typeof privacySettings!=="undefined"&&privacySettings.show_space_online_count===false;onlineCount.textContent=tr("در حال محاسبه افراد آنلاین…","Calculating online members…");detail.appendChild(onlineCount);
-   try{const {count:n,error:e}=await getClient().from("space_members").select("user_id",{count:"exact",head:true}).eq("space_id",spaceId);if(e)throw e;count.textContent=tr("تعداد اعضا: ","Members: ")+(n??0);if(!onlineCount.hidden){const {data:memberRows}=await getClient().from("space_members").select("user_id").eq("space_id",spaceId);let online=0;for(const row of memberRows||[]){try{const {data:presence}=await getClient().rpc("get_farnaz_presence_status",{p_user_id:row.user_id});const status=Array.isArray(presence)?presence[0]:presence;if(status?.can_see_online&&status.is_online)online++;}catch(_){}}onlineCount.textContent=tr("آنلاین: ","Online: ")+online;}}catch(e){count.textContent="";}
+   try{const {count:n,error:e}=await getClient().from("space_members").select("user_id",{count:"exact",head:true}).eq("space_id",spaceId);if(!isCurrent())return;if(e)throw e;count.textContent=tr("تعداد اعضا: ","Members: ")+(n??0);if(!onlineCount.hidden){const {data:memberRows}=await getClient().from("space_members").select("user_id").eq("space_id",spaceId);if(!isCurrent())return;let online=0;for(const row of memberRows||[]){try{const {data:presence}=await getClient().rpc("get_farnaz_presence_status",{p_user_id:row.user_id});const status=Array.isArray(presence)?presence[0]:presence;if(status?.can_see_online&&status.is_online)online++;}catch(_){}}onlineCount.textContent=tr("آنلاین: ","Online: ")+online;}}catch(e){count.textContent="";}
    if(mine&&["owner","admin"].includes(mine.role)){
     const edit=document.createElement("button");edit.type="button";edit.className="space-secondary";edit.textContent=tr("ویرایش نام، توضیحات و عکس","Edit name, description & photo");edit.onclick=()=>{q("spaceEditTitle").textContent=tr("ویرایش اطلاعات کانال","Edit channel information");q("spaceEditForm").querySelector('label[for="spaceEditName"]').textContent=tr("نام کانال","Channel name");q("spaceEditForm").querySelector('label[for="spaceEditDescription"]').textContent=tr("توضیحات","Description");q("spaceEditForm").querySelector('label[for="spaceEditPhoto"]').textContent=tr("عکس کانال","Channel photo");q("spaceEditForm").querySelector(".space-muted").textContent=tr("عکس کانال برای اعضای کانال قابل مشاهده است.","The channel photo is visible to channel members.");q("cancelSpaceEdit").textContent=tr("انصراف","Cancel");q("saveSpaceEdit").textContent=tr("ذخیره","Save");q("spaceEditName").value=active.name||"";q("spaceEditDescription").value=active.description||"";q("spaceEditPhoto").value="";q("spaceEditStatus").textContent="";q("spaceEditDialog").hidden=false;};actions.appendChild(edit);
     const inviteContact=document.createElement("button");inviteContact.type="button";inviteContact.className="space-primary";inviteContact.textContent=tr("＋ دعوت مخاطب","＋ Invite contact");inviteContact.onclick=async()=>{await contacts("spaceAddContacts");q("spaceAddDialog").querySelector("h3").textContent=tr("دعوت مخاطب به کانال","Invite contact to channel");q("saveAddContacts").textContent=tr("دعوت انتخاب‌شده‌ها","Invite selected");q("spaceAddStatus").textContent="";q("spaceInfoDialog").hidden=true;q("spaceAddDialog").hidden=false;};actions.appendChild(inviteContact);
@@ -305,6 +307,7 @@ async function openSpaceInfo(){
   }
   if(active.member_list_visibility==="managers"&&mine.role==="member"){q("spaceMemberHeading").textContent=tr("اعضای گروه","Group members");q("spaceMemberList").replaceChildren();q("spaceInfoStatus").textContent=tr("فهرست اعضا فقط برای مدیران قابل مشاهده است.","Only managers can view the member list.");return;}
   const {data:members,error}=await getClient().rpc("get_space_member_profiles",{p_space_id:spaceId});
+  if(!isCurrent())return;
   if(error){q("spaceInfoStatus").textContent=tr("دریافت فهرست اعضا ناموفق بود: ","Could not load members: ")+error.message;return;}
   const list=q("spaceMemberList");list.replaceChildren();
   q("spaceMemberHeading").textContent=tr("اعضای گروه","Group members")+" · "+(members||[]).length;

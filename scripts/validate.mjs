@@ -221,8 +221,9 @@ const authChecks = [
     "js/core.js must retain the email/password sign-in path"],
   [coreSource.includes("client.auth.getSession()") && coreSource.includes("window.FarnazBoot=()=>"),
     "js/core.js must restore the saved session from the app boot entry point"],
-  [coreSource.includes('withTimeout(client.auth.getSession(),9000,"saved session restore")'),
-    "js/core.js must bound saved-session restoration so startup cannot wait indefinitely"],
+  [coreSource.includes('withTimeout(client.auth.getSession(),18000,"saved session restore")') &&
+   coreSource.includes("longer than the fetch wrapper's 15-second auth-request deadline"),
+    "js/core.js must avoid timing out before its bounded refresh-token request settles"],
   [coreSource.includes("async function restoreSavedSession(attempt=0)") &&
    coreSource.includes('transientRestoreFailure=error?.name==="TimeoutError"||error?.name==="TypeError"||isTransientError(error)') &&
    coreSource.includes("await restoreSavedSession(attempt+1)"),

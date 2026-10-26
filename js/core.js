@@ -738,6 +738,8 @@ async function showUser(user){
         .upsert({id:user.id,display_name:fallbackName,phone:user.phone||null,show_phone:true},{onConflict:"id"})
         .select("id,display_name,avatar_url,phone,show_phone,presence_visibility,last_seen_visibility,show_typing,show_read_receipts,show_space_online_count").single(),2,18000);
       if(created.error)throw created.error;
+      // Logout/account switching may happen while profile creation is pending.
+      if(request!==profileRequestNumber||currentUser?.id!==user.id)return;
       profile=created.data;
     }
     privacySettings={presence_visibility:profile?.presence_visibility||"contacts",last_seen_visibility:profile?.last_seen_visibility||"contacts",show_typing:profile?.show_typing!==false,show_read_receipts:profile?.show_read_receipts!==false,show_space_online_count:profile?.show_space_online_count!==false};
@@ -751,6 +753,8 @@ async function showUser(user){
     $("profilePhoneInput").value=formatContactPhone(currentPhone);
     $("showPhoneSetting").checked=profile?.show_phone!==false;
     try{await window.FarnazLocalStore?.saveSnapshot(user.id,"profile",profile);}catch(cacheError){console.warn("Cached profile save:",cacheError);}
+    // A completed cache write must not let a stale profile request update the UI after logout.
+    if(request!==profileRequestNumber||currentUser?.id!==user.id)return;
     setStatus("profileStatus",english?"Profile loaded.":"پروفایل بارگذاری شد.");
   }catch(e){
     // Ignore a late profile failure after logout or a newer account/profile request.

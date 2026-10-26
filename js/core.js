@@ -1512,7 +1512,7 @@ async function refreshSavedContacts(){
     for(const item of phoneData){if(item.matched_user_id&&!importedNames.has(String(item.matched_user_id)))importedNames.set(String(item.matched_user_id),item.display_name);}
     let profilesById=new Map(),profilesLoaded=true;
     try{profilesById=await getContactProfiles((data||[]).map(item=>item.contact_user_id));}
-    catch(e){profilesLoaded=false;console.warn("Saved contact profiles:",e);}
+    catch(e){profilesLoaded=false;console.warn("Saved contact profiles:",e);setConnectionBanner(english?"Some contact profiles could not load. Retrying…":"اطلاعات بعضی مخاطبان بارگذاری نشد؛ دوباره تلاش می‌کنیم.");}
     if(currentUser?.id!==myId||request!==savedContactsRequestNumber)return;
     const snapshot=[];
     const seenContacts=new Set();
@@ -1529,7 +1529,7 @@ async function refreshSavedContacts(){
     setStatus("savedContactsStatus",snapshot.length?"":(english?"No saved Farnaz contacts yet.":"هنوز مخاطب عضو فرنازی ذخیره نشده است."));
     await refreshUnmatchedPhoneContacts();
     if(currentUser?.id!==myId||request!==savedContactsRequestNumber)return;
-    return true;
+    return profilesLoaded;
   }catch(e){
     if(currentUser?.id!==myId||request!==savedContactsRequestNumber)return;
     console.error("Saved contacts:",e);
@@ -1699,14 +1699,14 @@ async function refreshConversationList(){
     }
     const entries=[...conversations.values()];
     let profilesById=new Map(),profilesLoaded=true;
-    try{profilesById=await getContactProfiles(entries.map(c=>c.user_id));}catch(e){profilesLoaded=false;console.warn("Conversation contact profiles:",e);}
+    try{profilesById=await getContactProfiles(entries.map(c=>c.user_id));}catch(e){profilesLoaded=false;console.warn("Conversation contact profiles:",e);setConnectionBanner(english?"Some conversation profiles could not load. Retrying…":"اطلاعات بعضی مخاطبان گفتگو بارگذاری نشد؛ دوباره تلاش می‌کنیم.");}
     if(currentUser?.id!==myId||request!==conversationListRequestNumber)return;
     const snapshot=entries.map(c=>({...c,pref:prefFor(c.user_id),profile:profilesById.get(String(c.user_id))||{}}));
     renderConversationSnapshot(snapshot,myId);
     if(profilesLoaded){try{await window.FarnazLocalStore?.saveSnapshot(myId,"inbox",snapshot);}catch(cacheError){console.warn("Cached inbox save:",cacheError);}}
-    // The visible inbox may be usable with cached preferences, but the refresh is
-    // incomplete until server-side pin/archive/mute/hidden settings are confirmed.
-    return preferencesLoaded;
+    // The visible inbox may be usable with cached data, but recovery is complete only
+    // after server-side conversation preferences and participant profiles are confirmed.
+    return preferencesLoaded&&profilesLoaded;
   }catch(e){
     console.error("Inbox load:",e);
     if(currentUser?.id!==myId||request!==conversationListRequestNumber)return;

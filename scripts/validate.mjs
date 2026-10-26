@@ -324,6 +324,9 @@ const authChecks = [
    chatSource.includes('if(String(currentChatUser?.user_id||"")===receiverId){') &&
    chatSource.includes('input.value="";input.style.height="auto";'),
     "js/chat-menu-v5.js must bind private message writes and composer cleanup to the initiating account/chat"],
+  [chatSource.includes("// Re-check before caching anything so a late response cannot repopulate the") &&
+   chatSource.includes("if(request!==chatRequestNumber||currentUser?.id!==myId||String(currentChatUser?.user_id)!==String(contactId))return;"),
+    "js/chat-menu-v5.js must discard stale private-message results after the hidden-message read and before caching"],
   [sources["js/spaces.js"].includes('const senderId=String(currentUser.id),spaceId=String(active.id),editId=editingSpaceMessageId;') &&
    sources["js/spaces.js"].includes('.insert({space_id:spaceId,sender_id:senderId') &&
    sources["js/spaces.js"].includes('const sameSpace=()=>sameAccount()&&String(active?.id||"")===spaceId;'),

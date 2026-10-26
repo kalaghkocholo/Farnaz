@@ -1559,17 +1559,19 @@ function parseVCardContacts(text,countryCode){
   }
   return results;
 }
-async function syncSelectedPhoneContacts(contacts,button){
+async function syncSelectedPhoneContacts(contacts,button,expectedUserId=null){
   if(!currentUser)return;
-  const myId=currentUser.id;
+  const myId=String(expectedUserId||currentUser.id);
+  if(String(currentUser.id)!==myId)return;
   const valid=(contacts||[]).filter(c=>c?.phone&&/^\+[1-9]\d{7,14}$/.test(c.phone));
   const unique=[...new Map(valid.map(c=>[c.phone,c])).values()];
   if(!unique.length)throw new Error(english?"No valid phone numbers were selected.":"از مخاطبان انتخاب‌شده شماره تلفن معتبری دریافت نشد.");
   const {data,error}=await getClient().rpc("sync_farnaz_phone_contacts",{p_contacts:unique});
   if(error)throw error;
-  if(currentUser?.id!==myId)return;
+  if(String(currentUser?.id)!==myId)return;
   const result=Array.isArray(data)?data[0]:(data||{});
   await refreshSavedContacts();
+  if(String(currentUser?.id)!==myId)return;
   setStatus("phoneContactsImportStatus",english
     ?`Sync complete: ${result.processed??unique.length} numbers processed, ${result.matched??0} matched with Farnaz accounts, ${result.unmatched??0} not registered.`
     :`همگام‌سازی انجام شد: ${result.processed??unique.length} شماره پردازش شد؛ ${result.matched??0} مورد با حساب‌های فرناز تطبیق یافت و ${result.unmatched??0} مورد هنوز عضو نیست.`);
@@ -1577,6 +1579,7 @@ async function syncSelectedPhoneContacts(contacts,button){
 async function syncPhoneContactsFromPicker(){
   const button=$("pickPhoneContactsButton");
   if(!currentUser){setStatus("phoneContactsImportStatus",english?"Sign in first.":"ابتدا وارد حساب فرناز شو.",true);return;}
+  const myId=String(currentUser.id);
   if(!window.isSecureContext){setStatus("phoneContactsImportStatus",english?"Contact access requires a secure HTTPS connection.":"دسترسی به مخاطبان به اتصال امن HTTPS نیاز دارد.",true);return;}
   if(!navigator.contacts?.select){
     setStatus("phoneContactsImportStatus",english
@@ -1588,6 +1591,7 @@ async function syncPhoneContactsFromPicker(){
   setStatus("phoneContactsImportStatus",english?"Choose the contacts you want to share with Farnaz…":"مخاطبانی را که می‌خواهی با فرناز به اشتراک بگذاری انتخاب کن…");
   try{
     const picked=await navigator.contacts.select(["name","tel"],{multiple:true});
+    if(String(currentUser?.id)!==myId)return;
     const contacts=[],country=$("phoneContactsCountry")?.value||"98";
     for(const item of picked||[]){
       const name=Array.isArray(item.name)?item.name[0]:item.name;
@@ -1596,8 +1600,9 @@ async function syncPhoneContactsFromPicker(){
         if(/^\+[1-9]\d{7,14}$/.test(phone))contacts.push({display_name:String(name||"").trim().slice(0,120)||(english?"Phone contact":"مخاطب گوشی"),phone});
       }
     }
-    await syncSelectedPhoneContacts(contacts,button);
+    await syncSelectedPhoneContacts(contacts,button,myId);
   }catch(e){
+    if(String(currentUser?.id)!==myId)return;
     if(e?.name==="AbortError"){setStatus("phoneContactsImportStatus",english?"Contact selection cancelled.":"انتخاب مخاطبان لغو شد.");return;}
     console.error("Phone contact picker:",e);
     setStatus("phoneContactsImportStatus",(english?"Could not sync selected contacts: ":"همگام‌سازی مخاطبان انتخاب‌شده ناموفق بود: ")+(e?.message||String(e)),true);
@@ -1605,14 +1610,17 @@ async function syncPhoneContactsFromPicker(){
 }
 async function handlePhoneContactsFile(event){
   const input=event?.target||$("phoneContactsFile"),file=input?.files?.[0];if(!file||!currentUser)return;
-  const button=$("importPhoneContactsButton"),myId=currentUser.id;
+  const button=$("importPhoneContactsButton"),myId=String(currentUser.id);
   button.disabled=true;setStatus("phoneContactsImportStatus",english?"Reading VCF file…":"در حال خواندن فایل VCF…");
   try{
     if(file.size>15*1024*1024)throw new Error(english?"VCF file must be 15 MB or smaller.":"حجم فایل VCF باید حداکثر ۱۵ مگابایت باشد.");
-    const contacts=parseVCardContacts(await file.text(),$("phoneContactsCountry").value);
+    const fileText=await file.text();
+    if(String(currentUser?.id)!==myId)return;
+    const contacts=parseVCardContacts(fileText,$("phoneContactsCountry").value);
     if(!contacts.length)throw new Error(english?"No valid phone numbers were found in this VCF file.":"شماره تلفن معتبری در فایل VCF پیدا نشد.");
-    await syncSelectedPhoneContacts(contacts,button);
+    await syncSelectedPhoneContacts(contacts,button,myId);
   }catch(e){
+    if(String(currentUser?.id)!==myId)return;
     console.error("Phone contacts import:",e);
     setStatus("phoneContactsImportStatus",(english?"Could not sync contacts: ":"همگام‌سازی مخاطبان ناموفق بود: ")+e.message,true);
   }finally{button.disabled=false;if(input)input.value="";}

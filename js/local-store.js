@@ -51,8 +51,12 @@
   }
 
   function keyFor(userId,contactId){return String(userId)+"::"+String(contactId);}
-  async function read(storeName,key){
+  async function read(storeName,key,userId=null){
+    // Do not return cached account data while logout is purging that account.
+    // Re-check after opening IndexedDB because the purge can start during openDB().
+    await waitForUserClear(userId);
     const db=await openDB();if(!db)return null;
+    await waitForUserClear(userId);
     return new Promise((resolve,reject)=>{
       let settled=false;
       const finish=(error,value)=>{
@@ -112,7 +116,7 @@
 
   async function getMessages(userId,contactId){
     if(!userId||!contactId)return [];
-    const record=await read(STORE_MESSAGES,keyFor(userId,contactId));
+    const record=await read(STORE_MESSAGES,keyFor(userId,contactId),userId);
     return Array.isArray(record?.messages)?record.messages:[];
   }
   async function saveMessages(userId,contactId,messages,mergeExisting=false){
@@ -148,7 +152,7 @@
   }
   async function getDraft(userId,contactId){
     if(!userId||!contactId)return "";
-    const record=await read(STORE_DRAFTS,keyFor(userId,contactId));
+    const record=await read(STORE_DRAFTS,keyFor(userId,contactId),userId);
     return typeof record?.body==="string"?record.body:"";
   }
   async function saveDraft(userId,contactId,body){
@@ -168,7 +172,7 @@
   }
   async function getTemporaryFile(userId,fileId){
     if(!userId||!fileId)return null;
-    const record=await read(STORE_TEMP,keyFor(userId,fileId));
+    const record=await read(STORE_TEMP,keyFor(userId,fileId),userId);
     if(!record)return null;
     if(record.expiresAt<=Date.now()){await remove(STORE_TEMP,record.key,userId);return null;}
     return record.blob||null;
@@ -223,7 +227,7 @@
   }
   async function getSnapshot(userId,kind){
     if(!userId||!kind)return null;
-    const record=await read(STORE_SNAPSHOTS,keyFor(userId,kind));
+    const record=await read(STORE_SNAPSHOTS,keyFor(userId,kind),userId);
     return record&&Object.prototype.hasOwnProperty.call(record,"data")?record.data:null;
   }
   async function saveSnapshot(userId,kind,data){
@@ -232,7 +236,7 @@
   }
   async function getSpaceMessages(userId,spaceId){
     if(!userId||!spaceId)return [];
-    const record=await read(STORE_SPACE_MESSAGES,keyFor(userId,spaceId));
+    const record=await read(STORE_SPACE_MESSAGES,keyFor(userId,spaceId),userId);
     return Array.isArray(record?.messages)?record.messages:[];
   }
   async function saveSpaceMessages(userId,spaceId,messages){

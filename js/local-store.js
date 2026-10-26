@@ -76,7 +76,7 @@
       let tx,request;
       try{tx=db.transaction(storeName,"readonly");request=tx.objectStore(storeName).get(key);}
       catch(error){finish(error);return;}
-      request.onsuccess=()=>finish(null,request.result||null);
+      request.onsuccess=()=>finish(null,generationIsCurrent(userId,generation)?(request.result||null):null);
       request.onerror=()=>finish(request.error||new Error("Local read failed"));
       tx.onerror=()=>finish(tx.error||new Error("Local read transaction failed"));
       tx.onabort=()=>finish(tx.error||new Error("Local read transaction aborted"));

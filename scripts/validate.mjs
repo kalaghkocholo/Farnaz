@@ -198,7 +198,7 @@ for (const path of ["js/local-store.js", "js/core.js", "js/chat-menu-v5.js", "js
 // Keep shell cache and versioned local-store assets synchronized after cache behavior changes.
 const coreSource = sources["js/core.js"];
 const chatSource = sources["js/chat-menu-v5.js"];
-if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v130"') || !sources["service-worker.js"].includes('core.js?v=20261026-8') || !sources["service-worker.js"].includes('local-store.js?v=20261026-1')) {
+if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v131"') || !sources["service-worker.js"].includes('core.js?v=20261026-8') || !sources["service-worker.js"].includes('local-store.js?v=20261026-1')) {
   errors.push("service-worker.js must use the current shell cache and core asset versions");
 }
 const loaderChecks = [

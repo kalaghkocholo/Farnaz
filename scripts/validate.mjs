@@ -197,13 +197,13 @@ for (const path of ["js/local-store.js", "js/core.js", "js/chat-menu-v5.js", "js
 
 const coreSource = sources["js/core.js"];
 const chatSource = sources["js/chat-menu-v5.js"];
-if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v123"') || !sources["service-worker.js"].includes('core.js?v=20261026-2')) {
+if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v124"') || !sources["service-worker.js"].includes('core.js?v=20261026-3')) {
   errors.push("service-worker.js must use the current shell cache and core asset versions");
 }
 const loaderChecks = [
   [html.includes('script.src="./js/supabase-sdk.js"') && html.includes('script.onload=()=>{') && html.includes("loadLocalScripts();"),
     "index.html must wait for the local Supabase SDK before loading the app core"],
-  [html.includes('core.src="./js/core.js?v=20261026-2"') && html.includes("core.onload=()=>{") && html.includes("core.onerror=()=>{"),
+  [html.includes('core.src="./js/core.js?v=20261026-3"') && html.includes("core.onload=()=>{") && html.includes("core.onerror=()=>{"),
     "index.html must handle both successful and failed core-script loading"],
   [html.includes("script.onload=loadNextFeature;") && html.includes("if(typeof window.FarnazBoot===\"function\")window.FarnazBoot();"),
     "index.html must load feature scripts sequentially and boot only after the loader sequence"],

@@ -294,6 +294,14 @@ const authChecks = [
    coreSource.includes('const canRetry=isStorageUpload||["GET","HEAD","OPTIONS"].includes(requestMethod);') &&
    coreSource.includes("retrying those requests can duplicate messages or side effects."),
     "js/core.js must not automatically replay potentially non-idempotent Supabase POST writes after transport failures"],
+  [chatSource.includes('const senderId=String(currentUser.id),receiverId=String(currentChatUser.user_id);') &&
+   chatSource.includes('const row={sender_id:senderId,receiver_id:receiverId') &&
+   chatSource.includes('if(String(currentChatUser?.user_id||"")===receiverId){\\n      input.value='),
+    "js/chat-menu-v5.js must bind private message writes and composer cleanup to the initiating account/chat"],
+  [sources["js/spaces.js"].includes('const senderId=String(currentUser.id),spaceId=String(active.id),editId=editingSpaceMessageId;') &&
+   sources["js/spaces.js"].includes('.insert({space_id:spaceId,sender_id:senderId') &&
+   sources["js/spaces.js"].includes('const sameSpace=()=>sameAccount()&&String(active?.id||"")===spaceId;'),
+    "js/spaces.js must bind group/channel message writes and UI updates to the initiating account/space"],
   [coreSource.includes('async function findRecipient(event)') &&
    coreSource.includes('const myId=String(currentUser.id);') &&
    coreSource.includes('.upsert({user_id:myId,contact_user_id:id}') &&

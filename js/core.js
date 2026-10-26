@@ -810,8 +810,10 @@ function showGuest(){
   profileRequestNumber++;
   // Invalidate every in-flight list request before clearing the signed-in UI.
   // Also invalidate private-chat work so a late response cannot repopulate the guest screen.
-  chatRequestNumber++;
+  chatRequestNumber++;contactInfoRequest++;messageSearchRequest++;
   conversationListRequestNumber++;savedContactsRequestNumber++;unmatchedPhoneContactsRequestNumber++;
+  if(contactInfoDialog)contactInfoDialog.hidden=true;
+  if(messageSearchDialog)messageSearchDialog.hidden=true;
   currentUser=null;currentProfileName="";currentAvatarUrl="";currentPhone="";
   currentChatUser=null;
   // Logout can happen from a private chat or the spaces chat view. Reset their

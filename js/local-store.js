@@ -8,6 +8,16 @@
   const STORE_SNAPSHOTS="snapshots";
   const STORE_SPACE_MESSAGES="spaceMessages";
   let opening=null;
+  // Serialize account-cache writes against logout cleanup. A quick re-login must
+  // write fresh cache data only after the previous logout purge has completed.
+  const clearingUsers=new Map();
+  async function waitForUserClear(userId){
+    if(!userId)return;
+    while(clearingUsers.has(String(userId))){
+      const pending=clearingUsers.get(String(userId));
+      await pending;
+    }
+  }
 
   function openDB(){
     if(!("indexedDB" in window))return Promise.resolve(null);
@@ -60,7 +70,11 @@
     });
   }
   async function write(storeName,value){
+    const userId=value?.userId;
+    await waitForUserClear(userId);
     const db=await openDB();if(!db)return false;
+    // A logout may have started while openDB() was pending.
+    await waitForUserClear(userId);
     return new Promise((resolve,reject)=>{
       let settled=false;
       const finish=(error,result)=>{
@@ -76,8 +90,10 @@
       tx.onabort=()=>finish(tx.error||new Error("Local write aborted"));
     });
   }
-  async function remove(storeName,key){
+  async function remove(storeName,key,userId=null){
+    await waitForUserClear(userId);
     const db=await openDB();if(!db)return false;
+    await waitForUserClear(userId);
     return new Promise((resolve,reject)=>{
       let settled=false;
       const finish=(error,result)=>{
@@ -101,7 +117,9 @@
   }
   async function saveMessages(userId,contactId,messages,mergeExisting=false){
     if(!userId||!contactId||!Array.isArray(messages))return false;
+    await waitForUserClear(userId);
     const db=await openDB();if(!db)return false;
+    await waitForUserClear(userId);
     const key=keyFor(userId,contactId);
     return new Promise((resolve,reject)=>{
       const tx=db.transaction(STORE_MESSAGES,"readwrite");
@@ -141,7 +159,7 @@
   }
   async function clearDraft(userId,contactId){
     if(!userId||!contactId)return false;
-    return remove(STORE_DRAFTS,keyFor(userId,contactId));
+    return remove(STORE_DRAFTS,keyFor(userId,contactId),userId);
   }
   async function saveTemporaryFile(userId,fileId,blob,ttlMs){
     if(!userId||!fileId||!(blob instanceof Blob))return false;
@@ -155,25 +173,39 @@
     if(record.expiresAt<=Date.now()){await remove(STORE_TEMP,record.key);return null;}
     return record.blob||null;
   }
-  async function clearUser(userId){
-    if(!userId)return false;
-    const db=await openDB();if(!db)return false;
-    const names=[STORE_MESSAGES,STORE_DRAFTS,STORE_TEMP,STORE_SNAPSHOTS,STORE_SPACE_MESSAGES];
-    return new Promise((resolve,reject)=>{
-      const tx=db.transaction(names,"readwrite");
-      for(const name of names){
-        const request=tx.objectStore(name).openCursor();
-        request.onsuccess=()=>{
-          const cursor=request.result;
-          if(!cursor)return;
-          if(String(cursor.value?.userId)===String(userId))cursor.delete();
-          cursor.continue();
-        };
+  function clearUser(userId){
+    if(!userId)return Promise.resolve(false);
+    const id=String(userId);
+    const previous=clearingUsers.get(id);
+    let release;
+    const gate=new Promise(resolve=>{release=resolve;});
+    clearingUsers.set(id,gate);
+    return (async()=>{
+      try{
+        // Queue repeated cleanup operations for the same account.
+        if(previous)await previous;
+        const db=await openDB();if(!db)return false;
+        const names=[STORE_MESSAGES,STORE_DRAFTS,STORE_TEMP,STORE_SNAPSHOTS,STORE_SPACE_MESSAGES];
+        return await new Promise((resolve,reject)=>{
+          const tx=db.transaction(names,"readwrite");
+          for(const name of names){
+            const request=tx.objectStore(name).openCursor();
+            request.onsuccess=()=>{
+              const cursor=request.result;
+              if(!cursor)return;
+              if(String(cursor.value?.userId)===id)cursor.delete();
+              cursor.continue();
+            };
+          }
+          tx.oncomplete=()=>resolve(true);
+          tx.onerror=()=>reject(tx.error||new Error("Local account cleanup failed"));
+          tx.onabort=()=>reject(tx.error||new Error("Local account cleanup aborted"));
+        });
+      }finally{
+        if(clearingUsers.get(id)===gate)clearingUsers.delete(id);
+        release();
       }
-      tx.oncomplete=()=>resolve(true);
-      tx.onerror=()=>reject(tx.error||new Error("Local account cleanup failed"));
-      tx.onabort=()=>reject(tx.error||new Error("Local account cleanup aborted"));
-    });
+    })();
   }
   async function getSnapshot(userId,kind){
     if(!userId||!kind)return null;

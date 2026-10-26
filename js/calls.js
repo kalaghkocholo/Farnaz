@@ -224,7 +224,7 @@ async function startCall(type){
       try{await getClient().from("call_sessions").update({status:"ended"}).eq("id",data.id);}catch(_){}
       return;
     }
-    if(activeCall)return;
+    if(activeCall){try{await getClient().from("call_sessions").update({status:"ended"}).eq("id",data.id);}catch(_){}return;}
     activeCall={session:data,role:"caller",otherId:receiverId,signalChannel:null,pc:null,localStream:null,pendingCandidates:[],timeout:null};
     startedCall=activeCall;
     byId("farnazCallHangup").hidden=false;

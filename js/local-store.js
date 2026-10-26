@@ -148,6 +148,12 @@
       const store=tx.objectStore(STORE_MESSAGES);
       const request=store.get(key);
       request.onsuccess=()=>{
+        // A logout may begin while the IndexedDB read is pending. Abort this
+        // transaction before it can write any stale account cache data.
+        if(!generationIsCurrent(userId,generation)){
+          try{tx.abort();}catch(_){}
+          return;
+        }
         const uniqueMessages=new Map();
         if(mergeExisting&&Array.isArray(request.result?.messages)){
           for(const message of request.result.messages){if(message?.id)uniqueMessages.set(String(message.id),message);}
@@ -165,7 +171,10 @@
       request.onerror=()=>{try{tx.abort();}catch(_){};reject(request.error||new Error("Local message cache read failed"));};
       tx.oncomplete=()=>resolve(true);
       tx.onerror=()=>reject(tx.error||new Error("Local message cache write failed"));
-      tx.onabort=()=>reject(tx.error||new Error("Local message cache write aborted"));
+      tx.onabort=()=>{
+        if(!generationIsCurrent(userId,generation)){resolve(false);return;}
+        reject(tx.error||new Error("Local message cache write aborted"));
+      };
     });
   }
   async function getDraft(userId,contactId){

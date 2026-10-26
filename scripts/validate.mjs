@@ -326,6 +326,9 @@ const authChecks = [
 
   [sources["js/calls.js"].includes("let signedInUserId=null,inboxChannel=null,activeCall=null,userSwitchSequence=0,callStartInProgress=false;") &&
    sources["js/calls.js"].includes("local call teardown is complete") && sources["js/calls.js"].includes("Call hangup signal:") &&
+   sources["js/calls.js"].includes("new Promise(resolve=>setTimeout(resolve,1500))") &&
+   sources["js/calls.js"].includes("new Promise(resolve=>setTimeout(resolve,1200))") &&
+   sources["js/calls.js"].indexOf("call.pc.close()") < sources["js/calls.js"].indexOf("client.removeChannel(call.signalChannel)") &&
    sources["js/calls.js"].includes("if(request!==userSwitchSequence)return;") &&
    sources["js/calls.js"].includes("const call=activeCall;") &&
    sources["js/calls.js"].includes("await flushPendingCandidates(call);") && sources["js/calls.js"].includes("if(activeCall){try{await getClient().from(\"call_sessions\").update({status:\"ended\"}).eq(\"id\",data.id);}catch(_){}return;}"),

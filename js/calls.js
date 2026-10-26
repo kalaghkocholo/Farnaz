@@ -195,32 +195,56 @@ async function startCall(type){
   if(!signedInUserId||!currentUser){alert(tr("برای تماس ابتدا وارد حساب شو.","Sign in before starting a call."));return;}
   if(!currentChatUser?.user_id){alert(tr("تماس گروهی هنوز فعال نشده؛ فعلاً از گفت‌وگوی خصوصی تماس بگیر.","Group calls are not enabled yet. Start a call from a private chat."));return;}
   if(!navigator.mediaDevices?.getUserMedia||!window.RTCPeerConnection){alert(tr("این مرورگر امکان تماس WebRTC را ندارد.","This browser does not support WebRTC calls."));return;}
-  if(activeCall){alert(tr("یک تماس در حال اجراست.","A call is already in progress."));return;}
-  const receiverId=String(currentChatUser.user_id);
-  if(receiverId===String(signedInUserId))return;
+  if(activeCall||callStartInProgress){alert(tr("یک تماس در حال شروع یا اجراست.","A call is already starting or active."));return;}
+  const initiatingUserId=String(signedInUserId),receiverId=String(currentChatUser.user_id);
+  if(receiverId===initiatingUserId)return;
+  callStartInProgress=true;
+  let startedCall=null;
   try{
-    const {data:blocked,error}=await getClient().from("blocked_contacts").select("blocked_user_id").eq("blocker_id",signedInUserId).eq("blocked_user_id",receiverId).maybeSingle();
-    if(error)throw error;
+    const {data:blocked,error:blockError}=await getClient().from("blocked_contacts").select("blocked_user_id").eq("blocker_id",initiatingUserId).eq("blocked_user_id",receiverId).maybeSingle();
+    if(String(signedInUserId)!==initiatingUserId||String(currentUser?.id||"")!==initiatingUserId)return;
+    if(String(currentChatUser?.user_id||"")!==receiverId)return;
+    if(activeCall)return;
+    if(blockError)throw blockError;
     if(blocked){alert(tr("این مخاطب را مسدود کرده‌ای؛ برای تماس ابتدا مسدودسازی را بردار.","This contact is blocked. Unblock them before calling."));return;}
-  }catch(error){alert(tr("وضعیت مسدودسازی بررسی نشد: ","Could not verify block status: ")+error.message);return;}
-  showDialog(type==="video"?tr("تماس تصویری","Video call"):tr("تماس صوتی","Audio call"),tr("در حال شروع تماس…","Starting call…"));
-  try{
-    const {data,error}=await getClient().from("call_sessions").insert({caller_id:signedInUserId,receiver_id:receiverId,call_type:type,status:"ringing"}).select("*").single();
+    showDialog(type==="video"?tr("تماس تصویری","Video call"):tr("تماس صوتی","Audio call"),tr("در حال شروع تماس…","Starting call…"));
+    const {data,error}=await getClient().from("call_sessions").insert({caller_id:initiatingUserId,receiver_id:receiverId,call_type:type,status:"ringing"}).select("*").single();
     if(error)throw error;
+    if(String(signedInUserId)!==initiatingUserId||String(currentUser?.id||"")!==initiatingUserId||String(currentChatUser?.user_id||"")!==receiverId){
+      try{await getClient().from("call_sessions").update({status:"ended"}).eq("id",data.id);}catch(_){}
+      return;
+    }
+    if(activeCall)return;
     activeCall={session:data,role:"caller",otherId:receiverId,signalChannel:null,pc:null,localStream:null,pendingCandidates:[],timeout:null};
+    startedCall=activeCall;
     byId("farnazCallHangup").hidden=false;
     await preparePeer(data,"caller");
-    activeCall.timeout=setTimeout(async()=>{
-      if(!activeCall||activeCall.session.id!==data.id||activeCall.answered||activeCall.pc?.connectionState==="connected")return;
-      try{await sendSignal("hangup");await getClient().from("call_sessions").update({status:"missed"}).eq("id",data.id);}catch(e){console.warn("Missed call status:",e);}
-      await cleanupCall(false);showDialog(tr("تماس بی‌پاسخ","Missed call"),tr("پاسخی دریافت نشد.","No answer received."));
-      setTimeout(()=>{const d=byId("farnazCallDialog");if(d)d.hidden=true;},1800);
+    if(activeCall!==startedCall)return;
+    startedCall.timeout=setTimeout(async()=>{
+      if(activeCall!==startedCall||startedCall.answered||startedCall.pc?.connectionState==="connected")return;
+      try{
+        await sendSignal("hangup");
+        if(activeCall!==startedCall)return;
+        await getClient().from("call_sessions").update({status:"missed"}).eq("id",data.id);
+      }catch(e){console.warn("Missed call status:",e);}
+      if(activeCall!==startedCall)return;
+      await cleanupCall(false);
+      if(activeCall)return;
+      showDialog(tr("تماس بی‌پاسخ","Missed call"),tr("پاسخی دریافت نشد.","No answer received."));
+      setTimeout(()=>{const d=byId("farnazCallDialog");if(d&&!activeCall)d.hidden=true;},1800);
     },45000);
   }catch(e){
-    console.error("Start call:",e);try{if(activeCall?.session?.id)await getClient().from("call_sessions").update({status:"ended"}).eq("id",activeCall.session.id);}catch(_){}await cleanupCall(false);
-    setCallStatus(tr("تماس شروع نشد: ","Call could not start: ")+e.message);
-    byId("farnazCallHangup").hidden=false;
-  }
+    if(startedCall&&activeCall!==startedCall){
+      if(!activeCall)setCallStatus(tr("تماس لغو شد.","Call was cancelled."));
+      return;
+    }
+    console.error("Start call:",e);
+    if(startedCall&&activeCall===startedCall){
+      try{await getClient().from("call_sessions").update({status:"ended"}).eq("id",startedCall.session.id);}catch(_){}
+      if(activeCall===startedCall)await cleanupCall(false);
+    }
+    if(!activeCall){setCallStatus(tr("تماس شروع نشد: ","Call could not start: ")+e.message);byId("farnazCallHangup").hidden=true;}
+  }finally{callStartInProgress=false;}
 }
 async function setUser(userId){
   const request=++userSwitchSequence,next=userId?String(userId):null;

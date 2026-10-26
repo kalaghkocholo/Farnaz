@@ -198,13 +198,13 @@ for (const path of ["js/local-store.js", "js/core.js", "js/chat-menu-v5.js", "js
 // Keep shell cache and versioned local-store assets synchronized after cache behavior changes.
 const coreSource = sources["js/core.js"];
 const chatSource = sources["js/chat-menu-v5.js"];
-if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v128"') || !sources["service-worker.js"].includes('core.js?v=20261026-6') || !sources["service-worker.js"].includes('local-store.js?v=20261026-1')) {
+if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v129"') || !sources["service-worker.js"].includes('core.js?v=20261026-7') || !sources["service-worker.js"].includes('local-store.js?v=20261026-1')) {
   errors.push("service-worker.js must use the current shell cache and core asset versions");
 }
 const loaderChecks = [
   [html.includes('script.src="./js/supabase-sdk.js"') && html.includes('script.onload=()=>{') && html.includes("loadLocalScripts();"),
     "index.html must wait for the local Supabase SDK before loading the app core"],
-  [html.includes('core.src="./js/core.js?v=20261026-6"') && html.includes("core.onload=()=>{") && html.includes("core.onerror=()=>{"),
+  [html.includes('core.src="./js/core.js?v=20261026-7"') && html.includes("core.onload=()=>{") && html.includes("core.onerror=()=>{"),
     "index.html must handle both successful and failed core-script loading"],
   [html.includes("script.onload=loadNextFeature;") && html.includes("if(typeof window.FarnazBoot===\"function\")window.FarnazBoot();"),
     "index.html must load feature scripts sequentially and boot only after the loader sequence"],
@@ -265,6 +265,8 @@ const authChecks = [
     "js/core.js must show profile retry progress instead of leaving the profile status apparently frozen"],
   [coreSource.includes("could not restore your saved session") && coreSource.includes("setConnectionBanner("),
     "js/core.js must visibly report a failed saved-session restore"],
+  [coreSource.includes("let preferencesLoaded=true;") && coreSource.includes("preferencesLoaded=false;") && coreSource.includes("return preferencesLoaded;"),
+    "js/core.js must not report inbox recovery as successful when server-side conversation preferences failed"],
   [coreSource.includes("const recoveryUserId=String(currentUser.id);") &&
    coreSource.includes("const inboxRefreshed=await refreshConversationList();") &&
    coreSource.includes("if(inboxRefreshed===false)throw new Error") &&

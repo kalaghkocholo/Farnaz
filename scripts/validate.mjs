@@ -259,7 +259,7 @@ const authChecks = [
     "js/core.js must avoid duplicate inbox/contact refreshes during sign-in and saved-session restoration"],
   [sources["js/local-store.js"].includes("const clearingUsers=new Map()") && sources["js/local-store.js"].includes("await waitForUserClear(userId)") && sources["js/local-store.js"].includes("Queue repeated cleanup operations for the same account") && sources["js/local-store.js"].includes("function clearUser(userId)") && sources["js/local-store.js"].includes("Local account cleanup timed out") && sources["js/local-store.js"].includes("remove(STORE_TEMP,record.key,userId)"),
     "js/local-store.js must serialize per-user cache writes with logout cleanup to prevent a quick re-login from losing new cache data"],
-  [coreSource.includes('retryRead("create current user profile"') && coreSource.includes('withTimeout(operation(),timeoutMs,label)') && coreSource.includes('timeoutMs=9000'),
+  [coreSource.includes('retryRead("create current user profile"') && coreSource.includes('withTimeout(operation(),timeoutMs,label)') && coreSource.includes('timeoutMs=16000'),
     "js/core.js must bound the initial profile creation request"],
   [coreSource.includes('label==="current user profile"||label==="create current user profile"') && coreSource.includes('Profile connection interrupted; retrying automatically…') && coreSource.includes('ارتباط پروفایل قطع شده؛ تلاش مجدد خودکار…'),
     "js/core.js must show profile retry progress instead of leaving the profile status apparently frozen"],

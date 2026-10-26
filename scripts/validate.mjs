@@ -242,6 +242,11 @@ const authChecks = [
     "js/core.js must not silently hide failed inbox/contact initialization after login or session restore"],
   [chatSource.includes("window.loadPrivateMessages") || chatSource.includes("loadPrivateMessages"),
     "js/chat-menu-v5.js must retain the explicit private-message loader"],
+  [chatSource.includes("const subscriptionReady=new Promise") &&
+   chatSource.includes("await subscriptionReady") &&
+   chatSource.includes("},12000);") &&
+   chatSource.includes("client.removeChannel(channel)"),
+    "js/chat-menu-v5.js must wait for confirmed Realtime subscription and clean up failed setup"],
 ];
 for (const [passed, message] of authChecks) {
   if (!passed) errors.push(message);

@@ -488,7 +488,7 @@ document.addEventListener("click",event=>{
   const menu=$("attachmentMenu"),button=$("attachmentMenuButton");
   if(menu&&!menu.hidden&&!menu.contains(event.target)&&!button.contains(event.target))toggleAttachmentMenu(false);
 });
-function navigate(pageId){
+function navigate(pageId,options={}){
   if(!currentUser){openAuth();return;}
   if(!$(pageId))return;
   if(pageId==="chatPage"&&!currentChatUser)return;
@@ -506,8 +506,10 @@ function navigate(pageId){
   if(pageId==="chatsPage")applyConversationSearch();
   if(pageId!=="chatsPage")toggleNewChatPopover(false);
   if(pageId!=="contactsPage")toggleContactSearch(false);
-  if(pageId==="chatsPage")refreshConversationList();
-  if(pageId==="contactsPage")refreshSavedContacts();
+  if(options.refreshData!==false){
+    if(pageId==="chatsPage")refreshConversationList();
+    if(pageId==="contactsPage")refreshSavedContacts();
+  }
   window.scrollTo({top:0,behavior:"instant"});
 }
 function backFromChat(){dismissMessageMenus();exitMessageSelection();cancelReply();cancelMessageEdit();navigate(previousPage==="contactsPage"?"contactsPage":"chatsPage");}
@@ -796,16 +798,7 @@ function showGuest(){
 }
 
 
-window.addEventListener("farnaz-auth-user",event=>{
-  const userId=event.detail?.userId;
-  if(!userId)return;
-  setTimeout(()=>{
-    if(currentUser?.id!==userId)return;
-    if(document.getElementById("chatsPage")?.classList.contains("active"))refreshConversationList();
-    if(document.getElementById("contactsPage")?.classList.contains("active"))refreshSavedContacts();
-  },400);
-});
-
+/* Auth entry points own the initial inbox/contact refresh; do not schedule a duplicate refresh here. */
 let farnazPresenceStartPromise=null,farnazPresenceStartUserId=null;
 async function startFarnazPresence(forceRestart=false){
  if(!currentUser)return;
@@ -1809,7 +1802,7 @@ async function findRecipient(event){
         // reopen the form and erase the email/password immediately after login.
         currentUser=authenticatedUser;
         closeAuth();
-        navigate("chatsPage");
+        navigate("chatsPage",{refreshData:false});
         // Authentication has succeeded. Keep profile and inbox initialization
         // outside the authentication error path so they cannot undo a valid login.
         setStatus("authStatus","");
@@ -1883,7 +1876,7 @@ async function findRecipient(event){
       currentUser=session.user;
       document.body.dataset.authState="authenticated";
       closeAuth();
-      navigate("chatsPage");
+      navigate("chatsPage",{refreshData:false});
       setConnectionBanner(english?"Restoring your session…":"در حال بازیابی نشست ورود…");
       // Profile loading is independent; it must not hold session restoration.
       void showUser(session.user);

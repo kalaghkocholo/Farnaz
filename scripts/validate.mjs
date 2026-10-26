@@ -202,14 +202,14 @@ if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v143"
   errors.push("service-worker.js must use the current shell cache and core asset versions");
 }
 const loaderChecks = [
-  [html.includes('script.src="./js/supabase-sdk.js"') && html.includes('script.onload=()=>{') && html.includes("loadLocalScripts();"),
+  [html.includes('script.src="./js/supabase-sdk.js"') && html.includes("watchScript(script,()=>{") && html.includes("loadLocalScripts();"),
     "index.html must wait for the local Supabase SDK before loading the app core"],
-  [html.includes('core.src="./js/core.js?v=20261026-11"') && html.includes("core.onload=()=>{") && html.includes("core.onerror=()=>{"),
-    "index.html must handle both successful and failed core-script loading"],
-  [html.includes("script.onload=loadNextFeature;") && html.includes("if(typeof window.FarnazBoot===\"function\")window.FarnazBoot();"),
+  [html.includes('core.src="./js/core.js?v=20261026-11"') && html.includes("watchScript(core,()=>{") && html.includes("بارگذاری هستهٔ برنامه ناموفق بود یا بیش از حد طول کشید"),
+    "index.html must handle successful, failed, and stalled core-script loading"],
+  [html.includes("watchScript(script,loadNextFeature,()=>{") && html.includes("featureScripts[featureIndex++]") && html.includes('if(typeof window.FarnazBoot==="function")window.FarnazBoot();'),
     "index.html must load feature scripts sequentially and boot only after the loader sequence"],
-  [html.includes('script.onerror=()=>{') && html.includes("window.FARNAZ_APP_LOAD_FAILED=true;"),
-    "index.html must report a failed feature-script load"],
+  [html.includes("بارگذاری بخشی از برنامه ناموفق بود یا بیش از حد طول کشید") && html.includes("window[flag]=true;") && html.includes("SCRIPT_TIMEOUT_MS=20000"),
+    "index.html must report failed or stalled feature-script loads"],
 ];
 for (const [passed, message] of loaderChecks) {
   if (!passed) errors.push(message);

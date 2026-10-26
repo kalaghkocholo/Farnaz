@@ -312,7 +312,7 @@ async function openSpaceInfo(){
   const list=q("spaceMemberList");list.replaceChildren();
   q("spaceMemberHeading").textContent=tr("اعضای گروه","Group members")+" · "+(members||[]).length;
   if(typeof privacySettings==="undefined"||privacySettings.show_space_online_count!==false){
-   try{const presenceRows=await Promise.all((members||[]).map(async member=>{try{const {data,error}=await getClient().rpc("get_farnaz_presence_status",{p_user_id:member.user_id});if(error)return false;const status=Array.isArray(data)?data[0]:data;return !!(status?.can_see_online&&status.is_online);}catch(_){return false;}}));const onlineTotal=presenceRows.filter(Boolean).length;q("spaceMemberHeading").textContent+=" · "+tr("آنلاین ","Online ")+onlineTotal;}catch(_){}
+   try{const presenceRows=await Promise.all((members||[]).map(async member=>{try{const {data,error}=await getClient().rpc("get_farnaz_presence_status",{p_user_id:member.user_id});if(error)return false;const status=Array.isArray(data)?data[0]:data;return !!(status?.can_see_online&&status.is_online);}catch(_){return false;}}));if(!isCurrent())return;const onlineTotal=presenceRows.filter(Boolean).length;q("spaceMemberHeading").textContent+=" · "+tr("آنلاین ","Online ")+onlineTotal;}catch(_){}
   }
   for(const member of members||[]){
    const row=document.createElement("div");row.className="space-member-row";

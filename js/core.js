@@ -753,6 +753,9 @@ async function showUser(user){
     try{await window.FarnazLocalStore?.saveSnapshot(user.id,"profile",profile);}catch(cacheError){console.warn("Cached profile save:",cacheError);}
     setStatus("profileStatus",english?"Profile loaded.":"پروفایل بارگذاری شد.");
   }catch(e){
+    // Ignore a late profile failure after logout or a newer account/profile request.
+    // Otherwise it can overwrite the cleared guest UI with a stale loading/error status.
+    if(request!==profileRequestNumber||currentUser?.id!==user.id)return;
     console.error("Profile read:",e);
     if(cachedProfile){
       setStatus("profileStatus",english?"Showing saved profile; server refresh failed.":"پروفایل ذخیره‌شده نمایش داده می‌شود؛ به‌روزرسانی سرور ناموفق بود.");

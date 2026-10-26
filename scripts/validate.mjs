@@ -198,7 +198,7 @@ for (const path of ["js/local-store.js", "js/core.js", "js/chat-menu-v5.js", "js
 // Keep shell cache and versioned local-store assets synchronized after cache behavior changes.
 const coreSource = sources["js/core.js"];
 const chatSource = sources["js/chat-menu-v5.js"];
-if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v135"') || !sources["service-worker.js"].includes('core.js?v=20261026-10') || !sources["service-worker.js"].includes('local-store.js?v=20261026-1')) {
+if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v136"') || !sources["service-worker.js"].includes('core.js?v=20261026-10') || !sources["service-worker.js"].includes('local-store.js?v=20261026-1')) {
   errors.push("service-worker.js must use the current shell cache and core asset versions");
 }
 const loaderChecks = [
@@ -324,6 +324,7 @@ const authChecks = [
   [sources["js/spaces.js"].includes('const myId=String(currentUser.id),request=++spaceRefreshToken;') &&
    sources["js/spaces.js"].includes('const myId=String(currentUser.id),token=++spaceOpenToken;') &&
    sources["js/spaces.js"].includes('const isCurrent=()=>token===messageLoadToken&&String(currentUser?.id||"")===myId&&String(active?.id||"")===String(id);') &&
+   sources["js/spaces.js"].includes('}catch(e){if(!isCurrent())return;const status=q("spaceMessageStatus");') &&
    sources["js/spaces.js"].includes('spaceOpenToken++;spaceRefreshToken++;messageLoadToken++;'),
     "js/spaces.js must stop stale group/channel loads and subscriptions after account changes"],
 ];

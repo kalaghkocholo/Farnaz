@@ -630,7 +630,7 @@ async function loadMessages(id){
   if(token!==messageLoadToken||active?.id!==id)return;
   list.replaceChildren(fragment);
   if(wasNearBottom)list.scrollTop=list.scrollHeight;
- }catch(e){const status=q("spaceMessageStatus");if(status)status.textContent=tr("دریافت پیام ناموفق بود: ","Could not load posts: ")+(e?.message||String(e)||"Unknown error");}
+ }catch(e){if(!isCurrent())return;const status=q("spaceMessageStatus");if(status)status.textContent=tr("دریافت پیام ناموفق بود: ","Could not load posts: ")+(e?.message||String(e)||"Unknown error");}
 }
 let sendingMessage=false,spaceRecordedVoiceFile=null,spaceRecordingStream=null,spaceMediaRecorder=null,spaceAudioChunks=[],spaceVoiceUrl=null;
 function clearSpaceVoice(){const player=q("spaceVoicePlayer");if(player){player.pause();player.removeAttribute("src");player.load();}if(spaceVoiceUrl){URL.revokeObjectURL(spaceVoiceUrl);spaceVoiceUrl=null;}spaceRecordedVoiceFile=null;q("spaceVoicePreview").hidden=true;}

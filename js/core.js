@@ -296,7 +296,7 @@ function withTimeout(operation,timeoutMs=9000,label="درخواست"){
   });
   return Promise.race([Promise.resolve(operation),timeout]).finally(()=>clearTimeout(timer));
 }
-async function retryRead(label,operation,maxAttempts=2,timeoutMs=9000){
+async function retryRead(label,operation,maxAttempts=2,timeoutMs=16000){
   let lastError;
   for(let attempt=1;attempt<=maxAttempts;attempt++){
     try{
@@ -304,8 +304,8 @@ async function retryRead(label,operation,maxAttempts=2,timeoutMs=9000){
         setConnectionBanner(english?"You are offline. Farnaz will reconnect automatically.":"اتصال اینترنت قطع است؛ فرناز پس از وصل‌شدن خودکار تلاش می‌کند.");
         throw new Error("NETWORK_OFFLINE");
       }
-      // Match the 15-second network-fetch deadline for profile REST requests.
-      // A shorter wrapper timeout abandons the request and can start an overlapping retry.
+      // Supabase REST calls have a 15-second fetch deadline. Keep the default
+      // wrapper deadline longer so retries do not overlap a still-running request.
       const result=await withTimeout(operation(),timeoutMs,label);
       if(result?.error)throw result.error;
       if(Array.isArray(result)){

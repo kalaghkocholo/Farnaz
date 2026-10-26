@@ -317,6 +317,13 @@ async function retryRead(label,operation,maxAttempts=2,timeoutMs=9000){
       lastError=error;
       if(!isTransientError(error)||attempt===maxAttempts)throw error;
       setConnectionBanner(english?"Connection interrupted. Retrying automatically…":"ارتباط موقتاً قطع شده؛ تلاش مجدد خودکار…");
+      // Profile reads can take up to two bounded network attempts. Update the
+      // profile status as soon as a retry starts so the screen never looks frozen.
+      if(label==="current user profile"||label==="create current user profile"){
+        setStatus("profileStatus",english
+          ?"Profile connection interrupted; retrying automatically…"
+          :"ارتباط پروفایل قطع شده؛ تلاش مجدد خودکار…");
+      }
       await recoveryDelay(300*Math.pow(2,attempt-1)+Math.floor(Math.random()*180));
     }
   }

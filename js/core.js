@@ -877,7 +877,9 @@ async function startFarnazPresenceNow(expectedUid){
  try{
   const {data,error}=await client.rpc("get_farnaz_mutual_contact_ids");
   if(error)throw error;
+  if(!currentUser||String(currentUser.id)!==uid||farnazPresenceChannel!==ownChannel)return;
   for(const row of data||[]){
+   if(!currentUser||String(currentUser.id)!==uid||farnazPresenceChannel!==ownChannel)return;
    const contactId=String(row.contact_user_id||"");
    if(!contactId||contactId===uid)continue;
    const ch=client.channel("farnaz-presence:"+contactId,{config:{private:true,presence:{key:contactId}}});

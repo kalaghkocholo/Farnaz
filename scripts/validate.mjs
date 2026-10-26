@@ -237,8 +237,11 @@ const authChecks = [
    coreSource.includes("if(currentUser)return;") &&
    coreSource.includes("Retry transient startup failures before falling back to the guest screen."),
     "js/core.js must prevent late session reads and failures from overriding a completed manual sign-in"],
-  [coreSource.includes('async function logout()') && coreSource.includes('client.auth.signOut({scope:"local"})'),
-    "js/core.js must retain a local-only logout path"],
+  [coreSource.includes('async function logout()') && coreSource.includes('client.auth.signOut({scope:"local"})') &&
+   coreSource.includes('recoveryDelay(5000).then(()=>({timedOut:true}))') &&
+   coreSource.includes('localStorage.removeItem("sb-iemykhluluoymsbqpjsn-auth-token")') &&
+   coreSource.includes('Always return to the guest screen'),
+    "js/core.js must keep local logout bounded and clear the persisted session if auth cleanup stalls"],
   [coreSource.includes('setStatus("profileStatus","");') && coreSource.includes('setConnectionBanner("",false);'),
     "js/core.js must clear stale profile/connection loading status when returning to guest"],
   [coreSource.includes('retryRead("create current user profile"') && coreSource.includes('withTimeout(operation(),timeoutMs,label)') && coreSource.includes('timeoutMs=9000'),

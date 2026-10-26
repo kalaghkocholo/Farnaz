@@ -727,61 +727,76 @@ async function sendMessage(event){
   event.preventDefault();
   if(!currentUser||!currentChatUser){setStatus("sendMessageStatus",english?"Choose a contact first.":"ابتدا مخاطب را انتخاب کن.",true);return;}
   if(mediaRecorder&&mediaRecorder.state==="recording"){setStatus("sendMessageStatus",english?"Stop recording before sending.":"پیش از ارسال، ضبط صدا را متوقف کن.",true);return;}
+  const senderId=String(currentUser.id),receiverId=String(currentChatUser.user_id);
   const input=$("messageText"),body=input.value.trim(),selectedFile=$("attachmentFile").files[0],photoFile=$("photoFile").files[0],cameraFile=$("cameraFile").files[0];
   const file=recordedVoiceFile||selectedFile||photoFile||cameraFile;
   if(!body&&!file&&!editingMessageId)return;
   if(file&&file.size>20*1024*1024){setStatus("sendMessageStatus",english?"Choose a file up to 20 MB.":"حجم فایل باید حداکثر ۲۰ مگابایت باشد.",true);return;}
   if(editingMessageId&&file){setStatus("sendMessageStatus",english?"Remove the attachment before editing a message.":"برای ویرایش پیام، ابتدا پیوست را بردار.",true);return;}
   const button=$("sendMessageButton");button.disabled=true;setStatus("sendMessageStatus",english?"Sending…":"در حال ارسال…");
+  const sameChat=()=>String(currentUser?.id||"")===senderId&&String(currentChatUser?.user_id||"")===receiverId;
   try{
     const {data:s,error:se}=await getClient().auth.getSession();if(se)throw se;
-    if(!s.session||s.session.user.id!==currentUser.id)throw new Error(english?"Session expired. Sign in again.":"نشست منقضی شده؛ دوباره وارد شو.");
-    const client=getClient(),receiverId=currentChatUser.user_id;
+    if(String(currentUser?.id||"")!==senderId||!s.session||String(s.session.user.id)!==senderId)throw new Error(english?"Session changed or expired. Sign in again.":"نشست حساب تغییر کرده یا منقضی شده؛ دوباره وارد شو.");
+    const client=getClient();
     if(!editingMessageId){
-      const {data:blocked,error:blockError}=await client.from("blocked_contacts").select("blocked_user_id").eq("blocker_id",currentUser.id).eq("blocked_user_id",receiverId).maybeSingle();
+      const {data:blocked,error:blockError}=await client.from("blocked_contacts").select("blocked_user_id").eq("blocker_id",senderId).eq("blocked_user_id",receiverId).maybeSingle();
+      if(String(currentUser?.id||"")!==senderId)throw new Error("Account changed while sending.");
       if(blockError)throw blockError;
       if(blocked)throw new Error(english?"This contact is blocked. Unblock them before sending a message.":"این مخاطب را مسدود کرده‌ای؛ برای ارسال پیام ابتدا مسدودسازی را بردار.");
     }
     if(editingMessageId){
-      const {error}=await client.from("messages").update({body,edited_at:new Date().toISOString()}).eq("id",editingMessageId).eq("sender_id",currentUser.id);
-      if(error)throw error;cancelMessageEdit();
+      if(!sameChat())throw new Error("Account or conversation changed while editing.");
+      const {error}=await client.from("messages").update({body,edited_at:new Date().toISOString()}).eq("id",editingMessageId).eq("sender_id",senderId);
+      if(error)throw error;
+      if(!sameChat())return;
+      cancelMessageEdit();
     }else{
       let attachmentPath=null,attachmentName=null,attachmentMime=null,attachmentSize=null;
       const isImage=!!file&&file.type.startsWith("image/");
       if(file){
         const safeName=(file.name||"attachment").replace(/[^a-zA-Z0-9._-]/g,"_").slice(-120)||"attachment";
         const ext=(safeName.split(".").pop()||"bin").toLowerCase().replace(/[^a-z0-9]/g,"")||"bin";
-        attachmentPath=currentUser.id+"/"+crypto.randomUUID()+"."+ext;
+        attachmentPath=senderId+"/"+crypto.randomUUID()+"."+ext;
         const {error:uploadError}=await client.storage.from("chat-attachments").upload(attachmentPath,file,{contentType:file.type||"application/octet-stream",upsert:false});
         if(uploadError)throw uploadError;
+        if(String(currentUser?.id||"")!==senderId)throw new Error("Account changed while uploading; sign in again before sending.");
         attachmentName=safeName;attachmentMime=file.type||"application/octet-stream";attachmentSize=file.size;
       }
-      const isAudio=!!file&&(file.type||"").startsWith("audio/");
-      const row={sender_id:currentUser.id,receiver_id:receiverId,body:body||null,message_type:file?(isImage?"image":"file"):"text",
+      if(String(currentUser?.id||"")!==senderId)throw new Error("Account changed while sending.");
+      const row={sender_id:senderId,receiver_id:receiverId,body:body||null,message_type:file?(isImage?"image":"file"):"text",
         attachment_path:attachmentPath,attachment_name:attachmentName,attachment_mime:attachmentMime,attachment_size:attachmentSize,reply_to_id:replyTarget?.id||null};
-      const {data:sentMessage,error}=await client.from("messages").insert(row).select("id,sender_id,receiver_id,body,created_at,message_type,attachment_path,attachment_name,attachment_mime,reply_to_id,edited_at").single();
-      if(error){if(attachmentPath)await client.storage.from("chat-attachments").remove([attachmentPath]);throw error;}
-      // Append only the new message; avoid rebuilding the entire history and reloading all images.
-      if(sentMessage&&currentChatUser?.user_id===receiverId){
+      const {data:sentMessage,error:sendError}=await client.from("messages").insert(row).select("id,sender_id,receiver_id,body,created_at,message_type,attachment_path,attachment_name,attachment_mime,reply_to_id,edited_at").single();
+      if(sendError){if(attachmentPath)await client.storage.from("chat-attachments").remove([attachmentPath]);throw sendError;}
+      if(String(currentUser?.id||"")!==senderId)return;
+      // Only touch the composer and visible history if the user is still in the
+      // same account and conversation; switching chats must preserve its draft.
+      if(sameChat()&&sentMessage){
         const list=$("messageList");
         list.querySelector(".empty-state")?.remove();
-        list.appendChild(await makeMessageElement(sentMessage,currentUser.id));
-        list.scrollTop=list.scrollHeight;
-        window.FarnazLocalStore?.getMessages(currentUser.id,receiverId)
-          .then(cached=>window.FarnazLocalStore.saveMessages(currentUser.id,receiverId,[...cached,sentMessage]))
-          .catch(cacheError=>console.warn("Could not update message cache:",cacheError));
+        const element=await makeMessageElement(sentMessage,senderId);
+        if(sameChat()){
+          list.appendChild(element);
+          list.scrollTop=list.scrollHeight;
+          window.FarnazLocalStore?.getMessages(senderId,receiverId)
+            .then(cached=>window.FarnazLocalStore.saveMessages(senderId,receiverId,[...cached,sentMessage]))
+            .catch(cacheError=>console.warn("Could not update message cache:",cacheError));
+          cancelReply();if(file&&(file.type||"").startsWith("audio/"))discardRecordedVoice();
+        }
       }
-      cancelReply();if(isAudio)discardRecordedVoice();
     }
-    input.value="";input.style.height="auto";$("attachmentFile").value="";$("cameraFile").value="";$("photoFile").value="";
-    if(window.farnazDraftSaveTimer)clearTimeout(window.farnazDraftSaveTimer);
-    window.FarnazLocalStore?.clearDraft(currentUser.id,currentChatUser?.user_id).catch(cacheError=>console.warn("Could not clear sent draft:",cacheError));
-    setStatus("sendMessageStatus",english?"Message sent.":"پیام ارسال شد.");
-    // Do not reload the chat after sending: the new message was appended above.
+    if(String(currentUser?.id||"")!==senderId)return;
+    if(String(currentChatUser?.user_id||"")===receiverId){
+      input.value="";input.style.height="auto";$("attachmentFile").value="";$("cameraFile").value="";$("photoFile").value="";
+      if(window.farnazDraftSaveTimer)clearTimeout(window.farnazDraftSaveTimer);
+      window.FarnazLocalStore?.clearDraft(senderId,receiverId).catch(cacheError=>console.warn("Could not clear sent draft:",cacheError));
+      setStatus("sendMessageStatus",english?"Message sent.":"پیام ارسال شد.");
+    }
     await refreshConversationList();
   }catch(e){
+    if(String(currentUser?.id||"")!==senderId)return;
     console.error("Send message:",e);
-    setStatus("sendMessageStatus",(english?"Could not send: ":"ارسال پیام ناموفق بود: ")+e.message,true);
+    if(String(currentChatUser?.user_id||"")===receiverId)setStatus("sendMessageStatus",(english?"Could not send: ":"ارسال پیام ناموفق بود: ")+e.message,true);
   }finally{button.disabled=false;}
 }
 $("profileForm").addEventListener("submit",saveProfile);

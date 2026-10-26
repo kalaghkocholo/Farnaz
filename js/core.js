@@ -1858,6 +1858,9 @@ async function findRecipient(event){
         scheduleReconnect();
       }
     }catch(error){
+      // A manual sign-in may have completed while getSession() was pending.
+      // In that case this stale boot-time failure must not switch the UI back to guest.
+      if(currentUser)return;
       // Retry transient startup failures before falling back to the guest screen.
       // getSession() can time out while Safari is waking a suspended PWA.
       const transientRestoreFailure=error?.name==="TimeoutError"||error?.name==="TypeError"||isTransientError(error);

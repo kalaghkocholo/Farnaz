@@ -1834,6 +1834,10 @@ async function findRecipient(event){
       const session=data?.session;
       if(!session?.user){
         document.body.dataset.authState="guest";
+        // Clear the startup banner if an earlier transient restore attempt timed out.
+        // No valid session is a normal guest state, not a connection failure.
+        setConnectionBanner("",false);
+        setStatus("profileStatus","");
         return;
       }
       currentUser=session.user;

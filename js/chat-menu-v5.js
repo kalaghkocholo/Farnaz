@@ -67,7 +67,7 @@ async function toggleMessageReaction(messageId,emoji){
       ?await client.from("message_reactions").delete().eq("message_id",messageId).eq("user_id",currentUser.id)
       :await client.from("message_reactions").upsert({message_id:messageId,user_id:currentUser.id,emoji},{onConflict:"message_id,user_id"});
     if(result.error)throw result.error;
-    await loadMessages(false,true);
+    await loadPrivateMessages(false,true);
   }catch(e){console.error("Message reaction failed:",e);setStatus("sendMessageStatus",(english?"Could not save reaction: ":"ذخیره واکنش ناموفق بود: ")+e.message,true);}
 }
 async function toggleMessagePin(messageId){
@@ -78,11 +78,11 @@ async function toggleMessagePin(messageId){
       ?await client.from("message_pins").delete().eq("message_id",messageId)
       :await client.from("message_pins").insert({message_id:messageId,pinned_by:currentUser.id});
     if(result.error)throw result.error;
-    await loadMessages(false,true);
+    await loadPrivateMessages(false,true);
   }catch(e){console.error("Pin message failed:",e);setStatus("sendMessageStatus",(english?"Could not update pinned message: ":"تغییر سنجاق پیام ناموفق بود: ")+e.message,true);}
 }
 
-async function loadMessages(older=false,preserveScroll=false){
+async function loadPrivateMessages(older=false,preserveScroll=false){
   if(!currentUser||!currentChatUser)return;
   const scrollList=$("messageList");
   const oldScrollTop=scrollList.scrollTop;
@@ -107,7 +107,7 @@ async function loadMessages(older=false,preserveScroll=false){
     setStatus("sendMessageStatus",displayedCachedMessages
       ?(english?"Showing saved messages offline.":"پیام‌های ذخیره‌شده نمایش داده می‌شوند؛ اینترنت قطع است.")
       :(english?"Offline. No saved messages for this chat yet.":"اینترنت قطع است و هنوز پیامی از این گفتگو ذخیره نشده است."),!displayedCachedMessages);
-    return;
+    return false;
   }
   setStatus("sendMessageStatus",english?"Loading messages...":"در حال بارگذاری پیام‌ها...");
   try{
@@ -135,6 +135,10 @@ async function loadMessages(older=false,preserveScroll=false){
       if(!hidden.error)hiddenIds=new Set((hidden.data||[]).map(x=>x.message_id));
       else console.warn("Could not load hidden-message preferences:",hidden.error);
     }catch(hiddenError){console.warn("Could not load hidden-message preferences:",hiddenError);}
+    // The hidden-message read can finish after logout or a chat/account switch.
+    // Re-check before caching anything so a late response cannot repopulate the
+    // previous account's local message store after logout cleanup has started.
+    if(request!==chatRequestNumber||currentUser?.id!==myId||String(currentChatUser?.user_id)!==String(contactId))return;
     const visibleRows=rows.filter(m=>!hiddenIds.has(m.id));
     window.FarnazLocalStore?.saveMessages(myId,contactId,visibleRows,older).catch(cacheError=>console.warn("Could not cache messages:",cacheError));
     await loadMessageDecorations(visibleRows,myId,contactId);
@@ -155,6 +159,7 @@ async function loadMessages(older=false,preserveScroll=false){
     // Keep the older-history control hidden after loading; user must scroll back to the top.
     $("loadOlderButton").hidden=true;
     setStatus("sendMessageStatus","");
+    return true;
   }catch(e){
     console.error("Load messages:",e);
     if(displayedCachedMessages){
@@ -162,6 +167,7 @@ async function loadMessages(older=false,preserveScroll=false){
     }else{
       setStatus("sendMessageStatus",(english?"Could not load messages: ":"دریافت پیام‌ها ناموفق بود: ")+e.message,true);
     }
+    return false;
   }
 }
 async function makeMessageElement(m,myId,fromCache=false){
@@ -306,7 +312,7 @@ async function prependMessages(messages,myId){
 async function loadOlderMessages(){
   if(!messageHasMore)return;
   $("loadOlderButton").hidden=true;
-  await loadMessages(true);
+  await loadPrivateMessages(true);
 }
 function clearMessageActionOverlay(){
   document.querySelectorAll(".message-action-backdrop,.message-action-clone").forEach(node=>node.remove());
@@ -444,7 +450,7 @@ async function deleteMessage(m){
   try{
     if(all){const {error}=await getClient().from("messages").delete().eq("id",m.id).eq("sender_id",currentUser.id);if(error)throw error;}
     else{const {error}=await getClient().from("message_hidden").upsert({user_id:currentUser.id,message_id:m.id},{onConflict:"user_id,message_id"});if(error)throw error;}
-    await loadMessages(false);await refreshConversationList();
+    await loadPrivateMessages(false);await refreshConversationList();
   }catch(e){alert((english?"Delete failed: ":"حذف پیام ناموفق بود: ")+e.message);}
 }
 function toggleMessageSelection(id,item){if(selectedMessageIds.has(id))selectedMessageIds.delete(id);else selectedMessageIds.add(id);item?.classList.toggle("selected",selectedMessageIds.has(id));updateSelectionToolbar();}
@@ -475,7 +481,7 @@ async function deleteSelectedMessages(){
       const {error}=await client.from("message_hidden").upsert(rows,{onConflict:"user_id,message_id"});
       if(error)throw error;
     }
-    exitMessageSelection();await loadMessages(false);await refreshConversationList();
+    exitMessageSelection();await loadPrivateMessages(false);await refreshConversationList();
   }catch(e){alert((english?"Delete failed: ":"حذف ناموفق بود: ")+e.message);}
 }
 async function forwardSelectedMessages(){
@@ -536,7 +542,16 @@ async function subscribeToMessagesNow(){
   await stopMessageSubscription();if(!currentUser)return;
   const myId=currentUser.id,client=getClient();
   messageSubscriptionUserId=String(myId);
-  messageSubscription=client.channel("farnaz-inbox-"+myId)
+  let resolveSubscription,rejectSubscription,subscriptionSettled=false;
+  const subscriptionReady=new Promise((resolve,reject)=>{resolveSubscription=resolve;rejectSubscription=reject;});
+  const subscriptionTimeout=setTimeout(()=>{
+    if(subscriptionSettled)return;
+    subscriptionSettled=true;
+    rejectSubscription(new Error(english
+      ?"Live message channel did not confirm within 12 seconds."
+      :"کانال پیام زنده طی ۱۲ ثانیه اتصال را تأیید نکرد."));
+  },12000);
+  const channel=client.channel("farnaz-inbox-"+myId)
     .on("postgres_changes",{event:"INSERT",schema:"public",table:"messages"},async payload=>{
       if(currentUser?.id!==myId)return;
       const m=payload.new;
@@ -582,11 +597,11 @@ async function subscribeToMessagesNow(){
       if(currentUser?.id!==myId||!currentChatUser||!document.body.classList.contains("chat-mode"))return;
       const row=payload.new||payload.old;if(!row?.message_id)return;
       const item=$("messageList").querySelector('[data-message-id="'+row.message_id+'"]');
-      if(item)loadMessages(false,true);
+      if(item)loadPrivateMessages(false,true);
     })
     .on("postgres_changes",{event:"*",schema:"public",table:"message_pins"},payload=>{
       if(currentUser?.id!==myId||!currentChatUser||!document.body.classList.contains("chat-mode"))return;
-      loadMessages(false,true);
+      loadPrivateMessages(false,true);
     })
     .on("postgres_changes",{event:"DELETE",schema:"public",table:"messages"},payload=>{
       if(currentUser?.id!==myId)return;
@@ -594,19 +609,32 @@ async function subscribeToMessagesNow(){
       const m=payload.old;
       if(m?.id){$("messageList").querySelector('[data-message-id="'+m.id+'"]')?.remove();}
     })
-    .subscribe((status,err)=>{
-      if(status!=="SUBSCRIBED")console.warn("Farnaz inbox realtime status:",status,err?.message||err||"No error details provided");
-      if(status==="SUBSCRIBED"){
-        reconnectAttempts=0;
-        if(reconnectTimer){clearTimeout(reconnectTimer);reconnectTimer=null;}
-        setConnectionBanner("",false);
-        setStatus("inboxStatus",english?"Connected":"متصل");
-      }else if(status==="CHANNEL_ERROR"||status==="TIMED_OUT"||status==="CLOSED"){
-        setConnectionBanner(english?"Live connection interrupted. Reconnecting automatically…":"ارتباط زنده قطع شد؛ در حال اتصال مجدد…");
-        setStatus("inboxStatus",english?"Live updates interrupted; retrying…":"به‌روزرسانی زنده قطع شد؛ تلاش مجدد…");
-        scheduleReconnect();
-      }
-    });
+    ;
+  messageSubscription=channel;
+  channel.subscribe((status,err)=>{
+    if(status!=="SUBSCRIBED")console.warn("Farnaz inbox realtime status:",status,err?.message||err||"No error details provided");
+    if(status==="SUBSCRIBED"){
+      if(!subscriptionSettled){subscriptionSettled=true;clearTimeout(subscriptionTimeout);resolveSubscription();}
+      reconnectAttempts=0;
+      if(reconnectTimer){clearTimeout(reconnectTimer);reconnectTimer=null;}
+      setConnectionBanner("",false);
+      setStatus("inboxStatus",english?"Connected":"متصل");
+    }else if(status==="CHANNEL_ERROR"||status==="TIMED_OUT"||status==="CLOSED"){
+      if(!subscriptionSettled){subscriptionSettled=true;clearTimeout(subscriptionTimeout);rejectSubscription(err||new Error("Realtime channel status: "+status));}
+      setConnectionBanner(english?"Live connection interrupted. Reconnecting automatically…":"ارتباط زنده قطع شد؛ در حال اتصال مجدد…");
+      setStatus("inboxStatus",english?"Live updates interrupted; retrying…":"به‌روزرسانی زنده قطع شد؛ تلاش مجدد…");
+      scheduleReconnect();
+    }
+  });
+  try{
+    await subscriptionReady;
+  }catch(error){
+    clearTimeout(subscriptionTimeout);
+    if(messageSubscription===channel){messageSubscription=null;messageSubscriptionUserId=null;}
+    try{await Promise.race([client.removeChannel(channel),new Promise(resolve=>setTimeout(resolve,1500))]);}
+    catch(cleanupError){console.warn("Failed realtime setup cleanup:",cleanupError);}
+    throw error;
+  }
 }
 function stopAudioRecordingTracks(){
   if(recordingStream){recordingStream.getTracks().forEach(track=>track.stop());recordingStream=null;}
@@ -705,110 +733,79 @@ async function sendMessage(event){
   event.preventDefault();
   if(!currentUser||!currentChatUser){setStatus("sendMessageStatus",english?"Choose a contact first.":"ابتدا مخاطب را انتخاب کن.",true);return;}
   if(mediaRecorder&&mediaRecorder.state==="recording"){setStatus("sendMessageStatus",english?"Stop recording before sending.":"پیش از ارسال، ضبط صدا را متوقف کن.",true);return;}
+  const senderId=String(currentUser.id),receiverId=String(currentChatUser.user_id);
   const input=$("messageText"),body=input.value.trim(),selectedFile=$("attachmentFile").files[0],photoFile=$("photoFile").files[0],cameraFile=$("cameraFile").files[0];
   const file=recordedVoiceFile||selectedFile||photoFile||cameraFile;
   if(!body&&!file&&!editingMessageId)return;
   if(file&&file.size>20*1024*1024){setStatus("sendMessageStatus",english?"Choose a file up to 20 MB.":"حجم فایل باید حداکثر ۲۰ مگابایت باشد.",true);return;}
   if(editingMessageId&&file){setStatus("sendMessageStatus",english?"Remove the attachment before editing a message.":"برای ویرایش پیام، ابتدا پیوست را بردار.",true);return;}
   const button=$("sendMessageButton");button.disabled=true;setStatus("sendMessageStatus",english?"Sending…":"در حال ارسال…");
+  const sameChat=()=>String(currentUser?.id||"")===senderId&&String(currentChatUser?.user_id||"")===receiverId;
+  let pendingUploadPath=null;
   try{
     const {data:s,error:se}=await getClient().auth.getSession();if(se)throw se;
-    if(!s.session||s.session.user.id!==currentUser.id)throw new Error(english?"Session expired. Sign in again.":"نشست منقضی شده؛ دوباره وارد شو.");
-    const client=getClient(),receiverId=currentChatUser.user_id;
+    if(String(currentUser?.id||"")!==senderId||!s.session||String(s.session.user.id)!==senderId)throw new Error(english?"Session changed or expired. Sign in again.":"نشست حساب تغییر کرده یا منقضی شده؛ دوباره وارد شو.");
+    const client=getClient();
     if(!editingMessageId){
-      const {data:blocked,error:blockError}=await client.from("blocked_contacts").select("blocked_user_id").eq("blocker_id",currentUser.id).eq("blocked_user_id",receiverId).maybeSingle();
+      const {data:blocked,error:blockError}=await client.from("blocked_contacts").select("blocked_user_id").eq("blocker_id",senderId).eq("blocked_user_id",receiverId).maybeSingle();
+      if(String(currentUser?.id||"")!==senderId)throw new Error("Account changed while sending.");
       if(blockError)throw blockError;
       if(blocked)throw new Error(english?"This contact is blocked. Unblock them before sending a message.":"این مخاطب را مسدود کرده‌ای؛ برای ارسال پیام ابتدا مسدودسازی را بردار.");
     }
     if(editingMessageId){
-      const {error}=await client.from("messages").update({body,edited_at:new Date().toISOString()}).eq("id",editingMessageId).eq("sender_id",currentUser.id);
-      if(error)throw error;cancelMessageEdit();
+      if(!sameChat())throw new Error("Account or conversation changed while editing.");
+      const {error}=await client.from("messages").update({body,edited_at:new Date().toISOString()}).eq("id",editingMessageId).eq("sender_id",senderId);
+      if(error)throw error;
+      if(!sameChat())return;
+      cancelMessageEdit();
     }else{
       let attachmentPath=null,attachmentName=null,attachmentMime=null,attachmentSize=null;
       const isImage=!!file&&file.type.startsWith("image/");
       if(file){
         const safeName=(file.name||"attachment").replace(/[^a-zA-Z0-9._-]/g,"_").slice(-120)||"attachment";
         const ext=(safeName.split(".").pop()||"bin").toLowerCase().replace(/[^a-z0-9]/g,"")||"bin";
-        attachmentPath=currentUser.id+"/"+crypto.randomUUID()+"."+ext;
+        attachmentPath=senderId+"/"+crypto.randomUUID()+"."+ext;pendingUploadPath=attachmentPath;
         const {error:uploadError}=await client.storage.from("chat-attachments").upload(attachmentPath,file,{contentType:file.type||"application/octet-stream",upsert:false});
         if(uploadError)throw uploadError;
+        if(String(currentUser?.id||"")!==senderId)throw new Error("Account changed while uploading; sign in again before sending.");
         attachmentName=safeName;attachmentMime=file.type||"application/octet-stream";attachmentSize=file.size;
       }
-      const isAudio=!!file&&(file.type||"").startsWith("audio/");
-      const row={sender_id:currentUser.id,receiver_id:receiverId,body:body||null,message_type:file?(isImage?"image":"file"):"text",
+      if(String(currentUser?.id||"")!==senderId)throw new Error("Account changed while sending.");
+      const row={sender_id:senderId,receiver_id:receiverId,body:body||null,message_type:file?(isImage?"image":"file"):"text",
         attachment_path:attachmentPath,attachment_name:attachmentName,attachment_mime:attachmentMime,attachment_size:attachmentSize,reply_to_id:replyTarget?.id||null};
-      const {data:sentMessage,error}=await client.from("messages").insert(row).select("id,sender_id,receiver_id,body,created_at,message_type,attachment_path,attachment_name,attachment_mime,reply_to_id,edited_at").single();
-      if(error){if(attachmentPath)await client.storage.from("chat-attachments").remove([attachmentPath]);throw error;}
-      // Append only the new message; avoid rebuilding the entire history and reloading all images.
-      if(sentMessage&&currentChatUser?.user_id===receiverId){
+      const {data:sentMessage,error:sendError}=await client.from("messages").insert(row).select("id,sender_id,receiver_id,body,created_at,message_type,attachment_path,attachment_name,attachment_mime,reply_to_id,edited_at").single();
+      if(sendError){if(attachmentPath){await client.storage.from("chat-attachments").remove([attachmentPath]);pendingUploadPath=null;}throw sendError;}
+      pendingUploadPath=null;
+      if(String(currentUser?.id||"")!==senderId)return;
+      // Only touch the composer and visible history if the user is still in the
+      // same account and conversation; switching chats must preserve its draft.
+      if(sameChat()&&sentMessage){
         const list=$("messageList");
         list.querySelector(".empty-state")?.remove();
-        list.appendChild(await makeMessageElement(sentMessage,currentUser.id));
-        list.scrollTop=list.scrollHeight;
-        window.FarnazLocalStore?.getMessages(currentUser.id,receiverId)
-          .then(cached=>window.FarnazLocalStore.saveMessages(currentUser.id,receiverId,[...cached,sentMessage]))
-          .catch(cacheError=>console.warn("Could not update message cache:",cacheError));
+        const element=await makeMessageElement(sentMessage,senderId);
+        if(sameChat()){
+          list.appendChild(element);
+          list.scrollTop=list.scrollHeight;
+          window.FarnazLocalStore?.getMessages(senderId,receiverId)
+            .then(cached=>window.FarnazLocalStore.saveMessages(senderId,receiverId,[...cached,sentMessage]))
+            .catch(cacheError=>console.warn("Could not update message cache:",cacheError));
+          cancelReply();if(file&&(file.type||"").startsWith("audio/"))discardRecordedVoice();
+        }
       }
-      cancelReply();if(isAudio)discardRecordedVoice();
     }
-    input.value="";input.style.height="auto";$("attachmentFile").value="";$("cameraFile").value="";$("photoFile").value="";
-    if(window.farnazDraftSaveTimer)clearTimeout(window.farnazDraftSaveTimer);
-    window.FarnazLocalStore?.clearDraft(currentUser.id,currentChatUser?.user_id).catch(cacheError=>console.warn("Could not clear sent draft:",cacheError));
-    setStatus("sendMessageStatus",english?"Message sent.":"پیام ارسال شد.");
-    // Do not reload the chat after sending: the new message was appended above.
+    if(String(currentUser?.id||"")!==senderId)return;
+    if(String(currentChatUser?.user_id||"")===receiverId){
+      input.value="";input.style.height="auto";$("attachmentFile").value="";$("cameraFile").value="";$("photoFile").value="";
+      if(window.farnazDraftSaveTimer)clearTimeout(window.farnazDraftSaveTimer);
+      window.FarnazLocalStore?.clearDraft(senderId,receiverId).catch(cacheError=>console.warn("Could not clear sent draft:",cacheError));
+      setStatus("sendMessageStatus",english?"Message sent.":"پیام ارسال شد.");
+    }
     await refreshConversationList();
   }catch(e){
+    if(String(currentUser?.id||"")!==senderId){if(pendingUploadPath)try{await getClient().storage.from("chat-attachments").remove([pendingUploadPath]);}catch(cleanupError){console.warn("Could not clean up abandoned attachment:",cleanupError);}return;}
     console.error("Send message:",e);
-    setStatus("sendMessageStatus",(english?"Could not send: ":"ارسال پیام ناموفق بود: ")+e.message,true);
+    if(String(currentChatUser?.user_id||"")===receiverId)setStatus("sendMessageStatus",(english?"Could not send: ":"ارسال پیام ناموفق بود: ")+e.message,true);
   }finally{button.disabled=false;}
-}
-function authErrorMessage(error,mode){
-  const message=String(error?.message||error||"").toLowerCase();
-  const code=String(error?.code||"").toLowerCase();
-  const status=Number(error?.status||error?.statusCode||0);
-  if(/invalid login credentials|invalid_credentials|email or password/.test(message+" "+code)){
-    return english
-      ?"Email or password is incorrect. Check both fields, or use Forgot password."
-      :"ایمیل یا رمز عبور صحیح نیست. هر دو را بررسی کن یا از گزینهٔ «فراموشی رمز عبور» استفاده کن.";
-  }
-  if(/email not confirmed|email_not_confirmed/.test(message+" "+code)){
-    return english
-      ?"Your email has not been confirmed. Open the confirmation link sent to your email, then sign in."
-      :"ایمیلت هنوز تأیید نشده است. لینک تأیید ارسال‌شده به ایمیلت را باز کن و سپس وارد شو.";
-  }
-  if(/user already registered|already registered|email_exists/.test(message+" "+code)){
-    return english
-      ?"An account with this email already exists. Switch to Sign in."
-      :"با این ایمیل قبلاً حساب ساخته شده است؛ گزینهٔ «ورود» را انتخاب کن.";
-  }
-  if(/password should be at least|password.*too short|weak_password/.test(message+" "+code)){
-    return english
-      ?"The password does not meet the minimum length requirement."
-      :"رمز عبور کوتاه‌تر از حداقل طول مجاز است.";
-  }
-  if(status===429||/rate limit|too many requests/.test(message)){
-    return english
-      ?"Too many attempts. Wait a little and try again."
-      :"تعداد تلاش‌ها زیاد شده است؛ کمی صبر کن و دوباره تلاش کن.";
-  }
-  if(/network|fetch failed|failed to fetch|load failed|timeout|timed out|offline/.test(message)){
-    return english
-      ?"Connection problem. Check your internet connection and try again."
-      :"ارتباط با سرور برقرار نشد؛ اینترنت را بررسی کن و دوباره تلاش کن.";
-  }
-  if(/invalid email|email address is invalid/.test(message)){
-    return english
-      ?"The email address format is invalid. Check the address."
-      :"قالب ایمیل صحیح نیست؛ آدرس ایمیل را بررسی کن.";
-  }
-  return english
-    ?"We couldn't complete the request. Please check your details and try again."
-    :"درخواست انجام نشد؛ اطلاعات را بررسی کن و دوباره تلاش کن.";
-}
-function startCall(type){
-  alert(english?
-    (type==="video"?"Video calling is not configured yet.":"Audio calling is not configured yet."):
-    (type==="video"?"تماس تصویری هنوز راه‌اندازی نشده است.":"تماس صوتی هنوز راه‌اندازی نشده است."));
 }
 $("profileForm").addEventListener("submit",saveProfile);
 $("recipientForm").addEventListener("submit",findRecipient);

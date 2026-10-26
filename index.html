@@ -13,9 +13,7 @@
 <link rel="apple-touch-icon" href="./farnaz-icon.svg?v=20261024-4">
 <meta name="description" content="فرناز؛ ارتباطی نزدیک‌تر، در هر کجا.">
 <title>فرناز | Farnaz</title>
-<link rel="preload" href="./js/core.js?v=20261025-86" as="script">
-<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link rel="preconnect" href="https://unpkg.com" crossorigin>
+<link rel="preload" href="./js/core.js?v=20261026-15" as="script">
 <link rel="preconnect" href="https://iemykhluluoymsbqpjsn.supabase.co" crossorigin>
 <style>
 :root{--bg:#101828;--panel:#172237;--panel2:#1d2b42;--border:#2b3a50;--mint:#50e3c2;--muted:#aab5c7;--white:#f8fafc}
@@ -40,8 +38,8 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
 .welcome-secondary{width:100%;max-width:300px;margin-top:9px;padding:12px;border:1px solid var(--border);border-radius:14px;background:transparent;color:var(--white);font-size:13px}
 @media(max-width:360px){.welcome-shell{min-height:62dvh;padding:24px 15px 20px}.welcome-shell h2{font-size:22px}.welcome-mark{width:86px;height:86px;border-radius:25px}.welcome-mark img{width:73px;height:73px}}
 </style>
-<link rel="stylesheet" href="./styles.css?v=20261025-49" media="print" onload="this.onload=null;this.media='all'">
-<noscript><link rel="stylesheet" href="./styles.css?v=20261025-49"></noscript>
+<link rel="stylesheet" href="./styles.css?v=20261025-50" media="print" onload="this.onload=null;this.media='all'">
+<noscript><link rel="stylesheet" href="./styles.css?v=20261025-50"></noscript>
 <link rel="stylesheet" href="./spaces.css?v=20261025-29" media="print" onload="this.onload=null;this.media='all'">
 </head>
 <body data-auth-state="guest">
@@ -362,79 +360,81 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
   </div>
 </div>
 
-<script src="./js/local-store.js?v=20261025-4"></script>
+<script src="./js/local-store.js?v=20261026-3"></script>
 <script>
 (function(){
-  function showSdkError(message){
-    window.FARNAZ_SUPABASE_LOAD_FAILED=true;
+  const SCRIPT_TIMEOUT_MS=20000;
+  function watchScript(script,onload,onerror,timeoutMs=SCRIPT_TIMEOUT_MS){
+    let settled=false;
+    const finish=(callback,error)=>{
+      if(settled)return;
+      settled=true;
+      clearTimeout(timer);
+      callback(error);
+    };
+    const timer=setTimeout(()=>{
+      if(settled)return;
+      settled=true;
+      script.remove();
+      onerror(new Error("Script load timed out: "+script.src));
+    },timeoutMs);
+    script.onload=()=>finish(onload);
+    script.onerror=()=>finish(onerror,new Error("Script failed to load: "+script.src));
+  }
+  function showLoadError(message,flag){
+    window[flag]=true;
     const status=document.getElementById("authStatus");
     if(status)status.textContent=message;
   }
-
   function loadLocalScripts(){
     const core=document.createElement("script");
-    core.src="./js/core.js?v=20261025-85";
-    core.onload=()=>{
-      // Preserve the module dependency order. Loading these modules in parallel
-      // allowed spaces/calls to initialize before chat navigation/auth handlers.
+    core.src="./js/core.js?v=20261026-15";
+    watchScript(core,()=>{
+      // Feature modules depend on core and must remain ordered. A stalled
+      // optional module must not hold session restoration forever.
       const featureScripts=[
-        "./js/chat-menu-v5.js?v=20261025-17",
-        "./js/spaces.js?v=20261025-33",
-        "./js/calls.js?v=20261024-1"
+        "./js/chat-menu-v5.js?v=20261025-20",
+        "./js/spaces.js?v=20261026-3",
+        "./js/calls.js?v=20261026-4"
       ];
       let featureIndex=0;
       const loadNextFeature=()=>{
         if(featureIndex>=featureScripts.length){
           if(typeof window.FarnazBoot==="function")window.FarnazBoot();
-          else{
-            window.FARNAZ_APP_LOAD_FAILED=true;
-            const status=document.getElementById("authStatus");
-            if(status)status.textContent="راه‌اندازی برنامه کامل نشد. صفحه را تازه‌سازی کن و دوباره تلاش کن.";
-          }
+          else showLoadError("راه‌اندازی برنامه کامل نشد. صفحه را تازه‌سازی کن و دوباره تلاش کن.","FARNAZ_APP_LOAD_FAILED");
           return;
         }
         const script=document.createElement("script");
         script.src=featureScripts[featureIndex++];
-        script.onload=loadNextFeature;
-        script.onerror=()=>{
-          window.FARNAZ_APP_LOAD_FAILED=true;
-          const status=document.getElementById("authStatus");
-          if(status)status.textContent="بارگذاری بخشی از برنامه ناموفق بود. صفحه را تازه‌سازی کن و اتصال را بررسی کن.";
-          // A nonessential feature must not prevent account/session recovery.
+        watchScript(script,loadNextFeature,()=>{
+          showLoadError("بارگذاری بخشی از برنامه ناموفق بود یا بیش از حد طول کشید. صفحه را تازه‌سازی کن و اتصال را بررسی کن.","FARNAZ_APP_LOAD_FAILED");
           loadNextFeature();
-        };
+        },20000);
         document.body.appendChild(script);
       };
       loadNextFeature();
-    };
-    core.onerror=()=>{
-      window.FARNAZ_APP_LOAD_FAILED=true;
-      const status=document.getElementById("authStatus");
-      if(status)status.textContent="بارگذاری هستهٔ برنامه ناموفق بود. صفحه را تازه‌سازی کن و اتصال را بررسی کن.";
-    };
+    },()=>{
+      showLoadError("بارگذاری هستهٔ برنامه ناموفق بود یا بیش از حد طول کشید. صفحه را تازه‌سازی کن و اتصال را بررسی کن.","FARNAZ_APP_LOAD_FAILED");
+    });
     document.body.appendChild(core);
   }
-
   function loadSupabaseSdk(){
     const script=document.createElement("script");
     script.src="./js/supabase-sdk.js";
-    script.async=true;
-    script.onload=()=>{
+    watchScript(script,()=>{
       if(!window.supabase||typeof window.supabase.createClient!=="function"){
-        showSdkError("کتابخانهٔ داخلی ورود بارگذاری شد، اما آماده نیست. صفحه را تازه‌سازی کن.");
+        showLoadError("کتابخانهٔ داخلی ورود بارگذاری شد، اما آماده نیست. صفحه را تازه‌سازی کن.","FARNAZ_SUPABASE_LOAD_FAILED");
         return;
       }
       window.FARNAZ_SUPABASE_LOAD_FAILED=false;
       loadLocalScripts();
-    };
-    script.onerror=()=>{
-      showSdkError("کتابخانهٔ داخلی ورود بارگذاری نشد. اتصال را بررسی و صفحه را دوباره باز کن.");
-    };
+    },()=>{
+      showLoadError("کتابخانهٔ داخلی ورود بارگذاری نشد یا بیش از حد طول کشید. اتصال را بررسی و صفحه را دوباره باز کن.","FARNAZ_SUPABASE_LOAD_FAILED");
+    });
     document.head.appendChild(script);
   }
-
-  // Load the locally hosted SDK before the app core to eliminate CDN dependence
-  // and prevent an auth tap from racing SDK initialization.
+  // The SDK must be ready before core initializes. Every dynamic script now
+  // has a bounded wait so a stalled mobile request cannot freeze app startup.
   loadSupabaseSdk();
 })();
 </script>

@@ -177,8 +177,14 @@ async function farnazNetworkFetch(input,init){
   const needsRequestTimeout=isStorageUpload||isProfileRequest||isAuthRequest||isRestRequest;
   const requestTimeoutMs=isAuthRequest?15000:(isRestRequest?15000:25000);
   const isPasswordLogin=/\/auth\/v1\/token\?grant_type=password(?:&|$)/i.test(requestUrl);
-  const canRetry=isStorageUpload||(!(init?.body&&typeof init.body!=="string"&&!(init.body instanceof URLSearchParams)) &&
-    !(typeof Request!=="undefined"&&input instanceof Request&&input.bodyUsed));
+  const requestMethod=String(init?.method||(typeof Request!=="undefined"&&input instanceof Request?input.method:"GET")).toUpperCase();
+  // Only replay safe non-REST HTTP methods here. REST reads are retried by retryRead(),
+  // whose deadline is shorter than this wrapper’s former three-attempt loop; keeping
+  // both retry layers active could leave an abandoned request running beside its retry.
+  // Supabase writes and RPCs often use
+  // JSON-string POST bodies; a lost response does not mean the server rejected
+  // the write, so retrying those requests can duplicate messages or side effects.
+  const canRetry=isStorageUpload||(!isRestRequest&&!isAuthRequest&&["GET","HEAD","OPTIONS"].includes(requestMethod));
   let lastError;
   for(let attempt=0;attempt<3;attempt++){
     let timeoutId=null;
@@ -296,7 +302,7 @@ function withTimeout(operation,timeoutMs=9000,label="درخواست"){
   });
   return Promise.race([Promise.resolve(operation),timeout]).finally(()=>clearTimeout(timer));
 }
-async function retryRead(label,operation,maxAttempts=2){
+async function retryRead(label,operation,maxAttempts=2,timeoutMs=16000){
   let lastError;
   for(let attempt=1;attempt<=maxAttempts;attempt++){
     try{
@@ -304,7 +310,9 @@ async function retryRead(label,operation,maxAttempts=2){
         setConnectionBanner(english?"You are offline. Farnaz will reconnect automatically.":"اتصال اینترنت قطع است؛ فرناز پس از وصل‌شدن خودکار تلاش می‌کند.");
         throw new Error("NETWORK_OFFLINE");
       }
-      const result=await withTimeout(operation(),9000,label);
+      // Supabase REST calls have a 15-second fetch deadline. Keep the default
+      // wrapper deadline longer so retries do not overlap a still-running request.
+      const result=await withTimeout(operation(),timeoutMs,label);
       if(result?.error)throw result.error;
       if(Array.isArray(result)){
         const failed=result.find(item=>item?.error);
@@ -315,6 +323,13 @@ async function retryRead(label,operation,maxAttempts=2){
       lastError=error;
       if(!isTransientError(error)||attempt===maxAttempts)throw error;
       setConnectionBanner(english?"Connection interrupted. Retrying automatically…":"ارتباط موقتاً قطع شده؛ تلاش مجدد خودکار…");
+      // Profile reads can take up to two bounded network attempts. Update the
+      // profile status as soon as a retry starts so the screen never looks frozen.
+      if(label==="current user profile"||label==="create current user profile"){
+        setStatus("profileStatus",english
+          ?"Profile connection interrupted; retrying automatically…"
+          :"ارتباط پروفایل قطع شده؛ تلاش مجدد خودکار…");
+      }
       await recoveryDelay(300*Math.pow(2,attempt-1)+Math.floor(Math.random()*180));
     }
   }
@@ -333,18 +348,31 @@ function scheduleReconnect(){
 async function recoverConnection(){
   if(recoveryInProgress||!currentUser||typeof navigator!=="undefined"&&navigator.onLine===false)return;
   recoveryInProgress=true;
+  const recoveryUserId=String(currentUser.id);
   try{
     await subscribeToMessages();
+    if(!currentUser||String(currentUser.id)!==recoveryUserId)return;
     // Reconcile the active private chat after downtime so messages missed while
     // Realtime was disconnected are restored without forcing the view to bottom.
-    if(currentChatUser&&document.body.classList.contains("chat-mode")&&typeof loadMessages==="function"){
-      await loadMessages(false,true);
+    if(currentChatUser&&document.body.classList.contains("chat-mode")&&typeof loadPrivateMessages==="function"){
+      const chatRefreshed=await loadPrivateMessages(false,true);
+      if(!currentUser||String(currentUser.id)!==recoveryUserId)return;
+      if(chatRefreshed===false)throw new Error("Private chat refresh did not complete");
     }
-    await retryRead("conversation refresh",()=>refreshConversationList(),2);
+    // These refresh functions already own their bounded retries and return false
+    // when their data request fails. Wrapping them in retryRead previously treated
+    // false as success and cleared the recovery banner without restoring the data.
+    const inboxRefreshed=await refreshConversationList();
+    if(!currentUser||String(currentUser.id)!==recoveryUserId)return;
+    if(inboxRefreshed===false)throw new Error("Conversation refresh did not complete");
+    const contactsRefreshed=await refreshSavedContacts();
+    if(!currentUser||String(currentUser.id)!==recoveryUserId)return;
+    if(contactsRefreshed===false)throw new Error("Contacts refresh did not complete");
     // Reconnecting the realtime channel must never rebuild the open chat history.
     // Existing messages stay in the DOM; incoming messages are appended by the realtime handler.
     setConnectionBanner("",false);
   }catch(error){
+    if(!currentUser||String(currentUser.id)!==recoveryUserId)return;
     console.warn("Automatic connection recovery:",error);
     setConnectionBanner(english?"Still reconnecting. You can keep using Farnaz; it will retry automatically.":"هنوز اتصال برقرار نشده؛ می‌توانی با فرناز کار کنی و برنامه دوباره تلاش می‌کند.");
     scheduleReconnect();
@@ -486,7 +514,7 @@ document.addEventListener("click",event=>{
   const menu=$("attachmentMenu"),button=$("attachmentMenuButton");
   if(menu&&!menu.hidden&&!menu.contains(event.target)&&!button.contains(event.target))toggleAttachmentMenu(false);
 });
-function navigate(pageId){
+function navigate(pageId,options={}){
   if(!currentUser){openAuth();return;}
   if(!$(pageId))return;
   if(pageId==="chatPage"&&!currentChatUser)return;
@@ -504,8 +532,10 @@ function navigate(pageId){
   if(pageId==="chatsPage")applyConversationSearch();
   if(pageId!=="chatsPage")toggleNewChatPopover(false);
   if(pageId!=="contactsPage")toggleContactSearch(false);
-  if(pageId==="chatsPage")refreshConversationList();
-  if(pageId==="contactsPage")refreshSavedContacts();
+  if(options.refreshData!==false){
+    if(pageId==="chatsPage")refreshConversationList();
+    if(pageId==="contactsPage")refreshSavedContacts();
+  }
   window.scrollTo({top:0,behavior:"instant"});
 }
 function backFromChat(){dismissMessageMenus();exitMessageSelection();cancelReply();cancelMessageEdit();navigate(previousPage==="contactsPage"?"contactsPage":"chatsPage");}
@@ -524,11 +554,18 @@ function setConversationView(view){conversationView=view;refreshConversationList
 $("conversationSearch")?.addEventListener("input",applyConversationSearch);
 function prefFor(id){return conversationPrefs.get(id)||{pinned:false,archived:false,hidden_at:null};}
 async function saveConversationPref(contactId,patch){
-  const next={...prefFor(contactId),...patch,user_id:currentUser.id,contact_user_id:contactId,updated_at:new Date().toISOString()};
+  if(!currentUser)throw new Error(english?"Sign in to change conversation settings.":"برای تغییر تنظیمات گفتگو ابتدا وارد شو.");
+  const userId=String(currentUser.id);
+  const next={...prefFor(contactId),...patch,user_id:userId,contact_user_id:contactId,updated_at:new Date().toISOString()};
   const {error}=await getClient().from("conversation_preferences").upsert(next,{onConflict:"user_id,contact_user_id"});
-  if(error)throw error;conversationPrefs.set(contactId,next);await refreshConversationList();
+  if(error)throw error;
+  if(String(currentUser?.id)!==userId)return;
+  conversationPrefs.set(String(contactId),next);
+  await refreshConversationList();
 }
 async function conversationAction(contactId,action){
+  if(!currentUser)return;
+  const userId=String(currentUser.id);
   try{
     const old=prefFor(contactId);
     if(action==="delete"){
@@ -536,7 +573,10 @@ async function conversationAction(contactId,action){
       await saveConversationPref(contactId,{hidden_at:new Date().toISOString(),archived:false,pinned:false});
     }else if(action==="pin")await saveConversationPref(contactId,{pinned:!old.pinned,archived:false});
     else if(action==="archive")await saveConversationPref(contactId,{archived:!old.archived,pinned:false});
-  }catch(e){alert((english?"Action failed: ":"عملیات ناموفق بود: ")+e.message);}
+  }catch(e){
+    if(String(currentUser?.id)!==userId)return;
+    alert((english?"Action failed: ":"عملیات ناموفق بود: ")+e.message);
+  }
 }
 function showConversationActions(card,contactId){
   card.querySelector(".conversation-action-menu")?.remove();
@@ -726,16 +766,18 @@ async function showUser(user){
   }
   try{
     const {data,error}=await retryRead("current user profile",()=>getClient().from("profiles")
-      .select("id,display_name,avatar_url,phone,show_phone,presence_visibility,last_seen_visibility,show_typing,show_read_receipts,show_space_online_count").eq("id",user.id).maybeSingle());
+      .select("id,display_name,avatar_url,phone,show_phone,presence_visibility,last_seen_visibility,show_typing,show_read_receipts,show_space_online_count").eq("id",user.id).maybeSingle(),2,18000);
     if(request!==profileRequestNumber||currentUser?.id!==user.id)return;
     if(error)throw error;
     let profile=data;
     if(!profile){
       const fallbackName=(user.user_metadata?.display_name||user.email?.split("@")[0]||"Farnaz user").trim();
-      const created=await getClient().from("profiles")
+      const created=await retryRead("create current user profile",()=>getClient().from("profiles")
         .upsert({id:user.id,display_name:fallbackName,phone:user.phone||null,show_phone:true},{onConflict:"id"})
-        .select("id,display_name,avatar_url,phone,show_phone,presence_visibility,last_seen_visibility,show_typing,show_read_receipts,show_space_online_count").single();
+        .select("id,display_name,avatar_url,phone,show_phone,presence_visibility,last_seen_visibility,show_typing,show_read_receipts,show_space_online_count").single(),2,18000);
       if(created.error)throw created.error;
+      // Logout/account switching may happen while profile creation is pending.
+      if(request!==profileRequestNumber||currentUser?.id!==user.id)return;
       profile=created.data;
     }
     privacySettings={presence_visibility:profile?.presence_visibility||"contacts",last_seen_visibility:profile?.last_seen_visibility||"contacts",show_typing:profile?.show_typing!==false,show_read_receipts:profile?.show_read_receipts!==false,show_space_online_count:profile?.show_space_online_count!==false};
@@ -749,8 +791,13 @@ async function showUser(user){
     $("profilePhoneInput").value=formatContactPhone(currentPhone);
     $("showPhoneSetting").checked=profile?.show_phone!==false;
     try{await window.FarnazLocalStore?.saveSnapshot(user.id,"profile",profile);}catch(cacheError){console.warn("Cached profile save:",cacheError);}
+    // A completed cache write must not let a stale profile request update the UI after logout.
+    if(request!==profileRequestNumber||currentUser?.id!==user.id)return;
     setStatus("profileStatus",english?"Profile loaded.":"پروفایل بارگذاری شد.");
   }catch(e){
+    // Ignore a late profile failure after logout or a newer account/profile request.
+    // Otherwise it can overwrite the cleared guest UI with a stale loading/error status.
+    if(request!==profileRequestNumber||currentUser?.id!==user.id)return;
     console.error("Profile read:",e);
     if(cachedProfile){
       setStatus("profileStatus",english?"Showing saved profile; server refresh failed.":"پروفایل ذخیره‌شده نمایش داده می‌شود؛ به‌روزرسانی سرور ناموفق بود.");
@@ -763,32 +810,48 @@ function showGuest(){
   const previousUserId=currentUser?.id;
   if(previousUserId)window.FarnazLocalStore?.clearUser(previousUserId).catch(cacheError=>console.warn("Could not clear local account data:",cacheError));
   stopFarnazPresence().catch(()=>{});farnazPresenceContactCache.clear();
-  profileRequestNumber++;currentUser=null;currentProfileName="";currentAvatarUrl="";currentPhone="";
+  profileRequestNumber++;
+  // Invalidate every in-flight list request before clearing the signed-in UI.
+  // Also invalidate private-chat work so a late response cannot repopulate the guest screen.
+  chatRequestNumber++;contactInfoRequest++;messageSearchRequest++;
+  conversationListRequestNumber++;savedContactsRequestNumber++;unmatchedPhoneContactsRequestNumber++;
+  if(contactInfoDialog)contactInfoDialog.hidden=true;
+  if(messageSearchDialog)messageSearchDialog.hidden=true;
+  currentUser=null;currentProfileName="";currentAvatarUrl="";currentPhone="";
+  currentChatUser=null;
+  // Logout can happen from a private chat or the spaces chat view. Reset their
+  // layout state as well as the active page so the guest/auth screen is clean.
+  document.querySelector(".app")?.classList.remove("chat-mode","spaces-chat-mode");
+  document.body.classList.remove("chat-mode","spaces-chat-mode");
+  const brandHeader=document.querySelector(".app>header");if(brandHeader)brandHeader.hidden=false;
   document.body.dataset.authState="guest";if($("headerFButton"))$("headerFButton").hidden=true;const settingsButton=$("openSettingsButton");if(settingsButton){settingsButton.hidden=true;settingsButton.style.setProperty("display","none","important");}
   window.dispatchEvent(new CustomEvent("farnaz-auth-user",{detail:{userId:null}}));
-  currentChatUser=null;
+  // Clear any in-flight profile/connection status so a cancelled request cannot
+  // leave a stale "Loading profile…" message after logout or account switching.
+  setStatus("profileStatus","");
+  setStatus("authStatus","");
+  setConnectionBanner("",false);
   $("bottomNav").classList.remove("visible");
   $("userName").textContent=english?"Farnaz user":"کاربر فرناز";
   $("userEmail").textContent="";$("userPhone").textContent="";
   $("profileForm").reset();
   $("conversationList").replaceChildren();$("foundContact").replaceChildren();
   $("savedContactsList").replaceChildren();setStatus("savedContactsStatus","");
+  // Clear account-specific contact surfaces so a logout or account switch cannot
+  // leave the previous user’s imported names or quick-chat results visible.
+  $("unmatchedPhoneContactsList").replaceChildren();setStatus("unmatchedPhoneContactsStatus","");
+  $("newChatContactsList").replaceChildren();setStatus("newChatContactsStatus","");
+  if($("newChatPopover"))$("newChatPopover").hidden=true;
+  if($("savedContactFilter"))$("savedContactFilter").value="";
+  if($("contactSearchPopover"))$("contactSearchPopover").hidden=true;
+  if($("contactSearchButton"))$("contactSearchButton").setAttribute("aria-expanded","false");
   $("recipientValue").value="";setStatus("recipientStatus","");
   $("messageList").replaceChildren();
   document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id==="homePage"));
 }
 
 
-window.addEventListener("farnaz-auth-user",event=>{
-  const userId=event.detail?.userId;
-  if(!userId)return;
-  setTimeout(()=>{
-    if(currentUser?.id!==userId)return;
-    if(document.getElementById("chatsPage")?.classList.contains("active"))refreshConversationList();
-    if(document.getElementById("contactsPage")?.classList.contains("active"))refreshSavedContacts();
-  },400);
-});
-
+/* Auth entry points own the initial inbox/contact refresh; do not schedule a duplicate refresh here. */
 let farnazPresenceStartPromise=null,farnazPresenceStartUserId=null;
 async function startFarnazPresence(forceRestart=false){
  if(!currentUser)return;
@@ -796,8 +859,13 @@ async function startFarnazPresence(forceRestart=false){
  const existing=farnazPresenceChannel;
  if(!forceRestart&&existing&&farnazPresenceStartUserId===uid&&(existing.state==="joining"||existing.state==="joined"))return;
  if(farnazPresenceStartPromise){
-  try{await farnazPresenceStartPromise;}catch(_){}
-  return;
+  const pending=farnazPresenceStartPromise;
+  try{await pending;}catch(_){}
+  if(!currentUser)return;
+  if(String(currentUser.id)!==uid)return startFarnazPresence(forceRestart);
+  if(!forceRestart&&farnazPresenceChannel&&farnazPresenceStartUserId===uid&&
+    (farnazPresenceChannel.state==="joining"||farnazPresenceChannel.state==="joined"))return;
+  return startFarnazPresence(forceRestart);
  }
  const task=startFarnazPresenceNow(uid);
  farnazPresenceStartPromise=task;
@@ -830,7 +898,9 @@ async function startFarnazPresenceNow(expectedUid){
  try{
   const {data,error}=await client.rpc("get_farnaz_mutual_contact_ids");
   if(error)throw error;
+  if(!currentUser||String(currentUser.id)!==uid||farnazPresenceChannel!==ownChannel)return;
   for(const row of data||[]){
+   if(!currentUser||String(currentUser.id)!==uid||farnazPresenceChannel!==ownChannel)return;
    const contactId=String(row.contact_user_id||"");
    if(!contactId||contactId===uid)continue;
    const ch=client.channel("farnaz-presence:"+contactId,{config:{private:true,presence:{key:contactId}}});
@@ -864,6 +934,7 @@ async function startPrivateTypingChannel(contactId){
  if(!currentUser||!contactId)return;
  const client=getClient(),uid=String(currentUser.id),other=String(contactId);
  if(farnazTypingChannel){const old=farnazTypingChannel;farnazTypingChannel=null;try{await client.removeChannel(old);}catch(_){}}
+ if(!currentUser||String(currentUser.id)!==uid||String(currentChatUser?.user_id)!==other)return;
  if(uid===other)return;
  const pair=[uid,other].sort();
  const ch=client.channel("farnaz-typing:"+pair.join(":"),{config:{private:true}});
@@ -902,20 +973,32 @@ function applyPrivacySettings(){
 }
 async function savePrivacySetting(key,value){
  if(!currentUser)return;
+ const userId=String(currentUser.id);
  const allowed={presence_visibility:["everyone","contacts","nobody"],last_seen_visibility:["everyone","contacts","nobody"]};
  if(allowed[key]&&!allowed[key].includes(value))return;
  const previous=privacySettings[key];privacySettings={...privacySettings,[key]:value};
  const status=$("privacySettingsStatus");if(status)status.textContent=english?"Saving…":"در حال ذخیره…";
- try{const {error}=await getClient().from("profiles").update({[key]:value}).eq("id",currentUser.id);if(error)throw error;
+ try{
+  const {error}=await getClient().from("profiles").update({[key]:value}).eq("id",userId);if(error)throw error;
+  if(String(currentUser?.id)!==userId)return;
   if(status)status.textContent=english?"Privacy settings saved.":"تنظیمات حریم خصوصی ذخیره شد.";
-  try{const cached=await window.FarnazLocalStore?.getSnapshot(currentUser.id,"profile");if(cached)await window.FarnazLocalStore.saveSnapshot(currentUser.id,"profile",{...cached,[key]:value});}catch(cacheError){console.warn("Cached privacy settings update:",cacheError);}
+  try{const cached=await window.FarnazLocalStore?.getSnapshot(userId,"profile");if(cached&&String(currentUser?.id)===userId)await window.FarnazLocalStore.saveSnapshot(userId,"profile",{...cached,[key]:value});}catch(cacheError){console.warn("Cached privacy settings update:",cacheError);}
+  if(String(currentUser?.id)!==userId)return;
   window.dispatchEvent(new CustomEvent("farnaz-privacy-updated",{detail:{...privacySettings}}));
-  if(farnazPresenceChannel)startFarnazPresence().then(()=>{if(currentChatUser&&privacySettings.show_typing!==false)startPrivateTypingChannel(currentChatUser.user_id).catch(()=>{});}).catch(()=>{});
- }catch(error){privacySettings={...privacySettings,[key]:previous};applyPrivacySettings();if(status)status.textContent=(english?"Could not save: ":"ذخیره ناموفق بود: ")+(error?.message||String(error));}
+  if(farnazPresenceChannel)startFarnazPresence().then(()=>{if(String(currentUser?.id)===userId&&currentChatUser&&privacySettings.show_typing!==false)startPrivateTypingChannel(currentChatUser.user_id).catch(()=>{});}).catch(()=>{});
+ }catch(error){
+  if(String(currentUser?.id)!==userId)return;
+  privacySettings={...privacySettings,[key]:previous};applyPrivacySettings();
+  if(status)status.textContent=(english?"Could not save: ":"ذخیره ناموفق بود: ")+(error?.message||String(error));
+ }
 }
 
 async function saveProfile(event){
   event.preventDefault();if(!currentUser)return;
+  // Capture the account and settings before the first await. A logout or quick
+  // account switch must never redirect an in-flight save into the next profile.
+  const userId=String(currentUser.id);
+  const profilePrivacy={...privacySettings};
   const name=$("profileNameInput").value.trim();
   const phone=normalizePhone($("profilePhoneInput").value,$("profilePhoneCountry").value);
   const showPhone=$("showPhoneSetting").checked;
@@ -939,31 +1022,37 @@ async function saveProfile(event){
     if(file){
       setStatus("profileStatus",english?"Uploading profile photo...":"در حال بارگذاری عکس پروفایل...");
       const ext=file.type==="image/png"?"png":file.type==="image/webp"?"webp":"jpg";
-      const path=currentUser.id+"/avatar-"+Date.now()+"."+ext;
+      const path=userId+"/avatar-"+Date.now()+"."+ext;
       const {error}=await client.storage.from("avatars").upload(path,file,{contentType:file.type,upsert:true});
       if(error)throw error;
       avatarUrl=client.storage.from("avatars").getPublicUrl(path).data.publicUrl;
     }
+    if(String(currentUser?.id)!==userId)throw new Error("Account changed while saving; please retry on the current account.");
     setStatus("profileStatus",english?"Saving profile details...":"در حال ذخیره مشخصات پروفایل...");
     const {data,error}=await client.from("profiles")
-      .upsert({id:currentUser.id,display_name:name,phone:phone||null,avatar_url:avatarUrl||null,show_phone:showPhone,presence_visibility:privacySettings.presence_visibility,last_seen_visibility:privacySettings.last_seen_visibility,show_typing:privacySettings.show_typing,show_read_receipts:privacySettings.show_read_receipts,show_space_online_count:privacySettings.show_space_online_count},{onConflict:"id"})
+      .upsert({id:userId,display_name:name,phone:phone||null,avatar_url:avatarUrl||null,show_phone:showPhone,presence_visibility:profilePrivacy.presence_visibility,last_seen_visibility:profilePrivacy.last_seen_visibility,show_typing:profilePrivacy.show_typing,show_read_receipts:profilePrivacy.show_read_receipts,show_space_online_count:profilePrivacy.show_space_online_count},{onConflict:"id"})
       .select("id,display_name,phone,avatar_url,show_phone").single();
     if(error)throw error;
+    if(String(currentUser?.id)!==userId)return;
     currentProfileName=data.display_name||name;currentPhone=data.phone||"";
     currentAvatarUrl=data.avatar_url||"";
     setPhoneCountry("profilePhoneCountry",currentPhone);
     setStatus("profileStatus",english?"Updating account details...":"در حال به‌روزرسانی مشخصات حساب...");
     try{
+      if(String(currentUser?.id)!==userId)return;
       const {error:metadataError}=await client.auth.updateUser({data:{display_name:currentProfileName}});
       if(metadataError)console.warn("Auth metadata update:",metadataError);
     }catch(metadataError){
       // The profile row is already saved; account metadata is secondary and must not block success.
       console.warn("Auth metadata update:",metadataError);
     }
+    if(String(currentUser?.id)!==userId)return;
     renderUser(currentUser,currentProfileName);$("avatarFile").value="";
-    try{await window.FarnazLocalStore?.saveSnapshot(currentUser.id,"profile",{...data,presence_visibility:privacySettings.presence_visibility,last_seen_visibility:privacySettings.last_seen_visibility,show_typing:privacySettings.show_typing,show_read_receipts:privacySettings.show_read_receipts,show_space_online_count:privacySettings.show_space_online_count});}catch(cacheError){console.warn("Cached profile update:",cacheError);}
+    try{await window.FarnazLocalStore?.saveSnapshot(userId,"profile",{...data,...profilePrivacy});}catch(cacheError){console.warn("Cached profile update:",cacheError);}
+    if(String(currentUser?.id)!==userId)return;
     setStatus("profileStatus",english?"Profile saved.":"پروفایل ذخیره شد.");
   }catch(e){
+    if(String(currentUser?.id)!==userId)return;
     console.error("Profile save:",e);
     const reason=e?.name==="AbortError"||e?.name==="TimeoutError"
       ?(english?"Photo upload timed out. Check your connection and try again.":"بارگذاری عکس به پایان مهلت رسید. اتصال را بررسی کن و دوباره تلاش کن.")
@@ -974,19 +1063,40 @@ async function saveProfile(event){
 async function logout(){
   const button=$("logoutButton");
   if(button)button.disabled=true;
+  let logoutWarning="";
   try{
-    // Sign out locally first. Realtime/presence cleanup must never block logout.
+    // Local sign-out must not be held hostage by a stalled profile/realtime request.
     const client=getClient();
-    const {error}=await client.auth.signOut({scope:"local"});
-    if(error)throw error;
-    showGuest();
-    setStatus("authStatus",english?"You have signed out.":"با موفقیت از حساب خارج شدی.",false);
-    // Cleanup is best-effort and deliberately runs after the UI has returned to guest.
-    void stopMessageSubscription().catch(e=>console.warn("Message channel cleanup after logout:",e));
+    const result=await Promise.race([
+      client.auth.signOut({scope:"local"}),
+      recoveryDelay(5000).then(()=>({timedOut:true}))
+    ]);
+    if(result?.timedOut||result?.error){
+      // Supabase local sessions are persisted under this explicit storage key.
+      // If its own local cleanup stalls/fails, remove only this app's auth session.
+      try{localStorage.removeItem("sb-iemykhluluoymsbqpjsn-auth-token");}catch(storageError){
+        console.warn("Could not clear persisted auth session:",storageError);
+      }
+      if(result?.error)console.warn("Supabase local sign-out failed; cleared persisted session:",result.error);
+      logoutWarning=english
+        ?"Local session storage was cleared, but sign-out cleanup did not finish normally."
+        :"ذخیره نشست محلی پاک شد، اما فرایند خروج عادی کامل نشد.";
+    }
   }catch(e){
     console.error("Farnaz logout failed:",e);
-    setStatus("profileStatus",(english?"Sign out failed: ":"خروج ناموفق بود: ")+(e?.message||String(e)),true);
+    try{localStorage.removeItem("sb-iemykhluluoymsbqpjsn-auth-token");}catch(storageError){
+      console.warn("Could not clear persisted auth session:",storageError);
+    }
+    logoutWarning=english
+      ?"The local session was cleared after a sign-out error."
+      :"پس از خطای خروج، نشست ذخیره‌شدهٔ محلی پاک شد.";
   }finally{
+    // Always return to the guest screen, even if auth cleanup or network state stalls.
+    showGuest();
+    if(logoutWarning)setStatus("authStatus",logoutWarning,true);
+    else setStatus("authStatus",english?"You have signed out.":"با موفقیت از حساب خارج شدی.",false);
+    // Cleanup is best-effort and deliberately runs after the UI has returned to guest.
+    void stopMessageSubscription().catch(e=>console.warn("Message channel cleanup after logout:",e));
     if(button)button.disabled=false;
   }
 }
@@ -1005,7 +1115,7 @@ document.addEventListener("input",event=>{
 
 async function stopMessageSubscription(){
   if(!messageSubscription||!farnazClient)return;
-  const ch=messageSubscription;messageSubscription=null;
+  const ch=messageSubscription;messageSubscription=null;messageSubscriptionUserId=null;
   // A suspended mobile realtime socket can make removeChannel never settle.
   // Continue app initialization after a short grace period instead of deadlocking.
   try{
@@ -1270,7 +1380,7 @@ async function loadContactInfoMedia(contactId,request){
 }
 async function toggleContactBlock(){
   if(!currentUser||!currentChatUser)return;
-  const contactId=currentChatUser.user_id,name=currentChatUser.display_name||(english?"this contact":"این مخاطب");
+  const userId=String(currentUser.id),contactId=String(currentChatUser.user_id),name=currentChatUser.display_name||(english?"this contact":"این مخاطب");
   if(contactInfoBlocked){
     if(!confirm(contactInfoText("مسدودسازی این مخاطب برداشته شود؟","Unblock this contact?")))return;
   }else if(!confirm(contactInfoText("با مسدود کردن "+name+"، تبادل پیام و شروع تماس بین دو حساب متوقف می‌شود. ادامه می‌دهی؟","Blocking "+name+" prevents messaging and starting calls between both accounts. Continue?")))return;
@@ -1281,22 +1391,27 @@ async function toggleContactBlock(){
       ?await client.from("blocked_contacts").delete().eq("blocker_id",currentUser.id).eq("blocked_user_id",contactId)
       :await client.from("blocked_contacts").insert({blocker_id:currentUser.id,blocked_user_id:contactId});
     if(result.error)throw result.error;
+    if(String(currentUser?.id)!==userId||String(currentChatUser?.user_id)!==contactId)return;
     contactInfoBlocked=!contactInfoBlocked;
     button.textContent=contactInfoBlocked?contactInfoText("رفع مسدودسازی","Unblock contact"):contactInfoText("مسدود کردن مخاطب","Block contact");
     $("chatSubtitle").textContent=contactInfoBlocked?contactInfoText("مخاطب مسدود شده است","Contact blocked"):contactInfoText("گفتگوی خصوصی","Private conversation");
     $("contactInfoStatus").textContent=contactInfoBlocked?contactInfoText("مخاطب مسدود شد؛ پیام و تماس جدید مجاز نیست.","Contact blocked. New messages and calls are disabled."):contactInfoText("مسدودسازی برداشته شد.","Contact unblocked.");
   }catch(error){
+    if(String(currentUser?.id)!==userId||String(currentChatUser?.user_id)!==contactId)return;
     $("contactInfoStatus").textContent=(english?"Could not update block status: ":"تغییر وضعیت مسدودسازی ناموفق بود: ")+error.message;
   }finally{button.disabled=false;}
 }
 async function deleteContactConversation(){
   if(!currentUser||!currentChatUser)return;
+  const userId=String(currentUser.id),contactId=String(currentChatUser.user_id);
   if(!confirm(contactInfoText("این گفتگو فقط از فهرست شما حذف می‌شود؛ پیام‌ها و فایل‌ها برای طرف مقابل باقی می‌مانند. ادامه می‌دهی؟","This removes the conversation from your list only. Messages and files remain for the other person. Continue?")))return;
   $("contactInfoDelete").disabled=true;
   try{
-    await saveConversationPref(currentChatUser.user_id,{hidden_at:new Date().toISOString(),archived:false,pinned:false});
+    await saveConversationPref(contactId,{hidden_at:new Date().toISOString(),archived:false,pinned:false});
+    if(String(currentUser?.id)!==userId||String(currentChatUser?.user_id)!==contactId)return;
     closeContactInfo();backFromChat();
   }catch(error){
+    if(String(currentUser?.id)!==userId||String(currentChatUser?.user_id)!==contactId)return;
     $("contactInfoStatus").textContent=(english?"Could not delete conversation: ":"حذف گفتگو ناموفق بود: ")+error.message;
   }finally{$("contactInfoDelete").disabled=false;}
 }
@@ -1304,14 +1419,16 @@ async function deleteContactConversation(){
 
 async function refreshPrivatePresence(contactId){
  const subtitle=$("chatSubtitle");if(!subtitle||!currentUser||!contactId)return;
+ const userId=String(currentUser.id),otherId=String(contactId);
  currentChatPresenceLabel=english?"Private conversation":"گفتگوی خصوصی";subtitle.textContent=currentChatPresenceLabel;
  try{
-  const {data,error}=await getClient().rpc("get_farnaz_presence_status",{p_user_id:contactId});if(error)throw error;
-  const row=Array.isArray(data)?data[0]:data;if(!row||String(currentChatUser?.user_id)!==String(contactId))return;
+  const {data,error}=await getClient().rpc("get_farnaz_presence_status",{p_user_id:otherId});if(error)throw error;
+  if(String(currentUser?.id)!==userId||String(currentChatUser?.user_id)!==otherId)return;
+  const row=Array.isArray(data)?data[0]:data;if(!row)return;
   if(row.can_see_online&&row.is_online)currentChatPresenceLabel=english?"Online":"آنلاین";
   else if(row.can_see_last_seen&&row.last_seen_at){const when=new Date(row.last_seen_at);currentChatPresenceLabel=(english?"Last seen ":"آخرین بازدید: ")+when.toLocaleString(english?"en":"fa-IR",{dateStyle:"short",timeStyle:"short"});}
   subtitle.textContent=currentChatPresenceLabel;
- }catch(_){subtitle.textContent=currentChatPresenceLabel;}
+ }catch(_){if(String(currentUser?.id)===userId&&String(currentChatUser?.user_id)===otherId)subtitle.textContent=currentChatPresenceLabel;}
 }
 
 window.addEventListener("farnaz-presence-updated",()=>{if(currentChatUser&&!remoteTypingTimer)refreshPrivatePresence(currentChatUser.user_id);});
@@ -1337,7 +1454,7 @@ function openChat(contact,fromPage="chatsPage"){
   $("chatSubtitle").textContent=english?"Private conversation":"گفتگوی خصوصی";
   renderAvatar($("chatAvatar"),contact.avatar_url||"",$("conversationTitle").textContent);
   setStatus("sendMessageStatus","");
-  currentChatPresenceLabel=english?"Private conversation":"گفتگوی خصوصی";navigate("chatPage");refreshPrivatePresence(contact.user_id);loadMessages();
+  currentChatPresenceLabel=english?"Private conversation":"گفتگوی خصوصی";navigate("chatPage");refreshPrivatePresence(contact.user_id);loadPrivateMessages();
 }
 function makeContactButton(contact,preview="",timeText="",fromPage="chatsPage"){
   const button=document.createElement("button");
@@ -1354,14 +1471,15 @@ function makeContactButton(contact,preview="",timeText="",fromPage="chatsPage"){
   button.addEventListener("click",()=>{if(button.dataset.suppressOpen==="1"){button.dataset.suppressOpen="0";return;}openChat(contact,fromPage);});
   return button;
 }
+let unmatchedPhoneContactsRequestNumber=0;
 async function refreshUnmatchedPhoneContacts(){
   const list=$("unmatchedPhoneContactsList");if(!list||!currentUser)return;
-  const myId=currentUser.id;list.replaceChildren();
+  const request=++unmatchedPhoneContactsRequestNumber,myId=currentUser.id;list.replaceChildren();
   try{
     const {data,error}=await retryRead("phone contacts",()=>getClient().from("user_phone_contacts")
       .select("id,display_name,phone,matched_user_id,updated_at")
       .eq("user_id",myId).is("matched_user_id",null).order("display_name",{ascending:true}).limit(5000));
-    if(currentUser?.id!==myId)return;
+    if(currentUser?.id!==myId||request!==unmatchedPhoneContactsRequestNumber)return;
     if(error)throw error;
     for(const item of data||[]){
       const row=document.createElement("div");row.className="phone-contact-row";
@@ -1374,6 +1492,7 @@ async function refreshUnmatchedPhoneContacts(){
     }
     setStatus("unmatchedPhoneContactsStatus",data?.length?(english?"These contacts are saved privately for your account.":"این مخاطبان به‌صورت خصوصی برای حساب خودت ذخیره شده‌اند."):(english?"No unmatched phone contacts. Import a VCF file to begin.":"مخاطب گوشیِ تطبیق‌نیافته‌ای نیست؛ برای شروع فایل VCF را وارد کن."));
   }catch(e){
+    if(currentUser?.id!==myId||request!==unmatchedPhoneContactsRequestNumber)return;
     console.error("Unmatched phone contacts:",e);
     setStatus("unmatchedPhoneContactsStatus",(english?"Could not load phone contacts: ":"بارگذاری مخاطبان گوشی ناموفق بود: ")+e.message,true);
   }
@@ -1413,7 +1532,7 @@ async function refreshSavedContacts(){
     for(const item of phoneData){if(item.matched_user_id&&!importedNames.has(String(item.matched_user_id)))importedNames.set(String(item.matched_user_id),item.display_name);}
     let profilesById=new Map(),profilesLoaded=true;
     try{profilesById=await getContactProfiles((data||[]).map(item=>item.contact_user_id));}
-    catch(e){profilesLoaded=false;console.warn("Saved contact profiles:",e);}
+    catch(e){profilesLoaded=false;console.warn("Saved contact profiles:",e);setConnectionBanner(english?"Some contact profiles could not load. Retrying…":"اطلاعات بعضی مخاطبان بارگذاری نشد؛ دوباره تلاش می‌کنیم.");}
     if(currentUser?.id!==myId||request!==savedContactsRequestNumber)return;
     const snapshot=[];
     const seenContacts=new Set();
@@ -1425,13 +1544,18 @@ async function refreshSavedContacts(){
     });
     renderSavedContactsSnapshot(snapshot);
     if(profilesLoaded){try{await window.FarnazLocalStore?.saveSnapshot(myId,"contacts",snapshot);}catch(cacheError){console.warn("Cached contacts save:",cacheError);}}
+    // The account or a newer contacts refresh may have changed during the cache write.
+    if(currentUser?.id!==myId||request!==savedContactsRequestNumber)return;
     setStatus("savedContactsStatus",snapshot.length?"":(english?"No saved Farnaz contacts yet.":"هنوز مخاطب عضو فرنازی ذخیره نشده است."));
     await refreshUnmatchedPhoneContacts();
+    if(currentUser?.id!==myId||request!==savedContactsRequestNumber)return;
+    return profilesLoaded;
   }catch(e){
     if(currentUser?.id!==myId||request!==savedContactsRequestNumber)return;
     console.error("Saved contacts:",e);
     setStatus("savedContactsStatus",(english?"Could not load saved contacts: ":"بارگذاری مخاطبان ناموفق بود: ")+e.message,true);
     await refreshUnmatchedPhoneContacts();
+    return false;
   }
 }
 function parseVCardContacts(text,countryCode){
@@ -1455,17 +1579,19 @@ function parseVCardContacts(text,countryCode){
   }
   return results;
 }
-async function syncSelectedPhoneContacts(contacts,button){
+async function syncSelectedPhoneContacts(contacts,button,expectedUserId=null){
   if(!currentUser)return;
-  const myId=currentUser.id;
+  const myId=String(expectedUserId||currentUser.id);
+  if(String(currentUser.id)!==myId)return;
   const valid=(contacts||[]).filter(c=>c?.phone&&/^\+[1-9]\d{7,14}$/.test(c.phone));
   const unique=[...new Map(valid.map(c=>[c.phone,c])).values()];
   if(!unique.length)throw new Error(english?"No valid phone numbers were selected.":"از مخاطبان انتخاب‌شده شماره تلفن معتبری دریافت نشد.");
   const {data,error}=await getClient().rpc("sync_farnaz_phone_contacts",{p_contacts:unique});
   if(error)throw error;
-  if(currentUser?.id!==myId)return;
+  if(String(currentUser?.id)!==myId)return;
   const result=Array.isArray(data)?data[0]:(data||{});
   await refreshSavedContacts();
+  if(String(currentUser?.id)!==myId)return;
   setStatus("phoneContactsImportStatus",english
     ?`Sync complete: ${result.processed??unique.length} numbers processed, ${result.matched??0} matched with Farnaz accounts, ${result.unmatched??0} not registered.`
     :`همگام‌سازی انجام شد: ${result.processed??unique.length} شماره پردازش شد؛ ${result.matched??0} مورد با حساب‌های فرناز تطبیق یافت و ${result.unmatched??0} مورد هنوز عضو نیست.`);
@@ -1473,6 +1599,7 @@ async function syncSelectedPhoneContacts(contacts,button){
 async function syncPhoneContactsFromPicker(){
   const button=$("pickPhoneContactsButton");
   if(!currentUser){setStatus("phoneContactsImportStatus",english?"Sign in first.":"ابتدا وارد حساب فرناز شو.",true);return;}
+  const myId=String(currentUser.id);
   if(!window.isSecureContext){setStatus("phoneContactsImportStatus",english?"Contact access requires a secure HTTPS connection.":"دسترسی به مخاطبان به اتصال امن HTTPS نیاز دارد.",true);return;}
   if(!navigator.contacts?.select){
     setStatus("phoneContactsImportStatus",english
@@ -1484,6 +1611,7 @@ async function syncPhoneContactsFromPicker(){
   setStatus("phoneContactsImportStatus",english?"Choose the contacts you want to share with Farnaz…":"مخاطبانی را که می‌خواهی با فرناز به اشتراک بگذاری انتخاب کن…");
   try{
     const picked=await navigator.contacts.select(["name","tel"],{multiple:true});
+    if(String(currentUser?.id)!==myId)return;
     const contacts=[],country=$("phoneContactsCountry")?.value||"98";
     for(const item of picked||[]){
       const name=Array.isArray(item.name)?item.name[0]:item.name;
@@ -1492,8 +1620,9 @@ async function syncPhoneContactsFromPicker(){
         if(/^\+[1-9]\d{7,14}$/.test(phone))contacts.push({display_name:String(name||"").trim().slice(0,120)||(english?"Phone contact":"مخاطب گوشی"),phone});
       }
     }
-    await syncSelectedPhoneContacts(contacts,button);
+    await syncSelectedPhoneContacts(contacts,button,myId);
   }catch(e){
+    if(String(currentUser?.id)!==myId)return;
     if(e?.name==="AbortError"){setStatus("phoneContactsImportStatus",english?"Contact selection cancelled.":"انتخاب مخاطبان لغو شد.");return;}
     console.error("Phone contact picker:",e);
     setStatus("phoneContactsImportStatus",(english?"Could not sync selected contacts: ":"همگام‌سازی مخاطبان انتخاب‌شده ناموفق بود: ")+(e?.message||String(e)),true);
@@ -1501,14 +1630,17 @@ async function syncPhoneContactsFromPicker(){
 }
 async function handlePhoneContactsFile(event){
   const input=event?.target||$("phoneContactsFile"),file=input?.files?.[0];if(!file||!currentUser)return;
-  const button=$("importPhoneContactsButton"),myId=currentUser.id;
+  const button=$("importPhoneContactsButton"),myId=String(currentUser.id);
   button.disabled=true;setStatus("phoneContactsImportStatus",english?"Reading VCF file…":"در حال خواندن فایل VCF…");
   try{
     if(file.size>15*1024*1024)throw new Error(english?"VCF file must be 15 MB or smaller.":"حجم فایل VCF باید حداکثر ۱۵ مگابایت باشد.");
-    const contacts=parseVCardContacts(await file.text(),$("phoneContactsCountry").value);
+    const fileText=await file.text();
+    if(String(currentUser?.id)!==myId)return;
+    const contacts=parseVCardContacts(fileText,$("phoneContactsCountry").value);
     if(!contacts.length)throw new Error(english?"No valid phone numbers were found in this VCF file.":"شماره تلفن معتبری در فایل VCF پیدا نشد.");
-    await syncSelectedPhoneContacts(contacts,button);
+    await syncSelectedPhoneContacts(contacts,button,myId);
   }catch(e){
+    if(String(currentUser?.id)!==myId)return;
     console.error("Phone contacts import:",e);
     setStatus("phoneContactsImportStatus",(english?"Could not sync contacts: ":"همگام‌سازی مخاطبان ناموفق بود: ")+e.message,true);
   }finally{button.disabled=false;if(input)input.value="";}
@@ -1556,14 +1688,19 @@ async function refreshConversationList(){
       setStatus("inboxStatus",english?"Showing saved conversations while refreshing…":"نمایش گفتگوهای ذخیره‌شده؛ در حال همگام‌سازی…");
     }
   }catch(cacheError){console.warn("Cached inbox read:",cacheError);}
+  let preferencesLoaded=true;
   try{
     const prefResult=await retryRead("conversation preferences",()=>getClient().from("conversation_preferences").select("*").eq("user_id",myId));
     if(currentUser?.id!==myId||request!==conversationListRequestNumber)return;
     conversationPrefs=new Map((prefResult.data||[]).map(p=>[String(p.contact_user_id),p]));
   }catch(prefError){
+    // A failed preferences request may finish after logout or a newer refresh.
+    if(currentUser?.id!==myId||request!==conversationListRequestNumber)return;
+    preferencesLoaded=false;
     console.warn("Conversation preferences:",prefError);
-    if(!conversationPrefs.size)setConnectionBanner(english?"Some conversation settings could not load. Retrying…":"بخشی از تنظیمات گفتگو بارگذاری نشد؛ دوباره تلاش می‌کنیم.");
+    setConnectionBanner(english?"Some conversation settings could not load. Retrying…":"بخشی از تنظیمات گفتگو بارگذاری نشد؛ دوباره تلاش می‌کنیم.");
   }
+  // Do not let a stale preferences read continue into the messages request or update guest UI.
   setStatus("inboxStatus",english?"Loading conversations...":"در حال بارگذاری گفتگوها...");
   try{
     const {data,error}=await retryRead("conversation list",()=>getClient().from("messages")
@@ -1582,11 +1719,14 @@ async function refreshConversationList(){
     }
     const entries=[...conversations.values()];
     let profilesById=new Map(),profilesLoaded=true;
-    try{profilesById=await getContactProfiles(entries.map(c=>c.user_id));}catch(e){profilesLoaded=false;console.warn("Conversation contact profiles:",e);}
+    try{profilesById=await getContactProfiles(entries.map(c=>c.user_id));}catch(e){profilesLoaded=false;console.warn("Conversation contact profiles:",e);setConnectionBanner(english?"Some conversation profiles could not load. Retrying…":"اطلاعات بعضی مخاطبان گفتگو بارگذاری نشد؛ دوباره تلاش می‌کنیم.");}
     if(currentUser?.id!==myId||request!==conversationListRequestNumber)return;
     const snapshot=entries.map(c=>({...c,pref:prefFor(c.user_id),profile:profilesById.get(String(c.user_id))||{}}));
     renderConversationSnapshot(snapshot,myId);
     if(profilesLoaded){try{await window.FarnazLocalStore?.saveSnapshot(myId,"inbox",snapshot);}catch(cacheError){console.warn("Cached inbox save:",cacheError);}}
+    // The visible inbox may be usable with cached data, but recovery is complete only
+    // after server-side conversation preferences and participant profiles are confirmed.
+    return preferencesLoaded&&profilesLoaded;
   }catch(e){
     console.error("Inbox load:",e);
     if(currentUser?.id!==myId||request!==conversationListRequestNumber)return;
@@ -1594,11 +1734,13 @@ async function refreshConversationList(){
       renderConversationSnapshot(cachedSnapshot,myId);
       setStatus("inboxStatus",english?"Showing saved conversations; refresh failed.":"گفتگوهای ذخیره‌شده نمایش داده می‌شوند؛ به‌روزرسانی ناموفق بود.");
     }else setStatus("inboxStatus",(english?"Could not load conversations: ":"بارگذاری گفتگوها ناموفق بود: ")+e.message,true);
+    return false;
   }
 }
 async function findRecipient(event){
   event.preventDefault();
   if(!currentUser){openAuth();return;}
+  const myId=String(currentUser.id);
   const value=$("recipientValue").value.trim();
   if(!value){setStatus("recipientStatus",english?"Enter an email or phone number.":"ایمیل یا شماره را وارد کن.",true);return;}
   const button=$("findRecipientBtn");button.disabled=true;
@@ -1615,20 +1757,24 @@ async function findRecipient(event){
       ({data,error}=await client.rpc("find_farnaz_user_by_phone",{search_phone:phone}));
     }
     if(error)throw error;
+    if(String(currentUser?.id)!==myId)return;
     if(!data||!data.length){
       setStatus("recipientStatus",english?"No account found. Check the details.":"حسابی پیدا نشد؛ اطلاعات را بررسی کن.");return;
     }
     const r=data[0];
     const id=r.user_id||r.id;
     if(!id)throw new Error(english?"Search did not return a user ID.":"جست‌وجو شناسهٔ کاربر را برنگرداند.");
-    if(id===currentUser.id){
+    if(String(id)===myId){
       setStatus("recipientStatus",english?"You cannot message yourself.":"نمی‌توانی به حساب خودت پیام بدهی.",true);return;
     }
+    if(String(currentUser?.id)!==myId)return;
     const {error:saveError}=await client.from("contacts")
-      .upsert({user_id:currentUser.id,contact_user_id:id},{onConflict:"user_id,contact_user_id",ignoreDuplicates:true});
+      .upsert({user_id:myId,contact_user_id:id},{onConflict:"user_id,contact_user_id",ignoreDuplicates:true});
     if(saveError)throw saveError;
+    if(String(currentUser?.id)!==myId)return;
     let profile=null;
     try{profile=await getContactProfile(id);}catch(e){console.warn(e);}
+    if(String(currentUser?.id)!==myId)return;
     const contact={
       user_id:id,
       display_name:r.display_name||profile?.display_name||(english?"Farnaz user":"کاربر فرناز"),
@@ -1642,6 +1788,7 @@ async function findRecipient(event){
     previousPage="contactsPage";
     await refreshSavedContacts();
   }catch(e){
+    if(String(currentUser?.id)!==myId)return;
     console.error("Find recipient:",e);
     setStatus("recipientStatus",(english?"Search failed: ":"جست‌وجوی مخاطب ناموفق بود: ")+e.message,true);
   }finally{button.disabled=false;}
@@ -1758,7 +1905,7 @@ async function findRecipient(event){
         // reopen the form and erase the email/password immediately after login.
         currentUser=authenticatedUser;
         closeAuth();
-        navigate("chatsPage");
+        navigate("chatsPage",{refreshData:false});
         // Authentication has succeeded. Keep profile and inbox initialization
         // outside the authentication error path so they cannot undo a valid login.
         setStatus("authStatus","");
@@ -1770,7 +1917,9 @@ async function findRecipient(event){
           await subscribeToMessages();
           // Reconcile inbox and contacts after auth and realtime setup. The
           // navigation-triggered refresh may have been superseded during startup.
-          await Promise.allSettled([refreshConversationList(),refreshSavedContacts()]);
+          const initialDataResults=await Promise.allSettled([refreshConversationList(),refreshSavedContacts()]);
+          const initialDataFailure=initialDataResults.find(result=>result.status==="rejected"||result.value===false);
+          if(initialDataFailure)throw initialDataFailure.reason;
           setConnectionBanner("",false);
         }catch(connectionError){
           console.error("Post-login realtime initialization:",connectionError);
@@ -1803,28 +1952,56 @@ async function findRecipient(event){
   }
   // Restore the persisted Supabase session on app launch. Persisting a session is
   // not enough by itself: currentUser starts as null on every page reload.
-  async function restoreSavedSession(){
+  let sessionRestorePromise=null;
+  let sessionRestoreNeedsRetry=false;
+  async function restoreSavedSession(attempt=0){
+    if(currentUser)return;
+    if(sessionRestorePromise)return sessionRestorePromise;
+    sessionRestorePromise=(async()=>{
+      try{return await restoreSavedSessionAttempt(attempt);}
+      finally{sessionRestorePromise=null;}
+    })();
+    return sessionRestorePromise;
+  }
+  async function restoreSavedSessionAttempt(attempt=0){
+    // A single boot-time timeout must not permanently strand a valid local session
+    // behind the guest screen. A manual sign-in takes precedence over this retry.
+    if(currentUser)return;
     let client=null;
     try{
       client=getClient();
-      const {data,error}=await client.auth.getSession();
+      // Keep this longer than the fetch wrapper's 15-second auth-request deadline.
+      // A shorter outer timeout abandons a still-running refresh-token request; retrying
+      // getSession concurrently can race token rotation when Safari is waking from sleep.
+      const {data,error}=await withTimeout(client.auth.getSession(),18000,"saved session restore");
       if(error)throw error;
+      // A user may finish manual sign-in while this boot-time read is pending.
+      // Never let a late restore overwrite the newer authenticated identity.
+      if(currentUser)return;
       const session=data?.session;
       if(!session?.user){
+        sessionRestoreNeedsRetry=false;
         document.body.dataset.authState="guest";
+        // Clear the startup banner if an earlier transient restore attempt timed out.
+        // No valid session is a normal guest state, not a connection failure.
+        setConnectionBanner("",false);
+        setStatus("profileStatus","");
         return;
       }
+      sessionRestoreNeedsRetry=false;
       currentUser=session.user;
       document.body.dataset.authState="authenticated";
       closeAuth();
-      navigate("chatsPage");
+      navigate("chatsPage",{refreshData:false});
       setConnectionBanner(english?"Restoring your session…":"در حال بازیابی نشست ورود…");
       // Profile loading is independent; it must not hold session restoration.
       void showUser(session.user);
       try{
         await subscribeToMessages();
         // Reconcile inbox and contacts after restoring the saved session.
-        await Promise.allSettled([refreshConversationList(),refreshSavedContacts()]);
+        const initialDataResults=await Promise.allSettled([refreshConversationList(),refreshSavedContacts()]);
+        const initialDataFailure=initialDataResults.find(result=>result.status==="rejected"||result.value===false);
+        if(initialDataFailure)throw initialDataFailure.reason;
         setConnectionBanner("",false);
       }catch(connectionError){
         console.error("Restored-session initialization:",connectionError);
@@ -1834,8 +2011,24 @@ async function findRecipient(event){
         scheduleReconnect();
       }
     }catch(error){
+      // A manual sign-in may have completed while getSession() was pending.
+      // In that case this stale boot-time failure must not switch the UI back to guest.
+      if(currentUser)return;
+      // Retry transient startup failures before falling back to the guest screen.
+      // getSession() can time out while Safari is waking a suspended PWA.
+      const transientRestoreFailure=error?.name==="TimeoutError"||error?.name==="TypeError"||isTransientError(error);
+      if(transientRestoreFailure&&attempt<2&&!currentUser){
+        console.warn("Retrying saved-session restoration:",attempt+1);
+        setConnectionBanner(english
+          ?"Waking up your saved session… retrying connection."
+          :"در حال بازیابی نشست ذخیره‌شده؛ اتصال دوباره بررسی می‌شود…");
+        await recoveryDelay(700*(attempt+1));
+        if(!currentUser)await restoreSavedSessionAttempt(attempt+1);
+        return;
+      }
       // Do not erase a potentially valid session on a transient network failure.
       // A later explicit sign-in can still use the existing credentials.
+      sessionRestoreNeedsRetry=transientRestoreFailure;
       console.warn("Farnaz saved-session restore failed:",{
         name:error?.name||"Error",
         status:error?.status||error?.statusCode||null,
@@ -1843,6 +2036,9 @@ async function findRecipient(event){
         message:String(error?.message||error||"Unknown error")
       });
       document.body.dataset.authState="guest";
+      setConnectionBanner(english
+        ?"Farnaz could not restore your saved session. Check your connection and try signing in again."
+        :"بازیابی نشست ورود کامل نشد. اتصال را بررسی کن و دوباره برای ورود تلاش کن.");
       if(/refresh token.*(invalid|not found|expired)|invalid refresh token|session not found/i.test(String(error?.message||""))){
         try{if(client)await client.auth.signOut({scope:"local"});}catch(_){}
       }
@@ -1856,5 +2052,15 @@ async function findRecipient(event){
     farnazBootStarted=true;
     void restoreSavedSession();
   };
+  // Safari may suspend a standalone PWA while the network is unavailable.
+  // If the bounded boot retries failed transiently, retry once the app is visible
+  // or connectivity returns; share one in-flight restore to avoid overlapping reads.
+  const retryDeferredSessionRestore=()=>{
+    if(sessionRestoreNeedsRetry&&!currentUser&&document.visibilityState!=="hidden"){
+      void restoreSavedSession();
+    }
+  };
+  document.addEventListener("visibilitychange",retryDeferredSessionRestore);
+  window.addEventListener("online",retryDeferredSessionRestore);
   document.addEventListener("DOMContentLoaded",()=>{if(activeChat())syncViewport();});
 })();

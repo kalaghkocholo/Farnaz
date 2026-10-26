@@ -224,7 +224,7 @@ input[type=file]{font-size:11px;padding:9px}
   backdrop-filter:blur(15px)
 }
 .bottom-nav.visible{display:flex}
-.nav-inner{width:100%;max-width:560px;display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.nav-inner{width:100%;max-width:560px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
 .nav-button{
   min-height:57px;display:flex;flex-direction:column;
   justify-content:center;align-items:center;gap:4px;
@@ -291,7 +291,7 @@ footer{text-align:center;color:#718096;font-size:10px;padding:17px 0 7px}
 .app.chat-mode>header{display:none!important}
 .app.chat-mode>#chatPage{padding-top:2px}
 .app.chat-mode>#chatPage #sendMessageForm{margin:0;padding:0;flex:0 0 auto}
-.app.chat-mode>#chatPage .composer-shell{position:relative;display:grid;direction:ltr;grid-template-columns:40px minmax(0,1fr) auto;grid-template-rows:auto auto;grid-template-areas:"preview preview preview" "attach input controls";align-items:center;column-gap:5px;row-gap:4px;padding:5px 6px;border:1px solid var(--border);border-radius:24px;background:var(--panel)}
+.app.chat-mode>#chatPage .composer-shell{position:relative;display:grid;direction:ltr;grid-template-columns:40px minmax(0,1fr) auto;grid-template-rows:auto auto;grid-template-areas:"preview preview preview" "attach input controls";align-items:center;column-gap:5px;row-gap:4px;padding:5px 6px;border:1px solid var(--border);border-radius:24px;background:var(--bg)}
 .app.chat-mode>#chatPage .voice-preview{grid-area:preview;min-width:0}
 .app.chat-mode>#chatPage .send-row{grid-area:input;min-width:0;display:flex;align-items:center;gap:0}
 .app.chat-mode>#chatPage .send-row textarea{display:block;direction:rtl;text-align:right;width:100%;min-width:0;min-height:38px;max-height:112px;padding:9px 5px;line-height:1.4;border:0;border-radius:0;background:transparent}
@@ -985,7 +985,7 @@ body.chat-mode .app.chat-mode #chatPage #sendMessageForm {
 .contact-info-avatar{margin:0 auto 10px;width:82px;height:82px;font-size:26px}
 .contact-info-profile h2{font-size:20px;margin:8px 0}
 .contact-info-profile p{margin:5px 0}
-.contact-info-phone{font-size:14px;margin-top:8px;color:var(--mint,#50e3c2);direction:ltr!important;text-align:left!important;unicode-bidi:isolate;overflow-wrap:anywhere} #userPhone,.profile-phone,.phone-contact-details>span,#profilePhoneInput,#recipientValue{direction:ltr!important;text-align:left!important;unicode-bidi:isolate;overflow-wrap:anywhere} .profile-phone{display:block}
+.contact-info-phone{font-size:14px;margin-top:8px;color:var(--mint,#50e3c2);direction:ltr!important;text-align:right!important;unicode-bidi:isolate;overflow-wrap:anywhere} #userPhone,#profilePage .profile-phone{direction:ltr!important;text-align:right!important;unicode-bidi:isolate;overflow-wrap:anywhere} .phone-contact-details>span,#profilePhoneInput,#recipientValue{direction:ltr!important;text-align:left!important;unicode-bidi:isolate;overflow-wrap:anywhere} .profile-phone{display:block}
 .contact-info-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
 .contact-info-action{display:flex;min-width:0;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:10px 3px;border:1px solid var(--border,#334155);border-radius:13px;background:var(--panel2,#27364b);color:inherit;font:inherit;font-size:12px;cursor:pointer}
 .contact-info-action-icon{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:color-mix(in srgb,var(--accent,#50e3c2) 18%,transparent);color:var(--accent,#50e3c2);font-size:22px}
@@ -1218,7 +1218,7 @@ body[data-auth-state="guest"] #openSettingsButton{display:none!important;visibil
 .chats-topline .page-heading p{margin:3px 0 0;color:var(--muted);font-size:11px}
 .chats-new-button{width:42px;height:42px;flex:0 0 42px;display:grid;place-items:center;border:1px solid color-mix(in srgb,var(--accent,#7896c5) 35%,var(--border));border-radius:15px;background:var(--panel);color:var(--accent,#7896c5)}
 .chats-new-button svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
-.conversation-search{display:flex;align-items:center;gap:9px;margin:0 0 13px;padding:0 13px;border:1px solid var(--border);border-radius:15px;background:var(--panel);color:var(--muted)}
+.conversation-search{display:flex;align-items:center;gap:9px;margin:0 0 13px;padding:0 13px;border:1px solid var(--border);border-radius:15px;background:var(--bg);color:var(--muted)}
 .conversation-search svg{width:17px;height:17px;flex:0 0 17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
 .conversation-search input{min-width:0;padding:12px 0;border:0;outline:none!important;background:transparent;color:var(--white);font-size:14px;box-shadow:none}
 .conversation-search input::placeholder{color:var(--muted)}
@@ -1290,31 +1290,11 @@ body[data-theme="light"] .welcome-shell{background:radial-gradient(ellipse at 50
 #homePage .welcome-shell .welcome-language-switch{display:none!important}
 
 
-/* Phase 1 fixes: search/composer surfaces, contacts import toggle, avatars and nav. */
-#chatsPage .conversation-search{
-  background:var(--bg)!important;
-  border-color:var(--border)!important;
-}
-#chatsPage .conversation-search input{
-  background:transparent!important;
-}
-.app.chat-mode>#chatPage .composer-shell{
-  background:var(--bg)!important;
-}
-.app.chat-mode>#chatPage .send-row textarea{
-  background:transparent!important;
-}
-.nav-inner{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+/* Canonical contact-import layout, saved-contact sizing, and header placement. */
 #savedContactsList .avatar,
 #unmatchedPhoneContactsList .avatar{
   width:48px!important;height:48px!important;min-width:48px!important;
   font-size:18px!important;flex:0 0 48px!important;
-}
-#profilePage #userPhone,
-#profilePage .profile-phone{
-  direction:ltr!important;
-  text-align:right!important;
-  unicode-bidi:isolate!important;
 }
 #contactsPage{position:relative}
 #contactsPage .contacts-import-toggle{
@@ -1340,14 +1320,6 @@ body[data-theme="light"] .welcome-shell{background:radial-gradient(ellipse at 50
   position:absolute!important;left:0!important;right:auto!important;
   top:4px!important;margin:0!important;z-index:5;
 }
-
-/* Keep contact phone numbers aligned to the right in both RTL and LTR UI. */
-.contact-info-card .contact-info-phone{
-  direction:ltr!important;
-  text-align:right!important;
-  unicode-bidi:isolate!important;
-}
-
 
 /* iOS home-screen safe-area calibration */
 @media (display-mode: standalone) {

@@ -8,6 +8,22 @@
   const STORE_SNAPSHOTS="snapshots";
   const STORE_SPACE_MESSAGES="spaceMessages";
   let opening=null;
+  // Serialize account-cache writes against logout cleanup. A quick re-login must
+  // write fresh cache data only after the previous logout purge has completed.
+  const clearingUsers=new Map();
+  // Every account-scoped operation captures a generation. Logout advances it
+  // synchronously, so an older async read/write cannot publish or persist data
+  // after the purge starts, even if it was already waiting for IndexedDB.
+  const userGenerations=new Map();
+  function generationFor(userId){return userId?Number(userGenerations.get(String(userId))||0):0;}
+  function generationIsCurrent(userId,generation){return !userId||generationFor(userId)===generation;}
+  async function waitForUserClear(userId){
+    if(!userId)return;
+    while(clearingUsers.has(String(userId))){
+      const pending=clearingUsers.get(String(userId));
+      await pending;
+    }
+  }
 
   function openDB(){
     if(!("indexedDB" in window))return Promise.resolve(null);
@@ -41,8 +57,15 @@
   }
 
   function keyFor(userId,contactId){return String(userId)+"::"+String(contactId);}
-  async function read(storeName,key){
+  async function read(storeName,key,userId=null){
+    // Bind this read to the account generation at invocation time. If logout
+    // starts while we await a gate or IndexedDB, discard the late result.
+    const generation=generationFor(userId);
+    await waitForUserClear(userId);
+    if(!generationIsCurrent(userId,generation))return null;
     const db=await openDB();if(!db)return null;
+    await waitForUserClear(userId);
+    if(!generationIsCurrent(userId,generation))return null;
     return new Promise((resolve,reject)=>{
       let settled=false;
       const finish=(error,value)=>{
@@ -53,14 +76,21 @@
       let tx,request;
       try{tx=db.transaction(storeName,"readonly");request=tx.objectStore(storeName).get(key);}
       catch(error){finish(error);return;}
-      request.onsuccess=()=>finish(null,request.result||null);
+      request.onsuccess=()=>finish(null,generationIsCurrent(userId,generation)?(request.result||null):null);
       request.onerror=()=>finish(request.error||new Error("Local read failed"));
       tx.onerror=()=>finish(tx.error||new Error("Local read transaction failed"));
       tx.onabort=()=>finish(tx.error||new Error("Local read transaction aborted"));
     });
   }
   async function write(storeName,value){
+    const userId=value?.userId;
+    const generation=generationFor(userId);
+    await waitForUserClear(userId);
+    if(!generationIsCurrent(userId,generation))return false;
     const db=await openDB();if(!db)return false;
+    // A logout may have started while openDB() was pending.
+    await waitForUserClear(userId);
+    if(!generationIsCurrent(userId,generation))return false;
     return new Promise((resolve,reject)=>{
       let settled=false;
       const finish=(error,result)=>{
@@ -76,8 +106,13 @@
       tx.onabort=()=>finish(tx.error||new Error("Local write aborted"));
     });
   }
-  async function remove(storeName,key){
+  async function remove(storeName,key,userId=null){
+    const generation=generationFor(userId);
+    await waitForUserClear(userId);
+    if(!generationIsCurrent(userId,generation))return false;
     const db=await openDB();if(!db)return false;
+    await waitForUserClear(userId);
+    if(!generationIsCurrent(userId,generation))return false;
     return new Promise((resolve,reject)=>{
       let settled=false;
       const finish=(error,result)=>{
@@ -96,18 +131,29 @@
 
   async function getMessages(userId,contactId){
     if(!userId||!contactId)return [];
-    const record=await read(STORE_MESSAGES,keyFor(userId,contactId));
+    const record=await read(STORE_MESSAGES,keyFor(userId,contactId),userId);
     return Array.isArray(record?.messages)?record.messages:[];
   }
   async function saveMessages(userId,contactId,messages,mergeExisting=false){
     if(!userId||!contactId||!Array.isArray(messages))return false;
+    const generation=generationFor(userId);
+    await waitForUserClear(userId);
+    if(!generationIsCurrent(userId,generation))return false;
     const db=await openDB();if(!db)return false;
+    await waitForUserClear(userId);
+    if(!generationIsCurrent(userId,generation))return false;
     const key=keyFor(userId,contactId);
     return new Promise((resolve,reject)=>{
       const tx=db.transaction(STORE_MESSAGES,"readwrite");
       const store=tx.objectStore(STORE_MESSAGES);
       const request=store.get(key);
       request.onsuccess=()=>{
+        // A logout may begin while the IndexedDB read is pending. Abort this
+        // transaction before it can write any stale account cache data.
+        if(!generationIsCurrent(userId,generation)){
+          try{tx.abort();}catch(_){}
+          return;
+        }
         const uniqueMessages=new Map();
         if(mergeExisting&&Array.isArray(request.result?.messages)){
           for(const message of request.result.messages){if(message?.id)uniqueMessages.set(String(message.id),message);}
@@ -125,23 +171,26 @@
       request.onerror=()=>{try{tx.abort();}catch(_){};reject(request.error||new Error("Local message cache read failed"));};
       tx.oncomplete=()=>resolve(true);
       tx.onerror=()=>reject(tx.error||new Error("Local message cache write failed"));
-      tx.onabort=()=>reject(tx.error||new Error("Local message cache write aborted"));
+      tx.onabort=()=>{
+        if(!generationIsCurrent(userId,generation)){resolve(false);return;}
+        reject(tx.error||new Error("Local message cache write aborted"));
+      };
     });
   }
   async function getDraft(userId,contactId){
     if(!userId||!contactId)return "";
-    const record=await read(STORE_DRAFTS,keyFor(userId,contactId));
+    const record=await read(STORE_DRAFTS,keyFor(userId,contactId),userId);
     return typeof record?.body==="string"?record.body:"";
   }
   async function saveDraft(userId,contactId,body){
     if(!userId||!contactId)return false;
     const key=keyFor(userId,contactId),value=String(body||"");
-    if(!value.trim())return remove(STORE_DRAFTS,key);
+    if(!value.trim())return remove(STORE_DRAFTS,key,userId);
     return write(STORE_DRAFTS,{key,userId:String(userId),contactId:String(contactId),body:value,updatedAt:Date.now()});
   }
   async function clearDraft(userId,contactId){
     if(!userId||!contactId)return false;
-    return remove(STORE_DRAFTS,keyFor(userId,contactId));
+    return remove(STORE_DRAFTS,keyFor(userId,contactId),userId);
   }
   async function saveTemporaryFile(userId,fileId,blob,ttlMs){
     if(!userId||!fileId||!(blob instanceof Blob))return false;
@@ -150,34 +199,64 @@
   }
   async function getTemporaryFile(userId,fileId){
     if(!userId||!fileId)return null;
-    const record=await read(STORE_TEMP,keyFor(userId,fileId));
+    const record=await read(STORE_TEMP,keyFor(userId,fileId),userId);
     if(!record)return null;
-    if(record.expiresAt<=Date.now()){await remove(STORE_TEMP,record.key);return null;}
+    if(record.expiresAt<=Date.now()){await remove(STORE_TEMP,record.key,userId);return null;}
     return record.blob||null;
   }
-  async function clearUser(userId){
-    if(!userId)return false;
-    const db=await openDB();if(!db)return false;
-    const names=[STORE_MESSAGES,STORE_DRAFTS,STORE_TEMP,STORE_SNAPSHOTS,STORE_SPACE_MESSAGES];
-    return new Promise((resolve,reject)=>{
-      const tx=db.transaction(names,"readwrite");
-      for(const name of names){
-        const request=tx.objectStore(name).openCursor();
-        request.onsuccess=()=>{
-          const cursor=request.result;
-          if(!cursor)return;
-          if(String(cursor.value?.userId)===String(userId))cursor.delete();
-          cursor.continue();
-        };
+  function clearUser(userId){
+    if(!userId)return Promise.resolve(false);
+    const id=String(userId);
+    // Invalidate pending operations immediately, before any async cleanup work.
+    userGenerations.set(id,generationFor(id)+1);
+    const previous=clearingUsers.get(id);
+    let release;
+    const gate=new Promise(resolve=>{release=resolve;});
+    clearingUsers.set(id,gate);
+    return (async()=>{
+      try{
+        // Queue repeated cleanup operations for the same account.
+        if(previous)await previous;
+        const db=await openDB();if(!db)return false;
+        const names=[STORE_MESSAGES,STORE_DRAFTS,STORE_TEMP,STORE_SNAPSHOTS,STORE_SPACE_MESSAGES];
+        return await new Promise((resolve,reject)=>{
+          let settled=false;
+          let tx;
+          const finish=(error,result)=>{
+            if(settled)return;
+            settled=true;
+            clearTimeout(timer);
+            if(error)reject(error);else resolve(result);
+          };
+          const timer=setTimeout(()=>{
+            try{tx?.abort();}catch(_){}
+            finish(new Error("Local account cleanup timed out"));
+          },5000);
+          try{tx=db.transaction(names,"readwrite");}
+          catch(error){finish(error);return;}
+          for(const name of names){
+            const request=tx.objectStore(name).openCursor();
+            request.onsuccess=()=>{
+              const cursor=request.result;
+              if(!cursor)return;
+              if(String(cursor.value?.userId)===id)cursor.delete();
+              cursor.continue();
+            };
+            request.onerror=()=>{try{tx.abort();}catch(_){};finish(request.error||new Error("Local account cleanup cursor failed"));};
+          }
+          tx.oncomplete=()=>finish(null,true);
+          tx.onerror=()=>finish(tx.error||new Error("Local account cleanup failed"));
+          tx.onabort=()=>finish(tx.error||new Error("Local account cleanup aborted"));
+        });
+      }finally{
+        if(clearingUsers.get(id)===gate)clearingUsers.delete(id);
+        release();
       }
-      tx.oncomplete=()=>resolve(true);
-      tx.onerror=()=>reject(tx.error||new Error("Local account cleanup failed"));
-      tx.onabort=()=>reject(tx.error||new Error("Local account cleanup aborted"));
-    });
+    })();
   }
   async function getSnapshot(userId,kind){
     if(!userId||!kind)return null;
-    const record=await read(STORE_SNAPSHOTS,keyFor(userId,kind));
+    const record=await read(STORE_SNAPSHOTS,keyFor(userId,kind),userId);
     return record&&Object.prototype.hasOwnProperty.call(record,"data")?record.data:null;
   }
   async function saveSnapshot(userId,kind,data){
@@ -186,7 +265,7 @@
   }
   async function getSpaceMessages(userId,spaceId){
     if(!userId||!spaceId)return [];
-    const record=await read(STORE_SPACE_MESSAGES,keyFor(userId,spaceId));
+    const record=await read(STORE_SPACE_MESSAGES,keyFor(userId,spaceId),userId);
     return Array.isArray(record?.messages)?record.messages:[];
   }
   async function saveSpaceMessages(userId,spaceId,messages){

@@ -107,7 +107,7 @@ async function loadPrivateMessages(older=false,preserveScroll=false){
     setStatus("sendMessageStatus",displayedCachedMessages
       ?(english?"Showing saved messages offline.":"پیام‌های ذخیره‌شده نمایش داده می‌شوند؛ اینترنت قطع است.")
       :(english?"Offline. No saved messages for this chat yet.":"اینترنت قطع است و هنوز پیامی از این گفتگو ذخیره نشده است."),!displayedCachedMessages);
-    return;
+    return false;
   }
   setStatus("sendMessageStatus",english?"Loading messages...":"در حال بارگذاری پیام‌ها...");
   try{
@@ -155,6 +155,7 @@ async function loadPrivateMessages(older=false,preserveScroll=false){
     // Keep the older-history control hidden after loading; user must scroll back to the top.
     $("loadOlderButton").hidden=true;
     setStatus("sendMessageStatus","");
+    return true;
   }catch(e){
     console.error("Load messages:",e);
     if(displayedCachedMessages){
@@ -162,6 +163,7 @@ async function loadPrivateMessages(older=false,preserveScroll=false){
     }else{
       setStatus("sendMessageStatus",(english?"Could not load messages: ":"دریافت پیام‌ها ناموفق بود: ")+e.message,true);
     }
+    return false;
   }
 }
 async function makeMessageElement(m,myId,fromCache=false){

@@ -145,22 +145,29 @@ function renderSpacesList(spaceRows,mm,fromCache){
   q("spacesStatus").textContent="";
 }
 async function open(id){
+ if(!currentUser)return;
+ const myId=String(currentUser.id),token=++spaceOpenToken;
+ const isCurrent=()=>String(currentUser?.id||"")===myId&&token===spaceOpenToken;
  try{
   let s,cachedSpace=false,cachedSpacesSnapshot=null;
-  try{const latest=await withTimeout(getClient().from("spaces").select("*").eq("id",id).single(),8000,"اطلاعات گروه یا کانال");if(latest.error)throw latest.error;s=latest.data;}
+  try{const latest=await withTimeout(getClient().from("spaces").select("*").eq("id",id).single(),8000,"اطلاعات گروه یا کانال");if(latest.error)throw latest.error;if(!isCurrent())return;s=latest.data;}
   catch(fetchError){
-   cachedSpacesSnapshot=await window.FarnazLocalStore?.getSnapshot(currentUser.id,"spaces").catch(()=>null);
+   if(!isCurrent())return;
+   cachedSpacesSnapshot=await window.FarnazLocalStore?.getSnapshot(myId,"spaces").catch(()=>null);
+   if(!isCurrent())return;
    s=cachedSpacesSnapshot?.spaces?.find(item=>String(item.id)===String(id));
    if(!s)throw fetchError;
    cachedSpace=true;
   }
+  if(!isCurrent())return;
   active=s;spaces=spaces.map(x=>x.id===s.id?s:x);
  document.querySelector(".app")?.classList.add("spaces-chat-mode");document.body.classList.add("spaces-chat-mode");q("bottomNav")?.classList.remove("visible");q("spaceList").hidden=true;document.querySelector(".spaces-head").hidden=true;document.querySelector(".spaces-tabs").hidden=true;document.querySelector(".spaces-actions").hidden=true;q("spacesStatus").hidden=true;q("spaceDetail").hidden=false;q("spaceDetail").querySelector(".space-call-actions").hidden=true;
  q("spaceName").textContent=s.name;if(["group","channel"].includes(s.type)){q("spaceName").setAttribute("role","button");q("spaceName").tabIndex=0;q("spaceName").setAttribute("aria-label",s.type==="channel"?tr("باز کردن اطلاعات کانال","Open channel information"):tr("باز کردن اطلاعات گروه","Open group information"));q("spaceName").style.cursor="pointer";}else{q("spaceName").removeAttribute("role");q("spaceName").removeAttribute("tabindex");q("spaceName").removeAttribute("aria-label");q("spaceName").style.cursor="default";}renderSpaceAvatar(q("spaceIcon"),s.avatar_url,s.type==="group"?"👥":"📣",true);q("spaceIcon").style.cursor=["group","channel"].includes(s.type)?"pointer":"default";q("spaceDescription").textContent=s.description||"";q("spaceDescription").hidden=!q("spaceDescription").textContent.trim();
  let membership=null;
- try{const result=await withTimeout(getClient().from("space_members").select("role").eq("space_id",s.id).eq("user_id",currentUser.id).maybeSingle(),7000,"عضویت در گروه یا کانال");if(result.error)throw result.error;membership=result.data;}
+ try{const result=await withTimeout(getClient().from("space_members").select("role").eq("space_id",s.id).eq("user_id",myId).maybeSingle(),7000,"عضویت در گروه یا کانال");if(result.error)throw result.error;if(!isCurrent())return;membership=result.data;}
  catch(membershipError){
-  if(!cachedSpace)throw membershipError;
+   if(!isCurrent())return;
+   if(!cachedSpace)throw membershipError;
   membership=(cachedSpacesSnapshot?.memberships||[]).find(item=>String(item.space_id)===String(s.id))||null;
   q("spaceMessageStatus").textContent=tr("نمایش اطلاعات ذخیره‌شده؛ بعضی قابلیت‌ها تا اتصال اینترنت در دسترس نیستند.","Showing saved details; some features need an internet connection.");
  }
@@ -171,8 +178,10 @@ async function open(id){
  if(s.type==="channel"&&!s.is_public&&manager&&s.invite_code){const span=document.createElement("span");span.className="space-muted space-code";span.textContent=tr("کد دعوت: ","Invite code: ")+s.invite_code;acts.appendChild(span);const b=document.createElement("button");b.className="space-secondary";b.textContent=tr("کپی کد","Copy code");b.onclick=()=>navigator.clipboard.writeText(s.invite_code).then(()=>q("spaceMessageStatus").textContent=tr("کد کپی شد.","Invite code copied.")).catch(()=>q("spaceMessageStatus").textContent=s.invite_code);acts.appendChild(b);}
  acts.hidden=acts.childElementCount===0;
  q("spaceComposer").hidden=!(s.type==="group"?(joined&&(s.members_can_send_messages!==false||manager)):!!manager);if(s.allow_media===false){q("spaceAttachmentButton").hidden=true;q("spaceVoiceButton").hidden=true;}else{q("spaceAttachmentButton").hidden=false;q("spaceVoiceButton").hidden=false;}q("spaceMessageStatus").textContent=!joined&&s.type==="channel"?tr("برای دنبال‌کردن کانال عضو شو؛ فقط مدیران می‌توانند پیام منتشر کنند.","Join to follow this channel. Only admins can publish posts."):"";
- await loadMessages(s.id);if(sub){await getClient().removeChannel(sub);sub=null;}sub=getClient().channel("space-"+s.id,{config:{private:true}}).on("postgres_changes",{event:"*",schema:"public",table:"space_messages",filter:"space_id=eq."+s.id},()=>{if(active?.id===s.id){clearTimeout(messageReloadTimer);messageReloadTimer=setTimeout(()=>{if(active?.id===s.id)loadMessages(s.id);},220);}}).on("broadcast",{event:"typing"},event=>{const p=event?.payload||{};if(String(p.from)===String(currentUser?.id)||privacySettings?.show_typing===false)return;let indicator=q("spaceTypingIndicator");if(!indicator){indicator=document.createElement("p");indicator.id="spaceTypingIndicator";indicator.className="space-typing-indicator";q("spaceMessages")?.parentNode?.insertBefore(indicator,q("spaceMessages"));}indicator.textContent=p.typing?(tr("یکی از اعضا","A member")+" "+tr("در حال نوشتن…","is typing…")):"";if(spaceRemoteTypingTimer)clearTimeout(spaceRemoteTypingTimer);if(p.typing)spaceRemoteTypingTimer=setTimeout(()=>{if(indicator)indicator.textContent="";},2200);}).on("postgres_changes",{event:"INSERT",schema:"public",table:"space_message_reads",filter:"space_id=eq."+s.id},payload=>{if(active?.id===s.id&&String(payload?.new?.user_id)!==String(currentUser?.id)){clearTimeout(messageReloadTimer);messageReloadTimer=setTimeout(()=>{if(active?.id===s.id)loadMessages(s.id);},220);}}).subscribe();
- }catch(e){q("spacesStatus").textContent=tr("بازکردن فضا ناموفق بود: ","Could not open space: ")+e.message;}
+ await loadMessages(s.id);if(!isCurrent())return;
+  if(sub){const previous=sub;sub=null;await getClient().removeChannel(previous);if(!isCurrent())return;}
+  sub=getClient().channel("space-"+s.id,{config:{private:true}}).on("postgres_changes",{event:"*",schema:"public",table:"space_messages",filter:"space_id=eq."+s.id},()=>{if(active?.id===s.id){clearTimeout(messageReloadTimer);messageReloadTimer=setTimeout(()=>{if(active?.id===s.id)loadMessages(s.id);},220);}}).on("broadcast",{event:"typing"},event=>{const p=event?.payload||{};if(String(p.from)===String(currentUser?.id)||privacySettings?.show_typing===false)return;let indicator=q("spaceTypingIndicator");if(!indicator){indicator=document.createElement("p");indicator.id="spaceTypingIndicator";indicator.className="space-typing-indicator";q("spaceMessages")?.parentNode?.insertBefore(indicator,q("spaceMessages"));}indicator.textContent=p.typing?(tr("یکی از اعضا","A member")+" "+tr("در حال نوشتن…","is typing…")):"";if(spaceRemoteTypingTimer)clearTimeout(spaceRemoteTypingTimer);if(p.typing)spaceRemoteTypingTimer=setTimeout(()=>{if(indicator)indicator.textContent="";},2200);}).on("postgres_changes",{event:"INSERT",schema:"public",table:"space_message_reads",filter:"space_id=eq."+s.id},payload=>{if(active?.id===s.id&&String(payload?.new?.user_id)!==String(currentUser?.id)){clearTimeout(messageReloadTimer);messageReloadTimer=setTimeout(()=>{if(active?.id===s.id)loadMessages(s.id);},220);}}).subscribe();
+ }catch(e){if(isCurrent())q("spacesStatus").textContent=tr("بازکردن فضا ناموفق بود: ","Could not open space: ")+e.message;}
 }
 
  function renderSpaceAvatar(el,path,fallback,privateGroup=false){

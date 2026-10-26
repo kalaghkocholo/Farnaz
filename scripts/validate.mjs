@@ -346,7 +346,7 @@ const authChecks = [
    sources["js/spaces.js"].includes('const isCurrent=()=>String(currentUser?.id||"")===myId&&String(active?.id||"")===String(spaceId);'),
     "js/spaces.js must ignore late member-presence results after the account or active space changes"],
   [sources["js/local-store.js"].includes("async function read(storeName,key,userId=null)") &&
-   sources["js/local-store.js"].includes("await waitForUserClear(userId);\\n    const db=await openDB();if(!db)return null;\\n    await waitForUserClear(userId);") &&
+   (sources["js/local-store.js"].match(/await waitForUserClear\\(userId\\);/g)||[]).length>=2 && sources["js/local-store.js"].includes("const db=await openDB();if(!db)return null;") &&
    sources["js/local-store.js"].includes("read(STORE_SNAPSHOTS,keyFor(userId,kind),userId)") &&
    sources["js/local-store.js"].includes("read(STORE_MESSAGES,keyFor(userId,contactId),userId)") &&
    sources["js/local-store.js"].includes("read(STORE_SPACE_MESSAGES,keyFor(userId,spaceId),userId)"),

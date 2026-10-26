@@ -1932,7 +1932,18 @@ async function findRecipient(event){
   }
   // Restore the persisted Supabase session on app launch. Persisting a session is
   // not enough by itself: currentUser starts as null on every page reload.
+  let sessionRestorePromise=null;
+  let sessionRestoreNeedsRetry=false;
   async function restoreSavedSession(attempt=0){
+    if(currentUser)return;
+    if(sessionRestorePromise)return sessionRestorePromise;
+    sessionRestorePromise=(async()=>{
+      try{return await restoreSavedSessionAttempt(attempt);}
+      finally{sessionRestorePromise=null;}
+    })();
+    return sessionRestorePromise;
+  }
+  async function restoreSavedSessionAttempt(attempt=0){
     // A single boot-time timeout must not permanently strand a valid local session
     // behind the guest screen. A manual sign-in takes precedence over this retry.
     if(currentUser)return;
@@ -1949,6 +1960,7 @@ async function findRecipient(event){
       if(currentUser)return;
       const session=data?.session;
       if(!session?.user){
+        sessionRestoreNeedsRetry=false;
         document.body.dataset.authState="guest";
         // Clear the startup banner if an earlier transient restore attempt timed out.
         // No valid session is a normal guest state, not a connection failure.
@@ -1956,6 +1968,7 @@ async function findRecipient(event){
         setStatus("profileStatus","");
         return;
       }
+      sessionRestoreNeedsRetry=false;
       currentUser=session.user;
       document.body.dataset.authState="authenticated";
       closeAuth();
@@ -1990,11 +2003,12 @@ async function findRecipient(event){
           ?"Waking up your saved session… retrying connection."
           :"در حال بازیابی نشست ذخیره‌شده؛ اتصال دوباره بررسی می‌شود…");
         await recoveryDelay(700*(attempt+1));
-        if(!currentUser)await restoreSavedSession(attempt+1);
+        if(!currentUser)await restoreSavedSessionAttempt(attempt+1);
         return;
       }
       // Do not erase a potentially valid session on a transient network failure.
       // A later explicit sign-in can still use the existing credentials.
+      sessionRestoreNeedsRetry=transientRestoreFailure;
       console.warn("Farnaz saved-session restore failed:",{
         name:error?.name||"Error",
         status:error?.status||error?.statusCode||null,
@@ -2018,5 +2032,15 @@ async function findRecipient(event){
     farnazBootStarted=true;
     void restoreSavedSession();
   };
+  // Safari may suspend a standalone PWA while the network is unavailable.
+  // If the bounded boot retries failed transiently, retry once the app is visible
+  // or connectivity returns; share one in-flight restore to avoid overlapping reads.
+  const retryDeferredSessionRestore=()=>{
+    if(sessionRestoreNeedsRetry&&!currentUser&&document.visibilityState!=="hidden"){
+      void restoreSavedSession();
+    }
+  };
+  document.addEventListener("visibilitychange",retryDeferredSessionRestore);
+  window.addEventListener("online",retryDeferredSessionRestore);
   document.addEventListener("DOMContentLoaded",()=>{if(activeChat())syncViewport();});
 })();

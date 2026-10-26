@@ -280,6 +280,10 @@ const authChecks = [
     "js/core.js must not silently hide failed inbox/contact initialization after login or session restore"],
   [chatSource.includes("window.loadPrivateMessages") || chatSource.includes("loadPrivateMessages"),
     "js/chat-menu-v5.js must retain the explicit private-message loader"],
+  [chatSource.includes('setStatus("sendMessageStatus","");\n    return true;') &&
+   chatSource.includes('return false;\n  }\n}\nasync function makeMessageElement') &&
+   coreSource.includes('if(chatRefreshed===false)throw new Error("Private chat refresh did not complete")'),
+    "private-chat recovery must report failed message loads instead of clearing the connection banner"],
   [chatSource.includes("const subscriptionReady=new Promise") &&
    chatSource.includes("await subscriptionReady") &&
    chatSource.includes("},12000);") &&

@@ -246,6 +246,8 @@ const authChecks = [
     "js/core.js must clear stale profile/connection loading status when returning to guest"],
   [coreSource.includes("// Ignore a late profile failure after logout or a newer account/profile request.") && coreSource.includes("if(request!==profileRequestNumber||currentUser?.id!==user.id)return;"),
     "js/core.js must ignore stale profile failures after logout or account switching"],
+  [coreSource.includes("// Logout/account switching may happen while profile creation is pending.") && coreSource.includes("// A completed cache write must not let a stale profile request update the UI after logout.") ,
+    "js/core.js must re-check the profile request after awaited profile creation and cache writes"],
   [coreSource.includes('retryRead("create current user profile"') && coreSource.includes('withTimeout(operation(),timeoutMs,label)') && coreSource.includes('timeoutMs=9000'),
     "js/core.js must bound the initial profile creation request"],
   [coreSource.includes("could not restore your saved session") && coreSource.includes("setConnectionBanner("),

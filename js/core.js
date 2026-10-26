@@ -1821,7 +1821,10 @@ async function findRecipient(event){
     let client=null;
     try{
       client=getClient();
-      const {data,error}=await withTimeout(client.auth.getSession(),9000,"saved session restore");
+      // Keep this longer than the fetch wrapper's 15-second auth-request deadline.
+      // A shorter outer timeout abandons a still-running refresh-token request; retrying
+      // getSession concurrently can race token rotation when Safari is waking from sleep.
+      const {data,error}=await withTimeout(client.auth.getSession(),18000,"saved session restore");
       if(error)throw error;
       // A user may finish manual sign-in while this boot-time read is pending.
       // Never let a late restore overwrite the newer authenticated identity.

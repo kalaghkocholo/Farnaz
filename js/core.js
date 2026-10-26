@@ -1613,6 +1613,7 @@ async function refreshConversationList(){
       setStatus("inboxStatus",english?"Showing saved conversations while refreshing…":"نمایش گفتگوهای ذخیره‌شده؛ در حال همگام‌سازی…");
     }
   }catch(cacheError){console.warn("Cached inbox read:",cacheError);}
+  let preferencesLoaded=true;
   try{
     const prefResult=await retryRead("conversation preferences",()=>getClient().from("conversation_preferences").select("*").eq("user_id",myId));
     if(currentUser?.id!==myId||request!==conversationListRequestNumber)return;
@@ -1620,11 +1621,11 @@ async function refreshConversationList(){
   }catch(prefError){
     // A failed preferences request may finish after logout or a newer refresh.
     if(currentUser?.id!==myId||request!==conversationListRequestNumber)return;
+    preferencesLoaded=false;
     console.warn("Conversation preferences:",prefError);
-    if(!conversationPrefs.size)setConnectionBanner(english?"Some conversation settings could not load. Retrying…":"بخشی از تنظیمات گفتگو بارگذاری نشد؛ دوباره تلاش می‌کنیم.");
+    setConnectionBanner(english?"Some conversation settings could not load. Retrying…":"بخشی از تنظیمات گفتگو بارگذاری نشد؛ دوباره تلاش می‌کنیم.");
   }
   // Do not let a stale preferences read continue into the messages request or update guest UI.
-  if(currentUser?.id!==myId||request!==conversationListRequestNumber)return;
   setStatus("inboxStatus",english?"Loading conversations...":"در حال بارگذاری گفتگوها...");
   try{
     const {data,error}=await retryRead("conversation list",()=>getClient().from("messages")
@@ -1648,7 +1649,9 @@ async function refreshConversationList(){
     const snapshot=entries.map(c=>({...c,pref:prefFor(c.user_id),profile:profilesById.get(String(c.user_id))||{}}));
     renderConversationSnapshot(snapshot,myId);
     if(profilesLoaded){try{await window.FarnazLocalStore?.saveSnapshot(myId,"inbox",snapshot);}catch(cacheError){console.warn("Cached inbox save:",cacheError);}}
-    return true;
+    // The visible inbox may be usable with cached preferences, but the refresh is
+    // incomplete until server-side pin/archive/mute/hidden settings are confirmed.
+    return preferencesLoaded;
   }catch(e){
     console.error("Inbox load:",e);
     if(currentUser?.id!==myId||request!==conversationListRequestNumber)return;

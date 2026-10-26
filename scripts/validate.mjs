@@ -266,7 +266,7 @@ const authChecks = [
   [coreSource.includes("could not restore your saved session") && coreSource.includes("setConnectionBanner("),
     "js/core.js must visibly report a failed saved-session restore"],
   [coreSource.includes("let preferencesLoaded=true;") && coreSource.includes("preferencesLoaded=false;") && coreSource.includes("return preferencesLoaded&&profilesLoaded;") && coreSource.includes("return profilesLoaded;"),
-    "js/core.js must not report inbox recovery as successful when server-side conversation preferences failed"],
+    "js/core.js must not report inbox or contacts recovery as successful when preferences or participant profiles failed"],
   [coreSource.includes("const recoveryUserId=String(currentUser.id);") &&
    coreSource.includes("const inboxRefreshed=await refreshConversationList();") &&
    coreSource.includes("if(inboxRefreshed===false)throw new Error") &&

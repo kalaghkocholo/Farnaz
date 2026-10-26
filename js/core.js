@@ -931,20 +931,32 @@ function applyPrivacySettings(){
 }
 async function savePrivacySetting(key,value){
  if(!currentUser)return;
+ const userId=String(currentUser.id);
  const allowed={presence_visibility:["everyone","contacts","nobody"],last_seen_visibility:["everyone","contacts","nobody"]};
  if(allowed[key]&&!allowed[key].includes(value))return;
  const previous=privacySettings[key];privacySettings={...privacySettings,[key]:value};
  const status=$("privacySettingsStatus");if(status)status.textContent=english?"Saving…":"در حال ذخیره…";
- try{const {error}=await getClient().from("profiles").update({[key]:value}).eq("id",currentUser.id);if(error)throw error;
+ try{
+  const {error}=await getClient().from("profiles").update({[key]:value}).eq("id",userId);if(error)throw error;
+  if(String(currentUser?.id)!==userId)return;
   if(status)status.textContent=english?"Privacy settings saved.":"تنظیمات حریم خصوصی ذخیره شد.";
-  try{const cached=await window.FarnazLocalStore?.getSnapshot(currentUser.id,"profile");if(cached)await window.FarnazLocalStore.saveSnapshot(currentUser.id,"profile",{...cached,[key]:value});}catch(cacheError){console.warn("Cached privacy settings update:",cacheError);}
+  try{const cached=await window.FarnazLocalStore?.getSnapshot(userId,"profile");if(cached&&String(currentUser?.id)===userId)await window.FarnazLocalStore.saveSnapshot(userId,"profile",{...cached,[key]:value});}catch(cacheError){console.warn("Cached privacy settings update:",cacheError);}
+  if(String(currentUser?.id)!==userId)return;
   window.dispatchEvent(new CustomEvent("farnaz-privacy-updated",{detail:{...privacySettings}}));
-  if(farnazPresenceChannel)startFarnazPresence().then(()=>{if(currentChatUser&&privacySettings.show_typing!==false)startPrivateTypingChannel(currentChatUser.user_id).catch(()=>{});}).catch(()=>{});
- }catch(error){privacySettings={...privacySettings,[key]:previous};applyPrivacySettings();if(status)status.textContent=(english?"Could not save: ":"ذخیره ناموفق بود: ")+(error?.message||String(error));}
+  if(farnazPresenceChannel)startFarnazPresence().then(()=>{if(String(currentUser?.id)===userId&&currentChatUser&&privacySettings.show_typing!==false)startPrivateTypingChannel(currentChatUser.user_id).catch(()=>{});}).catch(()=>{});
+ }catch(error){
+  if(String(currentUser?.id)!==userId)return;
+  privacySettings={...privacySettings,[key]:previous};applyPrivacySettings();
+  if(status)status.textContent=(english?"Could not save: ":"ذخیره ناموفق بود: ")+(error?.message||String(error));
+ }
 }
 
 async function saveProfile(event){
   event.preventDefault();if(!currentUser)return;
+  // Capture the account and settings before the first await. A logout or quick
+  // account switch must never redirect an in-flight save into the next profile.
+  const userId=String(currentUser.id);
+  const profilePrivacy={...privacySettings};
   const name=$("profileNameInput").value.trim();
   const phone=normalizePhone($("profilePhoneInput").value,$("profilePhoneCountry").value);
   const showPhone=$("showPhoneSetting").checked;
@@ -968,31 +980,37 @@ async function saveProfile(event){
     if(file){
       setStatus("profileStatus",english?"Uploading profile photo...":"در حال بارگذاری عکس پروفایل...");
       const ext=file.type==="image/png"?"png":file.type==="image/webp"?"webp":"jpg";
-      const path=currentUser.id+"/avatar-"+Date.now()+"."+ext;
+      const path=userId+"/avatar-"+Date.now()+"."+ext;
       const {error}=await client.storage.from("avatars").upload(path,file,{contentType:file.type,upsert:true});
       if(error)throw error;
       avatarUrl=client.storage.from("avatars").getPublicUrl(path).data.publicUrl;
     }
+    if(String(currentUser?.id)!==userId)throw new Error("Account changed while saving; please retry on the current account.");
     setStatus("profileStatus",english?"Saving profile details...":"در حال ذخیره مشخصات پروفایل...");
     const {data,error}=await client.from("profiles")
-      .upsert({id:currentUser.id,display_name:name,phone:phone||null,avatar_url:avatarUrl||null,show_phone:showPhone,presence_visibility:privacySettings.presence_visibility,last_seen_visibility:privacySettings.last_seen_visibility,show_typing:privacySettings.show_typing,show_read_receipts:privacySettings.show_read_receipts,show_space_online_count:privacySettings.show_space_online_count},{onConflict:"id"})
+      .upsert({id:userId,display_name:name,phone:phone||null,avatar_url:avatarUrl||null,show_phone:showPhone,presence_visibility:profilePrivacy.presence_visibility,last_seen_visibility:profilePrivacy.last_seen_visibility,show_typing:profilePrivacy.show_typing,show_read_receipts:profilePrivacy.show_read_receipts,show_space_online_count:profilePrivacy.show_space_online_count},{onConflict:"id"})
       .select("id,display_name,phone,avatar_url,show_phone").single();
     if(error)throw error;
+    if(String(currentUser?.id)!==userId)return;
     currentProfileName=data.display_name||name;currentPhone=data.phone||"";
     currentAvatarUrl=data.avatar_url||"";
     setPhoneCountry("profilePhoneCountry",currentPhone);
     setStatus("profileStatus",english?"Updating account details...":"در حال به‌روزرسانی مشخصات حساب...");
     try{
+      if(String(currentUser?.id)!==userId)return;
       const {error:metadataError}=await client.auth.updateUser({data:{display_name:currentProfileName}});
       if(metadataError)console.warn("Auth metadata update:",metadataError);
     }catch(metadataError){
       // The profile row is already saved; account metadata is secondary and must not block success.
       console.warn("Auth metadata update:",metadataError);
     }
+    if(String(currentUser?.id)!==userId)return;
     renderUser(currentUser,currentProfileName);$("avatarFile").value="";
-    try{await window.FarnazLocalStore?.saveSnapshot(currentUser.id,"profile",{...data,presence_visibility:privacySettings.presence_visibility,last_seen_visibility:privacySettings.last_seen_visibility,show_typing:privacySettings.show_typing,show_read_receipts:privacySettings.show_read_receipts,show_space_online_count:privacySettings.show_space_online_count});}catch(cacheError){console.warn("Cached profile update:",cacheError);}
+    try{await window.FarnazLocalStore?.saveSnapshot(userId,"profile",{...data,...profilePrivacy});}catch(cacheError){console.warn("Cached profile update:",cacheError);}
+    if(String(currentUser?.id)!==userId)return;
     setStatus("profileStatus",english?"Profile saved.":"پروفایل ذخیره شد.");
   }catch(e){
+    if(String(currentUser?.id)!==userId)return;
     console.error("Profile save:",e);
     const reason=e?.name==="AbortError"||e?.name==="TimeoutError"
       ?(english?"Photo upload timed out. Check your connection and try again.":"بارگذاری عکس به پایان مهلت رسید. اتصال را بررسی کن و دوباره تلاش کن.")

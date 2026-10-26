@@ -198,7 +198,7 @@ for (const path of ["js/local-store.js", "js/core.js", "js/chat-menu-v5.js", "js
 // Keep shell cache and versioned local-store assets synchronized after cache behavior changes.
 const coreSource = sources["js/core.js"];
 const chatSource = sources["js/chat-menu-v5.js"];
-if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v142"') || !sources["service-worker.js"].includes('core.js?v=20261026-11') || !sources["service-worker.js"].includes('local-store.js?v=20261026-1')) {
+if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v143"') || !sources["service-worker.js"].includes('core.js?v=20261026-11') || !sources["service-worker.js"].includes('local-store.js?v=20261026-1')) {
   errors.push("service-worker.js must use the current shell cache and core asset versions");
 }
 const loaderChecks = [
@@ -324,10 +324,10 @@ const authChecks = [
 
 
 
-  [sources["js/calls.js"].includes("let signedInUserId=null,inboxChannel=null,activeCall=null,userSwitchSequence=0;") &&
+  [sources["js/calls.js"].includes("let signedInUserId=null,inboxChannel=null,activeCall=null,userSwitchSequence=0,callStartInProgress=false;") &&
    sources["js/calls.js"].includes("if(request!==userSwitchSequence)return;") &&
    sources["js/calls.js"].includes("const call=activeCall;") &&
-   sources["js/calls.js"].includes("await flushPendingCandidates(call);"),
+   sources["js/calls.js"].includes("await flushPendingCandidates(call);") && sources["js/calls.js"].includes("if(activeCall){try{await getClient().from(\"call_sessions\").update({status:\"ended\"}).eq(\"id\",data.id);}catch(_){}return;}"),
     "js/calls.js must serialize account-switch setup and bind awaited signaling work to the call that initiated it"],
   [sources["js/calls.js"].includes('if(activeCall!==call){media.getTracks().forEach(track=>track.stop());throw new Error("Call was cancelled before media became ready.");}') &&
    sources["js/calls.js"].includes('if(event.candidate&&activeCall===call)') &&

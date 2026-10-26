@@ -1606,9 +1606,13 @@ async function refreshConversationList(){
     if(currentUser?.id!==myId||request!==conversationListRequestNumber)return;
     conversationPrefs=new Map((prefResult.data||[]).map(p=>[String(p.contact_user_id),p]));
   }catch(prefError){
+    // A failed preferences request may finish after logout or a newer refresh.
+    if(currentUser?.id!==myId||request!==conversationListRequestNumber)return;
     console.warn("Conversation preferences:",prefError);
     if(!conversationPrefs.size)setConnectionBanner(english?"Some conversation settings could not load. Retrying…":"بخشی از تنظیمات گفتگو بارگذاری نشد؛ دوباره تلاش می‌کنیم.");
   }
+  // Do not let a stale preferences read continue into the messages request or update guest UI.
+  if(currentUser?.id!==myId||request!==conversationListRequestNumber)return;
   setStatus("inboxStatus",english?"Loading conversations...":"در حال بارگذاری گفتگوها...");
   try{
     const {data,error}=await retryRead("conversation list",()=>getClient().from("messages")

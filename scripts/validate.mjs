@@ -197,6 +197,9 @@ for (const path of ["js/local-store.js", "js/core.js", "js/chat-menu-v5.js", "js
 
 const coreSource = sources["js/core.js"];
 const chatSource = sources["js/chat-menu-v5.js"];
+if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v123"') || !sources["service-worker.js"].includes('core.js?v=20261026-2')) {
+  errors.push("service-worker.js must use the current shell cache and core asset versions");
+}
 const loaderChecks = [
   [html.includes('script.src="./js/supabase-sdk.js"') && html.includes('script.onload=()=>{') && html.includes("loadLocalScripts();"),
     "index.html must wait for the local Supabase SDK before loading the app core"],

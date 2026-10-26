@@ -352,8 +352,9 @@ async function recoverConnection(){
     // Reconcile the active private chat after downtime so messages missed while
     // Realtime was disconnected are restored without forcing the view to bottom.
     if(currentChatUser&&document.body.classList.contains("chat-mode")&&typeof loadPrivateMessages==="function"){
-      await loadPrivateMessages(false,true);
+      const chatRefreshed=await loadPrivateMessages(false,true);
       if(!currentUser||String(currentUser.id)!==recoveryUserId)return;
+      if(chatRefreshed===false)throw new Error("Private chat refresh did not complete");
     }
     // These refresh functions already own their bounded retries and return false
     // when their data request fails. Wrapping them in retryRead previously treated

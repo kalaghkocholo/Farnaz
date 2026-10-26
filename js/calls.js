@@ -59,38 +59,50 @@ async function sendSignal(type,payload=null){
   if(error)throw error;
 }
 async function preparePeer(session,role){
+  const call=activeCall;
+  if(!call||String(call.session?.id)!==String(session.id))throw new Error("Call is no longer active.");
   const type=session.call_type==="video"?"video":"audio";
   const media=await navigator.mediaDevices.getUserMedia({audio:true,video:type==="video"});
-  activeCall.localStream=media;
-  activeCall.pendingCandidates=activeCall.pendingCandidates||[];
+  // The permission prompt can remain open after the caller cancels or signs out.
+  // Never attach a late media stream to a different call, and always release it.
+  if(activeCall!==call){media.getTracks().forEach(track=>track.stop());throw new Error("Call was cancelled before media became ready.");}
+  call.localStream=media;
+  call.pendingCandidates=call.pendingCandidates||[];
   const local=byId("farnazLocalVideo");local.srcObject=media;local.hidden=type!=="video";
   const pc=new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun1.l.google.com:19302"}]});
-  activeCall.pc=pc;
+  call.pc=pc;
   media.getTracks().forEach(track=>pc.addTrack(track,media));
   pc.ontrack=event=>{
+    if(activeCall!==call)return;
     const stream=event.streams?.[0];if(!stream)return;
     if(type==="video"){const v=byId("farnazRemoteVideo");v.srcObject=stream;v.muted=true;v.hidden=false;v.play().catch(()=>{});}
     const audio=byId("farnazRemoteAudio");audio.srcObject=stream;audio.play().catch(()=>{});
   };
   pc.onicecandidate=event=>{
-    if(event.candidate&&activeCall?.session.id===session.id)sendSignal("ice-candidate",event.candidate.toJSON()).catch(e=>console.warn("ICE signal:",e));
+    if(event.candidate&&activeCall===call)sendSignal("ice-candidate",event.candidate.toJSON()).catch(e=>console.warn("ICE signal:",e));
   };
   pc.onconnectionstatechange=()=>{
-    if(!activeCall||activeCall.session.id!==session.id)return;
+    if(activeCall!==call)return;
     if(pc.connectionState==="connected")setCallStatus(tr("تماس برقرار است","Call connected"));
     else if(pc.connectionState==="connecting")setCallStatus(tr("در حال برقراری ارتباط…","Connecting…"));
     else if(pc.connectionState==="failed")setCallStatus(tr("اتصال مستقیم برقرار نشد؛ احتمالاً شبکه به TURN نیاز دارد.","Direct connection failed; this network may require a TURN server."));
     else if(pc.connectionState==="disconnected")setCallStatus(tr("ارتباط ناپایدار است…","Connection is unstable…"));
   };
   await subscribeSignalChannel(session);
+  if(activeCall!==call)throw new Error("Call was cancelled while connecting.");
   if(role==="caller"){
-    const offer=await pc.createOffer();await pc.setLocalDescription(offer);
+    const offer=await pc.createOffer();
+    if(activeCall!==call)throw new Error("Call was cancelled while preparing the offer.");
+    await pc.setLocalDescription(offer);
+    if(activeCall!==call)throw new Error("Call was cancelled before sending the offer.");
     await sendSignal("offer",{type:pc.localDescription.type,sdp:pc.localDescription.sdp});
+    if(activeCall!==call)return;
     setCallStatus(tr("در انتظار پاسخ…","Waiting for answer…"));
   }else{
-    const {data,error}=await getClient().from("call_signals").select("id,signal_type,payload,sender_id,target_id").eq("call_id",session.id).eq("target_id",signedInUserId).order("created_at",{ascending:true});
+    const {data,error}=await getClient().from("call_signals").select("id,signal_type,payload,sender_id,target_id").eq("call_id",session.id).eq("target_id",String(signedInUserId)).order("created_at",{ascending:true});
+    if(activeCall!==call)return;
     if(error)throw error;
-    for(const signal of data||[])await handleSignal(signal);
+    for(const signal of data||[]){if(activeCall!==call)return;await handleSignal(signal);}
   }
 }
 async function flushPendingCandidates(){

@@ -178,10 +178,13 @@ async function farnazNetworkFetch(input,init){
   const requestTimeoutMs=isAuthRequest?15000:(isRestRequest?15000:25000);
   const isPasswordLogin=/\/auth\/v1\/token\?grant_type=password(?:&|$)/i.test(requestUrl);
   const requestMethod=String(init?.method||(typeof Request!=="undefined"&&input instanceof Request?input.method:"GET")).toUpperCase();
-  // Only replay safe HTTP methods by default. Supabase writes and RPCs often use
+  // Only replay safe non-REST HTTP methods here. REST reads are retried by retryRead(),
+  // whose deadline is shorter than this wrapper’s former three-attempt loop; keeping
+  // both retry layers active could leave an abandoned request running beside its retry.
+  // Supabase writes and RPCs often use
   // JSON-string POST bodies; a lost response does not mean the server rejected
   // the write, so retrying those requests can duplicate messages or side effects.
-  const canRetry=isStorageUpload||["GET","HEAD","OPTIONS"].includes(requestMethod);
+  const canRetry=isStorageUpload||(!isRestRequest&&!isAuthRequest&&["GET","HEAD","OPTIONS"].includes(requestMethod));
   let lastError;
   for(let attempt=0;attempt<3;attempt++){
     let timeoutId=null;

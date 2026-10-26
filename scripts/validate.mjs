@@ -252,6 +252,8 @@ const authChecks = [
     "js/core.js must invalidate stale contact/list requests after logout"],
   [coreSource.includes("// The account or a newer contacts refresh may have changed during the cache write.") && coreSource.includes("if(currentUser?.id!==myId||request!==savedContactsRequestNumber)return;"),
     "js/core.js must guard contacts UI updates after awaited cache writes"],
+  [coreSource.includes("// A failed preferences request may finish after logout or a newer refresh.") && coreSource.includes("// Do not let a stale preferences read continue into the messages request or update guest UI.") && (coreSource.match(/if\(currentUser\?\.id!==myId\|\|request!==conversationListRequestNumber\)return;/g)||[]).length>=3,
+    "js/core.js must stop stale conversation-preferences requests before they can update the guest UI or continue loading messages"],
   [coreSource.includes('retryRead("create current user profile"') && coreSource.includes('withTimeout(operation(),timeoutMs,label)') && coreSource.includes('timeoutMs=9000'),
     "js/core.js must bound the initial profile creation request"],
   [coreSource.includes("could not restore your saved session") && coreSource.includes("setConnectionBanner("),

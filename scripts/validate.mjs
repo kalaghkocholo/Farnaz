@@ -345,6 +345,13 @@ const authChecks = [
   [sources["js/spaces.js"].includes('if(!isCurrent())return;if(status?.can_see_online&&status.is_online)') &&
    sources["js/spaces.js"].includes('const isCurrent=()=>String(currentUser?.id||"")===myId&&String(active?.id||"")===String(spaceId);'),
     "js/spaces.js must ignore late member-presence results after the account or active space changes"],
+  [sources["js/local-store.js"].includes("async function read(storeName,key,userId=null)") &&
+   sources["js/local-store.js"].includes("await waitForUserClear(userId);\\n    const db=await openDB();if(!db)return null;\\n    await waitForUserClear(userId);") &&
+   sources["js/local-store.js"].includes("read(STORE_SNAPSHOTS,keyFor(userId,kind),userId)") &&
+   sources["js/local-store.js"].includes("read(STORE_MESSAGES,keyFor(userId,contactId),userId)") &&
+   sources["js/local-store.js"].includes("read(STORE_SPACE_MESSAGES,keyFor(userId,spaceId),userId)"),
+    "js/local-store.js must serialize account-scoped cache reads with logout cleanup"],
+
   [sources["js/spaces.js"].includes('const myId=String(currentUser.id),request=++spaceRefreshToken;') &&
    sources["js/spaces.js"].includes('const myId=String(currentUser.id),token=++spaceOpenToken;') &&
    sources["js/spaces.js"].includes('const isCurrent=()=>token===messageLoadToken&&String(currentUser?.id||"")===myId&&String(active?.id||"")===String(id);') &&

@@ -154,7 +154,7 @@
   async function saveDraft(userId,contactId,body){
     if(!userId||!contactId)return false;
     const key=keyFor(userId,contactId),value=String(body||"");
-    if(!value.trim())return remove(STORE_DRAFTS,key);
+    if(!value.trim())return remove(STORE_DRAFTS,key,userId);
     return write(STORE_DRAFTS,{key,userId:String(userId),contactId:String(contactId),body:value,updatedAt:Date.now()});
   }
   async function clearDraft(userId,contactId){

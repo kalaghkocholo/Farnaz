@@ -981,19 +981,40 @@ async function saveProfile(event){
 async function logout(){
   const button=$("logoutButton");
   if(button)button.disabled=true;
+  let logoutWarning="";
   try{
-    // Sign out locally first. Realtime/presence cleanup must never block logout.
+    // Local sign-out must not be held hostage by a stalled profile/realtime request.
     const client=getClient();
-    const {error}=await client.auth.signOut({scope:"local"});
-    if(error)throw error;
-    showGuest();
-    setStatus("authStatus",english?"You have signed out.":"با موفقیت از حساب خارج شدی.",false);
-    // Cleanup is best-effort and deliberately runs after the UI has returned to guest.
-    void stopMessageSubscription().catch(e=>console.warn("Message channel cleanup after logout:",e));
+    const result=await Promise.race([
+      client.auth.signOut({scope:"local"}),
+      recoveryDelay(5000).then(()=>({timedOut:true}))
+    ]);
+    if(result?.timedOut||result?.error){
+      // Supabase local sessions are persisted under this explicit storage key.
+      // If its own local cleanup stalls/fails, remove only this app's auth session.
+      try{localStorage.removeItem("sb-iemykhluluoymsbqpjsn-auth-token");}catch(storageError){
+        console.warn("Could not clear persisted auth session:",storageError);
+      }
+      if(result?.error)console.warn("Supabase local sign-out failed; cleared persisted session:",result.error);
+      logoutWarning=english
+        ?"Local session storage was cleared, but sign-out cleanup did not finish normally."
+        :"ذخیره نشست محلی پاک شد، اما فرایند خروج عادی کامل نشد.";
+    }
   }catch(e){
     console.error("Farnaz logout failed:",e);
-    setStatus("profileStatus",(english?"Sign out failed: ":"خروج ناموفق بود: ")+(e?.message||String(e)),true);
+    try{localStorage.removeItem("sb-iemykhluluoymsbqpjsn-auth-token");}catch(storageError){
+      console.warn("Could not clear persisted auth session:",storageError);
+    }
+    logoutWarning=english
+      ?"The local session was cleared after a sign-out error."
+      :"پس از خطای خروج، نشست ذخیره‌شدهٔ محلی پاک شد.";
   }finally{
+    // Always return to the guest screen, even if auth cleanup or network state stalls.
+    showGuest();
+    if(logoutWarning)setStatus("authStatus",logoutWarning,true);
+    else setStatus("authStatus",english?"You have signed out.":"با موفقیت از حساب خارج شدی.",false);
+    // Cleanup is best-effort and deliberately runs after the UI has returned to guest.
+    void stopMessageSubscription().catch(e=>console.warn("Message channel cleanup after logout:",e));
     if(button)button.disabled=false;
   }
 }

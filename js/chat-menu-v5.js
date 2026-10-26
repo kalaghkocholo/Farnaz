@@ -135,6 +135,10 @@ async function loadPrivateMessages(older=false,preserveScroll=false){
       if(!hidden.error)hiddenIds=new Set((hidden.data||[]).map(x=>x.message_id));
       else console.warn("Could not load hidden-message preferences:",hidden.error);
     }catch(hiddenError){console.warn("Could not load hidden-message preferences:",hiddenError);}
+    // The hidden-message read can finish after logout or a chat/account switch.
+    // Re-check before caching anything so a late response cannot repopulate the
+    // previous account's local message store after logout cleanup has started.
+    if(request!==chatRequestNumber||currentUser?.id!==myId||String(currentChatUser?.user_id)!==String(contactId))return;
     const visibleRows=rows.filter(m=>!hiddenIds.has(m.id));
     window.FarnazLocalStore?.saveMessages(myId,contactId,visibleRows,older).catch(cacheError=>console.warn("Could not cache messages:",cacheError));
     await loadMessageDecorations(visibleRows,myId,contactId);

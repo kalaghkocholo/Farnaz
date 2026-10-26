@@ -808,12 +808,18 @@ function showGuest(){
   if(previousUserId)window.FarnazLocalStore?.clearUser(previousUserId).catch(cacheError=>console.warn("Could not clear local account data:",cacheError));
   stopFarnazPresence().catch(()=>{});farnazPresenceContactCache.clear();
   profileRequestNumber++;
-  // Invalidate every in-flight list request before clearing the signed-in UI.
+  // Invalidate every in-flight account/chat/list request before clearing the UI.
+  chatRequestNumber++;
   conversationListRequestNumber++;savedContactsRequestNumber++;unmatchedPhoneContactsRequestNumber++;
   currentUser=null;currentProfileName="";currentAvatarUrl="";currentPhone="";
+  currentChatUser=null;
+  // Logout can happen from a private chat or the spaces chat view. Reset their
+  // layout state as well as the active page so the guest/auth screen is clean.
+  document.querySelector(".app")?.classList.remove("chat-mode","spaces-chat-mode");
+  document.body.classList.remove("chat-mode","spaces-chat-mode");
+  const brandHeader=document.querySelector(".app>header");if(brandHeader)brandHeader.hidden=false;
   document.body.dataset.authState="guest";if($("headerFButton"))$("headerFButton").hidden=true;const settingsButton=$("openSettingsButton");if(settingsButton){settingsButton.hidden=true;settingsButton.style.setProperty("display","none","important");}
   window.dispatchEvent(new CustomEvent("farnaz-auth-user",{detail:{userId:null}}));
-  currentChatUser=null;
   // Clear any in-flight profile/connection status so a cancelled request cannot
   // leave a stale "Loading profile…" message after logout or account switching.
   setStatus("profileStatus","");

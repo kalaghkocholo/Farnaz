@@ -837,6 +837,14 @@ function showGuest(){
   $("profileForm").reset();
   $("conversationList").replaceChildren();$("foundContact").replaceChildren();
   $("savedContactsList").replaceChildren();setStatus("savedContactsStatus","");
+  // Clear account-specific contact surfaces so a logout or account switch cannot
+  // leave the previous user’s imported names or quick-chat results visible.
+  $("unmatchedPhoneContactsList").replaceChildren();setStatus("unmatchedPhoneContactsStatus","");
+  $("newChatContactsList").replaceChildren();setStatus("newChatContactsStatus","");
+  if($("newChatPopover"))$("newChatPopover").hidden=true;
+  if($("savedContactFilter"))$("savedContactFilter").value="";
+  if($("contactSearchPopover"))$("contactSearchPopover").hidden=true;
+  if($("contactSearchButton"))$("contactSearchButton").setAttribute("aria-expanded","false");
   $("recipientValue").value="";setStatus("recipientStatus","");
   $("messageList").replaceChildren();
   document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id==="homePage"));

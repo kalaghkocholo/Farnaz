@@ -713,7 +713,17 @@ function wire(){
 }
 window.addEventListener("farnaz-auth-user",event=>{
  const userId=event.detail?.userId;
- if(!userId)return;
+ if(!userId){
+  spaceOpenToken++;spaceRefreshToken++;messageLoadToken++;
+  active=null;spaces=[];
+  if(sub){const previous=sub;sub=null;try{getClient().removeChannel(previous).catch(()=>{});}catch(_){}}
+  if(q("spaceDetail"))q("spaceDetail").hidden=true;
+  if(q("spaceList"))q("spaceList").replaceChildren();
+  if(q("spaceMessages"))q("spaceMessages").replaceChildren();
+  document.querySelector(".app")?.classList.remove("spaces-chat-mode");
+  document.body.classList.remove("spaces-chat-mode");
+  return;
+ }
  setTimeout(()=>{
   if(currentUser?.id!==userId)return;
   if(q("spacesPage")?.classList.contains("active"))refresh();

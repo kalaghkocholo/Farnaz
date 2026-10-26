@@ -198,7 +198,7 @@ for (const path of ["js/local-store.js", "js/core.js", "js/chat-menu-v5.js", "js
 // Keep shell cache and versioned local-store assets synchronized after cache behavior changes.
 const coreSource = sources["js/core.js"];
 const chatSource = sources["js/chat-menu-v5.js"];
-if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v137"') || !sources["service-worker.js"].includes('core.js?v=20261026-11') || !sources["service-worker.js"].includes('local-store.js?v=20261026-1')) {
+if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v138"') || !sources["service-worker.js"].includes('core.js?v=20261026-11') || !sources["service-worker.js"].includes('local-store.js?v=20261026-1')) {
   errors.push("service-worker.js must use the current shell cache and core asset versions");
 }
 const loaderChecks = [
@@ -321,6 +321,11 @@ const authChecks = [
    coreSource.includes('const fileText=await file.text();\n    if(String(currentUser?.id)!==myId)return;') &&
    (coreSource.match(/syncSelectedPhoneContacts\(contacts,button,myId\)/g)||[]).length===2,
     "js/core.js must keep phone-contact sync bound to the account that started the picker or VCF import"],
+
+  [sources["js/spaces.js"].includes("const profiles=await getContactProfiles(rows.map(row=>row.contact_user_id));") &&
+   sources["js/spaces.js"].includes('const isCurrent=()=>String(currentUser?.id||"")===myId&&box.dataset.loadRequest===request;') &&
+   sources["js/spaces.js"].includes('if(!isCurrent())return;'),
+    "js/spaces.js must batch space contact profiles and ignore stale contact-picker results after account changes"],
   [sources["js/spaces.js"].includes('const myId=String(currentUser.id),request=++spaceRefreshToken;') &&
    sources["js/spaces.js"].includes('const myId=String(currentUser.id),token=++spaceOpenToken;') &&
    sources["js/spaces.js"].includes('const isCurrent=()=>token===messageLoadToken&&String(currentUser?.id||"")===myId&&String(active?.id||"")===String(id);') &&

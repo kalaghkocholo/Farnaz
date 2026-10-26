@@ -11,6 +11,12 @@
   // Serialize account-cache writes against logout cleanup. A quick re-login must
   // write fresh cache data only after the previous logout purge has completed.
   const clearingUsers=new Map();
+  // Every account-scoped operation captures a generation. Logout advances it
+  // synchronously, so an older async read/write cannot publish or persist data
+  // after the purge starts, even if it was already waiting for IndexedDB.
+  const userGenerations=new Map();
+  function generationFor(userId){return userId?Number(userGenerations.get(String(userId))||0):0;}
+  function generationIsCurrent(userId,generation){return !userId||generationFor(userId)===generation;}
   async function waitForUserClear(userId){
     if(!userId)return;
     while(clearingUsers.has(String(userId))){
@@ -52,11 +58,14 @@
 
   function keyFor(userId,contactId){return String(userId)+"::"+String(contactId);}
   async function read(storeName,key,userId=null){
-    // Do not return cached account data while logout is purging that account.
-    // Re-check after opening IndexedDB because the purge can start during openDB().
+    // Bind this read to the account generation at invocation time. If logout
+    // starts while we await a gate or IndexedDB, discard the late result.
+    const generation=generationFor(userId);
     await waitForUserClear(userId);
+    if(!generationIsCurrent(userId,generation))return null;
     const db=await openDB();if(!db)return null;
     await waitForUserClear(userId);
+    if(!generationIsCurrent(userId,generation))return null;
     return new Promise((resolve,reject)=>{
       let settled=false;
       const finish=(error,value)=>{
@@ -75,10 +84,13 @@
   }
   async function write(storeName,value){
     const userId=value?.userId;
+    const generation=generationFor(userId);
     await waitForUserClear(userId);
+    if(!generationIsCurrent(userId,generation))return false;
     const db=await openDB();if(!db)return false;
     // A logout may have started while openDB() was pending.
     await waitForUserClear(userId);
+    if(!generationIsCurrent(userId,generation))return false;
     return new Promise((resolve,reject)=>{
       let settled=false;
       const finish=(error,result)=>{
@@ -95,9 +107,12 @@
     });
   }
   async function remove(storeName,key,userId=null){
+    const generation=generationFor(userId);
     await waitForUserClear(userId);
+    if(!generationIsCurrent(userId,generation))return false;
     const db=await openDB();if(!db)return false;
     await waitForUserClear(userId);
+    if(!generationIsCurrent(userId,generation))return false;
     return new Promise((resolve,reject)=>{
       let settled=false;
       const finish=(error,result)=>{
@@ -121,9 +136,12 @@
   }
   async function saveMessages(userId,contactId,messages,mergeExisting=false){
     if(!userId||!contactId||!Array.isArray(messages))return false;
+    const generation=generationFor(userId);
     await waitForUserClear(userId);
+    if(!generationIsCurrent(userId,generation))return false;
     const db=await openDB();if(!db)return false;
     await waitForUserClear(userId);
+    if(!generationIsCurrent(userId,generation))return false;
     const key=keyFor(userId,contactId);
     return new Promise((resolve,reject)=>{
       const tx=db.transaction(STORE_MESSAGES,"readwrite");
@@ -180,6 +198,8 @@
   function clearUser(userId){
     if(!userId)return Promise.resolve(false);
     const id=String(userId);
+    // Invalidate pending operations immediately, before any async cleanup work.
+    userGenerations.set(id,generationFor(id)+1);
     const previous=clearingUsers.get(id);
     let release;
     const gate=new Promise(resolve=>{release=resolve;});

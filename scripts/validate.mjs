@@ -198,13 +198,13 @@ for (const path of ["js/local-store.js", "js/core.js", "js/chat-menu-v5.js", "js
 // Keep shell cache and versioned local-store assets synchronized after cache behavior changes.
 const coreSource = sources["js/core.js"];
 const chatSource = sources["js/chat-menu-v5.js"];
-if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v144"') || !sources["service-worker.js"].includes('core.js?v=20261026-11') || !sources["service-worker.js"].includes('local-store.js?v=20261026-1') || !sources["service-worker.js"].includes('calls.js?v=20261026-4')) {
+if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v145"') || !sources["service-worker.js"].includes('core.js?v=20261026-12') || !sources["service-worker.js"].includes('local-store.js?v=20261026-2') || !sources["service-worker.js"].includes('calls.js?v=20261026-4')) {
   errors.push("service-worker.js must use the current shell cache and core asset versions");
 }
 const loaderChecks = [
   [html.includes('script.src="./js/supabase-sdk.js"') && html.includes("watchScript(script,()=>{") && html.includes("loadLocalScripts();"),
     "index.html must wait for the local Supabase SDK before loading the app core"],
-  [html.includes('core.src="./js/core.js?v=20261026-11"') && html.includes("watchScript(core,()=>{") && html.includes("بارگذاری هستهٔ برنامه ناموفق بود یا بیش از حد طول کشید"),
+  [html.includes('core.src="./js/core.js?v=20261026-12"') && html.includes("watchScript(core,()=>{") && html.includes("بارگذاری هستهٔ برنامه ناموفق بود یا بیش از حد طول کشید"),
     "index.html must handle successful, failed, and stalled core-script loading"],
   [html.includes("watchScript(script,loadNextFeature,()=>{") && html.includes("featureScripts[featureIndex++]") && html.includes('if(typeof window.FarnazBoot==="function")window.FarnazBoot();'),
     "index.html must load feature scripts sequentially and boot only after the loader sequence"],
@@ -265,6 +265,19 @@ const authChecks = [
     "js/core.js must avoid duplicate inbox/contact refreshes during sign-in and saved-session restoration"],
   [sources["js/local-store.js"].includes("const clearingUsers=new Map()") && sources["js/local-store.js"].includes("await waitForUserClear(userId)") && sources["js/local-store.js"].includes("Queue repeated cleanup operations for the same account") && sources["js/local-store.js"].includes("function clearUser(userId)") && sources["js/local-store.js"].includes("Local account cleanup timed out") && sources["js/local-store.js"].includes("remove(STORE_TEMP,record.key,userId)"),
     "js/local-store.js must serialize per-user cache writes with logout cleanup to prevent a quick re-login from losing new cache data"],
+  [sources["js/local-store.js"].includes("const userGenerations=new Map()") &&
+   sources["js/local-store.js"].includes("function generationIsCurrent(userId,generation)") &&
+   sources["js/local-store.js"].includes("userGenerations.set(id,generationFor(id)+1)") &&
+   sources["js/local-store.js"].includes("if(!generationIsCurrent(userId,generation))return false;") &&
+   sources["js/local-store.js"].includes("generationIsCurrent(userId,generation)?(request.result||null):null") &&
+   sources["js/local-store.js"].includes("async function saveMessages(userId,contactId,messages,mergeExisting=false)") &&
+   sources["js/local-store.js"].includes("if(!generationIsCurrent(userId,generation))return false;"),
+    "js/local-store.js must invalidate stale reads and writes as soon as logout begins, including the direct message-cache path"],
+  [coreSource.includes("chatRequestNumber++;") &&
+   coreSource.includes('document.querySelector(".app")?.classList.remove("chat-mode","spaces-chat-mode")') &&
+   coreSource.includes('document.body.classList.remove("chat-mode","spaces-chat-mode")') &&
+   coreSource.includes('const brandHeader=document.querySelector(".app>header");if(brandHeader)brandHeader.hidden=false;'),
+    "js/core.js must invalidate in-flight private-chat work and reset chat layout on logout"],
   [coreSource.includes('retryRead("create current user profile"') && coreSource.includes('withTimeout(operation(),timeoutMs,label)') && coreSource.includes('timeoutMs=16000'),
     "js/core.js must bound the initial profile creation request"],
   [coreSource.includes('label==="current user profile"||label==="create current user profile"') && coreSource.includes('Profile connection interrupted; retrying automatically…') && coreSource.includes('ارتباط پروفایل قطع شده؛ تلاش مجدد خودکار…'),

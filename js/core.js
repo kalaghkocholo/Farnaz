@@ -342,18 +342,30 @@ function scheduleReconnect(){
 async function recoverConnection(){
   if(recoveryInProgress||!currentUser||typeof navigator!=="undefined"&&navigator.onLine===false)return;
   recoveryInProgress=true;
+  const recoveryUserId=String(currentUser.id);
   try{
     await subscribeToMessages();
+    if(!currentUser||String(currentUser.id)!==recoveryUserId)return;
     // Reconcile the active private chat after downtime so messages missed while
     // Realtime was disconnected are restored without forcing the view to bottom.
     if(currentChatUser&&document.body.classList.contains("chat-mode")&&typeof loadPrivateMessages==="function"){
       await loadPrivateMessages(false,true);
+      if(!currentUser||String(currentUser.id)!==recoveryUserId)return;
     }
-    await retryRead("conversation refresh",()=>refreshConversationList(),2);
+    // These refresh functions already own their bounded retries and return false
+    // when their data request fails. Wrapping them in retryRead previously treated
+    // false as success and cleared the recovery banner without restoring the data.
+    const inboxRefreshed=await refreshConversationList();
+    if(!currentUser||String(currentUser.id)!==recoveryUserId)return;
+    if(inboxRefreshed===false)throw new Error("Conversation refresh did not complete");
+    const contactsRefreshed=await refreshSavedContacts();
+    if(!currentUser||String(currentUser.id)!==recoveryUserId)return;
+    if(contactsRefreshed===false)throw new Error("Contacts refresh did not complete");
     // Reconnecting the realtime channel must never rebuild the open chat history.
     // Existing messages stay in the DOM; incoming messages are appended by the realtime handler.
     setConnectionBanner("",false);
   }catch(error){
+    if(!currentUser||String(currentUser.id)!==recoveryUserId)return;
     console.warn("Automatic connection recovery:",error);
     setConnectionBanner(english?"Still reconnecting. You can keep using Farnaz; it will retry automatically.":"هنوز اتصال برقرار نشده؛ می‌توانی با فرناز کار کنی و برنامه دوباره تلاش می‌کند.");
     scheduleReconnect();

@@ -308,6 +308,10 @@ const authChecks = [
    coreSource.includes('.upsert({user_id:myId,contact_user_id:id}') &&
    coreSource.includes('if(String(currentUser?.id)!==myId)return;'),
     "js/core.js must keep recipient search and contact creation bound to the initiating account"],
+  [coreSource.includes('const pending=farnazPresenceStartPromise;') &&
+   coreSource.includes('return startFarnazPresence(forceRestart);') &&
+   coreSource.includes('if(!currentUser||String(currentUser.id)!==uid||farnazPresenceChannel!==ownChannel)return;'),
+    "js/core.js must re-evaluate overlapping presence starts and ignore stale contact results after account changes"],
 ];
 for (const [passed, message] of authChecks) {
   if (!passed) errors.push(message);

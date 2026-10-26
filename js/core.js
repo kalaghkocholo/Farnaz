@@ -808,7 +808,8 @@ function showGuest(){
   if(previousUserId)window.FarnazLocalStore?.clearUser(previousUserId).catch(cacheError=>console.warn("Could not clear local account data:",cacheError));
   stopFarnazPresence().catch(()=>{});farnazPresenceContactCache.clear();
   profileRequestNumber++;
-  // Invalidate every in-flight account/chat/list request before clearing the UI.
+  // Invalidate every in-flight list request before clearing the signed-in UI.
+  // Also invalidate private-chat work so a late response cannot repopulate the guest screen.
   chatRequestNumber++;
   conversationListRequestNumber++;savedContactsRequestNumber++;unmatchedPhoneContactsRequestNumber++;
   currentUser=null;currentProfileName="";currentAvatarUrl="";currentPhone="";

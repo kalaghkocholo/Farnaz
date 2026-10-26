@@ -187,18 +187,51 @@ async function rejectIncoming(){
 }
 async function cleanupCall(updateStatus){
   const call=activeCall;activeCall=null;
-  if(call){if(call.timeout)clearTimeout(call.timeout);
-    if(call.signalChannel)try{await getClient().removeChannel(call.signalChannel);}catch(_){}
-    if(call.pc){call.pc.ontrack=null;call.pc.onicecandidate=null;call.pc.close();}
-    if(call.localStream)call.localStream.getTracks().forEach(t=>t.stop());
-    if(updateStatus)try{await getClient().from("call_sessions").update({status:"ended"}).eq("id",call.session.id);}catch(e){console.warn("Call status update:",e);}
+  // Release local media and close the peer connection before waiting on any
+  // network cleanup. A suspended mobile Realtime socket must not keep the
+  // microphone/camera active or hold the UI in the ending-call state.
+  if(call){
+    if(call.timeout)clearTimeout(call.timeout);
+    if(call.pc){call.pc.ontrack=null;call.pc.onicecandidate=null;try{call.pc.close();}catch(_){}}
+    if(call.localStream)call.localStream.getTracks().forEach(track=>{try{track.stop();}catch(_){}});
   }
   ["farnazLocalVideo","farnazRemoteVideo","farnazRemoteAudio"].forEach(id=>{const el=byId(id);if(el){el.pause?.();el.srcObject=null;el.hidden=true;}});
+  if(!call)return;
+  // Realtime removal and status persistence are best-effort. They may continue
+  // in the background, but neither is allowed to delay local call teardown.
+  try{
+    const client=getClient();
+    if(call.signalChannel){
+      Promise.race([
+        Promise.resolve(client.removeChannel(call.signalChannel)),
+        new Promise(resolve=>setTimeout(resolve,1500))
+      ]).catch(error=>console.warn("Call channel cleanup:",error));
+    }
+    if(updateStatus){
+      Promise.race([
+        Promise.resolve(client.from("call_sessions").update({status:"ended"}).eq("id",call.session.id)),
+        new Promise(resolve=>setTimeout(()=>resolve({timedOut:true}),2500))
+      ]).then(result=>{
+        if(result?.error)console.warn("Call status update:",result.error);
+        if(result?.timedOut)console.warn("Call status update timed out; local call teardown is complete.");
+      }).catch(error=>console.warn("Call status update:",error));
+    }
+  }catch(error){console.warn("Call cleanup scheduling:",error);}
 }
 async function endCall(notifyPeer){
-  if(!activeCall)return;
-  try{if(notifyPeer)await sendSignal("hangup");}catch(e){console.warn(e);}
-  await cleanupCall(true);
+  const call=activeCall;
+  if(!call)return;
+  // A failed signaling write must not prevent the local microphone/camera from
+  // being released. Bound the wait, then always tear down the active call.
+  if(notifyPeer){
+    try{
+      await Promise.race([
+        sendSignal("hangup"),
+        new Promise(resolve=>setTimeout(resolve,1200))
+      ]);
+    }catch(error){console.warn("Call hangup signal:",error);}
+  }
+  if(activeCall===call)await cleanupCall(true);
   const d=byId("farnazCallDialog");if(d)d.hidden=true;
 }
 async function startCall(type){

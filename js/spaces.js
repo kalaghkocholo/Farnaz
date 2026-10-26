@@ -563,7 +563,7 @@ async function loadMessages(id){
   if(!fromLocalCache){
    try{const {data:hiddenRows,error:hiddenError}=await withTimeout(getClient().from("space_message_hidden").select("message_id").eq("user_id",myId),7000,"پیام‌های مخفی‌شده");if(hiddenError)throw hiddenError;if(!isCurrent())return;hiddenIds=new Set((hiddenRows||[]).map(x=>String(x.id||x.message_id)));}
    catch(e){if(!isCurrent())return;console.warn("Hidden space messages could not load:",e);const cachedVisible=await window.FarnazLocalStore?.getSpaceMessages(myId,id).catch(()=>[]);if(!isCurrent())return;if(cachedVisible?.length){data=cachedVisible;fromLocalCache=true;}else throw e;}
-   try{const {data:pinnedRows,error:pinnedError}=await withTimeout(getClient().from("space_message_pins").select("message_id").eq("space_id",id),7000,"پیام‌های سنجاق‌شده");if(pinnedError)throw pinnedError;if(!isCurrent())return;spacePinnedMessageIds.clear();}(pinnedRows||[]).forEach(row=>spacePinnedMessageIds.add(String(row.message_id)));}
+   try{const {data:pinnedRows,error:pinnedError}=await withTimeout(getClient().from("space_message_pins").select("message_id").eq("space_id",id),7000,"پیام‌های سنجاق‌شده");if(pinnedError)throw pinnedError;if(!isCurrent())return;spacePinnedMessageIds.clear();(pinnedRows||[]).forEach(row=>spacePinnedMessageIds.add(String(row.message_id)));}
    catch(e){console.warn("Pinned space messages could not load:",e);}
   }
   const rows=(data||[]).filter(m=>!hiddenIds.has(String(m.id)));

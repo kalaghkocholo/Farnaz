@@ -327,7 +327,7 @@ const authChecks = [
    coreSource.includes('const path=userId+"/avatar-"'),
     "js/core.js must keep profile/photo writes bound to the account that started the save"],
   [coreSource.includes('const requestMethod=String(init?.method||') &&
-   coreSource.includes('const canRetry=isStorageUpload||["GET","HEAD","OPTIONS"].includes(requestMethod);') &&
+   coreSource.includes('const canRetry=isStorageUpload||(!isRestRequest&&!isAuthRequest&&["GET","HEAD","OPTIONS"].includes(requestMethod));') &&
    coreSource.includes("retrying those requests can duplicate messages or side effects."),
     "js/core.js must not automatically replay potentially non-idempotent Supabase POST writes after transport failures"],
   [chatSource.includes('const senderId=String(currentUser.id),receiverId=String(currentChatUser.user_id);') &&

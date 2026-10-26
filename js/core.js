@@ -296,7 +296,7 @@ function withTimeout(operation,timeoutMs=9000,label="درخواست"){
   });
   return Promise.race([Promise.resolve(operation),timeout]).finally(()=>clearTimeout(timer));
 }
-async function retryRead(label,operation,maxAttempts=2){
+async function retryRead(label,operation,maxAttempts=2,timeoutMs=9000){
   let lastError;
   for(let attempt=1;attempt<=maxAttempts;attempt++){
     try{
@@ -304,7 +304,9 @@ async function retryRead(label,operation,maxAttempts=2){
         setConnectionBanner(english?"You are offline. Farnaz will reconnect automatically.":"اتصال اینترنت قطع است؛ فرناز پس از وصل‌شدن خودکار تلاش می‌کند.");
         throw new Error("NETWORK_OFFLINE");
       }
-      const result=await withTimeout(operation(),9000,label);
+      // Match the 15-second network-fetch deadline for profile REST requests.
+      // A shorter wrapper timeout abandons the request and can start an overlapping retry.
+      const result=await withTimeout(operation(),timeoutMs,label);
       if(result?.error)throw result.error;
       if(Array.isArray(result)){
         const failed=result.find(item=>item?.error);
@@ -726,7 +728,7 @@ async function showUser(user){
   }
   try{
     const {data,error}=await retryRead("current user profile",()=>getClient().from("profiles")
-      .select("id,display_name,avatar_url,phone,show_phone,presence_visibility,last_seen_visibility,show_typing,show_read_receipts,show_space_online_count").eq("id",user.id).maybeSingle());
+      .select("id,display_name,avatar_url,phone,show_phone,presence_visibility,last_seen_visibility,show_typing,show_read_receipts,show_space_online_count").eq("id",user.id).maybeSingle(),2,18000);
     if(request!==profileRequestNumber||currentUser?.id!==user.id)return;
     if(error)throw error;
     let profile=data;
@@ -734,7 +736,7 @@ async function showUser(user){
       const fallbackName=(user.user_metadata?.display_name||user.email?.split("@")[0]||"Farnaz user").trim();
       const created=await retryRead("create current user profile",()=>getClient().from("profiles")
         .upsert({id:user.id,display_name:fallbackName,phone:user.phone||null,show_phone:true},{onConflict:"id"})
-        .select("id,display_name,avatar_url,phone,show_phone,presence_visibility,last_seen_visibility,show_typing,show_read_receipts,show_space_online_count").single(),2);
+        .select("id,display_name,avatar_url,phone,show_phone,presence_visibility,last_seen_visibility,show_typing,show_read_receipts,show_space_online_count").single(),2,18000);
       if(created.error)throw created.error;
       profile=created.data;
     }

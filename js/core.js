@@ -838,8 +838,13 @@ async function startFarnazPresence(forceRestart=false){
  const existing=farnazPresenceChannel;
  if(!forceRestart&&existing&&farnazPresenceStartUserId===uid&&(existing.state==="joining"||existing.state==="joined"))return;
  if(farnazPresenceStartPromise){
-  try{await farnazPresenceStartPromise;}catch(_){}
-  return;
+  const pending=farnazPresenceStartPromise;
+  try{await pending;}catch(_){}
+  if(!currentUser)return;
+  if(String(currentUser.id)!==uid)return startFarnazPresence(forceRestart);
+  if(!forceRestart&&farnazPresenceChannel&&farnazPresenceStartUserId===uid&&
+    (farnazPresenceChannel.state==="joining"||farnazPresenceChannel.state==="joined"))return;
+  return startFarnazPresence(forceRestart);
  }
  const task=startFarnazPresenceNow(uid);
  farnazPresenceStartPromise=task;

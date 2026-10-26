@@ -550,11 +550,18 @@ function setConversationView(view){conversationView=view;refreshConversationList
 $("conversationSearch")?.addEventListener("input",applyConversationSearch);
 function prefFor(id){return conversationPrefs.get(id)||{pinned:false,archived:false,hidden_at:null};}
 async function saveConversationPref(contactId,patch){
-  const next={...prefFor(contactId),...patch,user_id:currentUser.id,contact_user_id:contactId,updated_at:new Date().toISOString()};
+  if(!currentUser)throw new Error(english?"Sign in to change conversation settings.":"برای تغییر تنظیمات گفتگو ابتدا وارد شو.");
+  const userId=String(currentUser.id);
+  const next={...prefFor(contactId),...patch,user_id:userId,contact_user_id:contactId,updated_at:new Date().toISOString()};
   const {error}=await getClient().from("conversation_preferences").upsert(next,{onConflict:"user_id,contact_user_id"});
-  if(error)throw error;conversationPrefs.set(contactId,next);await refreshConversationList();
+  if(error)throw error;
+  if(String(currentUser?.id)!==userId)return;
+  conversationPrefs.set(String(contactId),next);
+  await refreshConversationList();
 }
 async function conversationAction(contactId,action){
+  if(!currentUser)return;
+  const userId=String(currentUser.id);
   try{
     const old=prefFor(contactId);
     if(action==="delete"){
@@ -562,7 +569,10 @@ async function conversationAction(contactId,action){
       await saveConversationPref(contactId,{hidden_at:new Date().toISOString(),archived:false,pinned:false});
     }else if(action==="pin")await saveConversationPref(contactId,{pinned:!old.pinned,archived:false});
     else if(action==="archive")await saveConversationPref(contactId,{archived:!old.archived,pinned:false});
-  }catch(e){alert((english?"Action failed: ":"عملیات ناموفق بود: ")+e.message);}
+  }catch(e){
+    if(String(currentUser?.id)!==userId)return;
+    alert((english?"Action failed: ":"عملیات ناموفق بود: ")+e.message);
+  }
 }
 function showConversationActions(card,contactId){
   card.querySelector(".conversation-action-menu")?.remove();

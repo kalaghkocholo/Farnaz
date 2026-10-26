@@ -245,6 +245,8 @@ const authChecks = [
     "js/core.js must bound the initial profile creation request"],
   [coreSource.includes("could not restore your saved session") && coreSource.includes("setConnectionBanner("),
     "js/core.js must visibly report a failed saved-session restore"],
+  [coreSource.includes('if(!session?.user){') && coreSource.includes('setConnectionBanner("",false);') && coreSource.includes('setStatus("profileStatus","");'),
+    "js/core.js must clear stale startup/profile status when no saved session exists"],
   [coreSource.includes('result.status==="rejected"||result.value===false') && (coreSource.match(/const initialDataFailure/g)||[]).length===2,
     "js/core.js must not silently hide failed inbox/contact initialization after login or session restore"],
   [chatSource.includes("window.loadPrivateMessages") || chatSource.includes("loadPrivateMessages"),

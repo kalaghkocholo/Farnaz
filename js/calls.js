@@ -1,6 +1,6 @@
 (function(){
 "use strict";
-let signedInUserId=null,inboxChannel=null,activeCall=null;
+let signedInUserId=null,inboxChannel=null,activeCall=null,userSwitchSequence=0;
 const processedSignals=new Set(),pendingIncomingSessions=new Set();
 const byId=id=>document.getElementById(id);
 const tr=(fa,en)=>typeof english!=="undefined"&&english?en:fa;
@@ -105,37 +105,57 @@ async function preparePeer(session,role){
     for(const signal of data||[]){if(activeCall!==call)return;await handleSignal(signal);}
   }
 }
-async function flushPendingCandidates(){
-  if(!activeCall?.pc?.remoteDescription||!activeCall.pendingCandidates?.length)return;
-  const queued=activeCall.pendingCandidates.splice(0);
-  for(const candidate of queued){try{await activeCall.pc.addIceCandidate(new RTCIceCandidate(candidate));}catch(e){console.warn("Queued ICE candidate:",e);}}
+async function flushPendingCandidates(call=activeCall){
+  const pc=call?.pc;
+  if(!pc?.remoteDescription||!call.pendingCandidates?.length)return;
+  const queued=call.pendingCandidates.splice(0);
+  for(const candidate of queued){
+    if(activeCall!==call)return;
+    try{await pc.addIceCandidate(new RTCIceCandidate(candidate));}catch(e){console.warn("Queued ICE candidate:",e);}
+  }
 }
 async function handleSignal(signal){
-  if(!activeCall||String(signal.call_id)!==String(activeCall.session.id)||processedSignals.has(signal.id))return;
+  const call=activeCall;
+  if(!call||String(signal.call_id)!==String(call.session.id)||processedSignals.has(signal.id))return;
   processedSignals.add(signal.id);
   if(String(signal.sender_id)===String(signedInUserId))return;
-  const pc=activeCall.pc;
-  if(signal.signal_type==="offer"&&activeCall.role==="receiver"){
-    if(!pc) return;
+  const pc=call.pc;
+  if(signal.signal_type==="offer"&&call.role==="receiver"){
+    if(!pc)return;
     await pc.setRemoteDescription(new RTCSessionDescription(signal.payload));
-    await flushPendingCandidates();
-    const answer=await pc.createAnswer();await pc.setLocalDescription(answer);
+    if(activeCall!==call)return;
+    await flushPendingCandidates(call);
+    if(activeCall!==call)return;
+    const answer=await pc.createAnswer();
+    if(activeCall!==call)return;
+    await pc.setLocalDescription(answer);
+    if(activeCall!==call)return;
     await sendSignal("answer",{type:pc.localDescription.type,sdp:pc.localDescription.sdp});
-    await getClient().from("call_sessions").update({status:"active"}).eq("id",activeCall.session.id);
+    if(activeCall!==call)return;
+    const {error}=await getClient().from("call_sessions").update({status:"active"}).eq("id",call.session.id);
+    if(activeCall!==call)return;
+    if(error)throw error;
     setCallStatus(tr("پاسخ ارسال شد؛ در حال اتصال…","Answer sent; connecting…"));
-  }else if(signal.signal_type==="answer"&&activeCall.role==="caller"){
-    activeCall.answered=true;
-    if(activeCall.timeout){clearTimeout(activeCall.timeout);activeCall.timeout=null;}
-    if(pc&&!pc.currentRemoteDescription){await pc.setRemoteDescription(new RTCSessionDescription(signal.payload));await flushPendingCandidates();}
+  }else if(signal.signal_type==="answer"&&call.role==="caller"){
+    call.answered=true;
+    if(call.timeout){clearTimeout(call.timeout);call.timeout=null;}
+    if(pc&&!pc.currentRemoteDescription){
+      await pc.setRemoteDescription(new RTCSessionDescription(signal.payload));
+      if(activeCall!==call)return;
+      await flushPendingCandidates(call);
+    }
   }else if(signal.signal_type==="ice-candidate"){
     if(pc&&signal.payload){
-      if(pc.remoteDescription){try{await pc.addIceCandidate(new RTCIceCandidate(signal.payload));}catch(e){console.warn("ICE candidate:",e);}}
-      else{activeCall.pendingCandidates=activeCall.pendingCandidates||[];activeCall.pendingCandidates.push(signal.payload);}
+      if(pc.remoteDescription){
+        if(activeCall!==call)return;
+        try{await pc.addIceCandidate(new RTCIceCandidate(signal.payload));}catch(e){console.warn("ICE candidate:",e);}
+      }else{call.pendingCandidates=call.pendingCandidates||[];call.pendingCandidates.push(signal.payload);}
     }
-  }else if(signal.signal_type==="reject"){
-    await cleanupCall(false);setCallStatus(tr("تماس رد شد","Call declined"));setTimeout(()=>{const d=byId("farnazCallDialog");if(d)d.hidden=true;},1400);
-  }else if(signal.signal_type==="hangup"){
-    await cleanupCall(false);setCallStatus(tr("تماس پایان یافت","Call ended"));setTimeout(()=>{const d=byId("farnazCallDialog");if(d)d.hidden=true;},1400);
+  }else if(signal.signal_type==="reject"||signal.signal_type==="hangup"){
+    await cleanupCall(false);
+    if(activeCall)return;
+    setCallStatus(signal.signal_type==="reject"?tr("تماس رد شد","Call declined"):tr("تماس پایان یافت","Call ended"));
+    setTimeout(()=>{const d=byId("farnazCallDialog");if(d&&!activeCall)d.hidden=true;},1400);
   }
 }
 async function acceptIncoming(){
@@ -203,23 +223,27 @@ async function startCall(type){
   }
 }
 async function setUser(userId){
-  const next=userId?String(userId):null;
+  const request=++userSwitchSequence,next=userId?String(userId):null;
   if(next===signedInUserId&&inboxChannel)return;
   if(activeCall)await endCall(false);
-  if(inboxChannel){try{await getClient().removeChannel(inboxChannel);}catch(_){}inboxChannel=null;}
+  if(request!==userSwitchSequence)return;
+  const previousChannel=inboxChannel;inboxChannel=null;
+  if(previousChannel){try{await getClient().removeChannel(previousChannel);}catch(_){}}
+  if(request!==userSwitchSequence)return;
   signedInUserId=next;
   if(!signedInUserId)return;
   const myId=signedInUserId,client=getClient();
-  inboxChannel=client.channel("farnaz-incoming-calls-"+myId);
-  inboxChannel
-    .on("postgres_changes",{event:"INSERT",schema:"public",table:"call_sessions",filter:"receiver_id=eq."+myId},payload=>handleIncomingSession(payload.new,client))
-    .on("postgres_changes",{event:"UPDATE",schema:"public",table:"call_sessions",filter:"receiver_id=eq."+myId},payload=>handleCallStatusUpdate(payload.new))
-    .on("postgres_changes",{event:"UPDATE",schema:"public",table:"call_sessions",filter:"caller_id=eq."+myId},payload=>handleCallStatusUpdate(payload.new))
-    .subscribe(status=>{if(status==="CHANNEL_ERROR"||status==="TIMED_OUT")console.warn("Incoming call listener:",status);});
+  const channel=client.channel("farnaz-incoming-calls-"+myId);
+  inboxChannel=channel;
+  channel
+    .on("postgres_changes",{event:"INSERT",schema:"public",table:"call_sessions",filter:"receiver_id=eq."+myId},payload=>{if(signedInUserId===myId)handleIncomingSession(payload.new,client);})
+    .on("postgres_changes",{event:"UPDATE",schema:"public",table:"call_sessions",filter:"receiver_id=eq."+myId},payload=>{if(signedInUserId===myId)handleCallStatusUpdate(payload.new);})
+    .on("postgres_changes",{event:"UPDATE",schema:"public",table:"call_sessions",filter:"caller_id=eq."+myId},payload=>{if(signedInUserId===myId)handleCallStatusUpdate(payload.new);})
+    .subscribe(status=>{if(signedInUserId===myId&&(status==="CHANNEL_ERROR"||status==="TIMED_OUT"))console.warn("Incoming call listener:",status);});
   // Recover a ringing invitation if the app reconnects after the INSERT event.
   client.from("call_sessions").select("*").eq("receiver_id",myId).eq("status","ringing")
     .gte("created_at",new Date(Date.now()-120000).toISOString()).order("created_at",{ascending:false}).limit(1)
-    .then(({data,error})=>{if(error)console.warn("Pending call lookup:",error);else if(data?.[0])handleIncomingSession(data[0],client);});
+    .then(({data,error})=>{if(signedInUserId!==myId)return;if(error)console.warn("Pending call lookup:",error);else if(data?.[0])handleIncomingSession(data[0],client);});
 }
 async function handleCallStatusUpdate(session){
   if(!activeCall||String(activeCall.session.id)!==String(session?.id))return;

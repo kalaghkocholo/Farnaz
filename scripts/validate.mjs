@@ -256,6 +256,8 @@ const authChecks = [
     "js/core.js must stop stale conversation-preferences requests before they can update the guest UI or continue loading messages"],
   [coreSource.includes("function navigate(pageId,options={})") && coreSource.includes('navigate("chatsPage",{refreshData:false})') && !coreSource.includes('window.addEventListener("farnaz-auth-user",event=>{'),
     "js/core.js must avoid duplicate inbox/contact refreshes during sign-in and saved-session restoration"],
+  [localStoreSource.includes("const clearingUsers=new Map()") && localStoreSource.includes("await waitForUserClear(userId)") && localStoreSource.includes("Queue repeated cleanup operations for the same account") && localStoreSource.includes("function clearUser(userId)"),
+    "js/local-store.js must serialize per-user cache writes with logout cleanup to prevent a quick re-login from losing new cache data"],
   [coreSource.includes('retryRead("create current user profile"') && coreSource.includes('withTimeout(operation(),timeoutMs,label)') && coreSource.includes('timeoutMs=9000'),
     "js/core.js must bound the initial profile creation request"],
   [coreSource.includes("could not restore your saved session") && coreSource.includes("setConnectionBanner("),

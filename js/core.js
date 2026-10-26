@@ -772,7 +772,10 @@ function showGuest(){
   const previousUserId=currentUser?.id;
   if(previousUserId)window.FarnazLocalStore?.clearUser(previousUserId).catch(cacheError=>console.warn("Could not clear local account data:",cacheError));
   stopFarnazPresence().catch(()=>{});farnazPresenceContactCache.clear();
-  profileRequestNumber++;currentUser=null;currentProfileName="";currentAvatarUrl="";currentPhone="";
+  profileRequestNumber++;
+  // Invalidate every in-flight list request before clearing the signed-in UI.
+  conversationListRequestNumber++;savedContactsRequestNumber++;unmatchedPhoneContactsRequestNumber++;
+  currentUser=null;currentProfileName="";currentAvatarUrl="";currentPhone="";
   document.body.dataset.authState="guest";if($("headerFButton"))$("headerFButton").hidden=true;const settingsButton=$("openSettingsButton");if(settingsButton){settingsButton.hidden=true;settingsButton.style.setProperty("display","none","important");}
   window.dispatchEvent(new CustomEvent("farnaz-auth-user",{detail:{userId:null}}));
   currentChatUser=null;
@@ -1389,14 +1392,15 @@ function makeContactButton(contact,preview="",timeText="",fromPage="chatsPage"){
   button.addEventListener("click",()=>{if(button.dataset.suppressOpen==="1"){button.dataset.suppressOpen="0";return;}openChat(contact,fromPage);});
   return button;
 }
+let unmatchedPhoneContactsRequestNumber=0;
 async function refreshUnmatchedPhoneContacts(){
   const list=$("unmatchedPhoneContactsList");if(!list||!currentUser)return;
-  const myId=currentUser.id;list.replaceChildren();
+  const request=++unmatchedPhoneContactsRequestNumber,myId=currentUser.id;list.replaceChildren();
   try{
     const {data,error}=await retryRead("phone contacts",()=>getClient().from("user_phone_contacts")
       .select("id,display_name,phone,matched_user_id,updated_at")
       .eq("user_id",myId).is("matched_user_id",null).order("display_name",{ascending:true}).limit(5000));
-    if(currentUser?.id!==myId)return;
+    if(currentUser?.id!==myId||request!==unmatchedPhoneContactsRequestNumber)return;
     if(error)throw error;
     for(const item of data||[]){
       const row=document.createElement("div");row.className="phone-contact-row";
@@ -1409,6 +1413,7 @@ async function refreshUnmatchedPhoneContacts(){
     }
     setStatus("unmatchedPhoneContactsStatus",data?.length?(english?"These contacts are saved privately for your account.":"این مخاطبان به‌صورت خصوصی برای حساب خودت ذخیره شده‌اند."):(english?"No unmatched phone contacts. Import a VCF file to begin.":"مخاطب گوشیِ تطبیق‌نیافته‌ای نیست؛ برای شروع فایل VCF را وارد کن."));
   }catch(e){
+    if(currentUser?.id!==myId||request!==unmatchedPhoneContactsRequestNumber)return;
     console.error("Unmatched phone contacts:",e);
     setStatus("unmatchedPhoneContactsStatus",(english?"Could not load phone contacts: ":"بارگذاری مخاطبان گوشی ناموفق بود: ")+e.message,true);
   }
@@ -1460,8 +1465,11 @@ async function refreshSavedContacts(){
     });
     renderSavedContactsSnapshot(snapshot);
     if(profilesLoaded){try{await window.FarnazLocalStore?.saveSnapshot(myId,"contacts",snapshot);}catch(cacheError){console.warn("Cached contacts save:",cacheError);}}
+    // The account or a newer contacts refresh may have changed during the cache write.
+    if(currentUser?.id!==myId||request!==savedContactsRequestNumber)return;
     setStatus("savedContactsStatus",snapshot.length?"":(english?"No saved Farnaz contacts yet.":"هنوز مخاطب عضو فرنازی ذخیره نشده است."));
     await refreshUnmatchedPhoneContacts();
+    if(currentUser?.id!==myId||request!==savedContactsRequestNumber)return;
     return true;
   }catch(e){
     if(currentUser?.id!==myId||request!==savedContactsRequestNumber)return;

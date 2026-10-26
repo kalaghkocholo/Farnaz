@@ -1010,7 +1010,7 @@ document.addEventListener("input",event=>{
 
 async function stopMessageSubscription(){
   if(!messageSubscription||!farnazClient)return;
-  const ch=messageSubscription;messageSubscription=null;
+  const ch=messageSubscription;messageSubscription=null;messageSubscriptionUserId=null;
   // A suspended mobile realtime socket can make removeChannel never settle.
   // Continue app initialization after a short grace period instead of deadlocking.
   try{

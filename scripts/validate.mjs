@@ -229,9 +229,15 @@ const authChecks = [
    coreSource.includes("longer than the fetch wrapper's 15-second auth-request deadline"),
     "js/core.js must avoid timing out before its bounded refresh-token request settles"],
   [coreSource.includes("async function restoreSavedSession(attempt=0)") &&
+   coreSource.includes("async function restoreSavedSessionAttempt(attempt=0)") &&
    coreSource.includes('transientRestoreFailure=error?.name==="TimeoutError"||error?.name==="TypeError"||isTransientError(error)') &&
-   coreSource.includes("await restoreSavedSession(attempt+1)"),
-    "js/core.js must retry transient saved-session restoration failures before falling back to guest"],
+   coreSource.includes("await restoreSavedSessionAttempt(attempt+1)") &&
+   coreSource.includes("sessionRestorePromise"),
+    "js/core.js must retry transient saved-session restoration failures without overlapping restore attempts"],
+  [coreSource.includes("sessionRestoreNeedsRetry") &&
+   coreSource.includes('document.addEventListener("visibilitychange",retryDeferredSessionRestore)') &&
+   coreSource.includes('window.addEventListener("online",retryDeferredSessionRestore)'),
+    "js/core.js must retry a transiently failed saved-session restore when Safari resumes or connectivity returns"],
   [coreSource.includes("// Never let a late restore overwrite the newer authenticated identity.") &&
    coreSource.includes("if(currentUser)return;") &&
    coreSource.includes("// In that case this stale boot-time failure must not switch the UI back to guest.") &&

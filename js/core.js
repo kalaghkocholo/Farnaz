@@ -528,7 +528,6 @@ function navigate(pageId,options={}){
   if(pageId!=="chatPage"){document.documentElement.style.removeProperty("--chat-viewport-offset");document.documentElement.style.removeProperty("--chat-viewport-height");}
   document.querySelectorAll(".nav-button").forEach(b=>b.classList.toggle("active",b.dataset.page===pageId));
   $("bottomNav").classList.toggle("visible",pageId!=="homePage"&&pageId!=="chatPage");
-  $("topNewChatButton").classList.toggle("visible",pageId==="chatsPage");
   if(pageId==="chatsPage")applyConversationSearch();
   if(pageId!=="chatsPage")toggleNewChatPopover(false);
   if(pageId!=="contactsPage")toggleContactSearch(false);

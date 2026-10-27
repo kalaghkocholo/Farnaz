@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" href="./farnaz-icon.svg?v=20261024-4">
 <meta name="description" content="فرناز؛ ارتباطی نزدیک‌تر، در هر کجا.">
 <title>فرناز | Farnaz</title>
-<link rel="preload" href="./js/core.js?v=20261028-17" as="script">
+<link rel="preload" href="./js/core.js?v=20261028-18" as="script">
 <link rel="preconnect" href="https://iemykhluluoymsbqpjsn.supabase.co" crossorigin>
 <style>
 :root{--bg:#101828;--panel:#172237;--panel2:#1d2b42;--border:#2b3a50;--mint:#50e3c2;--muted:#aab5c7;--white:#f8fafc}
@@ -38,8 +38,8 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
 .welcome-secondary{width:100%;max-width:300px;margin-top:9px;padding:12px;border:1px solid var(--border);border-radius:14px;background:transparent;color:var(--white);font-size:13px}
 @media(max-width:360px){.welcome-shell{min-height:62dvh;padding:24px 15px 20px}.welcome-shell h2{font-size:22px}.welcome-mark{width:86px;height:86px;border-radius:25px}.welcome-mark img{width:73px;height:73px}}
 </style>
-<link rel="stylesheet" href="./styles.css?v=20261025-50" media="print" onload="this.onload=null;this.media='all'">
-<noscript><link rel="stylesheet" href="./styles.css?v=20261025-50"></noscript>
+<link rel="stylesheet" href="./styles.css?v=20261028-51" media="print" onload="this.onload=null;this.media='all'">
+<noscript><link rel="stylesheet" href="./styles.css?v=20261028-51"></noscript>
 <link rel="stylesheet" href="./spaces.css?v=20261025-29" media="print" onload="this.onload=null;this.media='all'">
 </head>
 <body data-auth-state="guest">
@@ -86,7 +86,16 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
   <div class="page-heading" hidden><h2 id="contactsHeading">مخاطبان</h2></div>
   <button class="contacts-import-toggle" id="contactsImportToggle" type="button" aria-expanded="false" aria-controls="phoneContactsImport" onclick="toggleContactsImport()" aria-label="افزودن یا همگام‌سازی مخاطب" title="افزودن یا همگام‌سازی مخاطب">＋</button>
   <section class="phone-contacts-import" id="phoneContactsImport" aria-labelledby="phoneContactsImportTitle" hidden>
-    <div class="phone-contacts-import-heading"><span class="phone-contacts-import-icon" aria-hidden="true">▤</span><div><h3 id="phoneContactsImportTitle">همگام‌سازی مخاطبان گوشی</h3><p id="phoneContactsImportIntro">مخاطبان را مستقیم از انتخاب‌گر امن Safari انتخاب کن؛ فایل لازم نیست. اطلاعات انتخاب‌شده فقط برای حساب خودت ذخیره می‌شود.</p></div></div>
+    <div class="phone-contacts-import-heading"><span class="phone-contacts-import-icon" aria-hidden="true">▤</span><div><h3 id="phoneContactsImportTitle">افزودن و همگام‌سازی مخاطبان</h3><p id="phoneContactsImportIntro">می‌توانی مخاطب را دستی اضافه کنی یا از دفترچه تلفن انتخاب کنی. مخاطبان ذخیره‌شده فقط برای حساب خودت هستند.</p></div></div>
+    <form id="manualContactForm" class="manual-contact-form" onsubmit="addManualPhoneContact(event)">
+      <h4 id="manualContactTitle">افزودن دستی مخاطب</h4>
+      <label for="manualContactName" id="manualContactNameLabel">نام مخاطب</label>
+      <input id="manualContactName" type="text" maxlength="120" autocomplete="off" required placeholder="نام و نام خانوادگی">
+      <label for="manualContactPhone" id="manualContactPhoneLabel">شماره موبایل</label>
+      <input id="manualContactPhone" type="tel" dir="ltr" maxlength="25" autocomplete="tel" required placeholder="0912... یا +98912...">
+      <button class="action-button phone-contacts-import-button" id="manualContactSaveButton" type="submit">ذخیره مخاطب</button>
+      <p id="manualContactStatus" class="status muted-note" role="status"></p>
+    </form>
     <button class="action-button phone-contacts-import-button" id="pickPhoneContactsButton" type="button" onclick="syncPhoneContactsFromPicker()">انتخاب مخاطبان از دفترچه تلفن</button>
     <p id="phoneContactsImportStatus" class="status muted-note" role="status"></p>
     <p class="muted-note" id="phoneContactsPrivacyNote">اگر Safari راهنمای فعال‌سازی نشان داد، Contact Picker API را در تنظیمات پیشرفته Safari روشن کن و Safari را دوباره باز کن. در هر بار همگام‌سازی فقط مخاطبانی که خودت انتخاب می‌کنی به فرناز ارسال می‌شوند.</p>
@@ -459,7 +468,7 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
   });
   function loadLocalScripts(){
     const core=document.createElement("script");
-    core.src="./js/core.js?v=20261028-17";
+    core.src="./js/core.js?v=20261028-18";
     watchScript(core,()=>{
       // A script's load event can still fire after a runtime exception.
       // Verify the core boot contract before loading features or attempting

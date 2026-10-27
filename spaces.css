@@ -295,11 +295,11 @@
 #spaceCreateDialog .space-dialog-card,#spaceAddDialog .space-dialog-card {
   position:relative;
   width:min(520px,100%);
-  padding:52px 18px 18px
+  padding:calc(env(safe-area-inset-top, 0px) + 52px) 18px calc(env(safe-area-inset-bottom, 0px) + 18px)
 }
 #spaceCreateDialog .space-dialog-card>.contact-search-close,#spaceAddDialog .space-dialog-card>.contact-search-close {
   position:absolute;
-  top:10px;
+  top:calc(env(safe-area-inset-top, 0px) + 10px);
   left:12px;
   right:auto;
   margin:0;
@@ -734,7 +734,7 @@ body.spaces-chat-mode.keyboard-open #spacesPage #spaceComposer .composer-icon {
   height:100dvh!important;
   max-height:100dvh!important;
   border-radius:0!important;
-  padding:52px 18px 18px!important
+  padding:calc(env(safe-area-inset-top, 0px) + 52px) 18px calc(env(safe-area-inset-bottom, 0px) + 18px)!important
 }
 @media(min-width:700px) {
   #spaceInfoDialog {
@@ -835,7 +835,7 @@ body.spaces-chat-mode.keyboard-open #spacesPage #spaceComposer .composer-icon {
 }
 #spaceInfoDialog .contact-search-close {
   position:absolute;
-  top:12px;
+  top:calc(env(safe-area-inset-top, 0px) + 12px);
   left:14px;
   z-index:2
 }
@@ -850,11 +850,11 @@ body.spaces-chat-mode.keyboard-open #spacesPage #spaceComposer .composer-icon {
 }
 #spaceEditDialog .space-dialog-card {
   position:relative;
-  padding-top:52px
+  padding-top:calc(env(safe-area-inset-top, 0px) + 52px)
 }
 #spaceEditDialog .contact-search-close {
   position:absolute;
-  top:12px;
+  top:calc(env(safe-area-inset-top, 0px) + 12px);
   left:14px;
   z-index:2
 }

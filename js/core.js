@@ -726,6 +726,8 @@ function toggleLanguage(){
   if($("manualContactTitle"))$("manualContactTitle").textContent=english?"Add contact manually":"افزودن دستی مخاطب";
   if($("manualContactNameLabel"))$("manualContactNameLabel").textContent=english?"Contact name":"نام مخاطب";
   if($("manualContactPhoneLabel"))$("manualContactPhoneLabel").textContent=english?"Mobile number":"شماره موبایل";
+  if($("manualContactCountryLabel"))$("manualContactCountryLabel").textContent=english?"Country code":"کد کشور";
+  if($("manualContactCountry"))Array.from($("manualContactCountry").options).forEach((option,i)=>{const names=english?["Iran","Germany","United States / Canada","United Kingdom","Turkey"]:["ایران","آلمان","آمریکا / کانادا","بریتانیا","ترکیه"];option.textContent=names[i]+" (+"+option.value+")";});
   if($("manualContactSaveButton"))$("manualContactSaveButton").textContent=english?"Save contact":"ذخیره مخاطب";
   $("contactSearchButtonLabel").textContent=english?"Find contact":"جستجوی مخاطب";
   $("contactSearchTitle").textContent=english?"Find a new contact":"پیدا کردن مخاطب جدید";
@@ -1621,7 +1623,7 @@ async function addManualPhoneContact(event){
   event.preventDefault();
   if(!currentUser){openAuth();return;}
   const userId=String(currentUser.id),name=$("manualContactName").value.trim();
-  const phone=normalizePhone($("manualContactPhone").value,$("phoneContactsCountry").value);
+  const phone=normalizePhone($("manualContactPhone").value,$("manualContactCountry").value);
   const button=$("manualContactSaveButton");
   if(!name||name.length>120){setStatus("manualContactStatus",english?"Enter a contact name up to 120 characters.":"نام مخاطب را حداکثر در ۱۲۰ نویسه وارد کن.",true);return;}
   if(!/^\+[1-9]\d{7,14}$/.test(phone)){setStatus("manualContactStatus",english?"Enter a valid phone number.":"شماره موبایل معتبر وارد کن.",true);return;}
@@ -1630,9 +1632,17 @@ async function addManualPhoneContact(event){
     const client=getClient();
     const {data:phoneRows,error:phoneError}=await client.from("user_phone_contacts").select("phone").eq("user_id",userId).limit(5000);
     if(phoneError)throw phoneError;
+    const {data:savedRows,error:savedRowsError}=await client.from("contacts").select("contact_user_id").eq("user_id",userId);
+    if(savedRowsError)throw savedRowsError;
     const duplicateInPhoneBook=(phoneRows||[]).some(row=>normalizePhone(row.phone)===phone);
     const duplicateInSaved=[...($("savedContactsList")?.querySelectorAll(".saved-contact-row .list-item")||[])].some(row=>row.dataset.contactPhone===phone);
-    if(duplicateInPhoneBook||duplicateInSaved){
+    let duplicateMatchedAccount=false;
+    if(!duplicateInPhoneBook&&!duplicateInSaved){
+      const lookup=await client.rpc("find_farnaz_user_by_phone",{search_phone:phone});
+      if(lookup.error)throw lookup.error;
+      duplicateMatchedAccount=(lookup.data||[]).some(match=>(savedRows||[]).some(saved=>String(saved.contact_user_id)===String(match.user_id||match.id)));
+    }
+    if(duplicateInPhoneBook||duplicateInSaved||duplicateMatchedAccount){
       setStatus("manualContactStatus",english?"This phone number is already added or exists in your contact list.":"این شماره قبلاً اضافه شده یا در فهرست مخاطبان وجود دارد.",true);return;
     }
     if(String(currentUser?.id)!==userId)return;
@@ -1859,6 +1869,12 @@ async function findRecipient(event){
       setStatus("recipientStatus",english?"You cannot message yourself.":"نمی‌توانی به حساب خودت پیام بدهی.",true);return;
     }
     if(String(currentUser?.id)!==myId)return;
+    const {data:existingContact,error:existingContactError}=await client.from("contacts").select("id").eq("user_id",myId).eq("contact_user_id",id).maybeSingle();
+    if(existingContactError)throw existingContactError;
+    if(existingContact){
+      setStatus("recipientStatus",english?"This contact has already been added or is already in your list.":"این مخاطب قبلاً اضافه شده یا در فهرست مخاطبان وجود دارد.",true);
+      return;
+    }
     const {error:saveError}=await client.from("contacts")
       .upsert({user_id:myId,contact_user_id:id},{onConflict:"user_id,contact_user_id",ignoreDuplicates:true});
     if(saveError)throw saveError;

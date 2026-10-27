@@ -381,29 +381,81 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
     script.onload=()=>finish(onload);
     script.onerror=()=>finish(onerror,new Error("Script failed to load: "+script.src));
   }
-  function showLoadError(message,flag){
+  const FARNAZ_ERROR_REPORT_KEY="farnaz-startup-error-report-v1";
+  function saveFarnazErrorReport(entry){
+    try{
+      const previous=JSON.parse(localStorage.getItem(FARNAZ_ERROR_REPORT_KEY)||"[]");
+      const reports=Array.isArray(previous)?previous:[];
+      reports.push({...entry,time:new Date().toISOString()});
+      localStorage.setItem(FARNAZ_ERROR_REPORT_KEY,JSON.stringify(reports.slice(-8)));
+    }catch(storageError){
+      console.warn("[Farnaz startup] Could not persist error report:",storageError);
+    }
+  }
+  function getFarnazErrorReport(){
+    try{return JSON.parse(localStorage.getItem(FARNAZ_ERROR_REPORT_KEY)||"[]");}
+    catch(_){return [];}
+  }
+  async function copyFarnazErrorReport(){
+    const report=JSON.stringify(getFarnazErrorReport(),null,2);
+    try{
+      if(navigator.clipboard&&navigator.clipboard.writeText){
+        await navigator.clipboard.writeText(report);
+        const button=document.getElementById("farnazCopyErrorReport");
+        if(button)button.textContent="گزارش کپی شد";
+      }else{
+        window.prompt("گزارش خطا را کپی کن:",report);
+      }
+    }catch(_){
+      window.prompt("گزارش خطا را کپی کن:",report);
+    }
+  }
+  function showLoadError(message,flag,details){
     window[flag]=true;
+    const report={type:flag,message:String(message||""),...(details||{})};
+    saveFarnazErrorReport(report);
     const status=document.getElementById("authStatus");
     if(status)status.textContent=message;
-    // Startup errors must be visible on the home screen, not hidden inside
-    // the closed authentication dialog (the old behavior made every button
-    // appear dead without showing the reason).
+    // Keep startup diagnostics visible on the home screen, not inside a closed dialog.
     const banner=document.getElementById("connectionBanner");
     if(banner){
       banner.hidden=false;
-      banner.textContent=message;
+      banner.textContent=message+" ";
       banner.style.cssText="display:block!important;position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);left:12px;right:12px;z-index:100000;max-width:560px;margin:0 auto;padding:14px 16px;border:1px solid #b45309;border-radius:12px;background:#fff7ed;color:#7c2d12;box-shadow:0 8px 28px #0004;line-height:1.6;direction:rtl;text-align:right";
+      let copyButton=document.getElementById("farnazCopyErrorReport");
+      if(!copyButton){
+        copyButton=document.createElement("button");
+        copyButton.id="farnazCopyErrorReport";
+        copyButton.type="button";
+        copyButton.textContent="کپی گزارش خطا";
+        copyButton.style.cssText="display:block;margin-top:10px;padding:8px 12px;border:1px solid #9a3412;border-radius:8px;background:#fff;color:#7c2d12";
+        copyButton.addEventListener("click",copyFarnazErrorReport);
+        banner.appendChild(copyButton);
+      }
     }
-    console.error("[Farnaz startup]",flag,message);
+    console.error("[Farnaz startup]",report);
   }
-  // Surface uncaught application-script exceptions where the user can see
-  // them; otherwise a top-level exception can leave the UI looking clickable
-  // while none of its inline handlers have been initialized.
+  // Save actionable details for uncaught errors from application modules.
   window.addEventListener("error",event=>{
     const file=String(event.filename||"");
     if(file.includes("/js/core.js")||file.includes("/js/chat-menu-v5.js")||file.includes("/js/spaces.js")||file.includes("/js/calls.js")){
-      showLoadError("فرناز هنگام راه‌اندازی با خطای اجرایی روبه‌رو شد. جزئیات در گزارش خطا ثبت شد؛ صفحه را دوباره بارگذاری کن.","FARNAZ_RUNTIME_ERROR");
+      showLoadError("فرناز هنگام راه‌اندازی با خطای اجرایی روبه‌رو شد. گزارش خطا ذخیره شد؛ برای ارسال جزئیات، «کپی گزارش خطا» را بزن.","FARNAZ_RUNTIME_ERROR",{
+        errorName:event.error?.name||"Error",
+        errorMessage:String(event.message||event.error?.message||"Unknown runtime error").slice(0,500),
+        source:file.split("/").pop().split("?")[0],
+        line:Number(event.lineno)||null,
+        column:Number(event.colno)||null,
+        stack:String(event.error?.stack||"").slice(0,1800)
+      });
     }
+  });
+  window.addEventListener("unhandledrejection",event=>{
+    const reason=event.reason;
+    showLoadError("یکی از عملیات‌های آغازین فرناز با خطای مدیریت‌نشده روبه‌رو شد. گزارش خطا ذخیره شد؛ برای ارسال جزئیات، «کپی گزارش خطا» را بزن.","FARNAZ_UNHANDLED_REJECTION",{
+      errorName:reason?.name||"Error",
+      errorMessage:String(reason?.message||reason||"Unknown rejection").slice(0,500),
+      stack:String(reason?.stack||"").slice(0,1800)
+    });
   });
   function loadLocalScripts(){
     const core=document.createElement("script");

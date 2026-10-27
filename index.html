@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" href="./farnaz-icon.svg?v=20261024-4">
 <meta name="description" content="فرناز؛ ارتباطی نزدیک‌تر، در هر کجا.">
 <title>فرناز | Farnaz</title>
-<link rel="preload" href="./js/core.js?v=20261026-15" as="script">
+<link rel="preload" href="./js/core.js?v=20261028-16" as="script">
 <link rel="preconnect" href="https://iemykhluluoymsbqpjsn.supabase.co" crossorigin>
 <style>
 :root{--bg:#101828;--panel:#172237;--panel2:#1d2b42;--border:#2b3a50;--mint:#50e3c2;--muted:#aab5c7;--white:#f8fafc}
@@ -385,13 +385,37 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
     window[flag]=true;
     const status=document.getElementById("authStatus");
     if(status)status.textContent=message;
+    // Startup errors must be visible on the home screen, not hidden inside
+    // the closed authentication dialog (the old behavior made every button
+    // appear dead without showing the reason).
+    const banner=document.getElementById("connectionBanner");
+    if(banner){
+      banner.hidden=false;
+      banner.textContent=message;
+      banner.style.cssText="display:block!important;position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);left:12px;right:12px;z-index:100000;max-width:560px;margin:0 auto;padding:14px 16px;border:1px solid #b45309;border-radius:12px;background:#fff7ed;color:#7c2d12;box-shadow:0 8px 28px #0004;line-height:1.6;direction:rtl;text-align:right";
+    }
+    console.error("[Farnaz startup]",flag,message);
   }
+  // Surface uncaught application-script exceptions where the user can see
+  // them; otherwise a top-level exception can leave the UI looking clickable
+  // while none of its inline handlers have been initialized.
+  window.addEventListener("error",event=>{
+    const file=String(event.filename||"");
+    if(file.includes("/js/core.js")||file.includes("/js/chat-menu-v5.js")||file.includes("/js/spaces.js")||file.includes("/js/calls.js")){
+      showLoadError("فرناز هنگام راه‌اندازی با خطای اجرایی روبه‌رو شد. جزئیات در گزارش خطا ثبت شد؛ صفحه را دوباره بارگذاری کن.","FARNAZ_RUNTIME_ERROR");
+    }
+  });
   function loadLocalScripts(){
     const core=document.createElement("script");
-    core.src="./js/core.js?v=20261026-15";
+    core.src="./js/core.js?v=20261028-16";
     watchScript(core,()=>{
-      // Feature modules depend on core and must remain ordered. A stalled
-      // optional module must not hold session restoration forever.
+      // A script's load event can still fire after a runtime exception.
+      // Verify the core boot contract before loading features or attempting
+      // session restoration.
+      if(typeof window.FarnazBoot!=="function"){
+        showLoadError("هستهٔ فرناز دریافت شد اما راه‌اندازی آن کامل نشد. برنامه را تازه‌سازی کن؛ اگر تکرار شد باید خطای اجرایی بررسی شود.","FARNAZ_CORE_BOOT_MISSING");
+        return;
+      }
       const featureScripts=[
         "./js/chat-menu-v5.js?v=20261025-20",
         "./js/spaces.js?v=20261026-3",

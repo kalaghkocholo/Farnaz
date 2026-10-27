@@ -338,7 +338,8 @@ body[data-theme="light"] .page h1,body[data-theme="light"] .page h2,body[data-th
 body[data-theme="light"] .setting-copy strong,
 body[data-theme="light"] .conversation-title,body[data-theme="light"] .contact-name{color:var(--white)}
 body[data-theme="light"] .page p,body[data-theme="light"] .setting-copy small{color:var(--muted)}
-body[data-theme="light"] .setting-control,body[data-theme="light"] input,body[data-theme="light"] textarea,body[data-theme="light"] select{background:var(--panel)!important;border-color:var(--border)!important;color:var(--white)!important}
+body[data-theme="light"] .setting-control{background:var(--bg)!important;border-color:var(--border)!important;color:var(--white)!important}
+body[data-theme="light"] input,body[data-theme="light"] textarea,body[data-theme="light"] select{background:var(--bg)!important;border-color:var(--border)!important;color:var(--white)!important}
 body[data-theme="light"] .bubble{color:var(--white)}
 /* Respect selected bubble colors in light theme too. */
 body[data-theme="light"] .bubble.outgoing{background:var(--my-message-bg,var(--accent))!important;color:var(--my-message-ink,#15372f)!important}
@@ -1151,7 +1152,7 @@ p{color:var(--muted)!important}
 .logo,.avatar{background:var(--accent)!important;color:var(--accent-ink,#101722)!important}
 .primary,.action-button,.auth-submit,.composer-icon.send{background:var(--accent)!important;color:var(--accent-ink,#101722)!important}
 .icon-button,.list-item,.conversation-card .list-item,.settings-card,.panel,.feature,.new-chat-popover,.contact-search-popover,.contact-info-card,.message-search-card,.space-dialog-card,.message-tools-floating,.attachment-menu,.composer-shell,.mini-button,.message-reaction-chip,.message-pinned-banner{background:var(--panel)!important;color:var(--white)!important;border-color:var(--border)!important}
-input,textarea,select,#messageSearchQuery,#messageSearchKind,#messageSearchFrom,#messageSearchTo{background:var(--panel2)!important;color:var(--white)!important;border-color:var(--border)!important}
+input,textarea,select,#messageSearchQuery,#messageSearchKind,#messageSearchFrom,#messageSearchTo{background:var(--bg)!important;color:var(--white)!important;border-color:var(--border)!important}
 .bottom-nav{background:color-mix(in srgb,var(--panel) 94%,transparent)!important;border-top-color:var(--border)!important}
 .nav-button.active{background:var(--panel2)!important;color:var(--accent)!important}
 .composer-icon,.attachment-option-icon,.contact-info-action,.message-search-result{background:var(--panel2)!important;color:var(--white)!important;border-color:var(--border)!important}

@@ -137,12 +137,56 @@ window.addEventListener("storage",event=>{if(event.key===APPEARANCE_KEY){appeara
 if(window.matchMedia){window.matchMedia("(prefers-color-scheme: light)").addEventListener?.("change",()=>{if(appearanceSettings.theme==="system")applyAppearanceSettings();});}
 applyAppearanceSettings();
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",initPhoneContactsImport);else initPhoneContactsImport();
-// Register the offline cache only after the first page load, so cache installation
-// does not compete with the initial CSS, JavaScript, and authentication requests.
+// Register the offline cache after the first load, then check for updates whenever
+// the PWA returns to the foreground or reconnects. Avoid reloading while the user
+// is typing or has an unsent message; apply a pending update at the next safe moment.
+let farnazHadController=false;
+let farnazReloadAfterUpdate=false;
+let farnazUpdateCheckBusy=false;
+function farnazHasUnsavedInteraction(){
+  const active=document.activeElement;
+  if(active&&active!==document.body&&active!==document.documentElement&&
+     active.matches("input,textarea,select,[contenteditable='true']"))return true;
+  const composer=document.getElementById("messageText");
+  if(composer&&composer.value.trim())return true;
+  const authPassword=document.getElementById("authPassword");
+  if(authPassword&&authPassword.value)return true;
+  return false;
+}
+function applyFarnazUpdateWhenSafe(){
+  if(!farnazReloadAfterUpdate||document.visibilityState==="hidden"||farnazHasUnsavedInteraction())return;
+  farnazReloadAfterUpdate=false;
+  window.location.reload();
+}
+function checkFarnazForUpdates(){
+  const reg=window.farnazServiceWorkerRegistration;
+  if(!reg||farnazUpdateCheckBusy||!navigator.onLine)return;
+  farnazUpdateCheckBusy=true;
+  Promise.resolve(reg.update()).catch(error=>console.warn("Farnaz update check:",error)).finally(()=>{farnazUpdateCheckBusy=false;});
+}
 function registerFarnazServiceWorker(){
-  if(!("serviceWorker" in navigator) || location.protocol==="file:")return;
+  if(!("serviceWorker" in navigator)||location.protocol==="file:")return;
+  farnazHadController=!!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener("controllerchange",()=>{
+    if(!farnazHadController){farnazHadController=!!navigator.serviceWorker.controller;return;}
+    farnazReloadAfterUpdate=true;
+    applyFarnazUpdateWhenSafe();
+  });
   navigator.serviceWorker.register("./service-worker.js")
-    .then(reg=>{window.farnazServiceWorkerRegistration=reg;reg.update().catch(()=>{});})
+    .then(reg=>{
+      window.farnazServiceWorkerRegistration=reg;
+      reg.update().catch(()=>{});
+      reg.addEventListener("updatefound",()=>{
+        const worker=reg.installing;
+        if(!worker)return;
+        worker.addEventListener("statechange",()=>{
+          if(worker.state==="installed"&&navigator.serviceWorker.controller){
+            farnazReloadAfterUpdate=true;
+            applyFarnazUpdateWhenSafe();
+          }
+        });
+      });
+    })
     .catch(error=>console.warn("Farnaz service worker registration:",error));
 }
 if(document.readyState==="complete"){
@@ -152,6 +196,13 @@ if(document.readyState==="complete"){
     (window.requestIdleCallback||((fn)=>setTimeout(fn,900)))(registerFarnazServiceWorker,{timeout:2500});
   },{once:true});
 }
+document.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState==="visible"){checkFarnazForUpdates();applyFarnazUpdateWhenSafe();}
+});
+window.addEventListener("focus",()=>{checkFarnazForUpdates();applyFarnazUpdateWhenSafe();});
+window.addEventListener("online",()=>{checkFarnazForUpdates();if(currentUser)scheduleReconnect();});
+document.addEventListener("focusout",()=>{window.setTimeout(applyFarnazUpdateWhenSafe,150);});
+window.setInterval(()=>{if(document.visibilityState==="visible")checkFarnazForUpdates();},5*60*1000);
 window.notifyFarnazIncomingMessage=async function(){
   if(!("Notification" in window)||Notification.permission!=="granted"||!document.hidden)return;
   try{

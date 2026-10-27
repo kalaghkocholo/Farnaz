@@ -842,8 +842,8 @@ document.addEventListener("keydown",event=>{
 })();
 $("savedContactFilter").addEventListener("input",filterSavedContactsForNewChat);
 document.addEventListener("click",event=>{
-  const panel=$("newChatPopover"),button=$("topNewChatButton");
-  if(panel&&!panel.hidden&&!panel.contains(event.target)&&!button.contains(event.target))toggleNewChatPopover(false);
+  const panel=$("newChatPopover"),button=$("topNewChatButton")||document.querySelector(".chats-new-button");
+  if(panel&&!panel.hidden&&!panel.contains(event.target)&&(!button||!button.contains(event.target)))toggleNewChatPopover(false);
 });
 $("sendMessageForm").addEventListener("submit",sendMessage);
 function handleAttachmentChange(input){

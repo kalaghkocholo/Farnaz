@@ -74,7 +74,7 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
 
 <!-- صفحه گفتگوها -->
 <section class="page" id="chatsPage">
-  <div class="chats-topline"><div class="page-heading"><h2 id="chatsHeading">گفتگوها</h2><p id="chatsIntro">گفتگوهای اخیرت را اینجا می‌بینی.</p></div><button class="chats-new-button" type="button" onclick="startNewChat()" aria-label="گفتگوی جدید" title="گفتگوی جدید"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></div>
+  <div class="chats-topline"><div class="page-heading" hidden><h2 id="chatsHeading">گفتگوها</h2><p id="chatsIntro">گفتگوهای اخیرت را اینجا می‌بینی.</p></div><button class="chats-new-button" type="button" onclick="startNewChat()" aria-label="گفتگوی جدید" title="گفتگوی جدید"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></div>
   <label class="conversation-search" for="conversationSearch"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg><input id="conversationSearch" type="search" autocomplete="off" placeholder="جستجوی گفتگوها" aria-label="جستجوی گفتگوها"></label>
   <div class="conversation-tools"><button class="mini-button" id="showActiveChats" type="button" onclick="setConversationView('active')">گفتگوها</button><button class="mini-button" id="showArchivedChats" type="button" onclick="setConversationView('archived')">آرشیو</button></div>
   <div class="list" id="conversationList"></div>
@@ -83,7 +83,7 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
 
 <!-- صفحه مخاطبان -->
 <section class="page" id="contactsPage">
-  <div class="page-heading"><h2 id="contactsHeading">مخاطبان</h2></div>
+  <div class="page-heading" hidden><h2 id="contactsHeading">مخاطبان</h2></div>
   <button class="contacts-import-toggle" id="contactsImportToggle" type="button" aria-expanded="false" aria-controls="phoneContactsImport" onclick="toggleContactsImport()" aria-label="افزودن یا همگام‌سازی مخاطب" title="افزودن یا همگام‌سازی مخاطب">＋</button>
   <section class="phone-contacts-import" id="phoneContactsImport" aria-labelledby="phoneContactsImportTitle" hidden>
     <div class="phone-contacts-import-heading"><span class="phone-contacts-import-icon" aria-hidden="true">▤</span><div><h3 id="phoneContactsImportTitle">همگام‌سازی مخاطبان گوشی</h3><p id="phoneContactsImportIntro">مخاطبان را مستقیم از انتخاب‌گر امن Safari انتخاب کن؛ فایل لازم نیست. اطلاعات انتخاب‌شده فقط برای حساب خودت ذخیره می‌شود.</p></div></div>
@@ -128,7 +128,7 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
 
 <!-- صفحه پروفایل -->
 <section class="page" id="profilePage">
-  <div class="page-heading"><h2 id="profileHeading">پروفایل من</h2><p id="profileIntro">اطلاعات حساب خود را مدیریت کن.</p></div>
+  <div class="page-heading" hidden><h2 id="profileHeading">پروفایل من</h2><p id="profileIntro">اطلاعات حساب خود را مدیریت کن.</p></div>
   <div class="panel">
     <div class="profile-top">
       <div class="avatar large" id="userAvatar">F</div>

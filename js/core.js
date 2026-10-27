@@ -151,6 +151,8 @@ function farnazHasUnsavedInteraction(){
   if(composer&&composer.value.trim())return true;
   const authPassword=document.getElementById("authPassword");
   if(authPassword&&authPassword.value)return true;
+  // Do not reload while a form is submitting or a component advertises busy state.
+  if(document.querySelector("form button[type='submit']:disabled,form input[type='submit']:disabled,[aria-busy='true']"))return true;
   return false;
 }
 function applyFarnazUpdateWhenSafe(){

@@ -669,8 +669,12 @@ function toggleLanguage(){
     f4:["گروه‌ها و کانال‌ها","Groups & channels"],f4d:["گفت‌وگوهای جمعی و اطلاع‌رسانی در یک جا.","Group conversations and updates in one place."],
     chatsHeading:["گفتگوها","Chats"],chatsIntro:["گفتگوهای اخیرت را اینجا می‌بینی.","Your recent conversations appear here."],
     contactsHeading:["مخاطبان","Contacts"],
-    phoneContactsImportTitle:["همگام‌سازی مخاطبان گوشی","Sync phone contacts"],
-    phoneContactsImportIntro:["مخاطبان را مستقیم از انتخاب‌گر امن Safari انتخاب کن؛ فایل لازم نیست. اطلاعات انتخاب‌شده فقط برای حساب خودت ذخیره می‌شود.","Choose contacts directly in Safari’s secure picker; no file is needed. Selected contact data is stored privately for your account."],
+    phoneContactsImportTitle:["افزودن و همگام‌سازی مخاطبان","Add and sync contacts"],
+    phoneContactsImportIntro:["می‌توانی مخاطب را دستی اضافه کنی یا از دفترچه تلفن انتخاب کنی. مخاطبان ذخیره‌شده فقط برای حساب خودت هستند.","Add a contact manually or choose one from your phone book. Saved contacts are private to your account."],
+    manualContactTitle:["افزودن دستی مخاطب","Add contact manually"],
+    manualContactNameLabel:["نام مخاطب","Contact name"],
+    manualContactPhoneLabel:["شماره موبایل","Mobile number"],
+    manualContactSaveButton:["ذخیره مخاطب","Save contact"],
     pickPhoneContactsButton:["انتخاب مخاطبان از دفترچه تلفن","Choose contacts from address book"],
     phoneContactsVcfFallbackLabel:["روش جایگزین: واردکردن فایل VCF","Alternative: import a VCF file"],
     phoneContactsCountryLabel:["کد کشور برای شماره‌های محلی","Country code for local numbers"],
@@ -719,6 +723,12 @@ function toggleLanguage(){
   $("newChatPopoverTitle").textContent=english?"Start a new chat":"گفتگوی جدید";
   $("savedContactFilter").placeholder=english?"Search saved contacts by name":"جستجو با نام مخاطب ذخیره‌شده";
   $("savedContactFilter").setAttribute("aria-label",english?"Search saved contacts by name":"جستجو با نام مخاطب ذخیره‌شده");
+  if($("manualContactTitle"))$("manualContactTitle").textContent=english?"Add contact manually":"افزودن دستی مخاطب";
+  if($("manualContactNameLabel"))$("manualContactNameLabel").textContent=english?"Contact name":"نام مخاطب";
+  if($("manualContactPhoneLabel"))$("manualContactPhoneLabel").textContent=english?"Mobile number":"شماره موبایل";
+  if($("manualContactCountryLabel"))$("manualContactCountryLabel").textContent=english?"Country code":"کد کشور";
+  if($("manualContactCountry"))Array.from($("manualContactCountry").options).forEach((option,i)=>{const names=english?["Iran","Germany","United States / Canada","United Kingdom","Turkey"]:["ایران","آلمان","آمریکا / کانادا","بریتانیا","ترکیه"];option.textContent=names[i]+" (+"+option.value+")";});
+  if($("manualContactSaveButton"))$("manualContactSaveButton").textContent=english?"Save contact":"ذخیره مخاطب";
   $("contactSearchButtonLabel").textContent=english?"Find contact":"جستجوی مخاطب";
   $("contactSearchTitle").textContent=english?"Find a new contact":"پیدا کردن مخاطب جدید";
   $("contactSearchButton").setAttribute("aria-label",english?"Find a new contact":"جستجوی مخاطب جدید");
@@ -1053,9 +1063,12 @@ async function saveProfile(event){
   }catch(e){
     if(String(currentUser?.id)!==userId)return;
     console.error("Profile save:",e);
-    const reason=e?.name==="AbortError"||e?.name==="TimeoutError"
-      ?(english?"Photo upload timed out. Check your connection and try again.":"بارگذاری عکس به پایان مهلت رسید. اتصال را بررسی کن و دوباره تلاش کن.")
-      :(e?.message||String(e));
+    const duplicatePhone=e?.code==="23505"&&/profiles_phone_unique|phone/i.test(String(e?.message||""));
+    const reason=duplicatePhone
+      ?(english?"This phone number is already used by another Farnaz profile. Use a different number or leave the phone field empty.":"این شماره موبایل قبلاً در پروفایل حساب دیگری ثبت شده است. شمارهٔ دیگری وارد کن یا این فیلد را خالی بگذار.")
+      :e?.name==="AbortError"||e?.name==="TimeoutError"
+        ?(english?"Photo upload timed out. Check your connection and try again.":"بارگذاری عکس به پایان مهلت رسید. اتصال را بررسی کن و دوباره تلاش کن.")
+        :(e?.message||String(e));
     setStatus("profileStatus",(english?"Could not save profile: ":"ذخیره پروفایل ناموفق بود: ")+reason,true);
   }finally{button.disabled=false;}
 }
@@ -1487,7 +1500,11 @@ async function refreshUnmatchedPhoneContacts(){
       const name=document.createElement("strong");name.textContent=item.display_name||(english?"Phone contact":"مخاطب گوشی");
       const phone=document.createElement("span");setPhoneDisplay(phone,item.phone||"");
       const state=document.createElement("small");state.textContent=english?"Not on Farnaz yet":"هنوز در فرناز ثبت‌نام نکرده";
-      details.append(name,phone,state);row.append(avatar,details);list.appendChild(row);
+      details.append(name,phone,state);
+      const remove=document.createElement("button");remove.type="button";remove.className="contact-remove-button";remove.textContent="×";
+      remove.setAttribute("aria-label",english?"Delete contact":"حذف مخاطب");remove.title=english?"Delete contact":"حذف مخاطب";
+      remove.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();deletePhoneContact(String(item.id),remove);});
+      row.append(avatar,details,remove);list.appendChild(row);
     }
     setStatus("unmatchedPhoneContactsStatus",data?.length?(english?"These contacts are saved privately for your account.":"این مخاطبان به‌صورت خصوصی برای حساب خودت ذخیره شده‌اند."):(english?"No unmatched phone contacts. Import a VCF file to begin.":"مخاطب گوشیِ تطبیق‌نیافته‌ای نیست؛ برای شروع فایل VCF را وارد کن."));
   }catch(e){
@@ -1497,13 +1514,42 @@ async function refreshUnmatchedPhoneContacts(){
   }
 }
 let savedContactsRequestNumber=0;
+function makeSavedContactRow(contact,preview="",timeText=""){
+  const row=document.createElement("div");row.className="saved-contact-row";
+  const button=makeContactButton(contact,preview,timeText,"contactsPage");
+  button.dataset.contactPhone=normalizePhone(contact.phone||"");
+  row.appendChild(button);
+  const remove=document.createElement("button");remove.type="button";remove.className="contact-remove-button";
+  remove.textContent="×";remove.setAttribute("aria-label",english?"Remove contact":"حذف مخاطب");remove.title=english?"Remove contact":"حذف مخاطب";
+  remove.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();deleteSavedContact(String(contact.user_id),remove);});
+  row.appendChild(remove);return row;
+}
+async function deleteSavedContact(contactId,button){
+  if(!currentUser||!contactId)return;
+  const userId=String(currentUser.id);
+  if(!confirm(english?"Remove this contact from your saved contacts? This does not delete the other person's account or messages.":"این مخاطب از فهرست مخاطبان تو حذف شود؟ حساب طرف مقابل و پیام‌ها حذف نمی‌شوند."))return;
+  if(button)button.disabled=true;
+  try{
+    const client=getClient();
+    const {error}=await client.from("contacts").delete().eq("user_id",userId).eq("contact_user_id",contactId);
+    if(error)throw error;
+    if(String(currentUser?.id)!==userId)return;
+    const {error:phoneError}=await client.from("user_phone_contacts").delete().eq("user_id",userId).eq("matched_user_id",contactId);
+    if(phoneError)console.warn("Could not remove imported contact aliases:",phoneError);
+    await refreshSavedContacts();
+    setStatus("savedContactsStatus",english?"Contact removed.":"مخاطب حذف شد.");
+  }catch(error){
+    if(String(currentUser?.id)!==userId)return;
+    setStatus("savedContactsStatus",(english?"Could not remove contact: ":"حذف مخاطب ناموفق بود: ")+error.message,true);
+  }finally{if(button)button.disabled=false;}
+}
 function renderSavedContactsSnapshot(entries){
   const list=$("savedContactsList");if(!list)return;
   list.replaceChildren();
   const dropdownList=$("newChatContactsList");if(dropdownList)dropdownList.replaceChildren();
   for(const entry of entries||[]){
     const contact=entry?.contact;if(!contact?.user_id)continue;
-    list.appendChild(makeContactButton(contact,entry.subtitle||"",entry.date||"","contactsPage"));
+    list.appendChild(makeSavedContactRow(contact,entry.subtitle||"",entry.date||""));
     if(dropdownList){const quick=makeContactButton(contact,entry.subtitle||"","","chatsPage");quick.dataset.contactName=contact.display_name||"";dropdownList.appendChild(quick);}
   }
   filterSavedContactsForNewChat();
@@ -1556,6 +1602,62 @@ async function refreshSavedContacts(){
     await refreshUnmatchedPhoneContacts();
     return false;
   }
+}
+async function deletePhoneContact(contactRowId,button){
+  if(!currentUser||!contactRowId)return;
+  const userId=String(currentUser.id);
+  if(!confirm(english?"Delete this saved phone contact?":"این مخاطب ذخیره‌شده حذف شود؟"))return;
+  if(button)button.disabled=true;
+  try{
+    const {error}=await getClient().from("user_phone_contacts").delete().eq("id",contactRowId).eq("user_id",userId);
+    if(error)throw error;
+    if(String(currentUser?.id)!==userId)return;
+    await refreshUnmatchedPhoneContacts();
+    setStatus("phoneContactsImportStatus",english?"Contact deleted.":"مخاطب حذف شد.");
+  }catch(error){
+    if(String(currentUser?.id)!==userId)return;
+    setStatus("phoneContactsImportStatus",(english?"Could not delete contact: ":"حذف مخاطب ناموفق بود: ")+error.message,true);
+  }finally{if(button)button.disabled=false;}
+}
+async function addManualPhoneContact(event){
+  event.preventDefault();
+  if(!currentUser){openAuth();return;}
+  const userId=String(currentUser.id),name=$("manualContactName").value.trim();
+  const phone=normalizePhone($("manualContactPhone").value,$("manualContactCountry").value);
+  const button=$("manualContactSaveButton");
+  if(!name||name.length>120){setStatus("manualContactStatus",english?"Enter a contact name up to 120 characters.":"نام مخاطب را حداکثر در ۱۲۰ نویسه وارد کن.",true);return;}
+  if(!/^\+[1-9]\d{7,14}$/.test(phone)){setStatus("manualContactStatus",english?"Enter a valid phone number.":"شماره موبایل معتبر وارد کن.",true);return;}
+  button.disabled=true;setStatus("manualContactStatus",english?"Checking for duplicates…":"در حال بررسی تکراری نبودن مخاطب…");
+  try{
+    const client=getClient();
+    const {data:phoneRows,error:phoneError}=await client.from("user_phone_contacts").select("phone").eq("user_id",userId).limit(5000);
+    if(phoneError)throw phoneError;
+    const {data:savedRows,error:savedRowsError}=await client.from("contacts").select("contact_user_id").eq("user_id",userId);
+    if(savedRowsError)throw savedRowsError;
+    const duplicateInPhoneBook=(phoneRows||[]).some(row=>normalizePhone(row.phone)===phone);
+    const duplicateInSaved=[...($("savedContactsList")?.querySelectorAll(".saved-contact-row .list-item")||[])].some(row=>row.dataset.contactPhone===phone);
+    let duplicateMatchedAccount=false;
+    if(!duplicateInPhoneBook&&!duplicateInSaved){
+      const lookup=await client.rpc("find_farnaz_user_by_phone",{search_phone:phone});
+      if(lookup.error)throw lookup.error;
+      duplicateMatchedAccount=(lookup.data||[]).some(match=>(savedRows||[]).some(saved=>String(saved.contact_user_id)===String(match.user_id||match.id)));
+    }
+    if(duplicateInPhoneBook||duplicateInSaved||duplicateMatchedAccount){
+      setStatus("manualContactStatus",english?"This phone number is already added or exists in your contact list.":"این شماره قبلاً اضافه شده یا در فهرست مخاطبان وجود دارد.",true);return;
+    }
+    if(String(currentUser?.id)!==userId)return;
+    const {error}=await client.rpc("sync_farnaz_phone_contacts",{p_contacts:[{display_name:name,phone}]});
+    if(error)throw error;
+    if(String(currentUser?.id)!==userId)return;
+    $("manualContactName").value="";$("manualContactPhone").value="";
+    await refreshSavedContacts();
+    if(String(currentUser?.id)!==userId)return;
+    setStatus("manualContactStatus",english?"Contact saved. If this number belongs to a Farnaz account, it will appear in Farnaz contacts.":"مخاطب ذخیره شد. اگر این شماره متعلق به حساب فرناز باشد، در فهرست مخاطبان فرناز نمایش داده می‌شود.");
+  }catch(error){
+    if(String(currentUser?.id)!==userId)return;
+    console.error("Manual contact save:",error);
+    setStatus("manualContactStatus",(english?"Could not save contact: ":"ذخیره مخاطب ناموفق بود: ")+error.message,true);
+  }finally{button.disabled=false;}
 }
 function parseVCardContacts(text,countryCode){
   const normalized=String(text||"").replace(/\r\n/g,"\n").replace(/\r/g,"\n");
@@ -1767,6 +1869,12 @@ async function findRecipient(event){
       setStatus("recipientStatus",english?"You cannot message yourself.":"نمی‌توانی به حساب خودت پیام بدهی.",true);return;
     }
     if(String(currentUser?.id)!==myId)return;
+    const {data:existingContact,error:existingContactError}=await client.from("contacts").select("id").eq("user_id",myId).eq("contact_user_id",id).maybeSingle();
+    if(existingContactError)throw existingContactError;
+    if(existingContact){
+      setStatus("recipientStatus",english?"This contact has already been added or is already in your list.":"این مخاطب قبلاً اضافه شده یا در فهرست مخاطبان وجود دارد.",true);
+      return;
+    }
     const {error:saveError}=await client.from("contacts")
       .upsert({user_id:myId,contact_user_id:id},{onConflict:"user_id,contact_user_id",ignoreDuplicates:true});
     if(saveError)throw saveError;

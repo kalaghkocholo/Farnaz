@@ -754,8 +754,23 @@ async function sendMessage(event){
     if(String(currentUser?.id||"")!==senderId||!s.session||String(s.session.user.id)!==senderId)throw new Error(english?"Session changed or expired. Sign in again.":"نشست حساب تغییر کرده یا منقضی شده؛ دوباره وارد شو.");
     const client=getClient();
     if(!editingMessageId){
-      // Do not clear hidden_at here: it is the boundary that prevents old
-      // conversation history from returning after the user deleted the chat.
+      // Preserve the deleted-history boundary, but anchor it to the latest
+      // server timestamp (not the phone clock). This prevents clock skew from
+      // making a new message look older than the deletion marker.
+      const hiddenPreference=prefFor(receiverId);
+      if(hiddenPreference.hidden_at){
+        const [sentBefore,receivedBefore]=await Promise.all([
+          client.from("messages").select("created_at").eq("sender_id",senderId).eq("receiver_id",receiverId).order("created_at",{ascending:false}).limit(1),
+          client.from("messages").select("created_at").eq("sender_id",receiverId).eq("receiver_id",senderId).order("created_at",{ascending:false}).limit(1)
+        ]);
+        if(sentBefore.error)throw sentBefore.error;
+        if(receivedBefore.error)throw receivedBefore.error;
+        if(!sameChat())throw new Error("Conversation changed while preparing a new chat.");
+        const latestServerTime=[...(sentBefore.data||[]),...(receivedBefore.data||[])]
+          .map(row=>row.created_at).filter(Boolean).sort((a,b)=>new Date(b)-new Date(a))[0]||null;
+        await saveConversationPref(receiverId,{hidden_at:latestServerTime});
+        if(!sameChat())throw new Error("Conversation changed while preparing a new chat.");
+      }
       const {data:blocked,error:blockError}=await client.from("blocked_contacts").select("blocked_user_id").eq("blocker_id",senderId).eq("blocked_user_id",receiverId).maybeSingle();
       if(String(currentUser?.id||"")!==senderId)throw new Error("Account changed while sending.");
       if(blockError)throw blockError;
@@ -833,22 +848,8 @@ document.addEventListener("keydown",event=>{
   if(editingMessageId)cancelMessageEdit();
   toggleAttachmentMenu(false);
 });
-(function enableChatEdgeGestures(){
-  let startX=0,startY=0,tracking=false;
-  const chat=$("chatPage");
-  chat.addEventListener("touchstart",event=>{
-    if(!chat.classList.contains("active")||event.touches.length!==1)return;
-    const t=event.touches[0],width=window.innerWidth;
-    tracking=t.clientX<26||t.clientX>width-26;startX=t.clientX;startY=t.clientY;
-  },{passive:true});
-  chat.addEventListener("touchend",event=>{
-    if(!tracking||event.changedTouches.length!==1)return;
-    tracking=false;const t=event.changedTouches[0],dx=t.clientX-startX,dy=t.clientY-startY;
-    if(Math.abs(dx)<75||Math.abs(dx)<Math.abs(dy)*1.35)return;
-    if(dx>0&&startX<26)backFromChat();
-    else if(dx<0&&startX>window.innerWidth-26)openAdjacentConversation(1);
-  },{passive:true});
-})();
+/* Edge-swipe navigation intentionally disabled: it can accidentally leave
+   a private conversation during touch interactions on iPhone. */
 $("sendMessageForm").addEventListener("submit",sendMessage);
 function handleAttachmentChange(input){
   const file=input.files[0];if(!file)return;

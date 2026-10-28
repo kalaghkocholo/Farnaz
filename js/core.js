@@ -2055,9 +2055,6 @@ async function handlePhoneContactsFile(event){
 function initPhoneContactsImport(){
   const input=$("phoneContactsFile");if(input&&!input.dataset.bound){input.dataset.bound="1";input.addEventListener("change",handlePhoneContactsFile);}
 }
-function initPhoneContactsImport(){
-  const input=$("phoneContactsFile");if(input&&!input.dataset.bound){input.dataset.bound="1";input.addEventListener("change",handlePhoneContactsFile);}
-}
 let conversationListRequestNumber=0;
 function renderConversationSnapshot(snapshot,myId){
   const list=$("conversationList");if(!list||!Array.isArray(snapshot))return;

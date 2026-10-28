@@ -2043,9 +2043,10 @@ async function syncSelectedPhoneContacts(contacts,button,expectedUserId=null){
   if(String(currentUser?.id)!==myId)return;
   await refreshUnmatchedPhoneContacts();
   if(String(currentUser?.id)!==myId)return;
+  const skippedSelf=Number(result.skipped_self||0);
   setStatus("phoneContactsImportStatus",english
-    ?`Sync complete: ${result.processed??totalNumbers} numbers processed, ${result.matched??0} matched with Farnaz accounts, ${result.unmatched??0} not registered. Multiple matches are shown for account selection.`
-    :`همگام‌سازی انجام شد: ${result.processed??totalNumbers} شماره پردازش شد؛ ${result.matched??0} شماره با حساب‌های فرناز تطبیق یافت و ${result.unmatched??0} شماره هنوز عضو نیست. اگر چند حساب پیدا شود، امکان انتخاب حساب نمایش داده می‌شود.`);
+    ?`Sync complete: ${result.processed??totalNumbers} numbers processed, ${result.matched??0} matched with Farnaz accounts, ${result.unmatched??0} not registered, ${skippedSelf} own number(s) skipped.`
+    :`همگام‌سازی انجام شد: ${result.processed??totalNumbers} شماره پردازش شد؛ ${result.matched??0} شماره با حساب‌های فرناز تطبیق یافت، ${result.unmatched??0} شماره عضو نیست و ${skippedSelf} شماره متعلق به خودت نادیده گرفته شد.`);
 }
 async function syncPhoneContactsFromPicker(){
   const button=$("pickPhoneContactsButton");

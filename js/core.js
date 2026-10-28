@@ -451,7 +451,7 @@ function openFarnazAvatarPreview(src,label=""){
     const img=document.createElement("img");img.id="farnazAvatarPreviewImage";img.alt="";img.style.cssText="display:block;max-width:min(88vw,680px);max-height:78vh;object-fit:contain;border-radius:12px;box-shadow:0 12px 48px rgba(0,0,0,.35)";
     const caption=document.createElement("div");caption.id="farnazAvatarPreviewCaption";caption.style.cssText="position:absolute;bottom:max(18px,env(safe-area-inset-bottom));left:20px;right:20px;text-align:center;color:#fff;font:500 14px system-ui,sans-serif;overflow-wrap:anywhere";
     const panel=document.createElement("div");panel.style.cssText="display:flex;flex-direction:column;align-items:center;gap:12px;max-width:100%;max-height:100%";panel.append(img,caption);overlay.append(close,panel);
-    const hide=()=>{overlay.hidden=true;document.body.style.removeProperty("overflow");};
+    const hide=()=>{overlay.hidden=true;overlay.style.display="none";document.body.style.removeProperty("overflow");};
     close.addEventListener("click",hide);overlay.addEventListener("click",e=>{if(e.target===overlay)hide();});
     document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!overlay.hidden)hide();});
     document.body.appendChild(overlay);

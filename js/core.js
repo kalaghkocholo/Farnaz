@@ -746,7 +746,7 @@ function toggleLanguage(){
 }
 function renderUser(user,name){
   currentUser=user;currentProfileName=(name||"").trim();
-  document.body.dataset.authState="user";const settingsButton=$("openSettingsButton");if(settingsButton){settingsButton.hidden=false;settingsButton.style.removeProperty("display");}
+  document.body.dataset.authState="user";
   $("userName").textContent=currentProfileName||(english?"Farnaz user":"کاربر فرناز");
   $("userEmail").textContent=user.email||"";
   setPhoneDisplay($("userPhone"),currentPhone);
@@ -833,7 +833,7 @@ function showGuest(){
   document.querySelector(".app")?.classList.remove("chat-mode","spaces-chat-mode");
   document.body.classList.remove("chat-mode","spaces-chat-mode");
   const brandHeader=document.querySelector(".app>header");if(brandHeader)brandHeader.hidden=false;
-  document.body.dataset.authState="guest";if($("headerFButton"))$("headerFButton").hidden=true;const settingsButton=$("openSettingsButton");if(settingsButton){settingsButton.hidden=true;settingsButton.style.setProperty("display","none","important");}
+  document.body.dataset.authState="guest";if($("headerFButton"))$("headerFButton").hidden=true;
   window.dispatchEvent(new CustomEvent("farnaz-auth-user",{detail:{userId:null}}));
   // Clear any in-flight profile/connection status so a cancelled request cannot
   // leave a stale "Loading profile…" message after logout or account switching.

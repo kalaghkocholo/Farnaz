@@ -1730,8 +1730,11 @@ async function deletePhoneContact(contactRowId,button){
   if(!confirm(english?"Delete this saved phone contact?":"این مخاطب ذخیره‌شده حذف شود؟"))return;
   if(button)button.disabled=true;
   try{
-    const {error}=await getClient().from("user_phone_contacts").delete().eq("id",contactRowId).eq("user_id",userId);
+    const {data:deletedRows,error}=await getClient().from("user_phone_contacts").delete().eq("id",contactRowId).eq("user_id",userId).select("id");
     if(error)throw error;
+    if(!Array.isArray(deletedRows)||deletedRows.length!==1){
+      throw new Error(english?"The contact was not deleted. It may already be removed or you may not have permission.":"مخاطب واقعاً حذف نشد؛ ممکن است قبلاً حذف شده باشد یا مجوز دسترسی کافی نباشد.");
+    }
     if(String(currentUser?.id)!==userId)return;
     await refreshUnmatchedPhoneContacts();
     setStatus("phoneContactsImportStatus",english?"Contact deleted.":"مخاطب حذف شد.");

@@ -1544,7 +1544,24 @@ function openChat(contact,fromPage="chatsPage"){
   $("chatSubtitle").textContent=english?"Private conversation":"گفتگوی خصوصی";
   renderAvatar($("chatAvatar"),contact.avatar_url||"",$("conversationTitle").textContent);
   setStatus("sendMessageStatus","");
-  currentChatPresenceLabel=english?"Private conversation":"گفتگوی خصوصی";navigate("chatPage");refreshPrivatePresence(contact.user_id);loadPrivateMessages();
+  currentChatPresenceLabel=english?"Private conversation":"گفتگوی خصوصی";
+  navigate("chatPage");refreshPrivatePresence(contact.user_id);
+  const hiddenAt=prefFor(nextContactId).hidden_at;
+  if(hiddenAt){
+    const sendButton=$("sendMessageButton");
+    if(sendButton)sendButton.disabled=true;
+    setStatus("sendMessageStatus",english?"Reopening conversation…":"در حال بازگشایی گفتگو…");
+    saveConversationPref(nextContactId,{hidden_at:null}).then(()=>{
+      if(!currentUser||String(currentChatUser?.user_id)!==nextContactId)return;
+      if(sendButton)sendButton.disabled=false;
+      loadPrivateMessages();
+    }).catch(error=>{
+      if(!currentUser||String(currentChatUser?.user_id)!==nextContactId)return;
+      if(sendButton)sendButton.disabled=false;
+      setStatus("sendMessageStatus",(english?"Could not reopen conversation: ":"بازگشایی گفتگو ناموفق بود: ")+error.message,true);
+      loadPrivateMessages();
+    });
+  }else loadPrivateMessages();
 }
 function makeContactButton(contact,preview="",timeText="",fromPage="chatsPage"){
   const button=document.createElement("button");

@@ -1568,32 +1568,66 @@ function makeContactButton(contact,preview="",timeText="",fromPage="chatsPage"){
 let unmatchedPhoneContactsRequestNumber=0;
 async function refreshUnmatchedPhoneContacts(){
   const list=$("unmatchedPhoneContactsList");if(!list||!currentUser)return;
-  const request=++unmatchedPhoneContactsRequestNumber,myId=currentUser.id;list.replaceChildren();
+  const request=++unmatchedPhoneContactsRequestNumber,myId=String(currentUser.id);list.replaceChildren();
   try{
     const {data,error}=await retryRead("phone contacts",()=>getClient().from("user_phone_contacts")
-      .select("id,display_name,phone,matched_user_id,updated_at")
-      .eq("user_id",myId).is("matched_user_id",null).order("display_name",{ascending:true}).limit(5000));
+      .select("id,display_name,phone,matched_user_id,updated_at,contact_group_id,is_primary,selected_user_id")
+      .eq("user_id",myId).order("display_name",{ascending:true}).limit(5000));
     if(currentUser?.id!==myId||request!==unmatchedPhoneContactsRequestNumber)return;
     if(error)throw error;
+    const groups=new Map();
     for(const item of data||[]){
-      const shell=document.createElement("div");shell.className="phone-contact-swipe-shell";shell.dataset.phoneContactId=String(item.id);
+      const key=String(item.contact_group_id||item.id);
+      if(!groups.has(key))groups.set(key,{id:key,display_name:item.display_name||"",rows:[]});
+      groups.get(key).rows.push(item);
+    }
+    let visibleGroups=0;
+    for(const group of groups.values()){
+      const rows=group.rows.slice().sort((a,b)=>Number(!!b.is_primary)-Number(!!a.is_primary));
+      const matchedIds=[...new Set(rows.map(row=>String(row.matched_user_id||"")).filter(Boolean))];
+      const selectedId=String(rows.find(row=>row.selected_user_id)?.selected_user_id||"");
+      const selectedIsValid=!!selectedId&&matchedIds.includes(selectedId);
+      const resolvedIds=selectedIsValid?[selectedId]:matchedIds;
+      if(resolvedIds.length===1)continue;
+      visibleGroups++;
+      const shell=document.createElement("div");shell.className="phone-contact-swipe-shell";shell.dataset.phoneContactId=group.id;
       const actions=document.createElement("div");actions.className="phone-contact-swipe-actions";
-      const remove=document.createElement("button");remove.type="button";remove.className="contact-swipe-action contact-swipe-delete";remove.setAttribute("aria-label",english?"Delete contact":"حذف مخاطب");remove.title=english?"Delete contact":"حذف مخاطب";
+      const remove=document.createElement("button");remove.type="button";remove.className="contact-swipe-action contact-swipe-delete";
+      remove.setAttribute("aria-label",english?"Delete phone-book contact":"حذف مخاطب دفترچه تلفن");
+      remove.title=english?"Delete phone-book contact":"حذف مخاطب دفترچه تلفن";
       const glyph=document.createElement("span");glyph.className="contact-swipe-glyph";glyph.textContent="×";
       const label=document.createElement("span");label.className="contact-swipe-label";label.textContent=english?"Delete":"حذف";
-      remove.append(glyph,label);
-      remove.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();deletePhoneContact(String(item.id),remove);});
+      remove.append(glyph,label);remove.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();deletePhoneContactGroup(group.id,remove);});
       actions.appendChild(remove);
       const row=document.createElement("div");row.className="phone-contact-row";
-      const avatar=document.createElement("div");avatar.className="avatar";avatar.textContent=initials(item.display_name);
+      const avatar=document.createElement("div");avatar.className="avatar";avatar.textContent=initials(group.display_name);
       const details=document.createElement("div");details.className="phone-contact-details";
-      const name=document.createElement("strong");name.textContent=item.display_name||(english?"Phone contact":"مخاطب گوشی");
-      const phone=document.createElement("span");setPhoneDisplay(phone,item.phone||"");
-      const state=document.createElement("small");state.textContent=english?"Not on Farnaz yet":"هنوز در فرناز ثبت‌نام نکرده";
+      const name=document.createElement("strong");name.textContent=group.display_name||(english?"Phone contact":"مخاطب گوشی");
+      const phone=document.createElement("span");phone.textContent=rows.map(item=>formatContactPhone(item.phone)).filter(Boolean).join(" · ");
+      phone.setAttribute("dir","ltr");phone.style.direction="ltr";phone.style.unicodeBidi="isolate";phone.style.textAlign="left";
+      const state=document.createElement("small");
+      if(resolvedIds.length>1){
+        state.textContent=english?"Several Farnaz accounts match this person. Choose one:":"چند حساب فرناز برای این مخاطب پیدا شد؛ یکی را انتخاب کن:";
+      }else{
+        state.textContent=english?"Not on Farnaz yet":"هنوز در فرناز ثبت‌نام نکرده";
+      }
       details.append(name,phone,state);
+      if(resolvedIds.length>1){
+        const choices=document.createElement("div");choices.className="phone-contact-account-choices";
+        for(const accountId of resolvedIds){
+          let profile={};
+          try{profile=await getContactProfile(accountId)||{};}catch(profileError){console.warn("Phone contact account profile:",profileError);}
+          if(currentUser?.id!==myId||request!==unmatchedPhoneContactsRequestNumber)return;
+          const choose=document.createElement("button");choose.type="button";choose.className="action-button phone-contact-account-choice";
+          choose.textContent=profile.display_name||(english?"Farnaz account":"حساب فرناز");
+          choose.addEventListener("click",()=>choosePhoneContactAccount(group.id,accountId,choose));
+          choices.appendChild(choose);
+        }
+        details.appendChild(choices);
+      }
       row.append(avatar,details);shell.append(actions,row);list.appendChild(shell);
       let startX=0,startY=0,tracking=false;
-      shell.addEventListener("pointerdown",event=>{if(event.target.closest(".phone-contact-swipe-actions"))return;startX=event.clientX;startY=event.clientY;tracking=true;},{passive:true});
+      shell.addEventListener("pointerdown",event=>{if(event.target.closest(".phone-contact-swipe-actions")||event.target.closest(".phone-contact-account-choices"))return;startX=event.clientX;startY=event.clientY;tracking=true;},{passive:true});
       shell.addEventListener("pointerup",event=>{
         if(!tracking)return;tracking=false;
         const dx=event.clientX-startX,dy=event.clientY-startY;
@@ -1604,12 +1638,62 @@ async function refreshUnmatchedPhoneContacts(){
       },{passive:true});
       shell.addEventListener("pointercancel",()=>{tracking=false;},{passive:true});
     }
-    setStatus("unmatchedPhoneContactsStatus",data?.length?(english?"These contacts are saved privately for your account.":"این مخاطبان به‌صورت خصوصی برای حساب خودت ذخیره شده‌اند."):(english?"No unmatched phone contacts. Import a VCF file to begin.":"مخاطب گوشیِ تطبیق‌نیافته‌ای نیست؛ برای شروع فایل VCF را وارد کن."));
+    setStatus("unmatchedPhoneContactsStatus",visibleGroups
+      ?(english?"Phone-book contacts needing attention are shown here.":"مخاطبان دفترچه تلفن که نیاز به انتخاب یا بررسی دارند در اینجا نمایش داده می‌شوند.")
+      :(english?"All imported contacts are matched or no phone contacts have been imported.":"همه مخاطبان واردشده تطبیق یافته‌اند یا هنوز مخاطبی از دفترچه تلفن وارد نشده است."));
   }catch(e){
     if(currentUser?.id!==myId||request!==unmatchedPhoneContactsRequestNumber)return;
-    console.error("Unmatched phone contacts:",e);
+    console.error("Phone contacts:",e);
     setStatus("unmatchedPhoneContactsStatus",(english?"Could not load phone contacts: ":"بارگذاری مخاطبان گوشی ناموفق بود: ")+e.message,true);
   }
+}
+async function choosePhoneContactAccount(groupId,accountId,button){
+  if(!currentUser||!groupId||!accountId)return;
+  const myId=String(currentUser.id);
+  if(button)button.disabled=true;
+  try{
+    const client=getClient();
+    const {data:rows,error:readError}=await client.from("user_phone_contacts")
+      .select("matched_user_id").eq("user_id",myId).eq("contact_group_id",groupId);
+    if(readError)throw readError;
+    const available=[...new Set((rows||[]).map(row=>String(row.matched_user_id||"")).filter(Boolean))];
+    if(!available.includes(String(accountId)))throw new Error(english?"That account is no longer linked to this contact. Sync contacts again.":"این حساب دیگر به این مخاطب متصل نیست؛ مخاطبان را دوباره همگام‌سازی کن.");
+    const {error:saveError}=await client.from("contacts").upsert({user_id:myId,contact_user_id:accountId},{onConflict:"user_id,contact_user_id",ignoreDuplicates:true});
+    if(saveError)throw saveError;
+    const {error:updateError}=await client.from("user_phone_contacts").update({selected_user_id:accountId})
+      .eq("user_id",myId).eq("contact_group_id",groupId);
+    if(updateError)throw updateError;
+    const others=available.filter(id=>id!==String(accountId));
+    if(others.length){
+      const {error:deleteError}=await client.from("contacts").delete().eq("user_id",myId).in("contact_user_id",others);
+      if(deleteError)throw deleteError;
+    }
+    if(String(currentUser?.id)!==myId)return;
+    await refreshSavedContacts();
+    if(String(currentUser?.id)!==myId)return;
+    await refreshUnmatchedPhoneContacts();
+    setStatus("unmatchedPhoneContactsStatus",english?"Account selected for this phone-book contact.":"حساب انتخاب‌شده برای این مخاطب ذخیره شد.");
+  }catch(error){
+    if(String(currentUser?.id)!==myId)return;
+    console.error("Choose phone contact account:",error);
+    setStatus("unmatchedPhoneContactsStatus",(english?"Could not choose account: ":"انتخاب حساب ناموفق بود: ")+error.message,true);
+  }finally{if(button)button.disabled=false;}
+}
+async function deletePhoneContactGroup(groupId,button){
+  if(!currentUser||!groupId)return;
+  const myId=String(currentUser.id);
+  if(!confirm(english?"Delete this phone-book contact and all its numbers from Farnaz?":"این مخاطب و همه شماره‌هایش از دفترچه تلفن فرناز حذف شوند؟"))return;
+  if(button)button.disabled=true;
+  try{
+    const {error}=await getClient().from("user_phone_contacts").delete().eq("user_id",myId).eq("contact_group_id",groupId);
+    if(error)throw error;
+    if(String(currentUser?.id)!==myId)return;
+    await refreshUnmatchedPhoneContacts();
+    setStatus("phoneContactsImportStatus",english?"Phone-book contact deleted.":"مخاطب دفترچه تلفن حذف شد.");
+  }catch(error){
+    if(String(currentUser?.id)!==myId)return;
+    setStatus("unmatchedPhoneContactsStatus",(english?"Could not delete contact: ":"حذف مخاطب ناموفق بود: ")+error.message,true);
+  }finally{if(button)button.disabled=false;}
 }
 let savedContactsRequestNumber=0;
 function makeContactSwipeAction(label,icon,action,contactId){
@@ -1854,12 +1938,13 @@ async function addManualPhoneContact(event){
       setStatus("manualContactStatus",english?"This phone number is already added or exists in your contact list.":"این شماره قبلاً اضافه شده یا در فهرست مخاطبان وجود دارد.",true);return;
     }
     if(String(currentUser?.id)!==userId)return;
-    const {error}=await client.rpc("sync_farnaz_phone_contacts",{p_contacts:[{display_name:name,phone}]});
+    const {error}=await client.rpc("sync_farnaz_phone_contacts",{p_contacts:[{display_name:name,phones:[phone],primary_phone:phone}]});
     if(error)throw error;
     if(String(currentUser?.id)!==userId)return;
     $("manualContactName").value="";$("manualContactPhone").value="";
     await refreshSavedContacts();
     if(String(currentUser?.id)!==userId)return;
+    await refreshUnmatchedPhoneContacts();
     setStatus("manualContactStatus",english?"Contact saved. If this number belongs to a Farnaz account, it will appear in Farnaz contacts.":"مخاطب ذخیره شد. اگر این شماره متعلق به حساب فرناز باشد، در فهرست مخاطبان فرناز نمایش داده می‌شود.");
   }catch(error){
     if(String(currentUser?.id)!==userId)return;
@@ -1867,10 +1952,11 @@ async function addManualPhoneContact(event){
     setStatus("manualContactStatus",(english?"Could not save contact: ":"ذخیره مخاطب ناموفق بود: ")+error.message,true);
   }finally{button.disabled=false;}
 }
+
 function parseVCardContacts(text,countryCode){
   const normalized=String(text||"").replace(/\r\n/g,"\n").replace(/\r/g,"\n");
   const unfolded=normalized.replace(/\n[ \t]/g,"");
-  const cards=unfolded.split(/BEGIN:VCARD/i).slice(1),results=[],seen=new Set();
+  const cards=unfolded.split(/BEGIN:VCARD/i).slice(1),results=[];
   for(const rawCard of cards){
     const body=rawCard.split(/END:VCARD/i)[0]||"",lines=body.split("\n");
     let name="";const phones=[];
@@ -1881,10 +1967,10 @@ function parseVCardContacts(text,countryCode){
       value=value.replace(/\\n/gi," ").replace(/\\,/g,",").replace(/\\;/g,";").replace(/\\\\/g,"\\");
       if(key==="FN"&&!name)name=value;
       if(key==="N"&&!name){const parts=value.split(";").map(part=>part.trim()).filter(Boolean);name=[parts[1],parts[0],parts.slice(2).join(" ")].filter(Boolean).join(" ");}
-      if(key==="TEL"&&value){const phone=normalizePhone(value,countryCode);if(/^\+[1-9]\d{7,14}$/.test(phone))phones.push(phone);}
+      if(key==="TEL"&&value){const phone=normalizePhone(value,countryCode);if(/^\+[1-9]\d{7,14}$/.test(phone)&&!phones.includes(phone))phones.push(phone);}
     }
     if(!name)name=english?"Phone contact":"مخاطب گوشی";
-    for(const phone of phones){if(seen.has(phone))continue;seen.add(phone);results.push({display_name:name.slice(0,120),phone});}
+    if(phones.length)results.push({display_name:name.slice(0,120),phones,primary_phone:phones[0]});
   }
   return results;
 }
@@ -1892,18 +1978,32 @@ async function syncSelectedPhoneContacts(contacts,button,expectedUserId=null){
   if(!currentUser)return;
   const myId=String(expectedUserId||currentUser.id);
   if(String(currentUser.id)!==myId)return;
-  const valid=(contacts||[]).filter(c=>c?.phone&&/^\+[1-9]\d{7,14}$/.test(c.phone));
-  const unique=[...new Map(valid.map(c=>[c.phone,c])).values()];
-  if(!unique.length)throw new Error(english?"No valid phone numbers were selected.":"از مخاطبان انتخاب‌شده شماره تلفن معتبری دریافت نشد.");
-  const {data,error}=await getClient().rpc("sync_farnaz_phone_contacts",{p_contacts:unique});
+  const seenPhones=new Set(),normalizedContacts=[];
+  for(const contact of contacts||[]){
+    const name=String(contact?.display_name||"").trim().slice(0,120)||(english?"Phone contact":"مخاطب گوشی");
+    const incoming=Array.isArray(contact?.phones)?contact.phones:(contact?.phone?[contact.phone]:[]);
+    const phones=[];
+    for(const value of incoming){
+      const phone=normalizePhone(value,$("phoneContactsCountry")?.value||"98");
+      if(/^\+[1-9]\d{7,14}$/.test(phone)&&!seenPhones.has(phone)){seenPhones.add(phone);phones.push(phone);}
+    }
+    if(!phones.length)continue;
+    const preferred=normalizePhone(contact.primary_phone||phones[0],$("phoneContactsCountry")?.value||"98");
+    normalizedContacts.push({display_name:name,phones,primary_phone:phones.includes(preferred)?preferred:phones[0]});
+  }
+  if(!normalizedContacts.length)throw new Error(english?"No valid phone numbers were selected.":"از مخاطبان انتخاب‌شده شماره تلفن معتبری دریافت نشد.");
+  const totalNumbers=normalizedContacts.reduce((sum,contact)=>sum+contact.phones.length,0);
+  const {data,error}=await getClient().rpc("sync_farnaz_phone_contacts",{p_contacts:normalizedContacts});
   if(error)throw error;
   if(String(currentUser?.id)!==myId)return;
   const result=Array.isArray(data)?data[0]:(data||{});
   await refreshSavedContacts();
   if(String(currentUser?.id)!==myId)return;
+  await refreshUnmatchedPhoneContacts();
+  if(String(currentUser?.id)!==myId)return;
   setStatus("phoneContactsImportStatus",english
-    ?`Sync complete: ${result.processed??unique.length} numbers processed, ${result.matched??0} matched with Farnaz accounts, ${result.unmatched??0} not registered.`
-    :`همگام‌سازی انجام شد: ${result.processed??unique.length} شماره پردازش شد؛ ${result.matched??0} مورد با حساب‌های فرناز تطبیق یافت و ${result.unmatched??0} مورد هنوز عضو نیست.`);
+    ?`Sync complete: ${result.processed??totalNumbers} numbers processed, ${result.matched??0} matched with Farnaz accounts, ${result.unmatched??0} not registered. Multiple matches are shown for account selection.`
+    :`همگام‌سازی انجام شد: ${result.processed??totalNumbers} شماره پردازش شد؛ ${result.matched??0} شماره با حساب‌های فرناز تطبیق یافت و ${result.unmatched??0} شماره هنوز عضو نیست. اگر چند حساب پیدا شود، امکان انتخاب حساب نمایش داده می‌شود.`);
 }
 async function syncPhoneContactsFromPicker(){
   const button=$("pickPhoneContactsButton");
@@ -1924,10 +2024,8 @@ async function syncPhoneContactsFromPicker(){
     const contacts=[],country=$("phoneContactsCountry")?.value||"98";
     for(const item of picked||[]){
       const name=Array.isArray(item.name)?item.name[0]:item.name;
-      for(const tel of Array.isArray(item.tel)?item.tel:[item.tel]){
-        const phone=normalizePhone(tel,country);
-        if(/^\+[1-9]\d{7,14}$/.test(phone))contacts.push({display_name:String(name||"").trim().slice(0,120)||(english?"Phone contact":"مخاطب گوشی"),phone});
-      }
+      const phones=[...new Set((Array.isArray(item.tel)?item.tel:[item.tel]).map(tel=>normalizePhone(tel,country)).filter(phone=>/^\+[1-9]\d{7,14}$/.test(phone)))];
+      if(phones.length)contacts.push({display_name:String(name||"").trim().slice(0,120)||(english?"Phone contact":"مخاطب گوشی"),phones,primary_phone:phones[0]});
     }
     await syncSelectedPhoneContacts(contacts,button,myId);
   }catch(e){
@@ -1953,6 +2051,9 @@ async function handlePhoneContactsFile(event){
     console.error("Phone contacts import:",e);
     setStatus("phoneContactsImportStatus",(english?"Could not sync contacts: ":"همگام‌سازی مخاطبان ناموفق بود: ")+e.message,true);
   }finally{button.disabled=false;if(input)input.value="";}
+}
+function initPhoneContactsImport(){
+  const input=$("phoneContactsFile");if(input&&!input.dataset.bound){input.dataset.bound="1";input.addEventListener("change",handlePhoneContactsFile);}
 }
 function initPhoneContactsImport(){
   const input=$("phoneContactsFile");if(input&&!input.dataset.bound){input.dataset.bound="1";input.addEventListener("change",handlePhoneContactsFile);}

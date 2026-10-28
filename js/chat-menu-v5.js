@@ -754,23 +754,10 @@ async function sendMessage(event){
     if(String(currentUser?.id||"")!==senderId||!s.session||String(s.session.user.id)!==senderId)throw new Error(english?"Session changed or expired. Sign in again.":"نشست حساب تغییر کرده یا منقضی شده؛ دوباره وارد شو.");
     const client=getClient();
     if(!editingMessageId){
-      // Preserve the deleted-history boundary, but anchor it to the latest
-      // server timestamp (not the phone clock). This prevents clock skew from
-      // making a new message look older than the deletion marker.
-      const hiddenPreference=prefFor(receiverId);
-      if(hiddenPreference.hidden_at){
-        const [sentBefore,receivedBefore]=await Promise.all([
-          client.from("messages").select("created_at").eq("sender_id",senderId).eq("receiver_id",receiverId).order("created_at",{ascending:false}).limit(1),
-          client.from("messages").select("created_at").eq("sender_id",receiverId).eq("receiver_id",senderId).order("created_at",{ascending:false}).limit(1)
-        ]);
-        if(sentBefore.error)throw sentBefore.error;
-        if(receivedBefore.error)throw receivedBefore.error;
-        if(!sameChat())throw new Error("Conversation changed while preparing a new chat.");
-        const latestServerTime=[...(sentBefore.data||[]),...(receivedBefore.data||[])]
-          .map(row=>row.created_at).filter(Boolean).sort((a,b)=>new Date(b)-new Date(a))[0]||null;
-        await saveConversationPref(receiverId,{hidden_at:latestServerTime});
-        if(!sameChat())throw new Error("Conversation changed while preparing a new chat.");
-      }
+      // Do not rewrite conversation preferences before sending. That write also
+      // refreshes/rebuilds the inbox and can interrupt the active chat on mobile.
+      // Keep the deletion boundary stable; a successful new message is handled
+      // below without navigating away from this conversation.
       const {data:blocked,error:blockError}=await client.from("blocked_contacts").select("blocked_user_id").eq("blocker_id",senderId).eq("blocked_user_id",receiverId).maybeSingle();
       if(String(currentUser?.id||"")!==senderId)throw new Error("Account changed while sending.");
       if(blockError)throw blockError;

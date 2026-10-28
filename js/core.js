@@ -448,15 +448,70 @@ function renderAvatar(el,url,name){
     el.appendChild(img);
   }else el.textContent=initials(name);
 }
+let newPrivateChatModal=null;
+let newPrivateChatMovedNodes=[];
+function markPrivateChatContactRows(active){
+  $("savedContactsList")?.querySelectorAll(".contact-swipe-shell .list-item").forEach(button=>{
+    if(active)button.dataset.openFromPage="chatsPage";
+    else delete button.dataset.openFromPage;
+  });
+}
+function closeNewPrivateChat(){
+  const modal=newPrivateChatModal;
+  if(!modal)return;
+  modal.hidden=true;
+  markPrivateChatContactRows(false);
+  for(const item of newPrivateChatMovedNodes){
+    if(item.placeholder.parentNode)item.placeholder.parentNode.insertBefore(item.node,item.placeholder);
+    item.placeholder.remove();
+  }
+  newPrivateChatMovedNodes=[];
+  modal.remove();
+  newPrivateChatModal=null;
+}
 function startNewChat(){
   if(!currentUser){openAuth();return;}
-  toggleContactsImport(false);
-  navigate("contactsPage");
-  const filter=$("savedFarnazContactFilter");
-  if(filter){
-    filter.value="";
-    filterSavedFarnazContacts();
-    requestAnimationFrame(()=>filter.focus({preventScroll:true}));
+  if(newPrivateChatModal){closeNewPrivateChat();return;}
+  const filter=$("savedFarnazContactFilter"),list=$("savedContactsList");
+  if(!filter||!list)return;
+  const modal=document.createElement("div");
+  modal.id="newPrivateChatModal";
+  modal.className="new-private-chat-overlay";
+  modal.setAttribute("role","presentation");
+  modal.innerHTML='<section class="new-private-chat-dialog" role="dialog" aria-modal="true" aria-labelledby="newPrivateChatTitle"><header class="new-private-chat-header"><h2 id="newPrivateChatTitle"></h2><button class="new-private-chat-close" type="button" aria-label="Close">×</button></header><p class="new-private-chat-hint"></p><div class="new-private-chat-search"></div><div class="new-private-chat-status"></div><div class="new-private-chat-list"></div><div class="new-private-chat-footer"><button class="new-private-chat-cancel" type="button"></button></div></section>';
+  const title=modal.querySelector("#newPrivateChatTitle");
+  const hint=modal.querySelector(".new-private-chat-hint");
+  const searchSlot=modal.querySelector(".new-private-chat-search");
+  const statusSlot=modal.querySelector(".new-private-chat-status");
+  const listSlot=modal.querySelector(".new-private-chat-list");
+  const footer=modal.querySelector(".new-private-chat-cancel");
+  title.textContent=english?"New private chat":"گفتگوی خصوصی جدید";
+  hint.textContent=english?"Choose a contact to open your private conversation.":"مخاطب را انتخاب کن تا گفتگوی خصوصی او باز شود.";
+  footer.textContent=english?"Cancel":"انصراف";
+  const movable=[filter,$("savedFarnazContactSearchStatus"),list,$("savedContactsStatus")].filter(Boolean);
+  for(const node of movable){
+    const placeholder=document.createComment("farnaz-private-chat-placeholder");
+    node.parentNode?.insertBefore(placeholder,node);
+    newPrivateChatMovedNodes.push({node,placeholder});
+  }
+  searchSlot.appendChild(filter);
+  const searchStatus=$("savedFarnazContactSearchStatus");
+  if(searchStatus)statusSlot.appendChild(searchStatus);
+  listSlot.appendChild(list);
+  const contactsStatus=$("savedContactsStatus");
+  if(contactsStatus)statusSlot.appendChild(contactsStatus);
+  filter.value="";
+  filterSavedFarnazContacts();
+  markPrivateChatContactRows(true);
+  modal.querySelector(".new-private-chat-close").addEventListener("click",closeNewPrivateChat);
+  footer.addEventListener("click",closeNewPrivateChat);
+  modal.addEventListener("click",event=>{if(event.target===modal)closeNewPrivateChat();});
+  document.body.appendChild(modal);
+  newPrivateChatModal=modal;
+  requestAnimationFrame(()=>filter.focus({preventScroll:true}));
+  if(!list.children.length){
+    refreshSavedContacts().then(()=>{if(newPrivateChatModal===modal)markPrivateChatContactRows(true);})
+      .catch(error=>console.warn("Could not refresh contacts for new chat:",error));
   }
 }
 function normalizeContactSearchText(value){
@@ -1497,7 +1552,7 @@ function makeContactButton(contact,preview="",timeText="",fromPage="chatsPage"){
   desc.textContent=preview;
   details.append(name,desc);button.append(avatar,details);
   if(timeText){const time=document.createElement("span");time.className="list-time";time.textContent=timeText;details.appendChild(time);}
-  button.addEventListener("click",()=>{if(button.dataset.suppressOpen==="1"){button.dataset.suppressOpen="0";return;}openChat(contact,fromPage);});
+  button.addEventListener("click",()=>{if(button.dataset.suppressOpen==="1"){button.dataset.suppressOpen="0";return;}const targetPage=button.dataset.openFromPage||fromPage;if(newPrivateChatModal)closeNewPrivateChat();openChat(contact,targetPage);});
   return button;
 }
 let unmatchedPhoneContactsRequestNumber=0;

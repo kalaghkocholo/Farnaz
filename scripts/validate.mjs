@@ -198,7 +198,7 @@ for (const path of ["js/local-store.js", "js/core.js", "js/chat-menu-v5.js", "js
 // Keep shell cache and versioned local-store assets synchronized after cache behavior changes.
 const coreSource = sources["js/core.js"];
 const chatSource = sources["js/chat-menu-v5.js"];
-if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v164"') || !sources["service-worker.js"].includes('core.js?v=20261028-24') || !sources["service-worker.js"].includes('local-store.js?v=20261026-3') || !sources["service-worker.js"].includes('calls.js?v=20261026-4') || !sources["service-worker.js"].includes('chat-menu-v5.js?v=20261028-21') || !html.includes('chat-menu-v5.js?v=20261028-21')) {
+if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v165"') || !sources["service-worker.js"].includes('styles.css?v=20261028-56') || !sources["service-worker.js"].includes('core.js?v=20261028-24') || !sources["service-worker.js"].includes('local-store.js?v=20261026-3') || !sources["service-worker.js"].includes('calls.js?v=20261026-4') || !sources["service-worker.js"].includes('chat-menu-v5.js?v=20261028-21') || !html.includes('chat-menu-v5.js?v=20261028-21')) {
   errors.push("service-worker.js must use the current shell cache and core asset versions");
 }
 const loaderChecks = [
@@ -220,7 +220,7 @@ const networkChecks = [
     "js/core.js must avoid overlapping inner retries for REST reads already bounded by retryRead"],
   [coreSource.includes('$("unmatchedPhoneContactsList").replaceChildren();setStatus("unmatchedPhoneContactsStatus","");') &&
    !coreSource.includes('newChatPopover') && !coreSource.includes('newChatContactsList') &&
-   !html.includes('id="newChatPopover"') && coreSource.includes('normalizeContactSearchText(name).includes(query)'),
+   !html.includes('id="newChatPopover"') && !sources["styles.css"].includes(".new-chat-popover") && coreSource.includes('normalizeContactSearchText(name).includes(query)'),
     "private-chat creation must use one saved-contact list with name-only search and no duplicate popover"],
 ];
 for (const [passed, message] of networkChecks) {

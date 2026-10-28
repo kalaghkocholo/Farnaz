@@ -1130,7 +1130,8 @@ function showAvatarCropDialog(image){
  document.getElementById("avatarCropDialog")?.remove();
  const modal=document.createElement("div");modal.id="avatarCropDialog";modal.setAttribute("role","dialog");modal.setAttribute("aria-modal","true");
  modal.style.cssText="position:fixed;inset:0;z-index:100001;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.75);backdrop-filter:blur(8px)";
- const card=document.createElement("section");card.style.cssText="width:min(100%,420px);max-height:calc(100dvh - 36px);overflow:auto;padding:20px;border-radius:22px;background:var(--panel,var(--bg,#fff));color:${getComputedStyle(document.body).color||"#111"};box-shadow:0 18px 60px rgba(0,0,0,.3);display:flex;flex-direction:column;gap:14px";
+ const card=document.createElement("section");card.style.cssText="width:min(100%,420px);max-height:calc(100dvh - 36px);overflow:auto;padding:20px;border-radius:22px;background:var(--panel,var(--bg,#fff));color:var(--text,#111);box-shadow:0 18px 60px rgba(0,0,0,.3);display:flex;flex-direction:column;gap:14px";
+ card.style.color=getComputedStyle(document.body).color||"#111";
  const title=document.createElement("h3");title.textContent=english?"Crop profile photo":"برش و ویرایش عکس پروفایل";title.style.cssText="margin:0;font-size:17px;text-align:center";
  const hint=document.createElement("p");hint.textContent=english?"Drag to reposition; use the slider to zoom.":"عکس را با انگشت جابه‌جا کن و با نوار زیر بزرگ‌نمایی را تنظیم کن.";hint.style.cssText="margin:0;font-size:13px;line-height:1.7;opacity:.8;text-align:center";
  const canvas=document.createElement("canvas");canvas.width=320;canvas.height=320;canvas.style.cssText="width:min(76vw,320px);height:min(76vw,320px);max-height:38vh;align-self:center;border-radius:50%;touch-action:none;background:#222;cursor:grab";

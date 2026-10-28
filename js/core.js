@@ -10,6 +10,7 @@ let currentProfileName="",currentAvatarUrl="",currentPhone="",currentChatPresenc
 let currentChatUser=null,messageSubscription=null,reconnectTimer=null,reconnectAttempts=0;
 let profileRequestNumber=0,chatRequestNumber=0,previousPage="chatsPage";
 let conversationView="active",conversationPrefs=new Map(),messageLoadedCount=50,messageHasMore=false;
+let contactsCategory="all";
 let selectedMessageIds=new Set(),replyTarget=null,editingMessageId=null,messageSelectionMode=false,preEditDraft="";
 let recordedVoiceFile=null,recordedVoiceUrl=null,mediaRecorder=null,recordedAudioChunks=[],recordingStream=null;
 
@@ -523,21 +524,36 @@ function startNewChat(){
 function normalizeContactSearchText(value){
   return String(value||"").normalize("NFKC").replace(/[يى]/g,"ی").replace(/ك/g,"ک").replace(/[\u200c\u200f\u202a-\u202e]/g,"").trim().toLocaleLowerCase();
 }
+function setContactsCategory(category){
+  contactsCategory=category==="members"?"members":"all";
+  const all=$("contactsAllTab"),members=$("contactsMembersTab");
+  if(all){all.classList.toggle("is-active",contactsCategory==="all");all.setAttribute("aria-pressed",String(contactsCategory==="all"));}
+  if(members){members.classList.toggle("is-active",contactsCategory==="members");members.setAttribute("aria-pressed",String(contactsCategory==="members"));}
+  const unmatched=$("unmatchedPhoneContactsSection");
+  if(unmatched)unmatched.hidden=contactsCategory==="members";
+  filterSavedFarnazContacts();
+}
 function filterSavedFarnazContacts(){
   const filter=$("savedFarnazContactFilter");
-  const list=$("savedContactsList");
   const status=$("savedFarnazContactSearchStatus");
-  if(!filter||!list||!status)return;
+  const saved=$("savedContactsList"),phone=$("unmatchedPhoneContactsList");
+  if(!filter||!status||!saved||!phone)return;
   const query=normalizeContactSearchText(filter.value);
   let visible=0;
-  list.querySelectorAll(".contact-swipe-shell").forEach(shell=>{
-    const name=shell.dataset.searchName||"";
-    const matches=!query||normalizeContactSearchText(name).includes(query);
+  saved.querySelectorAll(".contact-swipe-shell").forEach(shell=>{
+    const matches=!query||normalizeContactSearchText(shell.dataset.searchName||"").includes(query);
     shell.hidden=!matches;
     if(matches)visible++;
   });
+  if(contactsCategory==="all"){
+    phone.querySelectorAll(".phone-contact-swipe-shell").forEach(shell=>{
+      const matches=!query||normalizeContactSearchText(shell.dataset.searchName||"").includes(query);
+      shell.hidden=!matches;
+      if(matches)visible++;
+    });
+  }
   status.textContent=query&&!visible
-    ?(english?"No saved Farnaz contacts match that name.":"مخاطبی با این نام در فهرست مخاطبان فرناز پیدا نشد.")
+    ?(english?"No contacts match that name.":"مخاطبی با این نام پیدا نشد.")
     :"";
 }
 function applyConversationSearch(){
@@ -738,8 +754,10 @@ function toggleLanguage(){
     phoneContactsCountryLabel:["کد کشور برای شماره‌های محلی","Country code for local numbers"],
     importPhoneContactsButton:["واردکردن / به‌روزرسانی فایل VCF","Import / update VCF file"],
     phoneContactsPrivacyNote:["برای همگام‌سازی دوباره، فایل به‌روز مخاطبان را از آیفون انتخاب کن. حذف فایل یا مخاطب از گوشی، مخاطبان ذخیره‌شده فرناز را خودکار حذف نمی‌کند.","To sync again, select an updated VCF file from your iPhone. Removing a contact from your phone does not automatically delete saved Farnaz contacts."],
-    savedFarnazContactsTitle:["مخاطبان فرناز","Farnaz contacts"],
+    savedFarnazContactsTitle:["مخاطبان فرناز","Farnaz members"],
     unmatchedPhoneContactsTitle:["مخاطبان گوشی که هنوز عضو فرناز نیستند","Phone contacts not on Farnaz yet"],
+    contactsAllTab:["همه","All"],
+    contactsMembersTab:["عضو فرناز","Farnaz members"],
     contactsIntro:["مخاطبان ذخیره‌شده را انتخاب کن یا از جست‌وجوی پایین حساب جدیدی پیدا کن.","Choose a saved contact or find a new account using the search control below."],
     savedContactsStatus:["",""],
     profilePhoneCountryLabel:["کد کشور شماره تلفن","Phone country code"],
@@ -1563,8 +1581,10 @@ function makeContactButton(contact,preview="",timeText="",fromPage="chatsPage"){
   details.append(name,desc);button.append(avatar,details);
   if(fromPage==="contactsPage"){
     const swipeHint=document.createElement("span");swipeHint.className="contact-swipe-hint";
-    swipeHint.textContent=english?"← Swipe":"← بکش";
-    swipeHint.setAttribute("aria-hidden","true");button.appendChild(swipeHint);
+    swipeHint.textContent="‹";
+    swipeHint.setAttribute("aria-hidden","true");
+    swipeHint.title=english?"Swipe left for contact actions":"برای دیدن امکانات، به چپ بکش";
+    button.appendChild(swipeHint);
   }
   if(timeText){const time=document.createElement("span");time.className="list-time";time.textContent=timeText;details.appendChild(time);}
   button.addEventListener("click",()=>{if(button.dataset.suppressOpen==="1"){button.dataset.suppressOpen="0";return;}const targetPage=button.dataset.openFromPage||fromPage;if(newPrivateChatModal)closeNewPrivateChat();openChat(contact,targetPage);});
@@ -1596,6 +1616,7 @@ async function refreshUnmatchedPhoneContacts(){
       if(resolvedIds.length===1)continue;
       visibleGroups++;
       const shell=document.createElement("div");shell.className="phone-contact-swipe-shell";shell.dataset.phoneContactId=group.id;
+      shell.dataset.searchName=group.display_name||"";
       const actions=document.createElement("div");actions.className="phone-contact-swipe-actions";
       const remove=document.createElement("button");remove.type="button";remove.className="contact-swipe-action contact-swipe-delete";
       remove.setAttribute("aria-label",english?"Delete phone-book contact":"حذف مخاطب دفترچه تلفن");

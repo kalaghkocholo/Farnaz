@@ -59,8 +59,8 @@ h1{font-size:20px;margin:0}
 .sub{color:var(--muted);font-size:11px;margin-top:3px}
 .icon-button{
   display:grid;place-items:center;width:40px;height:40px;
-  border:1px solid var(--border);border-radius:13px;
-  background:var(--panel);color:var(--white);font-size:19px
+  border:1px solid transparent;border-radius:14px;
+  background:transparent;color:var(--white);font-size:21px
 }
 .brand-stack{display:flex;flex-direction:column;align-items:center;gap:5px;flex-shrink:0;position:relative}
 .new-chat-button{display:none;flex-shrink:0;width:32px;height:30px;border-radius:10px;font-size:16px}
@@ -71,19 +71,19 @@ h1{font-size:20px;margin:0}
 @keyframes appear{from{opacity:.65}to{opacity:1}}
 .hero,.panel,.feature{
   background:var(--panel);border:1px solid var(--border);
-  border-radius:17px
+  border-radius:22px
 }
 .hero{
-  padding:20px 16px;margin-bottom:15px;
-  background:linear-gradient(145deg,#1c2b43,#172237)
+  padding:22px 18px;margin-bottom:15px;
+  background:var(--panel)
 }
 .tag{color:var(--mint);font-size:11px;font-weight:700}
 h2{font-size:18px;line-height:1.5;margin:9px 0}
 h3{font-size:14px;margin:0}
 p{color:#b6c1d1;line-height:1.7;font-size:12px}
 .primary,.action-button,.auth-submit{
-  border:0;border-radius:11px;padding:11px 13px;
-  background:var(--mint);color:var(--bg);
+  border:0;border-radius:15px;padding:12px 15px;
+  background:var(--mint);color:#fff;
   font-size:13px;font-weight:750
 }
 .primary{width:100%;margin-top:8px}
@@ -142,9 +142,9 @@ input[type=file]{font-size:11px;padding:9px}
 .list{display:flex;flex-direction:column;gap:7px}
 .list-item{
   width:100%;display:flex;align-items:center;gap:10px;
-  padding:10px;text-align:start;color:var(--white);
-  border:1px solid var(--border);border-radius:13px;
-  background:var(--bg)
+  padding:12px 10px;text-align:start;color:var(--white);
+  border:1px solid transparent;border-radius:16px;
+  background:var(--panel)
 }
 .list-item:active{background:var(--panel2)}
 .list-details{flex:1;min-width:0}
@@ -228,7 +228,7 @@ input[type=file]{font-size:11px;padding:9px}
   font-size:10px
 }
 .nav-button .nav-icon{font-size:21px;line-height:1.2}
-.nav-button.active{background:#203b43;color:var(--mint);font-weight:700}
+.nav-button.active{background:#202020;color:var(--white);font-weight:700}
 #chatPage{padding-bottom:5px}
 #messageList{
   display:flex;flex-direction:column;gap:8px;
@@ -345,7 +345,7 @@ button,.primary,.action-button,.nav-button{--button-accent:var(--accent)}
 .primary,.action-button,.nav-button.active{border-color:var(--accent)}
 .settings-page{padding:16px 14px 28px}
 .settings-intro{color:var(--muted);margin:4px 0 16px;line-height:1.7}
-.settings-card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:15px;margin:0 0 12px}
+.settings-card{background:var(--panel);border:1px solid var(--border);border-radius:20px;padding:16px;margin:0 0 12px}
 .settings-card h3{font-size:15px;margin:0 0 13px}
 .setting-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
 .setting-row:last-child{border-bottom:0;padding-bottom:0}
@@ -361,7 +361,7 @@ button,.primary,.action-button,.nav-button{--button-accent:var(--accent)}
 .bubble-color-choice[data-bubble-color="auto"]{position:relative;overflow:hidden}
 .bubble-color-choice[data-bubble-color="auto"]::after{content:"↻";position:absolute;inset:0;display:grid;place-items:center;color:#172237;font-size:17px;font-weight:800;text-shadow:0 1px 2px #fff}
 .settings-reset{width:100%;margin-top:4px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:10px;padding:11px}
-body[data-theme="light"]{--bg:#f3f6fb;--panel:#fff;--panel2:#e8eef7;--border:#d5deea;--muted:#596579;--white:#172237;--danger:#b42318;--card:var(--panel);--line:var(--border);--text:var(--white)}
+body[data-theme="light"]{--bg:#f5f5f7;--panel:#fff;--panel2:#e9e9eb;--border:#d1d1d6;--muted:#6e6e73;--white:#1c1c1e;--danger:#b42318;--card:var(--panel);--line:var(--border);--text:var(--white)}
 body[data-theme="light"] .settings-card{box-shadow:0 2px 12px rgba(20,35,60,.04)}
 body[data-theme="light"] input,body[data-theme="light"] textarea,body[data-theme="light"] select{color:var(--white)}
 body[data-theme="light"] .icon-button,body[data-theme="light"] .mini-button{color:var(--white)}

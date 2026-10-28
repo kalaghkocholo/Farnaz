@@ -1680,6 +1680,7 @@ async function refreshUnmatchedPhoneContacts(){
       },{passive:true});
       shell.addEventListener("pointercancel",()=>{tracking=false;},{passive:true});
     }
+    filterSavedFarnazContacts();
     setStatus("unmatchedPhoneContactsStatus",visibleGroups
       ?(english?"Phone-book contacts needing attention are shown here.":"مخاطبان دفترچه تلفن که نیاز به انتخاب یا بررسی دارند در اینجا نمایش داده می‌شوند.")
       :(english?"All imported contacts are matched or no phone contacts have been imported.":"همه مخاطبان واردشده تطبیق یافته‌اند یا هنوز مخاطبی از دفترچه تلفن وارد نشده است."));

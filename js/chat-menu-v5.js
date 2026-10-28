@@ -97,9 +97,11 @@ async function loadPrivateMessages(older=false,preserveScroll=false){
     messageReactionMap=new Map();pinnedMessageIds=new Set();currentPinnedMessage=null;updatePinnedMessageBanner();
     try{
       const cached=await window.FarnazLocalStore?.getMessages(myId,contactId);
-      if(request===chatRequestNumber&&currentUser?.id===myId&&String(currentChatUser?.user_id)===String(contactId)&&cached?.length){
+      const hiddenBoundary=prefFor(contactId).hidden_at?new Date(prefFor(contactId).hidden_at).getTime():null;
+      const visibleCached=Array.isArray(cached)?cached.filter(m=>!hiddenBoundary||new Date(m.created_at).getTime()>hiddenBoundary):[];
+      if(request===chatRequestNumber&&currentUser?.id===myId&&String(currentChatUser?.user_id)===String(contactId)&&visibleCached.length){
         displayedCachedMessages=true;
-        await renderMessages(cached,myId,true);
+        await renderMessages(visibleCached,myId,true);
       }
     }catch(cacheError){console.warn("Could not read cached messages:",cacheError);}
   }
@@ -139,7 +141,12 @@ async function loadPrivateMessages(older=false,preserveScroll=false){
     // Re-check before caching anything so a late response cannot repopulate the
     // previous account's local message store after logout cleanup has started.
     if(request!==chatRequestNumber||currentUser?.id!==myId||String(currentChatUser?.user_id)!==String(contactId))return;
-    const visibleRows=rows.filter(m=>!hiddenIds.has(m.id));
+    // A deleted conversation remains deleted in this user's view. Only messages
+    // strictly newer than the saved boundary may appear when the same contact is reopened.
+    const hiddenBoundary=prefFor(contactId).hidden_at?new Date(prefFor(contactId).hidden_at).getTime():null;
+    const visibleRows=rows.filter(m=>
+      !hiddenIds.has(m.id)&&(!hiddenBoundary||new Date(m.created_at).getTime()>hiddenBoundary)
+    );
     window.FarnazLocalStore?.saveMessages(myId,contactId,visibleRows,older).catch(cacheError=>console.warn("Could not cache messages:",cacheError));
     await loadMessageDecorations(visibleRows,myId,contactId);
     if(request!==chatRequestNumber||currentUser?.id!==myId||currentChatUser?.user_id!==contactId)return;
@@ -747,12 +754,8 @@ async function sendMessage(event){
     if(String(currentUser?.id||"")!==senderId||!s.session||String(s.session.user.id)!==senderId)throw new Error(english?"Session changed or expired. Sign in again.":"نشست حساب تغییر کرده یا منقضی شده؛ دوباره وارد شو.");
     const client=getClient();
     if(!editingMessageId){
-      // A hidden conversation is hidden only from the inbox. Reopen it before
-      // sending so clock skew cannot hide the newly inserted message again.
-      if(prefFor(receiverId).hidden_at){
-        await saveConversationPref(receiverId,{hidden_at:null});
-        if(!sameChat())throw new Error("Conversation changed while reopening.");
-      }
+      // Do not clear hidden_at here: it is the boundary that prevents old
+      // conversation history from returning after the user deleted the chat.
       const {data:blocked,error:blockError}=await client.from("blocked_contacts").select("blocked_user_id").eq("blocker_id",senderId).eq("blocked_user_id",receiverId).maybeSingle();
       if(String(currentUser?.id||"")!==senderId)throw new Error("Account changed while sending.");
       if(blockError)throw blockError;

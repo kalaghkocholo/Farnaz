@@ -1658,16 +1658,10 @@ async function choosePhoneContactAccount(groupId,accountId,button){
     if(readError)throw readError;
     const available=[...new Set((rows||[]).map(row=>String(row.matched_user_id||"")).filter(Boolean))];
     if(!available.includes(String(accountId)))throw new Error(english?"That account is no longer linked to this contact. Sync contacts again.":"این حساب دیگر به این مخاطب متصل نیست؛ مخاطبان را دوباره همگام‌سازی کن.");
-    const {error:saveError}=await client.from("contacts").upsert({user_id:myId,contact_user_id:accountId},{onConflict:"user_id,contact_user_id",ignoreDuplicates:true});
-    if(saveError)throw saveError;
-    const {error:updateError}=await client.from("user_phone_contacts").update({selected_user_id:accountId})
-      .eq("user_id",myId).eq("contact_group_id",groupId);
-    if(updateError)throw updateError;
-    const others=available.filter(id=>id!==String(accountId));
-    if(others.length){
-      const {error:deleteError}=await client.from("contacts").delete().eq("user_id",myId).in("contact_user_id",others);
-      if(deleteError)throw deleteError;
-    }
+    const {error:selectionError}=await client.rpc("choose_farnaz_phone_contact_account",{
+      p_contact_group_id:groupId,p_account_id:accountId
+    });
+    if(selectionError)throw selectionError;
     if(String(currentUser?.id)!==myId)return;
     await refreshSavedContacts();
     if(String(currentUser?.id)!==myId)return;

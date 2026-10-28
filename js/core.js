@@ -1514,40 +1514,131 @@ async function refreshUnmatchedPhoneContacts(){
   }
 }
 let savedContactsRequestNumber=0;
+function makeContactSwipeAction(label,icon,action,contactId){
+  const button=document.createElement("button");button.type="button";button.className="contact-swipe-action contact-swipe-"+action;
+  button.dataset.action=action;button.setAttribute("aria-label",label);button.title=label;
+  const glyph=document.createElement("span");glyph.className="contact-swipe-glyph";glyph.textContent=icon;
+  const text=document.createElement("span");text.className="contact-swipe-label";text.textContent=label;
+  button.append(glyph,text);
+  button.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();runContactSwipeAction(contactId,action,button);});
+  return button;
+}
 function makeSavedContactRow(contact,preview="",timeText=""){
-  const row=document.createElement("div");row.className="saved-contact-row";
+  const shell=document.createElement("div");shell.className="contact-swipe-shell";shell.dataset.contactId=String(contact.user_id||"");
+  const actions=document.createElement("div");actions.className="contact-swipe-actions";
+  const id=String(contact.user_id||"");
+  const pref=prefFor(id);
+  actions.append(
+    makeContactSwipeAction(english?"Message":"پیام دادن","✉","message",id),
+    makeContactSwipeAction(pref.pinned?(english?"Unpin":"برداشتن پین"):(english?"Pin":"پین کردن"),pref.pinned?"📌":"⌖","pin",id),
+    makeContactSwipeAction(contact.blocked?(english?"Unblock":"رفع مسدودسازی"):(english?"Block":"مسدود کردن"),"⊘","block",id),
+    makeContactSwipeAction(english?"Delete":"حذف مخاطب","×","delete",id)
+  );
+  const row=document.createElement("div");row.className="saved-contact-row"+(pref.pinned?" is-pinned":"");
   const button=makeContactButton(contact,preview,timeText,"contactsPage");
   button.dataset.contactPhone=normalizePhone(contact.phone||"");
-  row.appendChild(button);
-  const remove=document.createElement("button");remove.type="button";remove.className="contact-remove-button";
-  remove.textContent="×";remove.setAttribute("aria-label",english?"Remove contact":"حذف مخاطب");remove.title=english?"Remove contact":"حذف مخاطب";
-  remove.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();deleteSavedContact(String(contact.user_id),remove);});
-  row.appendChild(remove);return row;
+  button.setAttribute("aria-label",(contact.display_name||"")+(english?", actions available by swiping left":"، برای عملیات بیشتر به چپ بکش"));
+  row.appendChild(button);shell.append(actions,row);
+  let startX=0,startY=0,tracking=false,swiped=false;
+  const close=()=>{shell.classList.remove("is-open");shell.dataset.open="false";};
+  const open=()=>{shell.classList.add("is-open");shell.dataset.open="true";};
+  shell.addEventListener("pointerdown",event=>{
+    if(event.target.closest(".contact-swipe-actions"))return;
+    startX=event.clientX;startY=event.clientY;tracking=true;swiped=false;
+  },{passive:true});
+  shell.addEventListener("pointerup",event=>{
+    if(!tracking)return;tracking=false;
+    const dx=event.clientX-startX,dy=event.clientY-startY;
+    if(Math.abs(dx)>12)swiped=true;
+    if(Math.abs(dx)>46&&Math.abs(dx)>Math.abs(dy)*1.25){
+      if(dx<0)open();else close();
+      const mainButton=shell.querySelector(".list-item");if(mainButton)mainButton.dataset.suppressOpen="1";
+    }
+  },{passive:true});
+  shell.addEventListener("pointercancel",()=>{tracking=false;},{passive:true});
+  shell.addEventListener("click",event=>{
+    if(event.target.closest(".contact-swipe-actions"))return;
+    if(event.target.closest(".list-item")&&shell.classList.contains("is-open")){event.preventDefault();close();}
+  });
+  return shell;
 }
-async function deleteSavedContact(contactId,button){
+async function runContactSwipeAction(contactId,action,button){
   if(!currentUser||!contactId)return;
   const userId=String(currentUser.id);
-  if(!confirm(english?"Remove this contact from your saved contacts? This does not delete the other person's account or messages.":"این مخاطب از فهرست مخاطبان تو حذف شود؟ حساب طرف مقابل و پیام‌ها حذف نمی‌شوند."))return;
+  const name=Array.from(document.querySelectorAll("#savedContactsList .contact-swipe-shell")).find(el=>el.dataset.contactId===String(contactId))?.querySelector(".list-name")?.textContent|| (english?"this contact":"این مخاطب");
   if(button)button.disabled=true;
   try{
     const client=getClient();
-    const {error}=await client.from("contacts").delete().eq("user_id",userId).eq("contact_user_id",contactId);
-    if(error)throw error;
+    if(action==="message"){
+      const row=document.querySelector('#savedContactsList .contact-swipe-shell[data-contact-id="'+CSS.escape(String(contactId))+'"]');
+      const contactButton=row?.querySelector(".list-item");
+      if(!contactButton)throw new Error(english?"Contact is no longer in your list.":"این مخاطب دیگر در فهرست نیست.");
+      const avatar=row.querySelector(".avatar");
+      const contact={user_id:String(contactId),display_name:row.querySelector(".list-name")?.textContent||name,avatar_url:avatar?.querySelector("img")?.src||avatar?.dataset.avatarUrl||"",phone:row.querySelector(".list-item")?.dataset.contactPhone||""};
+      row.classList.remove("is-open");row.dataset.open="false";openChat(contact,"contactsPage");return;
+    }
+    if(action==="pin"){
+      const {data:old,error:readError}=await client.from("conversation_preferences").select("pinned,archived,hidden_at").eq("user_id",userId).eq("contact_user_id",contactId).maybeSingle();
+      if(readError)throw readError;
+      const pinned=!old?.pinned;
+      const {error}=await client.from("conversation_preferences").upsert({user_id:userId,contact_user_id:contactId,pinned,archived:old?.archived||false,hidden_at:old?.hidden_at||null,updated_at:new Date().toISOString()},{onConflict:"user_id,contact_user_id"});
+      if(error)throw error;
+      conversationPrefs.set(String(contactId),{...prefFor(contactId),...old,pinned,archived:old?.archived||false,hidden_at:old?.hidden_at||null});
+      await refreshConversationList();
+      if(String(currentUser?.id)!==userId)return;
+      await refreshSavedContacts();
+      setStatus("savedContactsStatus",pinned?(english?"Contact pinned to the top.":"مخاطب به بالای فهرست سنجاق شد."):(english?"Contact unpinned.":"سنجاق مخاطب برداشته شد."));
+      return;
+    }
+    if(action==="block"){
+      const {data:existing,error:readError}=await client.from("blocked_contacts").select("blocked_user_id").eq("blocker_id",userId).eq("blocked_user_id",contactId).maybeSingle();
+      if(readError)throw readError;
+      if(existing){
+        if(!confirm(english?"Unblock "+name+"?":"مسدودسازی «"+name+"» برداشته شود؟"))return;
+        const {error}=await client.from("blocked_contacts").delete().eq("blocker_id",userId).eq("blocked_user_id",contactId);
+        if(error)throw error;
+        setStatus("savedContactsStatus",english?"Contact unblocked.":"مسدودسازی مخاطب برداشته شد.");
+      }else{
+        if(!confirm(english?"Block "+name+"? Messaging and calls between the two accounts will be stopped.":"مخاطب «"+name+"» مسدود شود؟ تبادل پیام و تماس بین دو حساب متوقف می‌شود."))return;
+        const {error}=await client.from("blocked_contacts").insert({blocker_id:userId,blocked_user_id:contactId});
+        if(error)throw error;
+        setStatus("savedContactsStatus",english?"Contact blocked.":"مخاطب مسدود شد.");
+      }
+    }else if(action==="delete"){
+      if(!confirm(english?"Remove "+name+" from your contacts? This will not delete messages or the other account.":"«"+name+"» از فهرست مخاطبانت حذف شود؟ پیام‌ها و حساب طرف مقابل حذف نمی‌شوند."))return;
+      const {data:deleted,error}=await client.from("contacts").delete().eq("user_id",userId).eq("contact_user_id",contactId).select("contact_user_id");
+      if(error)throw error;
+      if(!deleted?.length)throw new Error(english?"No saved contact was removed. Refresh the list and try again.":"هیچ مخاطبی حذف نشد؛ فهرست را تازه‌سازی کن و دوباره امتحان کن.");
+      if(String(currentUser?.id)!==userId)return;
+      const {error:aliasError}=await client.from("user_phone_contacts").delete().eq("user_id",userId).eq("matched_user_id",contactId);
+      if(aliasError)console.warn("Could not remove imported phone contact aliases:",aliasError);
+      try{
+        const cached=await window.FarnazLocalStore?.getSnapshot(userId,"contacts");
+        if(Array.isArray(cached))await window.FarnazLocalStore?.saveSnapshot(userId,"contacts",cached.filter(entry=>String(entry?.contact?.user_id)!==String(contactId)));
+      }catch(cacheError){console.warn("Could not update contacts cache:",cacheError);}
+      await refreshSavedContacts();
+      setStatus("savedContactsStatus",english?"Contact removed.":"مخاطب حذف شد.");
+      return;
+    }
+    const shell=document.querySelector('#savedContactsList .contact-swipe-shell[data-contact-id="'+CSS.escape(String(contactId))+'"]');
+    shell?.classList.remove("is-open");
     if(String(currentUser?.id)!==userId)return;
-    const {error:phoneError}=await client.from("user_phone_contacts").delete().eq("user_id",userId).eq("matched_user_id",contactId);
-    if(phoneError)console.warn("Could not remove imported contact aliases:",phoneError);
     await refreshSavedContacts();
-    setStatus("savedContactsStatus",english?"Contact removed.":"مخاطب حذف شد.");
   }catch(error){
     if(String(currentUser?.id)!==userId)return;
-    setStatus("savedContactsStatus",(english?"Could not remove contact: ":"حذف مخاطب ناموفق بود: ")+error.message,true);
+    console.error("Contact action failed:",action,error);
+    setStatus("savedContactsStatus",(english?"Action failed: ":"عملیات ناموفق بود: ")+error.message,true);
   }finally{if(button)button.disabled=false;}
+}
+async function deleteSavedContact(contactId,button){
+  return runContactSwipeAction(contactId,"delete",button);
 }
 function renderSavedContactsSnapshot(entries){
   const list=$("savedContactsList");if(!list)return;
   list.replaceChildren();
   const dropdownList=$("newChatContactsList");if(dropdownList)dropdownList.replaceChildren();
-  for(const entry of entries||[]){
+  const sortedEntries=[...(entries||[])].sort((a,b)=>Number(!!(b.pinned??b.contact?.pinned))-Number(!!(a.pinned??a.contact?.pinned)));
+  for(const entry of sortedEntries){
     const contact=entry?.contact;if(!contact?.user_id)continue;
     list.appendChild(makeSavedContactRow(contact,entry.subtitle||"",entry.date||""));
     if(dropdownList){const quick=makeContactButton(contact,entry.subtitle||"","","chatsPage");quick.dataset.contactName=contact.display_name||"";dropdownList.appendChild(quick);}
@@ -1575,6 +1666,17 @@ async function refreshSavedContacts(){
     }catch(e){console.warn("Imported phone contact names:",e);}
     const importedNames=new Map();
     for(const item of phoneData){if(item.matched_user_id&&!importedNames.has(String(item.matched_user_id)))importedNames.set(String(item.matched_user_id),item.display_name);}
+    let contactPreferences=new Map(),blockedContactIds=new Set();
+    try{
+      const preferenceResult=await retryRead("contact pin preferences",()=>getClient().from("conversation_preferences").select("contact_user_id,pinned,archived,hidden_at").eq("user_id",myId));
+      if(preferenceResult.error)throw preferenceResult.error;
+      contactPreferences=new Map((preferenceResult.data||[]).map(pref=>[String(pref.contact_user_id),pref]));
+    }catch(preferenceError){console.warn("Contact pin preferences:",preferenceError);}
+    try{
+      const blockedResult=await retryRead("blocked contact list",()=>getClient().from("blocked_contacts").select("blocked_user_id").eq("blocker_id",myId));
+      if(blockedResult.error)throw blockedResult.error;
+      blockedContactIds=new Set((blockedResult.data||[]).map(item=>String(item.blocked_user_id)));
+    }catch(blockedError){console.warn("Blocked contact list:",blockedError);}
     let profilesById=new Map(),profilesLoaded=true;
     try{profilesById=await getContactProfiles((data||[]).map(item=>item.contact_user_id));}
     catch(e){profilesLoaded=false;console.warn("Saved contact profiles:",e);setConnectionBanner(english?"Some contact profiles could not load. Retrying…":"اطلاعات بعضی مخاطبان بارگذاری نشد؛ دوباره تلاش می‌کنیم.");}
@@ -1584,8 +1686,11 @@ async function refreshSavedContacts(){
     (data||[]).forEach(item=>{
       const contactId=String(item.contact_user_id||"");if(!contactId||seenContacts.has(contactId))return;seenContacts.add(contactId);
       const p=profilesById.get(contactId)||{};
-      const contact={user_id:contactId,display_name:importedNames.get(contactId)||p.display_name||(english?"Farnaz user":"کاربر فرناز"),avatar_url:p.avatar_url||"",phone:p.phone||""};
-      snapshot.push({contact,subtitle:p.phone?formatContactPhone(p.phone):(english?"Farnaz member":"عضو فرناز"),date:item.created_at?new Date(item.created_at).toLocaleDateString(english?"en":"fa-IR"):""});
+      const preference=contactPreferences.get(contactId)||{};
+      const contact={user_id:contactId,display_name:importedNames.get(contactId)||p.display_name||(english?"Farnaz user":"کاربر فرناز"),avatar_url:p.avatar_url||"",phone:p.phone||"",pinned:!!preference.pinned};
+      conversationPrefs.set(contactId,preference);
+      contact.blocked=blockedContactIds.has(contactId);
+      snapshot.push({contact,subtitle:p.phone?formatContactPhone(p.phone):(english?"Farnaz member":"عضو فرناز"),date:item.created_at?new Date(item.created_at).toLocaleDateString(english?"en":"fa-IR"):"",pinned:!!preference.pinned});
     });
     renderSavedContactsSnapshot(snapshot);
     if(profilesLoaded){try{await window.FarnazLocalStore?.saveSnapshot(myId,"contacts",snapshot);}catch(cacheError){console.warn("Cached contacts save:",cacheError);}}

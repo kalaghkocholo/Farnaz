@@ -1203,8 +1203,22 @@ body[data-auth-state="guest"] #openSettingsButton{display:none!important;visibil
 .manual-contact-form label{margin:5px 0 0;color:var(--muted)}
 .manual-contact-form input{background:var(--bg);border-color:var(--border)}
 .manual-contact-form .action-button{margin-top:5px}
-.saved-contact-row{display:flex;align-items:stretch;gap:6px;min-width:0}
-.saved-contact-row>.list-item{flex:1;min-width:0}
+.contact-swipe-shell{position:relative;isolation:isolate;overflow:hidden;border-radius:14px;margin-bottom:7px;min-width:0;background:var(--panel2);touch-action:pan-y}
+.contact-swipe-actions{position:absolute;inset-block:0;right:0;display:flex;align-items:stretch;width:264px;max-width:82vw;direction:ltr;z-index:0}
+.contact-swipe-action{display:flex;flex:1 1 0;min-width:0;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:5px 2px;border:0;border-inline-start:1px solid #ffffff20;background:#64748b;color:#fff;font:inherit;font-size:11px;line-height:1.15}
+.contact-swipe-action:first-child{background:#287a9d}
+.contact-swipe-pin{background:#7c6b32}
+.contact-swipe-block{background:#9a5b30}
+.contact-swipe-delete{background:#b83d4b}
+.contact-swipe-glyph{font-size:20px;line-height:1}
+.contact-swipe-label{white-space:normal;text-align:center;overflow-wrap:anywhere}
+.saved-contact-row{position:relative;z-index:1;display:flex;align-items:stretch;gap:0;min-width:0;width:100%;background:var(--panel);transform:translateX(0);transition:transform .2s ease;will-change:transform}
+.saved-contact-row>.list-item{flex:1;min-width:0;width:100%;border:0;border-radius:0;background:var(--panel);text-align:start}
+.contact-swipe-shell.is-open .saved-contact-row{transform:translateX(-264px)}
+.contact-swipe-shell .list-item .list-details{min-width:0}
+.contact-swipe-shell .list-name,.contact-swipe-shell .list-preview{overflow:hidden;text-overflow:ellipsis}
+.contact-swipe-shell .saved-contact-row.is-pinned:after{content:"📌";align-self:center;padding:0 10px;font-size:13px}
+@media (prefers-reduced-motion:reduce){.saved-contact-row{transition:none}}
 .contact-remove-button{flex:0 0 40px;width:40px;border:1px solid var(--border);border-radius:12px;background:var(--bg);color:var(--danger);font-size:18px}
 .phone-contact-row .contact-remove-button{margin-inline-start:auto;align-self:center}
 .phone-contacts-subheading{margin:16px 0 8px}

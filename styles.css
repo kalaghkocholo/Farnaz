@@ -1456,3 +1456,23 @@ body[data-theme="light"] .welcome-shell{background:radial-gradient(ellipse at 50
 .contacts-category-section[hidden]{display:none!important}
 #savedFarnazContactFilter{width:100%;margin:0 0 8px}
 @media (prefers-reduced-motion:reduce){.contacts-category-tab{transition:none}}
+
+/* Farnaz group-info layout: one authoritative block for the member view. */
+.space-info-top{display:flex;align-items:center;gap:14px;padding:14px 4px 18px;border-bottom:1px solid var(--border);margin-bottom:12px}
+.space-info-avatar{width:72px;height:72px;flex:0 0 72px;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:var(--panel2);font-size:30px}
+.space-info-top-copy{min-width:0;flex:1}
+.space-info-top-copy strong{display:block;font-size:18px;font-weight:700}
+.space-info-top-copy p{margin:5px 0 0;color:var(--muted);white-space:pre-wrap;overflow-wrap:anywhere}
+.space-info-actions{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 16px}
+.space-info-actions button{flex:1 1 145px;min-height:42px}
+.space-info-members-heading{display:flex;align-items:center;justify-content:space-between;margin:14px 0 8px}
+.space-info-members-heading h4{margin:0}
+.space-info-members-list{margin-bottom:16px}
+.space-info-members-list .space-member-row{border-bottom:1px solid var(--border);padding:4px 0}
+.space-info-members-list .space-member-trigger{width:100%;min-height:54px;display:flex;align-items:center;gap:10px;text-align:inherit;background:transparent;color:inherit;border:0;padding:7px 2px}
+.space-info-members-list .space-member-copy{flex:1;min-width:0}
+.space-info-members-list .space-member-copy strong,.space-info-members-list .space-member-copy small{display:block;overflow-wrap:anywhere}
+.space-admin-settings{margin:16px 0;padding-top:12px;border-top:1px solid var(--border)}
+.space-admin-settings h4{margin-top:0}
+.space-info-exit{width:100%;margin:12px 0 4px;min-height:42px;border:1px solid #d45b62;border-radius:10px;background:transparent;color:#d45b62;font:inherit;font-weight:600}
+.space-info-exit:disabled{opacity:.55}

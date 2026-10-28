@@ -1561,6 +1561,11 @@ function makeContactButton(contact,preview="",timeText="",fromPage="chatsPage"){
   const desc=document.createElement("span");desc.className="list-preview";
   desc.textContent=preview;
   details.append(name,desc);button.append(avatar,details);
+  if(fromPage==="contactsPage"){
+    const swipeHint=document.createElement("span");swipeHint.className="contact-swipe-hint";
+    swipeHint.textContent=english?"← Swipe":"← بکش";
+    swipeHint.setAttribute("aria-hidden","true");button.appendChild(swipeHint);
+  }
   if(timeText){const time=document.createElement("span");time.className="list-time";time.textContent=timeText;details.appendChild(time);}
   button.addEventListener("click",()=>{if(button.dataset.suppressOpen==="1"){button.dataset.suppressOpen="0";return;}const targetPage=button.dataset.openFromPage||fromPage;if(newPrivateChatModal)closeNewPrivateChat();openChat(contact,targetPage);});
   return button;
@@ -1722,6 +1727,7 @@ function makeSavedContactRow(contact,preview="",timeText=""){
   const pref=prefFor(id);
   actions.append(
     makeContactSwipeAction(english?"Message":"پیام دادن","✉","message",id),
+    makeContactSwipeAction(english?"Edit name":"ویرایش نام","✎","edit",id),
     makeContactSwipeAction(pref.pinned?(english?"Unpin":"برداشتن پین"):(english?"Pin":"پین کردن"),pref.pinned?"📌":"⌖","pin",id),
     makeContactSwipeAction(contact.blocked?(english?"Unblock":"رفع مسدودسازی"):(english?"Block":"مسدود کردن"),"⊘","block",id),
     makeContactSwipeAction(english?"Delete":"حذف مخاطب","×","delete",id)
@@ -1761,6 +1767,20 @@ async function runContactSwipeAction(contactId,action,button){
   if(button)button.disabled=true;
   try{
     const client=getClient();
+    if(action==="edit"){
+      const row=document.querySelector('#savedContactsList .contact-swipe-shell[data-contact-id="'+CSS.escape(String(contactId))+'"]');
+      const contactButton=row?.querySelector(".list-item");
+      const currentName=contactButton?.querySelector(".list-name")?.textContent||name;
+      const entered=window.prompt(english?"Choose a name for this contact. Leave blank to use their profile name.":"نام دلخواه مخاطب را وارد کن؛ برای برگشت به نام پروفایل، کادر را خالی بگذار.",currentName);
+      if(entered===null)return;
+      const alias=entered.trim();
+      if(alias.length>120)throw new Error(english?"Name must be 120 characters or fewer.":"نام مخاطب باید حداکثر ۱۲۰ نویسه باشد.");
+      await saveConversationPref(contactId,{display_name:alias||null});
+      if(String(currentUser?.id)!==userId)return;
+      await refreshSavedContacts();
+      setStatus("savedContactsStatus",english?"Contact name updated.":"نام مخاطب تغییر کرد.");
+      return;
+    }
     if(action==="message"){
       const row=document.querySelector('#savedContactsList .contact-swipe-shell[data-contact-id="'+CSS.escape(String(contactId))+'"]');
       const contactButton=row?.querySelector(".list-item");
@@ -1938,11 +1958,23 @@ async function addManualPhoneContact(event){
     if(savedRowsError)throw savedRowsError;
     const duplicateInPhoneBook=(phoneRows||[]).some(row=>normalizePhone(row.phone)===phone);
     const duplicateInSaved=[...($("savedContactsList")?.querySelectorAll(".saved-contact-row .list-item")||[])].some(row=>row.dataset.contactPhone===phone);
+    const authPhones=[currentUser?.phone,currentUser?.user_metadata?.phone,currentUser?.user_metadata?.phone_number]
+      .map(value=>normalizePhone(value)).filter(Boolean);
+    let ownProfilePhone="";
+    try{const ownProfile=await getContactProfile(userId);ownProfilePhone=normalizePhone(ownProfile?.phone||"");}
+    catch(profileError){console.warn("Could not read own profile phone for self-contact check:",profileError);}
+    if(authPhones.includes(phone)||ownProfilePhone===phone){
+      setStatus("manualContactStatus",english?"This is the phone number on your own Farnaz profile. You cannot add yourself as a contact.":"این شماره متعلق به پروفایل خودت در فرناز است؛ نمی‌توانی خودت را به‌عنوان مخاطب اضافه کنی.",true);return;
+    }
     let duplicateMatchedAccount=false;
     if(!duplicateInPhoneBook&&!duplicateInSaved){
       const lookup=await client.rpc("find_farnaz_user_by_phone",{search_phone:phone});
       if(lookup.error)throw lookup.error;
-      duplicateMatchedAccount=(lookup.data||[]).some(match=>(savedRows||[]).some(saved=>String(saved.contact_user_id)===String(match.user_id||match.id)));
+      const matches=lookup.data||[];
+      if(matches.some(match=>String(match.user_id||match.id)===userId)){
+        setStatus("manualContactStatus",english?"This number belongs to your own Farnaz account, so it cannot be added as a contact.":"این شماره به حساب خودت در فرناز متصل است؛ افزودن حساب خودت به مخاطبان ممکن نیست.",true);return;
+      }
+      duplicateMatchedAccount=matches.some(match=>(savedRows||[]).some(saved=>String(saved.contact_user_id)===String(match.user_id||match.id)));
     }
     if(duplicateInPhoneBook||duplicateInSaved||duplicateMatchedAccount){
       setStatus("manualContactStatus",english?"This phone number is already added or exists in your contact list.":"این شماره قبلاً اضافه شده یا در فهرست مخاطبان وجود دارد.",true);return;

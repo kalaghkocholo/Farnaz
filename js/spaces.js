@@ -330,7 +330,12 @@ async function openSpaceInfo(){
   if(!isChannel&&mine&&mine.role!=="owner"){
    const leave=document.createElement("button");leave.type="button";leave.className="space-info-exit";leave.textContent=tr("خروج از گروه","Leave group");
    leave.onclick=async()=>{if(!window.confirm(tr("از گروه «"+(active.name||"")+"» خارج می‌شوی؟","Leave the group “"+(active.name||"")+"”?")))return;leave.disabled=true;try{const {error}=await getClient().from("space_members").delete().eq("space_id",spaceId).eq("user_id",myId);if(error)throw error;q("spaceInfoDialog").hidden=true;setSpaceMuted(spaceId,false);setSpaceFlag("archived",spaceId,false);setSpaceFlag("pinned",spaceId,false);await refresh();q("spacesStatus").textContent=tr("از گروه خارج شدی.","You left the group.");}catch(e){q("spaceInfoStatus").textContent=tr("خروج ناموفق بود: ","Could not leave: ")+(e?.message||String(e));leave.disabled=false;}};
-   leave.classList.add("space-info-exit");infoCard.insertBefore(leave,infoStatus);
+   leave.classList.add("space-info-exit");
+   // The info status node may have been moved into another accordion.
+   // insertBefore requires the reference node to belong to this exact parent.
+   if(infoStatus?.parentNode===infoCard)infoCard.insertBefore(leave,infoStatus);
+   else if(actions?.isConnected)actions.appendChild(leave);
+   else infoCard.appendChild(leave);
   }
   const muteBtn=document.createElement("button");muteBtn.type="button";muteBtn.className="space-secondary space-info-quick-action";const syncMuteLabel=()=>{setSpaceActionContent(muteBtn,'<svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>',isSpaceMuted(spaceId)?tr("فعال کردن اعلان‌ها","Unmute group"):tr("بی‌صدا کردن گروه","Mute group"));};syncMuteLabel();muteBtn.onclick=()=>{const next=!isSpaceMuted(spaceId);if(!setSpaceMuted(spaceId,next)){q("spaceInfoStatus").textContent=tr("ذخیره تنظیم اعلان‌ها ممکن نشد.","Could not save notification setting.");return;}syncMuteLabel();};actions.appendChild(muteBtn);
   if(mine.role==="member"&&active.members_can_add_members===true){

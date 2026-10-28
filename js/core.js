@@ -446,6 +446,37 @@ function startNewChat(){
   /* The visible control is .chats-new-button; older code expected a missing #topNewChatButton. */
   toggleNewChatPopover();
 }
+function startPrivateChatFromNewChat(){
+  if(!currentUser){openAuth();return;}
+  toggleNewChatPopover(false);
+  toggleContactSearch(false);
+  navigate("contactsPage");
+  const filter=$("savedFarnazContactFilter");
+  if(filter){
+    filter.value="";
+    filterSavedFarnazContacts();
+    requestAnimationFrame(()=>filter.focus({preventScroll:true}));
+  }
+}
+function filterSavedFarnazContacts(){
+  const filter=$("savedFarnazContactFilter");
+  const list=$("savedContactsList");
+  const status=$("savedFarnazContactSearchStatus");
+  if(!filter||!list||!status)return;
+  const query=filter.value.trim().toLocaleLowerCase();
+  let visible=0,total=0;
+  list.querySelectorAll(".contact-swipe-shell").forEach(shell=>{
+    total++;
+    const name=shell.querySelector(".list-name")?.textContent||"";
+    const phone=shell.querySelector(".list-item")?.dataset.contactPhone||"";
+    const matches=!query||(name+" "+phone).toLocaleLowerCase().includes(query);
+    shell.hidden=!matches;
+    if(matches)visible++;
+  });
+  status.textContent=query&&!visible
+    ?(english?"No saved Farnaz contacts match that search.":"مخاطبی با این نام در فهرست مخاطبان فرناز پیدا نشد.")
+    :"";
+}
 function createGroupFromHome(){
   if(!currentUser){openAuth();return;}
   toggleNewChatPopover(false);
@@ -551,6 +582,7 @@ function openAdjacentConversation(direction){
 
 function setConversationView(view){conversationView=view;refreshConversationList();}
 $("conversationSearch")?.addEventListener("input",applyConversationSearch);
+$("savedFarnazContactFilter")?.addEventListener("input",filterSavedFarnazContacts);
 function prefFor(id){return conversationPrefs.get(id)||{pinned:false,archived:false,hidden_at:null};}
 async function saveConversationPref(contactId,patch){
   if(!currentUser)throw new Error(english?"Sign in to change conversation settings.":"برای تغییر تنظیمات گفتگو ابتدا وارد شو.");
@@ -723,6 +755,11 @@ function toggleLanguage(){
   $("newChatPopoverTitle").textContent=english?"Start a new chat":"گفتگوی جدید";
   $("savedContactFilter").placeholder=english?"Search saved contacts by name":"جستجو با نام مخاطب ذخیره‌شده";
   $("savedContactFilter").setAttribute("aria-label",english?"Search saved contacts by name":"جستجو با نام مخاطب ذخیره‌شده");
+  if($("savedFarnazContactFilter")){
+    $("savedFarnazContactFilter").placeholder=english?"Search saved Farnaz contacts by name or phone":"جستجو در مخاطبان فرناز با نام یا شماره";
+    $("savedFarnazContactFilter").setAttribute("aria-label",english?"Search saved Farnaz contacts by name or phone":"جستجو در مخاطبان فرناز با نام یا شماره");
+  }
+  if($("savedFarnazContactSearchStatus"))$("savedFarnazContactSearchStatus").textContent="";
   if($("manualContactTitle"))$("manualContactTitle").textContent=english?"Add contact manually":"افزودن دستی مخاطب";
   if($("manualContactNameLabel"))$("manualContactNameLabel").textContent=english?"Contact name":"نام مخاطب";
   if($("manualContactPhoneLabel"))$("manualContactPhoneLabel").textContent=english?"Mobile number":"شماره موبایل";
@@ -1660,6 +1697,7 @@ function renderSavedContactsSnapshot(entries){
     if(dropdownList){const quick=makeContactButton(contact,entry.subtitle||"","","chatsPage");quick.dataset.contactName=contact.display_name||"";dropdownList.appendChild(quick);}
   }
   filterSavedContactsForNewChat();
+  filterSavedFarnazContacts();
 }
 async function refreshSavedContacts(){
   const list=$("savedContactsList");if(!list||!currentUser)return;

@@ -1,5 +1,5 @@
 "use strict";
-const CACHE_NAME="farnaz-shell-v157";
+const CACHE_NAME="farnaz-shell-v158";
 const APP_BASE=new URL("./",self.location.href);
 const SHELL=["./","./index.html","./styles.css?v=20261028-52","./spaces.css?v=20261025-29","./js/local-store.js?v=20261026-3","./js/supabase-sdk.js","./js/core.js?v=20261028-19","./js/chat-menu-v5.js?v=20261028-21","./js/spaces.js?v=20261026-3","./js/calls.js?v=20261026-4","./manifest.webmanifest","./farnaz-icon.svg?v=20261024-4"];
 self.addEventListener("install",event=>{
@@ -14,41 +14,30 @@ self.addEventListener("fetch",event=>{
   const url=new URL(req.url);
   if(url.origin!==self.location.origin||!url.pathname.startsWith(APP_BASE.pathname))return;
   if(req.mode==="navigate"){
-    // Explicit versioned links must bypass the cached HTML so a new build can be tested immediately.
-    if(url.search){
-      event.respondWith(fetch(req).then(response=>{
-        if(response.ok){const copy=response.clone();caches.open(CACHE_NAME).then(cache=>cache.put(new URL("./index.html",APP_BASE).href,copy));}
-        return response;
-      }).catch(async()=>await caches.match(new URL("./index.html",APP_BASE).href)||Response.error()));
-      return;
-    }
-    const cachedPage=caches.match(new URL("./index.html",APP_BASE).href);
-    const refreshPage=fetch(req).then(response=>{
-      if(response.ok){const copy=response.clone();caches.open(CACHE_NAME).then(cache=>cache.put(new URL("./index.html",APP_BASE).href,copy));}
+    // Network-first is intentional: stale cached HTML must never hide a published build.
+    const pageKey=new URL("./index.html",APP_BASE).href;
+    event.respondWith(fetch(req).then(async response=>{
+      if(response.ok){
+        const copy=response.clone();
+        await caches.open(CACHE_NAME).then(cache=>cache.put(pageKey,copy));
+      }
       return response;
-    });
-    // Register background refresh while the fetch event is still active.
-    event.waitUntil(refreshPage.then(()=>{}).catch(()=>{}));
-    event.respondWith((async()=>{
-      const cached=await cachedPage;
-      if(cached)return cached;
-      try{return await refreshPage;}catch(_){return await caches.match(req,{ignoreSearch:true})||Response.error();}
-    })());
+    }).catch(async()=>{
+      return await caches.match(pageKey)||await caches.match(req,{ignoreSearch:true})||Response.error();
+    }));
     return;
   }
   const isCodeAsset=/\.(?:html|css|js)$/i.test(url.pathname)||url.search.length>0;
   if(isCodeAsset){
-    const cachedAsset=caches.match(req);
-    const refreshAsset=fetch(req).then(response=>{
-      if(response.ok&&response.type==="basic")caches.open(CACHE_NAME).then(cache=>cache.put(req,response.clone()));
+    // Network-first for HTML/CSS/JS and versioned assets; use cache only when offline.
+    event.respondWith(fetch(req).then(async response=>{
+      if(response.ok&&response.type==="basic"){
+        await caches.open(CACHE_NAME).then(cache=>cache.put(req,response.clone()));
+      }
       return response;
-    });
-    event.waitUntil(refreshAsset.then(()=>{}).catch(()=>{}));
-    event.respondWith((async()=>{
-      const cached=await cachedAsset;
-      if(cached)return cached;
-      try{return await refreshAsset;}catch(_){return Response.error();}
-    })());
+    }).catch(async()=>{
+      return await caches.match(req)||Response.error();
+    }));
     return;
   }
   event.respondWith((async()=>{

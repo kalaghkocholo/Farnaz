@@ -1395,3 +1395,33 @@ body[data-theme="light"] .welcome-shell{background:radial-gradient(ellipse at 50
 /* Main navigation now includes Settings as a first-class destination. */
 .bottom-nav .nav-button{min-width:0;padding-inline:2px;font-size:10px}
 .bottom-nav .nav-button .nav-icon{font-size:20px}
+
+
+/* Keep all five main destinations on one horizontal row, including narrow iPhones. */
+.bottom-nav .nav-inner{
+  display:grid!important;
+  grid-template-columns:repeat(5,minmax(0,1fr))!important;
+  grid-auto-flow:row!important;
+  align-items:stretch!important;
+  gap:2px!important;
+  min-width:0!important;
+}
+.bottom-nav .nav-button{
+  min-width:0!important;
+  width:100%!important;
+  flex:initial!important;
+  padding-inline:0!important;
+  gap:3px!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+}
+.bottom-nav .nav-button>span:not(.nav-icon){
+  display:block!important;
+  max-width:100%!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:clip!important;
+  font-size:clamp(8px,2.45vw,10px)!important;
+  line-height:1.2!important;
+}
+.bottom-nav .nav-button .nav-icon{font-size:18px!important;line-height:1.1!important}

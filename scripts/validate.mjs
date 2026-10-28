@@ -198,13 +198,13 @@ for (const path of ["js/local-store.js", "js/core.js", "js/chat-menu-v5.js", "js
 // Keep shell cache and versioned local-store assets synchronized after cache behavior changes.
 const coreSource = sources["js/core.js"];
 const chatSource = sources["js/chat-menu-v5.js"];
-if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v179"') || !sources["service-worker.js"].includes('styles.css?v=20261029-64') || !sources["service-worker.js"].includes('core.js?v=20261029-41') || !sources["service-worker.js"].includes('local-store.js?v=20261026-3') || !sources["service-worker.js"].includes('calls.js?v=20261026-4') || !sources["service-worker.js"].includes('chat-menu-v5.js?v=20261028-28') || !html.includes('chat-menu-v5.js?v=20261028-28')) {
+if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v180"') || !sources["service-worker.js"].includes('styles.css?v=20261029-64') || !sources["service-worker.js"].includes('core.js?v=20261029-42') || !sources["service-worker.js"].includes('local-store.js?v=20261026-3') || !sources["service-worker.js"].includes('calls.js?v=20261026-4') || !sources["service-worker.js"].includes('chat-menu-v5.js?v=20261028-28') || !html.includes('chat-menu-v5.js?v=20261028-28')) {
   errors.push("service-worker.js must use the current shell cache and core asset versions");
 }
 const loaderChecks = [
   [html.includes('script.src="./js/supabase-sdk.js"') && html.includes("watchScript(script,()=>{") && html.includes("loadLocalScripts();"),
     "index.html must wait for the local Supabase SDK before loading the app core"],
-  [html.includes('core.src="./js/core.js?v=20261029-41"') && html.includes("watchScript(core,()=>{") && html.includes("بارگذاری هستهٔ برنامه ناموفق بود یا بیش از حد طول کشید"),
+  [html.includes('core.src="./js/core.js?v=20261029-42"') && html.includes("watchScript(core,()=>{") && html.includes("بارگذاری هستهٔ برنامه ناموفق بود یا بیش از حد طول کشید"),
     "index.html must handle successful, failed, and stalled core-script loading"],
   [html.includes("watchScript(script,loadNextFeature,()=>{") && html.includes("featureScripts[featureIndex++]") && html.includes('if(typeof window.FarnazBoot==="function")window.FarnazBoot();'),
     "index.html must load feature scripts sequentially and boot only after the loader sequence"],
@@ -228,6 +228,8 @@ const uiChecks = [
     "contacts page must provide All/Farnaz members tabs and search across both contact categories"],
   [coreSource.includes('swipeHint.textContent="‹"') && sources["styles.css"].includes('.contact-swipe-hint{flex:0 0 20px;'),
     "contact swipe affordance must be a subtle left-edge chevron, without duplicate CSS overrides"],
+  [coreSource.includes('function normalizeContactPhoneSearch(value)') && coreSource.includes('function contactMatchesSearch(shell,query)') && coreSource.includes('shell.dataset.searchPhone=String(contact.phone||"")') && coreSource.includes('shell.dataset.searchPhone=rows.map(item=>item.phone||"").filter(Boolean).join(" ")'),
+    "contacts search must match names and phone numbers for saved members and imported phone-book contacts"],
 ];
 for (const [passed, message] of uiChecks) { if (!passed) errors.push(message); }
 

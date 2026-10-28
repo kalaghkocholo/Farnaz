@@ -1874,7 +1874,7 @@ function renderSavedContactsSnapshot(entries){
     const contact=entry?.contact;if(!contact?.user_id)continue;
     const row=makeSavedContactRow(contact,entry.subtitle||"",entry.date||"");
     const legacySearchName=contact.display_name!==contact.profile_display_name?contact.display_name:"";
-    row.dataset.searchName=String(contact.search_name??contact.local_contact_name??legacySearchName??"");
+    row.dataset.searchName=String(contact.search_name||contact.local_contact_name||legacySearchName||contact.display_name||"");
     list.appendChild(row);
   }
   filterSavedFarnazContacts();

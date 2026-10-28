@@ -737,7 +737,11 @@ async function toggleAudioRecording(){
   }
 }
 async function sendMessage(event){
-  event.preventDefault();
+  // Prevent native form navigation even when invoked directly by the send button.
+  event?.preventDefault();
+  const button=$("sendMessageButton");
+  // The button click and form submit must never start two sends for one tap.
+  if(button?.disabled)return;
   if(!currentUser||!currentChatUser){setStatus("sendMessageStatus",english?"Choose a contact first.":"ابتدا مخاطب را انتخاب کن.",true);return;}
   if(mediaRecorder&&mediaRecorder.state==="recording"){setStatus("sendMessageStatus",english?"Stop recording before sending.":"پیش از ارسال، ضبط صدا را متوقف کن.",true);return;}
   const senderId=String(currentUser.id),receiverId=String(currentChatUser.user_id);
@@ -746,7 +750,7 @@ async function sendMessage(event){
   if(!body&&!file&&!editingMessageId)return;
   if(file&&file.size>20*1024*1024){setStatus("sendMessageStatus",english?"Choose a file up to 20 MB.":"حجم فایل باید حداکثر ۲۰ مگابایت باشد.",true);return;}
   if(editingMessageId&&file){setStatus("sendMessageStatus",english?"Remove the attachment before editing a message.":"برای ویرایش پیام، ابتدا پیوست را بردار.",true);return;}
-  const button=$("sendMessageButton");button.disabled=true;setStatus("sendMessageStatus",english?"Sending…":"در حال ارسال…");
+  button.disabled=true;setStatus("sendMessageStatus",english?"Sending…":"در حال ارسال…");
   const sameChat=()=>String(currentUser?.id||"")===senderId&&String(currentChatUser?.user_id||"")===receiverId;
   let pendingUploadPath=null;
   try{

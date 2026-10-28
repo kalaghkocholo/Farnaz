@@ -106,7 +106,9 @@ function closeSpaceSwipeActions(except){q("spaceList").querySelectorAll(".space-
 function buildSpaceSwipeActions(space,role,shell,card){
  const panel=document.createElement("div");panel.className="space-card-actions";panel.setAttribute("aria-label",tr("گزینه‌های گروه یا کانال","Group or channel actions"));
  const addAction=(label,fn,disabled=false)=>{const b=document.createElement("button");b.type="button";b.className="space-swipe-action";b.textContent=label;b.disabled=disabled;b.addEventListener("click",e=>{e.preventDefault();e.stopPropagation();fn(b);});panel.appendChild(b);return b;};
- const muted=isSpaceMuted(space.id);
+ const muted=isSpaceMuted(space.id),hidden=isSpaceHidden(space.id);
+ if(hidden)addAction(tr("↩ بازگردانی گفتگو","↩ Restore chat"),()=>{if(!setSpaceFlag("hidden",space.id,false)){q("spacesStatus").textContent=tr("بازگردانی گفتگو ممکن نشد.","Could not restore chat.");return;}refresh();});
+ else addAction(tr("حذف گفتگو","Delete chat"),()=>{if(!window.confirm(tr("گفتگو از فهرست شما پنهان شود؟ عضویت شما در گروه یا کانال باقی می‌ماند.","Hide this chat from your list? You will remain a member of the group or channel.")))return;if(!setSpaceFlag("hidden",space.id,true)){q("spacesStatus").textContent=tr("حذف گفتگو ممکن نشد.","Could not hide chat.");return;}refresh();});
  if(role)addAction(muted?tr("🔔 خارج از سایلنت","🔔 Unmute"):tr("🔕 سایلنت","🔕 Mute"),()=>{if(!setSpaceMuted(space.id,!muted)){q("spacesStatus").textContent=tr("ذخیره تنظیم سایلنت ممکن نشد.","Could not save mute setting.");return;}refresh();});
  const pinned=isSpacePinned(space.id);
  addAction(pinned?tr("📌 برداشتن پین","📌 Unpin"):tr("📌 پین","📌 Pin"),()=>{if(!setSpaceFlag("pinned",space.id,!pinned)){q("spacesStatus").textContent=tr("ذخیره پین ممکن نشد.","Could not save pin.");return;}refresh();});

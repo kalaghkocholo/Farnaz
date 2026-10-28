@@ -822,8 +822,10 @@ async function sendMessage(event){
     if(String(currentChatUser?.user_id||"")===receiverId)setStatus("sendMessageStatus",(english?"Could not send: ":"ارسال پیام ناموفق بود: ")+e.message,true);
   }finally{button.disabled=false;}
 }
-$("profileForm").addEventListener("submit",saveProfile);
-$("recipientForm").addEventListener("submit",findRecipient);
+$("profileForm")?.addEventListener("submit",saveProfile);
+// Legacy recipient lookup form is not present in the current HTML.
+// Register its handler only if that optional form exists.
+$("recipientForm")?.addEventListener("submit",findRecipient);
 document.addEventListener("click",event=>{
   const chat=$("chatPage");
   if(!chat?.classList.contains("active"))return;

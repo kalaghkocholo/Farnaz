@@ -450,7 +450,6 @@ function renderAvatar(el,url,name){
 }
 function startNewChat(){
   if(!currentUser){openAuth();return;}
-  toggleContactSearch(false);
   toggleContactsImport(false);
   navigate("contactsPage");
   const filter=$("savedFarnazContactFilter");
@@ -497,14 +496,7 @@ function toggleContactsImport(force){
   button.textContent=open?"×":"＋";
   button.setAttribute("aria-label",open?(english?"Close contact import":"بستن بخش افزودن مخاطب"):(english?"Add or sync contacts":"افزودن یا همگام‌سازی مخاطب"));
 }
-function toggleContactSearch(force){
-  const panel=$("contactSearchPopover"),button=$("contactSearchButton");
-  if(!panel)return;
-  const open=typeof force==="boolean"?force:panel.hidden;
-  panel.hidden=!open;
-  button?.setAttribute("aria-expanded",String(open));
-  if(open)requestAnimationFrame(()=> $("recipientValue")?.focus({preventScroll:true}));
-}
+
 function toggleAttachmentMenu(force){
   const menu=$("attachmentMenu"),button=$("attachmentMenuButton");
   if(!menu||!button)return;
@@ -536,7 +528,6 @@ function navigate(pageId,options={}){
   document.querySelectorAll(".nav-button").forEach(b=>b.classList.toggle("active",b.dataset.page===pageId));
   $("bottomNav").classList.toggle("visible",pageId!=="homePage"&&pageId!=="chatPage");
   if(pageId==="chatsPage")applyConversationSearch();
-  if(pageId!=="contactsPage")toggleContactSearch(false);
   if(options.refreshData!==false){
     if(pageId==="chatsPage")refreshConversationList();
     if(pageId==="contactsPage")refreshSavedContacts();
@@ -690,14 +681,10 @@ function toggleLanguage(){
     savedFarnazContactsTitle:["مخاطبان فرناز","Farnaz contacts"],
     unmatchedPhoneContactsTitle:["مخاطبان گوشی که هنوز عضو فرناز نیستند","Phone contacts not on Farnaz yet"],
     contactsIntro:["مخاطبان ذخیره‌شده را انتخاب کن یا از جست‌وجوی پایین حساب جدیدی پیدا کن.","Choose a saved contact or find a new account using the search control below."],
-    recipientLabel:["ایمیل یا شماره تلفن با کد کشور","Email or phone with country code"],
-    recipientCountryLabel:["کد کشور شماره تلفن","Phone country code"],
-    findRecipientBtn:["پیدا کردن مخاطب","Find contact"],foundHeading:["نتیجه جست‌وجو","Search result"],
     savedContactsStatus:["",""],
     profilePhoneCountryLabel:["کد کشور شماره تلفن","Phone country code"],
     showPhoneSettingLabel:["نمایش شماره موبایل به مخاطبان (پیش‌فرض روشن)","Show my phone number to contacts (on by default)"],
     showPhoneSettingHint:["اگر خاموشش کنی، شماره‌ات در اطلاعات مخاطب نمایش داده نمی‌شود.","Turn this off to hide your number from contact info."],
-    contactNote:["جست‌وجو فقط برای حساب‌های ثبت‌شده در فرناز انجام می‌شود.","Search works for registered Farnaz accounts."],
     profileHeading:["پروفایل من","My profile"],profileIntro:["اطلاعات حساب خود را مدیریت کن.","Manage your account information."],
     profileNameLabel:["نام نمایشی","Display name"],profilePhoneLabel:["شماره موبایل با کد کشور","Phone number with country code"],
     avatarFileLabel:["تصویر پروفایل","Profile picture"],avatarNote:["فرمت JPG، PNG یا WebP؛ حداکثر ۳ مگابایت.","JPG, PNG or WebP; maximum 3 MB."],
@@ -710,13 +697,12 @@ function toggleLanguage(){
   if($("welcomeLanguageButton")){$("welcomeLanguageButton").textContent=english?"فا":"EN";$("welcomeLanguageButton").setAttribute("aria-label",english?"Switch to Persian":"Switch to English");}
   if($("contactsImportToggle"))$("contactsImportToggle").textContent=$("phoneContactsImport")&&!$("phoneContactsImport").hidden?"×":"＋";
   if($("start"))$("start").textContent=english?"Sign in to Farnaz →":"ورود به فرناز ←";
-  ["recipientCountry","profilePhoneCountry"].forEach(id=>{
+  ["profilePhoneCountry"].forEach(id=>{
     const select=$(id);if(!select)return;
     const names=english?["Iran","Germany","United States / Canada","United Kingdom","Turkey"]:["ایران","آلمان","آمریکا / کانادا","بریتانیا","ترکیه"];
     Array.from(select.options).forEach((option,i)=>{option.textContent=names[i]+" (+"+option.value+")";});
   });
   $("footerText").textContent="Farnaz · Closer, wherever you are.";
-  $("recipientValue").placeholder=english?"email@example.com or +98912...":"email@example.com یا +98912...";
   $("messageText").placeholder=english?"Write a message...":"پیامت را بنویس...";
   $("showActiveChats").textContent=english?"Chats":"گفتگوها";$("showArchivedChats").textContent=english?"Archive":"آرشیو";
   $("attachmentMenuButton").title=english?"Add attachment":"افزودن پیوست";
@@ -738,9 +724,6 @@ function toggleLanguage(){
   if($("manualContactCountryLabel"))$("manualContactCountryLabel").textContent=english?"Country code":"کد کشور";
   if($("manualContactCountry"))Array.from($("manualContactCountry").options).forEach((option,i)=>{const names=english?["Iran","Germany","United States / Canada","United Kingdom","Turkey"]:["ایران","آلمان","آمریکا / کانادا","بریتانیا","ترکیه"];option.textContent=names[i]+" (+"+option.value+")";});
   if($("manualContactSaveButton"))$("manualContactSaveButton").textContent=english?"Save contact":"ذخیره مخاطب";
-  if($("contactSearchButtonLabel"))$("contactSearchButtonLabel").textContent=english?"Find contact":"جستجوی مخاطب";
-  $("contactSearchTitle").textContent=english?"Find a new contact":"پیدا کردن مخاطب جدید";
-  $("contactSearchButton")?.setAttribute("aria-label",english?"Find a new contact":"جستجوی مخاطب جدید");
   $("recordAudioButton").title=english?"Record voice message":"ضبط پیام صوتی";$("attachmentHint").textContent=english?"Files up to 20 MB":"فایل تا ۲۰ مگابایت";
   $("loadOlderButton").textContent=english?"Load older messages":"پیام‌های قدیمی‌تر";$("cancelEditButton").textContent=english?"Cancel edit":"لغو ویرایش";
   const selectionButtons=$("selectionToolbar").querySelectorAll("button");
@@ -853,14 +836,11 @@ function showGuest(){
   $("userName").textContent=english?"Farnaz user":"کاربر فرناز";
   $("userEmail").textContent="";$("userPhone").textContent="";
   $("profileForm").reset();
-  $("conversationList").replaceChildren();$("foundContact").replaceChildren();
+  $("conversationList").replaceChildren();
   $("savedContactsList").replaceChildren();setStatus("savedContactsStatus","");
   // Clear account-specific contact surfaces so a logout or account switch cannot
   // leave the previous user’s imported names or quick-chat results visible.
   $("unmatchedPhoneContactsList").replaceChildren();setStatus("unmatchedPhoneContactsStatus","");
-  if($("contactSearchPopover"))$("contactSearchPopover").hidden=true;
-  if($("contactSearchButton"))$("contactSearchButton").setAttribute("aria-expanded","false");
-  $("recipientValue").value="";setStatus("recipientStatus","");
   $("messageList").replaceChildren();
   document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id==="homePage"));
 }
@@ -1998,69 +1978,7 @@ async function refreshConversationList(){
     return false;
   }
 }
-async function findRecipient(event){
-  event.preventDefault();
-  if(!currentUser){openAuth();return;}
-  const myId=String(currentUser.id);
-  const value=$("recipientValue").value.trim();
-  if(!value){setStatus("recipientStatus",english?"Enter an email or phone number.":"ایمیل یا شماره را وارد کن.",true);return;}
-  const button=$("findRecipientBtn");button.disabled=true;
-  $("foundContact").replaceChildren();
-  setStatus("recipientStatus",english?"Searching...":"در حال جست‌وجو...");
-  try{
-    const client=getClient();let data,error;
-    if(value.includes("@")){
-      ({data,error}=await client.rpc("find_farnaz_user",{search_email:value}));
-    }else{
-      const phone=normalizePhone(value,$("recipientCountry").value);
-      if(!/^\+[1-9]\d{7,14}$/.test(phone))
-        throw new Error(english?"Enter a valid phone number.":"شماره تلفن معتبر وارد کن.");
-      ({data,error}=await client.rpc("find_farnaz_user_by_phone",{search_phone:phone}));
-    }
-    if(error)throw error;
-    if(String(currentUser?.id)!==myId)return;
-    if(!data||!data.length){
-      setStatus("recipientStatus",english?"No account found. Check the details.":"حسابی پیدا نشد؛ اطلاعات را بررسی کن.");return;
-    }
-    const r=data[0];
-    const id=r.user_id||r.id;
-    if(!id)throw new Error(english?"Search did not return a user ID.":"جست‌وجو شناسهٔ کاربر را برنگرداند.");
-    if(String(id)===myId){
-      setStatus("recipientStatus",english?"You cannot message yourself.":"نمی‌توانی به حساب خودت پیام بدهی.",true);return;
-    }
-    if(String(currentUser?.id)!==myId)return;
-    const {data:existingContact,error:existingContactError}=await client.from("contacts").select("id").eq("user_id",myId).eq("contact_user_id",id).maybeSingle();
-    if(existingContactError)throw existingContactError;
-    if(existingContact){
-      setStatus("recipientStatus",english?"This contact has already been added or is already in your list.":"این مخاطب قبلاً اضافه شده یا در فهرست مخاطبان وجود دارد.",true);
-      return;
-    }
-    const {error:saveError}=await client.from("contacts")
-      .upsert({user_id:myId,contact_user_id:id},{onConflict:"user_id,contact_user_id",ignoreDuplicates:true});
-    if(saveError)throw saveError;
-    if(String(currentUser?.id)!==myId)return;
-    let profile=null;
-    try{profile=await getContactProfile(id);}catch(e){console.warn(e);}
-    if(String(currentUser?.id)!==myId)return;
-    const contact={
-      user_id:id,
-      display_name:r.display_name||profile?.display_name||(english?"Farnaz user":"کاربر فرناز"),
-      avatar_url:r.avatar_url||profile?.avatar_url||"",
-      phone:r.phone||profile?.phone||""
-    };
-    $("foundContact").appendChild(makeContactButton(
-      contact,english?"Tap to open a private conversation":"برای باز کردن گفتگوی خصوصی بزن"
-    ));
-    setStatus("recipientStatus",english?"Contact found and saved.":"مخاطب پیدا و ذخیره شد.");
-    previousPage="contactsPage";
-    await refreshSavedContacts();
-  }catch(e){
-    if(String(currentUser?.id)!==myId)return;
-    console.error("Find recipient:",e);
-    setStatus("recipientStatus",(english?"Search failed: ":"جست‌وجوی مخاطب ناموفق بود: ")+e.message,true);
-  }finally{button.disabled=false;}
-}
-
+async 
 
 /* Track the iOS/Android visual viewport so chat composers follow the keyboard. */
 (function installChatKeyboardLayout(){

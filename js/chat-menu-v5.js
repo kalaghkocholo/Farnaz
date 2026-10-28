@@ -747,6 +747,12 @@ async function sendMessage(event){
     if(String(currentUser?.id||"")!==senderId||!s.session||String(s.session.user.id)!==senderId)throw new Error(english?"Session changed or expired. Sign in again.":"نشست حساب تغییر کرده یا منقضی شده؛ دوباره وارد شو.");
     const client=getClient();
     if(!editingMessageId){
+      // A hidden conversation is hidden only from the inbox. Reopen it before
+      // sending so clock skew cannot hide the newly inserted message again.
+      if(prefFor(receiverId).hidden_at){
+        await saveConversationPref(receiverId,{hidden_at:null});
+        if(!sameChat())throw new Error("Conversation changed while reopening.");
+      }
       const {data:blocked,error:blockError}=await client.from("blocked_contacts").select("blocked_user_id").eq("blocker_id",senderId).eq("blocked_user_id",receiverId).maybeSingle();
       if(String(currentUser?.id||"")!==senderId)throw new Error("Account changed while sending.");
       if(blockError)throw blockError;

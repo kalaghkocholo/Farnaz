@@ -1223,6 +1223,8 @@ body[data-auth-state="guest"] #openSettingsButton{display:none!important;visibil
 .phone-contact-details{display:flex;flex-direction:column;gap:4px;min-width:0;overflow-wrap:anywhere}
 .phone-contact-details strong{font-weight:650}
 .phone-contact-details span,.phone-contact-details small{color:var(--muted);font-size:12px}
+.phone-contact-account-choices{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.phone-contact-account-choice{width:auto;min-width:0;max-width:100%;padding:7px 10px;white-space:normal;text-align:start}
 
 
 /* Farnaz conversation-first home refresh */

@@ -1118,6 +1118,40 @@ async function savePrivacySetting(key,value){
  }
 }
 
+// Square crop editor: drag to reposition and use the slider to zoom.
+function openAvatarCropEditor(file){
+ if(!file)return;
+ const reader=new FileReader(),image=new Image();
+ reader.onload=()=>{image.onload=()=>showAvatarCropDialog(image);image.onerror=()=>setStatus("profileStatus",english?"Could not read this image.":"خواندن تصویر ناموفق بود.",true);image.src=String(reader.result||"");};
+ reader.onerror=()=>setStatus("profileStatus",english?"Could not read this image.":"خواندن تصویر ناموفق بود.",true);
+ reader.readAsDataURL(file);
+}
+function showAvatarCropDialog(image){
+ document.getElementById("avatarCropDialog")?.remove();
+ const modal=document.createElement("div");modal.id="avatarCropDialog";modal.setAttribute("role","dialog");modal.setAttribute("aria-modal","true");
+ modal.style.cssText="position:fixed;inset:0;z-index:100001;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.75);backdrop-filter:blur(8px)";
+ const card=document.createElement("section");card.style.cssText="width:min(100%,420px);max-height:calc(100dvh - 36px);overflow:auto;padding:20px;border-radius:22px;background:var(--panel,var(--bg,#fff));color:var(--text,var(--white,#111));box-shadow:0 18px 60px rgba(0,0,0,.3);display:flex;flex-direction:column;gap:14px";
+ const title=document.createElement("h3");title.textContent=english?"Crop profile photo":"برش و ویرایش عکس پروفایل";title.style.cssText="margin:0;font-size:17px;text-align:center";
+ const hint=document.createElement("p");hint.textContent=english?"Drag to reposition; use the slider to zoom.":"عکس را با انگشت جابه‌جا کن و با نوار زیر بزرگ‌نمایی را تنظیم کن.";hint.style.cssText="margin:0;font-size:13px;line-height:1.7;opacity:.8;text-align:center";
+ const canvas=document.createElement("canvas");canvas.width=320;canvas.height=320;canvas.style.cssText="width:min(76vw,320px);height:min(76vw,320px);max-height:38vh;align-self:center;border-radius:50%;touch-action:none;background:#222;cursor:grab";
+ const label=document.createElement("label");label.textContent=english?"Zoom":"بزرگ‌نمایی";
+ const zoom=document.createElement("input");zoom.type="range";zoom.min="1";zoom.max="3";zoom.step=".01";zoom.value="1";zoom.style.width="100%";
+ const actions=document.createElement("div");actions.style.cssText="display:flex;gap:10px";
+ const cancel=document.createElement("button");cancel.type="button";cancel.textContent=english?"Cancel":"انصراف";cancel.style.cssText="flex:1;padding:12px;border:1px solid var(--border,#888);border-radius:12px;background:transparent;color:inherit";
+ const save=document.createElement("button");save.type="button";save.textContent=english?"Use photo":"استفاده از عکس";save.style.cssText="flex:1;padding:12px;border:0;border-radius:12px;background:var(--accent,#8aa9df);color:var(--accent-ink,#101722);font-weight:650";
+ actions.append(cancel,save);card.append(title,hint,canvas,label,zoom,actions);modal.append(card);document.body.append(modal);
+ const ctx=canvas.getContext("2d");let scale=1,dx=0,dy=0,drag=null;const base=Math.max(320/image.naturalWidth,320/image.naturalHeight);
+ function draw(){ctx.clearRect(0,0,320,320);const w=image.naturalWidth*base*scale,h=image.naturalHeight*base*scale;ctx.save();ctx.beginPath();ctx.arc(160,160,159,0,Math.PI*2);ctx.clip();ctx.drawImage(image,(320-w)/2+dx,(320-h)/2+dy,w,h);ctx.restore();}
+ zoom.addEventListener("input",()=>{scale=Number(zoom.value);draw();});
+ canvas.addEventListener("pointerdown",e=>{drag={x:e.clientX,y:e.clientY,dx,dy};canvas.setPointerCapture(e.pointerId);});
+ canvas.addEventListener("pointermove",e=>{if(!drag)return;const r=canvas.getBoundingClientRect();dx=drag.dx+(e.clientX-drag.x)*320/r.width;dy=drag.dy+(e.clientY-drag.y)*320/r.height;draw();});
+ const end=()=>{drag=null;};canvas.addEventListener("pointerup",end);canvas.addEventListener("pointercancel",end);
+ const close=()=>modal.remove();cancel.addEventListener("click",close);modal.addEventListener("click",e=>{if(e.target===modal)close();});
+ save.addEventListener("click",()=>{const out=document.createElement("canvas");out.width=512;out.height=512;const c=out.getContext("2d");const ratio=1.6,w=image.naturalWidth*base*scale*ratio,h=image.naturalHeight*base*scale*ratio;c.save();c.beginPath();c.arc(256,256,256,0,Math.PI*2);c.clip();c.drawImage(image,(160-(image.naturalWidth*base*scale)/2+dx)*ratio,(160-(image.naturalHeight*base*scale)/2+dy)*ratio,w,h);c.restore();out.toBlob(blob=>{if(!blob){setStatus("profileStatus",english?"Image processing failed.":"پردازش تصویر ناموفق بود.",true);return;}try{const transfer=new DataTransfer();transfer.items.add(new File([blob],"profile-photo.jpg",{type:"image/jpeg",lastModified:Date.now()}));$("avatarFile").files=transfer.files;}catch(err){setStatus("profileStatus",english?"Please select the image again.":"لطفاً عکس را دوباره انتخاب کن.",true);close();return;}$("avatarNote").textContent=english?"Cropped photo ready. Save profile to upload.":"عکس برش‌خورده آماده است؛ برای بارگذاری ذخیره تغییرات را بزن.";setStatus("profileStatus",english?"Photo cropped. Save profile to upload it.":"عکس برش خورد؛ برای بارگذاری، ذخیره تغییرات را بزن.");close();},"image/jpeg",.9);});
+ draw();save.focus({preventScroll:true});
+}
+if($("avatarFile"))$("avatarFile").addEventListener("change",event=>{const file=event.target.files?.[0];if(file)openAvatarCropEditor(file);});
+
 async function saveProfile(event){
   event.preventDefault();if(!currentUser)return;
   // Capture the account and settings before the first await. A logout or quick

@@ -1978,7 +1978,6 @@ async function refreshConversationList(){
     return false;
   }
 }
-async 
 
 /* Track the iOS/Android visual viewport so chat composers follow the keyboard. */
 (function installChatKeyboardLayout(){

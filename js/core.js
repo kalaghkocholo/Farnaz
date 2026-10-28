@@ -524,6 +524,24 @@ function startNewChat(){
 function normalizeContactSearchText(value){
   return String(value||"").normalize("NFKC").replace(/[يى]/g,"ی").replace(/ك/g,"ک").replace(/[\u200c\u200f\u202a-\u202e]/g,"").trim().toLocaleLowerCase();
 }
+function normalizeContactPhoneSearch(value){
+  let digits=normalizeDigits(value).replace(/\D/g,"");
+  if(digits.startsWith("00"))digits=digits.slice(2);
+  if(digits.startsWith("0")&&digits.length===11)digits="98"+digits.slice(1);
+  else if(digits.startsWith("9")&&digits.length===10)digits="98"+digits;
+  return digits;
+}
+function contactMatchesSearch(shell,query){
+  const name=normalizeContactSearchText(shell.dataset.searchName||"");
+  if(!query||name.includes(query))return true;
+  const queryDigits=normalizeContactPhoneSearch(query);
+  if(!queryDigits)return false;
+  const rawQueryDigits=normalizeDigits(query).replace(/\D/g,"");
+  const phoneValue=shell.dataset.searchPhone||"";
+  const rawPhoneDigits=normalizeDigits(phoneValue).replace(/\D/g,"");
+  const phoneDigits=normalizeContactPhoneSearch(phoneValue);
+  return rawPhoneDigits.includes(rawQueryDigits)||phoneDigits.includes(queryDigits);
+}
 function setContactsCategory(category){
   contactsCategory=category==="members"?"members":"all";
   const all=$("contactsAllTab"),members=$("contactsMembersTab");
@@ -541,13 +559,13 @@ function filterSavedFarnazContacts(){
   const query=normalizeContactSearchText(filter.value);
   let visible=0;
   saved.querySelectorAll(".contact-swipe-shell").forEach(shell=>{
-    const matches=!query||normalizeContactSearchText(shell.dataset.searchName||"").includes(query);
+    const matches=contactMatchesSearch(shell,query);
     shell.hidden=!matches;
     if(matches)visible++;
   });
   if(contactsCategory==="all"){
     phone.querySelectorAll(".phone-contact-swipe-shell").forEach(shell=>{
-      const matches=!query||normalizeContactSearchText(shell.dataset.searchName||"").includes(query);
+      const matches=contactMatchesSearch(shell,query);
       shell.hidden=!matches;
       if(matches)visible++;
     });
@@ -1617,6 +1635,7 @@ async function refreshUnmatchedPhoneContacts(){
       visibleGroups++;
       const shell=document.createElement("div");shell.className="phone-contact-swipe-shell";shell.dataset.phoneContactId=group.id;
       shell.dataset.searchName=group.display_name||"";
+      shell.dataset.searchPhone=rows.map(item=>item.phone||"").filter(Boolean).join(" ");
       const actions=document.createElement("div");actions.className="phone-contact-swipe-actions";
       const remove=document.createElement("button");remove.type="button";remove.className="contact-swipe-action contact-swipe-delete";
       remove.setAttribute("aria-label",english?"Delete phone-book contact":"حذف مخاطب دفترچه تلفن");
@@ -1744,6 +1763,7 @@ function makeContactSwipeAction(label,icon,action,contactId){
 }
 function makeSavedContactRow(contact,preview="",timeText=""){
   const shell=document.createElement("div");shell.className="contact-swipe-shell";shell.dataset.contactId=String(contact.user_id||"");
+  shell.dataset.searchPhone=String(contact.phone||"");
   const actions=document.createElement("div");actions.className="contact-swipe-actions";
   const id=String(contact.user_id||"");
   const pref=prefFor(id);

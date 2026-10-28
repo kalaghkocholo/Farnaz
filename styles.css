@@ -360,7 +360,7 @@ button,.primary,.action-button,.nav-button{--button-accent:var(--accent)}
 .bubble-color-choice[data-bubble-color="auto"]{position:relative;overflow:hidden}
 .bubble-color-choice[data-bubble-color="auto"]::after{content:"↻";position:absolute;inset:0;display:grid;place-items:center;color:#172237;font-size:17px;font-weight:800;text-shadow:0 1px 2px #fff}
 .settings-reset{width:100%;margin-top:4px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:10px;padding:11px}
-body[data-theme="light"]{--bg:#f3f6fb;--panel:#fff;--panel2:#e8eef7;--border:#d5deea;--muted:#596579;--danger:#b42318;--card:var(--panel);--line:var(--border);--text:var(--white)}
+body[data-theme="light"]{--bg:#f3f6fb;--panel:#fff;--panel2:#e8eef7;--border:#d5deea;--muted:#596579;--white:#172237;--danger:#b42318;--card:var(--panel);--line:var(--border);--text:var(--white)}
 body[data-theme="light"] .settings-card{box-shadow:0 2px 12px rgba(20,35,60,.04)}
 body[data-theme="light"] input,body[data-theme="light"] textarea,body[data-theme="light"] select{color:var(--white)}
 body[data-theme="light"] .icon-button,body[data-theme="light"] .mini-button{color:var(--white)}
@@ -430,7 +430,7 @@ body[data-theme="light"] .bottom-nav .nav-button {color:var(--muted)!important}
 body[data-theme="light"] .bottom-nav .nav-button.active {color:var(--accent)!important;background:var(--panel2)!important}
 /* Keep explicit black/white font choices consistent across common text surfaces. */
 body[data-font-color="black"] {--white:#111111!important}
-body[data-font-color="white"] {--white:#ffffff!important}
+body[data-font-color="white"]:not([data-theme="light"]) {--white:#ffffff!important}
 
 
 body[data-font-color="black"] .page h1,
@@ -443,16 +443,16 @@ body[data-font-color="black"] .page .list-details,
 body[data-font-color="black"] .page .empty-state,
 body[data-font-color="black"] .page .setting-copy strong,
 body[data-font-color="black"] .app>header .brand-text {color:#111!important}
-body[data-font-color="white"] .page h1,
-body[data-font-color="white"] .page h2,
-body[data-font-color="white"] .page h3,
-body[data-font-color="white"] .page p,
-body[data-font-color="white"] .page label,
-body[data-font-color="white"] .page .list-name,
-body[data-font-color="white"] .page .list-details,
-body[data-font-color="white"] .page .empty-state,
-body[data-font-color="white"] .page .setting-copy strong,
-body[data-font-color="white"] .app>header .brand-text {color:#fff!important}
+body[data-font-color="white"]:not([data-theme="light"]) .page h1,
+body[data-font-color="white"]:not([data-theme="light"]) .page h2,
+body[data-font-color="white"]:not([data-theme="light"]) .page h3,
+body[data-font-color="white"]:not([data-theme="light"]) .page p,
+body[data-font-color="white"]:not([data-theme="light"]) .page label,
+body[data-font-color="white"]:not([data-theme="light"]) .page .list-name,
+body[data-font-color="white"]:not([data-theme="light"]) .page .list-details,
+body[data-font-color="white"]:not([data-theme="light"]) .page .empty-state,
+body[data-font-color="white"]:not([data-theme="light"]) .page .setting-copy strong,
+body[data-font-color="white"]:not([data-theme="light"]) .app>header .brand-text {color:#fff!important}
 
 
 /* Explicit font-color preference for all readable interface text. */
@@ -466,16 +466,16 @@ body[data-font-color="black"] .setting-control,
 body[data-font-color="black"] .app input,
 body[data-font-color="black"] .app textarea,
 body[data-font-color="black"] .app select {color:#111111}
-body[data-font-color="white"] .app,
-body[data-font-color="white"] .app header,
-body[data-font-color="white"] .app .page,
-body[data-font-color="white"] .app .page :is(h1,h2,h3,p,label,strong,small,span,li,summary),
-body[data-font-color="white"] .app footer,
-body[data-font-color="white"] .bottom-nav .nav-button,
-body[data-font-color="white"] .setting-control,
-body[data-font-color="white"] .app input,
-body[data-font-color="white"] .app textarea,
-body[data-font-color="white"] .app select {color:#ffffff}
+body[data-font-color="white"]:not([data-theme="light"]) .app,
+body[data-font-color="white"]:not([data-theme="light"]) .app header,
+body[data-font-color="white"]:not([data-theme="light"]) .app .page,
+body[data-font-color="white"]:not([data-theme="light"]) .app .page :is(h1,h2,h3,p,label,strong,small,span,li,summary),
+body[data-font-color="white"]:not([data-theme="light"]) .app footer,
+body[data-font-color="white"]:not([data-theme="light"]) .bottom-nav .nav-button,
+body[data-font-color="white"]:not([data-theme="light"]) .setting-control,
+body[data-font-color="white"]:not([data-theme="light"]) .app input,
+body[data-font-color="white"]:not([data-theme="light"]) .app textarea,
+body[data-font-color="white"]:not([data-theme="light"]) .app select {color:#ffffff}
 
 
 /* Enforce the selected font color after theme and component rules. */
@@ -498,25 +498,25 @@ body[data-font-color="black"][data-theme] .app .list-preview,
 body[data-font-color="black"][data-theme] .app .list-time,
 body[data-font-color="black"][data-theme] .app .sub,
 body[data-font-color="black"][data-theme] .bottom-nav .nav-button { color:#111111 !important; }
-body[data-font-color="white"][data-theme] .app h1,
-body[data-font-color="white"][data-theme] .app h2,
-body[data-font-color="white"][data-theme] .app h3,
-body[data-font-color="white"][data-theme] .app p,
-body[data-font-color="white"][data-theme] .app label,
-body[data-font-color="white"][data-theme] .app strong,
-body[data-font-color="white"][data-theme] .app small,
-body[data-font-color="white"][data-theme] .app span,
-body[data-font-color="white"][data-theme] .app li,
-body[data-font-color="white"][data-theme] .app button,
-body[data-font-color="white"][data-theme] .app input,
-body[data-font-color="white"][data-theme] .app textarea,
-body[data-font-color="white"][data-theme] .app select,
-body[data-font-color="white"][data-theme] .app .status,
-body[data-font-color="white"][data-theme] .app .muted-note,
-body[data-font-color="white"][data-theme] .app .list-preview,
-body[data-font-color="white"][data-theme] .app .list-time,
-body[data-font-color="white"][data-theme] .app .sub,
-body[data-font-color="white"][data-theme] .bottom-nav .nav-button { color:#ffffff !important; }
+body[data-font-color="white"]:not([data-theme="light"])[data-theme] .app h1,
+body[data-font-color="white"]:not([data-theme="light"])[data-theme] .app h2,
+body[data-font-color="white"]:not([data-theme="light"])[data-theme] .app h3,
+body[data-font-color="white"]:not([data-theme="light"])[data-theme] .app p,
+body[data-font-color="white"]:not([data-theme="light"])[data-theme] .app label,
+body[data-font-color="white"]:not([data-theme="light"])[data-theme] .app strong,
+body[data-font-color="white"]:not([data-theme="light"])[data-theme] .app small,
+body[data-font-color="white"]:not([data-theme="light"])[data-theme] .app span,
+body[data-font-color="white"]:not([data-theme="light"])[data-theme] .app li,
+body[data-font-color="white"]:not([data-theme="light"])[data-theme] .app button,
+body[data-font-color="white"]:not([data-theme="light"])[data-theme] .app input,
+body[data-font-color="white"]:not([data-theme="light"])[data-theme] .app textarea,
+body[data-font-color="white"]:not([data-theme="light"])[data-theme] .app select,
+body[data-font-color="white"]:not([data-theme="light"])[data-theme] .app .status,
+body[data-font-color="white"]:not([data-theme="light"])[data-theme] .app .muted-note,
+body[data-font-color="white"]:not([data-theme="light"])[data-theme] .app .list-preview,
+body[data-font-color="white"]:not([data-theme="light"])[data-theme] .app .list-time,
+body[data-font-color="white"]:not([data-theme="light"])[data-theme] .app .sub,
+body[data-font-color="white"]:not([data-theme="light"])[data-theme] .bottom-nav .nav-button { color:#ffffff !important; }
 
  
 /* Accent color picker controls all primary action buttons, including black and white. */

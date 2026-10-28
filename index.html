@@ -295,7 +295,7 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
         <div class="composer-right">
           <button class="mini-button" id="cancelEditButton" type="button" onclick="cancelMessageEdit()" hidden>لغو ویرایش</button><span class="muted-note" id="attachmentHint">فایل تا ۲۰ مگابایت</span>
           <button class="composer-icon" id="recordAudioButton" type="button" onclick="toggleAudioRecording()" aria-label="ضبط پیام صوتی" title="پیام صوتی">🎙</button>
-          <button class="composer-icon send" id="sendMessageButton" type="submit" aria-label="ارسال پیام" title="ارسال پیام">➤</button>
+          <button class="composer-icon send" id="sendMessageButton" type="submit" onclick="sendMessage(event)" aria-label="ارسال پیام" title="ارسال پیام">➤</button>
         </div>
       </div>
       <div id="messageComposerTools"><input id="photoFile" type="file" accept="image/*"><input id="attachmentFile" type="file"><input id="cameraFile" type="file" accept="image/*" capture="environment"></div>
@@ -461,7 +461,7 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
         return;
       }
       const featureScripts=[
-        "./js/chat-menu-v5.js?v=20261028-27",
+        "./js/chat-menu-v5.js?v=20261028-28",
         "./js/spaces.js?v=20261028-4",
         "./js/calls.js?v=20261026-4"
       ];

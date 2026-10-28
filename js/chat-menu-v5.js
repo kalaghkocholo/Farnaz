@@ -840,7 +840,8 @@ document.addEventListener("keydown",event=>{
     else if(dx<0&&startX>window.innerWidth-26)openAdjacentConversation(1);
   },{passive:true});
 })();
-$("savedContactFilter").addEventListener("input",filterSavedContactsForNewChat);
+const savedContactFilter = $("savedContactFilter");
+if(savedContactFilter) savedContactFilter.addEventListener("input", filterSavedContactsForNewChat);
 document.addEventListener("click",event=>{
   const panel=$("newChatPopover"),button=$("topNewChatButton")||document.querySelector(".chats-new-button");
   if(panel&&!panel.hidden&&!panel.contains(event.target)&&(!button||!button.contains(event.target)))toggleNewChatPopover(false);

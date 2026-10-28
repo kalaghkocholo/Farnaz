@@ -439,8 +439,42 @@ function setPhoneCountry(selectId,phone){
   if(match)select.value=match;
 }
 function initials(name){return(name||"F").trim().charAt(0).toLocaleUpperCase()||"F";}
+function openFarnazAvatarPreview(src,label=""){
+  if(!src)return;
+  let overlay=document.getElementById("farnazAvatarPreview");
+  if(!overlay){
+    overlay=document.createElement("div");overlay.id="farnazAvatarPreview";overlay.hidden=true;
+    overlay.setAttribute("role","dialog");overlay.setAttribute("aria-modal","true");
+    overlay.style.cssText="position:fixed;inset:0;z-index:100000;align-items:center;justify-content:center;padding:22px;background:rgba(0,0,0,.88);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)";
+    const close=document.createElement("button");close.type="button";close.setAttribute("aria-label","Close image");close.textContent="×";
+    close.style.cssText="position:absolute;top:max(18px,env(safe-area-inset-top));right:18px;width:44px;height:44px;border:0;border-radius:50%;background:rgba(255,255,255,.16);color:#fff;font-size:32px;line-height:1;cursor:pointer";
+    const img=document.createElement("img");img.id="farnazAvatarPreviewImage";img.alt="";img.style.cssText="display:block;max-width:min(88vw,680px);max-height:78vh;object-fit:contain;border-radius:12px;box-shadow:0 12px 48px rgba(0,0,0,.35)";
+    const caption=document.createElement("div");caption.id="farnazAvatarPreviewCaption";caption.style.cssText="position:absolute;bottom:max(18px,env(safe-area-inset-bottom));left:20px;right:20px;text-align:center;color:#fff;font:500 14px system-ui,sans-serif;overflow-wrap:anywhere";
+    const panel=document.createElement("div");panel.style.cssText="display:flex;flex-direction:column;align-items:center;gap:12px;max-width:100%;max-height:100%";panel.append(img,caption);overlay.append(close,panel);
+    const hide=()=>{overlay.hidden=true;document.body.style.removeProperty("overflow");};
+    close.addEventListener("click",hide);overlay.addEventListener("click",e=>{if(e.target===overlay)hide();});
+    document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!overlay.hidden)hide();});
+    document.body.appendChild(overlay);
+  }
+  const image=document.getElementById("farnazAvatarPreviewImage"),caption=document.getElementById("farnazAvatarPreviewCaption");
+  image.src=src;image.alt=label||"Profile photo";caption.textContent=label||"";
+  overlay.hidden=false;overlay.style.display="flex";document.body.style.overflow="hidden";
+  overlay.querySelector("button")?.focus({preventScroll:true});
+}
+window.openFarnazAvatarPreview=openFarnazAvatarPreview;
+function bindAvatarPreview(el,label=""){
+  if(!el||el.dataset.previewBound==="1")return;
+  el.dataset.previewBound="1";
+  el.addEventListener("click",event=>{
+    const img=event.target?.closest?.("img");
+    if(!img||!el.contains(img)||(!img.currentSrc&&!img.src))return;
+    event.preventDefault();event.stopPropagation();
+    openFarnazAvatarPreview(img.currentSrc||img.src,label||img.alt||"");
+  });
+}
 function renderAvatar(el,url,name){
   if(!el)return;
+  bindAvatarPreview(el,name||"");
   el.replaceChildren();
   if(url){
     const img=document.createElement("img");
@@ -1578,7 +1612,14 @@ function openChat(contact,fromPage="chatsPage"){
   }
   $("conversationTitle").textContent=contact.display_name||(english?"Farnaz user":"مخاطب فرناز");
   $("chatSubtitle").textContent=english?"Private conversation":"گفتگوی خصوصی";
-  renderAvatar($("chatAvatar"),contact.avatar_url||"",$("conversationTitle").textContent);
+  const chatAvatar=$("chatAvatar");
+  renderAvatar(chatAvatar,contact.avatar_url||"",$("conversationTitle").textContent);
+  chatAvatar.onclick=event=>{
+    if(event.target?.closest?.("img"))return;
+    if(typeof openContactInfo==="function")openContactInfo();
+  };
+  chatAvatar.setAttribute("role","button");chatAvatar.tabIndex=0;
+  chatAvatar.setAttribute("aria-label",english?"View profile photo":"بزرگ‌نمایی عکس مخاطب");
   setStatus("sendMessageStatus","");
   currentChatPresenceLabel=english?"Private conversation":"گفتگوی خصوصی";
   navigate("chatPage");refreshPrivatePresence(contact.user_id);

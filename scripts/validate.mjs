@@ -198,13 +198,13 @@ for (const path of ["js/local-store.js", "js/core.js", "js/chat-menu-v5.js", "js
 // Keep shell cache and versioned local-store assets synchronized after cache behavior changes.
 const coreSource = sources["js/core.js"];
 const chatSource = sources["js/chat-menu-v5.js"];
-if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v163"') || !sources["service-worker.js"].includes('core.js?v=20261028-23') || !sources["service-worker.js"].includes('local-store.js?v=20261026-3') || !sources["service-worker.js"].includes('calls.js?v=20261026-4') || !sources["service-worker.js"].includes('chat-menu-v5.js?v=20261028-21') || !html.includes('chat-menu-v5.js?v=20261028-21')) {
+if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v164"') || !sources["service-worker.js"].includes('core.js?v=20261028-24') || !sources["service-worker.js"].includes('local-store.js?v=20261026-3') || !sources["service-worker.js"].includes('calls.js?v=20261026-4') || !sources["service-worker.js"].includes('chat-menu-v5.js?v=20261028-21') || !html.includes('chat-menu-v5.js?v=20261028-21')) {
   errors.push("service-worker.js must use the current shell cache and core asset versions");
 }
 const loaderChecks = [
   [html.includes('script.src="./js/supabase-sdk.js"') && html.includes("watchScript(script,()=>{") && html.includes("loadLocalScripts();"),
     "index.html must wait for the local Supabase SDK before loading the app core"],
-  [html.includes('core.src="./js/core.js?v=20261028-23"') && html.includes("watchScript(core,()=>{") && html.includes("بارگذاری هستهٔ برنامه ناموفق بود یا بیش از حد طول کشید"),
+  [html.includes('core.src="./js/core.js?v=20261028-24"') && html.includes("watchScript(core,()=>{") && html.includes("بارگذاری هستهٔ برنامه ناموفق بود یا بیش از حد طول کشید"),
     "index.html must handle successful, failed, and stalled core-script loading"],
   [html.includes("watchScript(script,loadNextFeature,()=>{") && html.includes("featureScripts[featureIndex++]") && html.includes('if(typeof window.FarnazBoot==="function")window.FarnazBoot();'),
     "index.html must load feature scripts sequentially and boot only after the loader sequence"],
@@ -219,9 +219,9 @@ const networkChecks = [
   [coreSource.includes('const canRetry=isStorageUpload||(!isRestRequest&&!isAuthRequest&&["GET","HEAD","OPTIONS"].includes(requestMethod));'),
     "js/core.js must avoid overlapping inner retries for REST reads already bounded by retryRead"],
   [coreSource.includes('$("unmatchedPhoneContactsList").replaceChildren();setStatus("unmatchedPhoneContactsStatus","");') &&
-   coreSource.includes('$("newChatContactsList").replaceChildren();setStatus("newChatContactsStatus","");') &&
-   coreSource.includes('if($("newChatPopover"))$("newChatPopover").hidden=true;'),
-    "js/core.js must clear account-specific contact surfaces on logout/account switching"],
+   !coreSource.includes('newChatPopover') && !coreSource.includes('newChatContactsList') &&
+   !html.includes('id="newChatPopover"') && coreSource.includes('normalizeContactSearchText(name).includes(query)'),
+    "private-chat creation must use one saved-contact list with name-only search and no duplicate popover"],
 ];
 for (const [passed, message] of networkChecks) {
   if (!passed) errors.push(message);

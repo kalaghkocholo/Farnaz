@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" href="./farnaz-icon.svg?v=20261024-4">
 <meta name="description" content="فرناز؛ ارتباطی نزدیک‌تر، در هر کجا.">
 <title>فرناز | Farnaz</title>
-<link rel="preload" href="./js/core.js?v=20261028-23" as="script">
+<link rel="preload" href="./js/core.js?v=20261028-24" as="script">
 <link rel="preconnect" href="https://iemykhluluoymsbqpjsn.supabase.co" crossorigin>
 <style>
 :root{--bg:#101828;--panel:#172237;--panel2:#1d2b42;--border:#2b3a50;--mint:#50e3c2;--muted:#aab5c7;--white:#f8fafc}
@@ -47,14 +47,6 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
 <header>
   <div class="brand-stack"><button id="headerFButton" class="logo logo-button" type="button" hidden onclick="navigate('chatsPage')" aria-label="گفتگوها" title="گفتگوها">F</button></div>
 </header>
-<div class="new-chat-popover" id="newChatPopover" hidden>
-  <div class="new-chat-popover-title"><span id="newChatPopoverTitle">گفتگوی جدید</span><button class="contact-search-close" type="button" onclick="toggleNewChatPopover(false)" aria-label="بستن">×</button></div>
-  <button class="new-chat-option" type="button" onclick="startPrivateChatFromNewChat()"><span class="new-chat-option-icon">↗</span><span><strong>چت خصوصی</strong><small>انتخاب یا پیدا کردن مخاطب</small></span></button>
-  <button class="new-chat-option" type="button" onclick="createGroupFromHome()"><span class="new-chat-option-icon">＋</span><span><strong>ساخت گروه</strong><small>شروع گفتگوی گروهی جدید</small></span></button>
-  <input id="savedContactFilter" type="search" autocomplete="off" placeholder="جستجو در مخاطبان ذخیره‌شده" aria-label="جستجو در مخاطبان ذخیره‌شده">
-  <div class="list" id="newChatContactsList"></div>
-  <p class="status muted-note" id="newChatContactsStatus" role="status"></p>
-</div>
 <div id="connectionBanner" class="connection-banner" role="status" aria-live="polite" hidden></div>
 
 <!-- صفحه شروع -->
@@ -112,7 +104,7 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
     </details>
   </section>
   <div class="phone-contacts-subheading"><h3 id="savedFarnazContactsTitle">مخاطبان فرناز</h3></div>
-  <input id="savedFarnazContactFilter" type="search" autocomplete="off" placeholder="جستجو در مخاطبان فرناز با نام یا شماره" aria-label="جستجو در مخاطبان فرناز با نام یا شماره">
+  <input id="savedFarnazContactFilter" type="search" autocomplete="off" placeholder="جستجو در مخاطبان فرناز بر اساس نام" aria-label="جستجو در مخاطبان فرناز بر اساس نام">
   <p id="savedFarnazContactSearchStatus" class="status muted-note" role="status" aria-live="polite"></p>
   <div class="list" id="savedContactsList"></div>
   <p id="savedContactsStatus" class="status muted-note" role="status"></p>

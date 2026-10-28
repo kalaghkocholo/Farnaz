@@ -443,13 +443,7 @@ function renderAvatar(el,url,name){
 function startNewChat(){
   if(!currentUser){openAuth();return;}
   toggleContactSearch(false);
-  /* The visible control is .chats-new-button; older code expected a missing #topNewChatButton. */
-  toggleNewChatPopover();
-}
-function startPrivateChatFromNewChat(){
-  if(!currentUser){openAuth();return;}
-  toggleNewChatPopover(false);
-  toggleContactSearch(false);
+  toggleContactsImport(false);
   navigate("contactsPage");
   const filter=$("savedFarnazContactFilter");
   if(filter){
@@ -458,30 +452,26 @@ function startPrivateChatFromNewChat(){
     requestAnimationFrame(()=>filter.focus({preventScroll:true}));
   }
 }
+function normalizeContactSearchText(value){
+  return String(value||"").normalize("NFKC").replace(/[يى]/g,"ی").replace(/ك/g,"ک").replace(/[\u200c\u200f\u202a-\u202e]/g,"").trim().toLocaleLowerCase();
+}
 function filterSavedFarnazContacts(){
   const filter=$("savedFarnazContactFilter");
   const list=$("savedContactsList");
   const status=$("savedFarnazContactSearchStatus");
   if(!filter||!list||!status)return;
-  const query=filter.value.trim().toLocaleLowerCase();
+  const query=normalizeContactSearchText(filter.value);
   let visible=0,total=0;
   list.querySelectorAll(".contact-swipe-shell").forEach(shell=>{
     total++;
     const name=shell.querySelector(".list-name")?.textContent||"";
-    const phone=shell.querySelector(".list-item")?.dataset.contactPhone||"";
-    const matches=!query||(name+" "+phone).toLocaleLowerCase().includes(query);
+    const matches=!query||normalizeContactSearchText(name).includes(query);
     shell.hidden=!matches;
     if(matches)visible++;
   });
   status.textContent=query&&!visible
-    ?(english?"No saved Farnaz contacts match that search.":"مخاطبی با این نام در فهرست مخاطبان فرناز پیدا نشد.")
+    ?(english?"No saved Farnaz contacts match that name.":"مخاطبی با این نام در فهرست مخاطبان فرناز پیدا نشد.")
     :"";
-}
-function createGroupFromHome(){
-  if(!currentUser){openAuth();return;}
-  toggleNewChatPopover(false);
-  navigate("spacesPage");
-  window.setTimeout(()=>{const createButton=$("createSpaceBtn");if(createButton)createButton.click();},80);
 }
 function applyConversationSearch(){
   const query=($("conversationSearch")?.value||"").trim().toLocaleLowerCase();
@@ -489,28 +479,6 @@ function applyConversationSearch(){
     const text=(card.textContent||"").toLocaleLowerCase();
     card.hidden=!!query&&!text.includes(query);
   });
-}
-function toggleNewChatPopover(force){
-  const panel=$("newChatPopover"),button=$("topNewChatButton")||document.querySelector(".chats-new-button");
-  if(!panel||!button)return;
-  const open=typeof force==="boolean"?force:panel.hidden;
-  panel.hidden=!open;button.setAttribute("aria-expanded",String(open));
-  if(open){
-    $("savedContactFilter").value="";
-    filterSavedContactsForNewChat();
-    refreshSavedContacts();
-    requestAnimationFrame(()=> $("savedContactFilter").focus({preventScroll:true}));
-  }
-}
-function filterSavedContactsForNewChat(){
-  const query=($("savedContactFilter")?.value||"").trim().toLocaleLowerCase();
-  let visible=0;
-  $("newChatContactsList")?.querySelectorAll(".list-item").forEach(item=>{
-    const name=(item.dataset.contactName||"").toLocaleLowerCase();
-    const show=!query||name.includes(query);item.hidden=!show;if(show)visible++;
-  });
-  const hasItems=$("newChatContactsList")?.children.length||0;
-  $("newChatContactsStatus").textContent=hasItems?(visible?"":(english?"No matching saved contacts.":"مخاطب ذخیره‌شده‌ای با این نام پیدا نشد.")):(english?"No saved contacts yet.":"هنوز مخاطبی ذخیره نشده است.");
 }
 function toggleContactsImport(force){
   const panel=$("phoneContactsImport"),button=$("contactsImportToggle");
@@ -560,7 +528,6 @@ function navigate(pageId,options={}){
   document.querySelectorAll(".nav-button").forEach(b=>b.classList.toggle("active",b.dataset.page===pageId));
   $("bottomNav").classList.toggle("visible",pageId!=="homePage"&&pageId!=="chatPage");
   if(pageId==="chatsPage")applyConversationSearch();
-  if(pageId!=="chatsPage")toggleNewChatPopover(false);
   if(pageId!=="contactsPage")toggleContactSearch(false);
   if(options.refreshData!==false){
     if(pageId==="chatsPage")refreshConversationList();
@@ -752,12 +719,9 @@ function toggleLanguage(){
   if(newChatButton){newChatButton.title=english?"New chat":"گفتگوی جدید";newChatButton.setAttribute("aria-label",english?"New chat":"گفتگوی جدید");}
   const importToggle=$("contactsImportToggle");
   if(importToggle){importToggle.setAttribute("aria-label",english?"Add or sync contacts":"افزودن یا همگام‌سازی مخاطب");importToggle.title=importToggle.getAttribute("aria-label");}
-  $("newChatPopoverTitle").textContent=english?"Start a new chat":"گفتگوی جدید";
-  $("savedContactFilter").placeholder=english?"Search saved contacts by name":"جستجو با نام مخاطب ذخیره‌شده";
-  $("savedContactFilter").setAttribute("aria-label",english?"Search saved contacts by name":"جستجو با نام مخاطب ذخیره‌شده");
   if($("savedFarnazContactFilter")){
-    $("savedFarnazContactFilter").placeholder=english?"Search saved Farnaz contacts by name or phone":"جستجو در مخاطبان فرناز با نام یا شماره";
-    $("savedFarnazContactFilter").setAttribute("aria-label",english?"Search saved Farnaz contacts by name or phone":"جستجو در مخاطبان فرناز با نام یا شماره");
+    $("savedFarnazContactFilter").placeholder=english?"Search saved Farnaz contacts by name":"جستجو در مخاطبان فرناز بر اساس نام";
+    $("savedFarnazContactFilter").setAttribute("aria-label",english?"Search saved Farnaz contacts by name":"جستجو در مخاطبان فرناز بر اساس نام");
   }
   if($("savedFarnazContactSearchStatus"))$("savedFarnazContactSearchStatus").textContent="";
   if($("manualContactTitle"))$("manualContactTitle").textContent=english?"Add contact manually":"افزودن دستی مخاطب";
@@ -886,9 +850,6 @@ function showGuest(){
   // Clear account-specific contact surfaces so a logout or account switch cannot
   // leave the previous user’s imported names or quick-chat results visible.
   $("unmatchedPhoneContactsList").replaceChildren();setStatus("unmatchedPhoneContactsStatus","");
-  $("newChatContactsList").replaceChildren();setStatus("newChatContactsStatus","");
-  if($("newChatPopover"))$("newChatPopover").hidden=true;
-  if($("savedContactFilter"))$("savedContactFilter").value="";
   if($("contactSearchPopover"))$("contactSearchPopover").hidden=true;
   if($("contactSearchButton"))$("contactSearchButton").setAttribute("aria-expanded","false");
   $("recipientValue").value="";setStatus("recipientStatus","");
@@ -1352,6 +1313,38 @@ async function openSearchedMessage(messageId,createdAt,contactId){
     setStatus("sendMessageStatus","");
   }catch(error){if(request===chatRequestNumber)setStatus("sendMessageStatus",(english?"Could not open search result: ":"باز کردن پیام پیدا‌شده ناموفق بود: ")+(error?.message||String(error)),true);}
 }
+async function renameCurrentContact(){
+  if(!currentUser||!currentChatUser)return;
+  const userId=String(currentUser.id),contactId=String(currentChatUser.user_id);
+  const oldAlias=String(prefFor(contactId).display_name||"");
+  const fallback=currentChatUser.profile_display_name||currentChatUser.display_name||(english?"Farnaz user":"مخاطب فرناز");
+  const entered=window.prompt(
+    english?"Choose a name for this contact. Leave blank to use their profile name.":"نام دلخواه این مخاطب را وارد کن؛ برای استفاده از نام پروفایل، کادر را خالی بگذار.",
+    oldAlias||fallback
+  );
+  if(entered===null)return;
+  const alias=entered.trim();
+  if(alias.length>120){
+    $("contactInfoStatus").textContent=contactInfoText("نام حداکثر ۱۲۰ نویسه باشد.","Name must be 120 characters or fewer.");
+    return;
+  }
+  try{
+    await saveConversationPref(contactId,{display_name:alias||null});
+    if(String(currentUser?.id)!==userId)return;
+    const displayName=alias||currentChatUser.profile_display_name||(english?"Farnaz user":"مخاطب فرناز");
+    currentChatUser={...currentChatUser,display_name:displayName};
+    $("conversationTitle").textContent=displayName;
+    $("contactInfoTitle").textContent=displayName;
+    renderAvatar($("chatAvatar"),currentChatUser.avatar_url||"",displayName);
+    renderAvatar($("contactInfoAvatar"),currentChatUser.avatar_url||"",displayName);
+    $("contactInfoStatus").textContent=contactInfoText("نام مخاطب ذخیره شد.","Contact name saved.");
+    await refreshSavedContacts();
+    await refreshConversationList();
+  }catch(error){
+    if(String(currentUser?.id)!==userId)return;
+    $("contactInfoStatus").textContent=(english?"Could not save contact name: ":"ذخیرهٔ نام مخاطب ناموفق بود: ")+(error?.message||String(error));
+  }
+}
 async function openContactInfo(){
   if(!currentUser||!currentChatUser)return;
   ensureContactInfoDialog();
@@ -1371,6 +1364,7 @@ async function openContactInfo(){
   $("contactInfoBlock").textContent=contactInfoText("در حال بررسی…","Checking…");
   contactInfoBlocked=false;contactInfoDialog.hidden=false;
   addContactInfoAction(contactInfoText("پیام","Message"),"✉",closeContactInfo);
+  addContactInfoAction(contactInfoText("ویرایش نام مخاطب","Edit contact name"),"✎",renameCurrentContact);
   addContactInfoAction(contactInfoText("تماس صوتی","Audio call"),"#chatPage .call-actions button[onclick=\"startCall('audio')\"] svg",()=>{closeContactInfo();startCall("audio");});
   addContactInfoAction(contactInfoText("تماس تصویری","Video call"),"#chatPage .call-actions button[onclick=\"startCall('video')\"] svg",()=>{closeContactInfo();startCall("video");});
   addContactInfoAction(contactInfoText("جست‌وجو در گفتگو","Search chat"),"⌕",searchCurrentConversation);
@@ -1689,14 +1683,11 @@ async function deleteSavedContact(contactId,button){
 function renderSavedContactsSnapshot(entries){
   const list=$("savedContactsList");if(!list)return;
   list.replaceChildren();
-  const dropdownList=$("newChatContactsList");if(dropdownList)dropdownList.replaceChildren();
   const sortedEntries=[...(entries||[])].sort((a,b)=>Number(!!(b.pinned??b.contact?.pinned))-Number(!!(a.pinned??a.contact?.pinned)));
   for(const entry of sortedEntries){
     const contact=entry?.contact;if(!contact?.user_id)continue;
     list.appendChild(makeSavedContactRow(contact,entry.subtitle||"",entry.date||""));
-    if(dropdownList){const quick=makeContactButton(contact,entry.subtitle||"","","chatsPage");quick.dataset.contactName=contact.display_name||"";dropdownList.appendChild(quick);}
   }
-  filterSavedContactsForNewChat();
   filterSavedFarnazContacts();
 }
 async function refreshSavedContacts(){
@@ -1722,7 +1713,7 @@ async function refreshSavedContacts(){
     for(const item of phoneData){if(item.matched_user_id&&!importedNames.has(String(item.matched_user_id)))importedNames.set(String(item.matched_user_id),item.display_name);}
     let contactPreferences=new Map(),blockedContactIds=new Set();
     try{
-      const preferenceResult=await retryRead("contact pin preferences",()=>getClient().from("conversation_preferences").select("contact_user_id,pinned,archived,hidden_at").eq("user_id",myId));
+      const preferenceResult=await retryRead("contact pin preferences",()=>getClient().from("conversation_preferences").select("contact_user_id,pinned,archived,hidden_at,display_name").eq("user_id",myId));
       if(preferenceResult.error)throw preferenceResult.error;
       contactPreferences=new Map((preferenceResult.data||[]).map(pref=>[String(pref.contact_user_id),pref]));
     }catch(preferenceError){console.warn("Contact pin preferences:",preferenceError);}
@@ -1741,7 +1732,7 @@ async function refreshSavedContacts(){
       const contactId=String(item.contact_user_id||"");if(!contactId||seenContacts.has(contactId))return;seenContacts.add(contactId);
       const p=profilesById.get(contactId)||{};
       const preference=contactPreferences.get(contactId)||{};
-      const contact={user_id:contactId,display_name:importedNames.get(contactId)||p.display_name||(english?"Farnaz user":"کاربر فرناز"),avatar_url:p.avatar_url||"",phone:p.phone||"",pinned:!!preference.pinned};
+      const contact={user_id:contactId,display_name:preference.display_name||importedNames.get(contactId)||p.display_name||(english?"Farnaz user":"کاربر فرناز"),profile_display_name:p.display_name||"",avatar_url:p.avatar_url||"",phone:p.phone||"",pinned:!!preference.pinned};
       conversationPrefs.set(contactId,preference);
       contact.blocked=blockedContactIds.has(contactId);
       snapshot.push({contact,subtitle:p.phone?formatContactPhone(p.phone):(english?"Farnaz member":"عضو فرناز"),date:item.created_at?new Date(item.created_at).toLocaleDateString(english?"en":"fa-IR"):"",pinned:!!preference.pinned});
@@ -1923,9 +1914,9 @@ function renderConversationSnapshot(snapshot,myId){
   }
   for(const c of visible){
     const p=c.profile||{},pref=c.pref||{};
-    const name=p.display_name||(english?"Farnaz user":"مخاطب فرناز");
+    const name=pref.display_name||p.display_name||(english?"Farnaz user":"مخاطب فرناز");
     const preview=(c.lastSender===myId?(english?"You: ":"شما: "):"")+(pref.pinned?"📌 ":"")+(pref.archived?"🗄 ":"")+c.lastMessage;
-    const contact={user_id:c.user_id,display_name:name,avatar_url:p.avatar_url||""};
+    const contact={user_id:c.user_id,display_name:name,profile_display_name:p.display_name||"",avatar_url:p.avatar_url||""};
     const card=document.createElement("div");card.className="conversation-card"+(pref.pinned?" pinned":"")+(pref.archived?" archived":"");
     const btn=makeContactButton(contact,preview,new Date(c.created_at).toLocaleString(english?"en":"fa-IR"));
     btn.addEventListener("contextmenu",e=>{e.preventDefault();showConversationActions(card,c.user_id);});

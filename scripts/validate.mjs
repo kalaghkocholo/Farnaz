@@ -198,13 +198,13 @@ for (const path of ["js/local-store.js", "js/core.js", "js/chat-menu-v5.js", "js
 // Keep shell cache and versioned local-store assets synchronized after cache behavior changes.
 const coreSource = sources["js/core.js"];
 const chatSource = sources["js/chat-menu-v5.js"];
-if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v166"') || !sources["service-worker.js"].includes('styles.css?v=20261028-57') || !sources["service-worker.js"].includes('core.js?v=20261028-25') || !sources["service-worker.js"].includes('local-store.js?v=20261026-3') || !sources["service-worker.js"].includes('calls.js?v=20261026-4') || !sources["service-worker.js"].includes('chat-menu-v5.js?v=20261028-21') || !html.includes('chat-menu-v5.js?v=20261028-21')) {
+if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v167"') || !sources["service-worker.js"].includes('styles.css?v=20261028-58') || !sources["service-worker.js"].includes('core.js?v=20261028-26') || !sources["service-worker.js"].includes('local-store.js?v=20261026-3') || !sources["service-worker.js"].includes('calls.js?v=20261026-4') || !sources["service-worker.js"].includes('chat-menu-v5.js?v=20261028-21') || !html.includes('chat-menu-v5.js?v=20261028-21')) {
   errors.push("service-worker.js must use the current shell cache and core asset versions");
 }
 const loaderChecks = [
   [html.includes('script.src="./js/supabase-sdk.js"') && html.includes("watchScript(script,()=>{") && html.includes("loadLocalScripts();"),
     "index.html must wait for the local Supabase SDK before loading the app core"],
-  [html.includes('core.src="./js/core.js?v=20261028-25"') && html.includes("watchScript(core,()=>{") && html.includes("بارگذاری هستهٔ برنامه ناموفق بود یا بیش از حد طول کشید"),
+  [html.includes('core.src="./js/core.js?v=20261028-26"') && html.includes("watchScript(core,()=>{") && html.includes("بارگذاری هستهٔ برنامه ناموفق بود یا بیش از حد طول کشید"),
     "index.html must handle successful, failed, and stalled core-script loading"],
   [html.includes("watchScript(script,loadNextFeature,()=>{") && html.includes("featureScripts[featureIndex++]") && html.includes('if(typeof window.FarnazBoot==="function")window.FarnazBoot();'),
     "index.html must load feature scripts sequentially and boot only after the loader sequence"],
@@ -220,6 +220,8 @@ const uiChecks = [
     "presence and privacy settings must translate their labels, hints, and select options"],
   [html.includes('class="page-heading"><h2 id="chatsHeading"') && html.includes('class="page-heading"><h2 id="contactsHeading"') && sources["styles.css"].includes("env(safe-area-inset-top, 0px)") && sources["styles.css"].includes("inset-inline-start:10px"),
     "page headers must be separated, safe-area aware, and use logical-direction controls"],
+  [!html.includes('id="contactSearchButton"') && sources["styles.css"].includes(".contact-info-actions{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}") && sources["styles.css"].includes(".app.chat-mode>#chatPage .send-row textarea{display:block;direction:rtl;text-align:right;width:100%;min-width:0;min-height:38px;max-height:112px;padding:9px 5px;line-height:1.4;border:0;border-radius:0;background:var(--panel)!important;color:var(--white)}"),
+    "new-chat screen must use the saved-contact list/search only, contact actions must stay on one row, and composer surfaces must share one color"],
 ];
 for (const [passed, message] of uiChecks) { if (!passed) errors.push(message); }
 

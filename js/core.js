@@ -499,11 +499,11 @@ function toggleContactsImport(force){
 }
 function toggleContactSearch(force){
   const panel=$("contactSearchPopover"),button=$("contactSearchButton");
-  if(!panel||!button)return;
+  if(!panel)return;
   const open=typeof force==="boolean"?force:panel.hidden;
   panel.hidden=!open;
-  button.setAttribute("aria-expanded",String(open));
-  if(open)requestAnimationFrame(()=> $("recipientValue").focus({preventScroll:true}));
+  button?.setAttribute("aria-expanded",String(open));
+  if(open)requestAnimationFrame(()=> $("recipientValue")?.focus({preventScroll:true}));
 }
 function toggleAttachmentMenu(force){
   const menu=$("attachmentMenu"),button=$("attachmentMenuButton");
@@ -738,9 +738,9 @@ function toggleLanguage(){
   if($("manualContactCountryLabel"))$("manualContactCountryLabel").textContent=english?"Country code":"کد کشور";
   if($("manualContactCountry"))Array.from($("manualContactCountry").options).forEach((option,i)=>{const names=english?["Iran","Germany","United States / Canada","United Kingdom","Turkey"]:["ایران","آلمان","آمریکا / کانادا","بریتانیا","ترکیه"];option.textContent=names[i]+" (+"+option.value+")";});
   if($("manualContactSaveButton"))$("manualContactSaveButton").textContent=english?"Save contact":"ذخیره مخاطب";
-  $("contactSearchButtonLabel").textContent=english?"Find contact":"جستجوی مخاطب";
+  if($("contactSearchButtonLabel"))$("contactSearchButtonLabel").textContent=english?"Find contact":"جستجوی مخاطب";
   $("contactSearchTitle").textContent=english?"Find a new contact":"پیدا کردن مخاطب جدید";
-  $("contactSearchButton").setAttribute("aria-label",english?"Find a new contact":"جستجوی مخاطب جدید");
+  $("contactSearchButton")?.setAttribute("aria-label",english?"Find a new contact":"جستجوی مخاطب جدید");
   $("recordAudioButton").title=english?"Record voice message":"ضبط پیام صوتی";$("attachmentHint").textContent=english?"Files up to 20 MB":"فایل تا ۲۰ مگابایت";
   $("loadOlderButton").textContent=english?"Load older messages":"پیام‌های قدیمی‌تر";$("cancelEditButton").textContent=english?"Cancel edit":"لغو ویرایش";
   const selectionButtons=$("selectionToolbar").querySelectorAll("button");

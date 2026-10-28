@@ -297,10 +297,10 @@ footer{text-align:center;color:#718096;font-size:10px;padding:17px 0 7px}
 .app.chat-mode>header{display:none!important}
 .app.chat-mode>#chatPage{padding-top:2px}
 .app.chat-mode>#chatPage #sendMessageForm{margin:0;padding:0;flex:0 0 auto}
-.app.chat-mode>#chatPage .composer-shell{position:relative;display:grid;direction:ltr;grid-template-columns:40px minmax(0,1fr) auto;grid-template-rows:auto auto;grid-template-areas:"preview preview preview" "attach input controls";align-items:center;column-gap:5px;row-gap:4px;padding:5px 6px;border:1px solid var(--border);border-radius:24px;background:var(--bg)}
+.app.chat-mode>#chatPage .composer-shell{position:relative;display:grid;direction:ltr;grid-template-columns:40px minmax(0,1fr) auto;grid-template-rows:auto auto;grid-template-areas:"preview preview preview" "attach input controls";align-items:center;column-gap:5px;row-gap:4px;padding:5px 6px;border:1px solid var(--border);border-radius:24px;background:var(--panel)}
 .app.chat-mode>#chatPage .voice-preview{grid-area:preview;min-width:0}
 .app.chat-mode>#chatPage .send-row{grid-area:input;min-width:0;display:flex;align-items:center;gap:0}
-.app.chat-mode>#chatPage .send-row textarea{display:block;direction:rtl;text-align:right;width:100%;min-width:0;min-height:38px;max-height:112px;padding:9px 5px;line-height:1.4;border:0;border-radius:0;background:transparent}
+.app.chat-mode>#chatPage .send-row textarea{display:block;direction:rtl;text-align:right;width:100%;min-width:0;min-height:38px;max-height:112px;padding:9px 5px;line-height:1.4;border:0;border-radius:0;background:var(--panel)!important;color:var(--white)}
 .app.chat-mode>#chatPage .composer-actions{display:contents}
 .app.chat-mode>#chatPage .composer-left{grid-area:attach;display:flex;align-items:center;justify-content:center;min-width:0}
 .app.chat-mode>#chatPage .composer-right{grid-area:controls;display:flex;align-items:center;justify-content:flex-end;gap:5px;direction:ltr;min-width:0}
@@ -994,8 +994,8 @@ body.chat-mode .app.chat-mode #chatPage #sendMessageForm {
 .contact-info-profile h2{font-size:20px;margin:8px 0}
 .contact-info-profile p{margin:5px 0}
 .contact-info-phone{font-size:14px;margin-top:8px;color:var(--mint,#50e3c2);direction:ltr!important;text-align:right!important;unicode-bidi:isolate;overflow-wrap:anywhere} #userPhone,#profilePage .profile-phone{direction:ltr!important;text-align:right!important;unicode-bidi:isolate;overflow-wrap:anywhere} .phone-contact-details>span,#profilePhoneInput,#recipientValue{direction:ltr!important;text-align:left!important;unicode-bidi:isolate;overflow-wrap:anywhere} .profile-phone{display:block}
-.contact-info-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
-.contact-info-action{display:flex;min-width:0;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:10px 3px;border:1px solid var(--border,#334155);border-radius:13px;background:var(--panel2,#27364b);color:inherit;font:inherit;font-size:12px;cursor:pointer}
+.contact-info-actions{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
+.contact-info-action{display:flex;min-width:0;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:8px 2px;border:1px solid var(--border,#334155);border-radius:11px;background:var(--panel2,#27364b);color:inherit;font:inherit;font-size:10px;line-height:1.25;overflow-wrap:anywhere;cursor:pointer}
 .contact-info-action-icon{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:color-mix(in srgb,var(--accent,#50e3c2) 18%,transparent);color:var(--accent,#50e3c2);font-size:22px}
 .contact-info-media{border-top:1px solid var(--border,#334155);padding-top:12px}
 .contact-info-media h3{font-size:16px;margin:0 0 6px}

@@ -1349,3 +1349,50 @@ body[data-theme="light"] #spacesPage .space-swipe-hint{color:#526f9d}
 
 .space-member-presence{font-size:11px;color:var(--muted)}.space-member-presence.is-online{color:#22a06b}.space-typing-indicator{font-size:12px;color:var(--accent);margin:4px 12px;padding:0;min-height:0}
 .space-message.space-system-notice{align-self:center!important;max-width:92%!important;width:fit-content!important;background:var(--panel2,#f1f4f8)!important;color:var(--muted,#6b7280)!important;border:1px solid var(--border,#d8dee8)!important;border-radius:999px!important;padding:6px 12px!important;margin:7px auto!important;text-align:center!important;box-shadow:none!important;font-size:12px!important;pointer-events:auto}.space-system-notice .space-message-meta{justify-content:center!important}.space-system-notice .space-message-time{font-size:10px!important}.space-system-notice .space-message-read-status{display:none!important}
+
+
+/* Light-theme contrast for group/channel creation and form dialogs. */
+body[data-theme="light"] #spaceCreateDialog .space-dialog-card,
+body[data-theme="light"] #spaceAddDialog .space-dialog-card {
+  background:#ffffff!important;
+  color:#172237!important;
+  border-color:#d5deea!important;
+}
+body[data-theme="light"] #spaceCreateDialog .space-dialog-card h3,
+body[data-theme="light"] #spaceCreateDialog .space-dialog-card label,
+body[data-theme="light"] #spaceCreateDialog .space-dialog-card p,
+body[data-theme="light"] #spaceCreateDialog .space-dialog-card small,
+body[data-theme="light"] #spaceCreateDialog .space-dialog-card .space-muted,
+body[data-theme="light"] #spaceAddDialog .space-dialog-card h3,
+body[data-theme="light"] #spaceAddDialog .space-dialog-card label,
+body[data-theme="light"] #spaceAddDialog .space-dialog-card p,
+body[data-theme="light"] #spaceAddDialog .space-dialog-card small,
+body[data-theme="light"] #spaceAddDialog .space-dialog-card .space-muted {
+  color:#172237!important;
+  opacity:1;
+}
+body[data-theme="light"] #spaceCreateDialog .space-dialog-card input,
+body[data-theme="light"] #spaceCreateDialog .space-dialog-card textarea,
+body[data-theme="light"] #spaceCreateDialog .space-dialog-card select,
+body[data-theme="light"] #spaceAddDialog .space-dialog-card input,
+body[data-theme="light"] #spaceAddDialog .space-dialog-card textarea,
+body[data-theme="light"] #spaceAddDialog .space-dialog-card select {
+  background:#f5f7fb!important;
+  color:#172237!important;
+  border-color:#cbd5e1!important;
+  opacity:1;
+  -webkit-text-fill-color:#172237!important;
+}
+body[data-theme="light"] #spaceCreateDialog .space-dialog-card input::placeholder,
+body[data-theme="light"] #spaceCreateDialog .space-dialog-card textarea::placeholder,
+body[data-theme="light"] #spaceAddDialog .space-dialog-card input::placeholder,
+body[data-theme="light"] #spaceAddDialog .space-dialog-card textarea::placeholder {
+  color:#667085!important;
+  opacity:1;
+  -webkit-text-fill-color:#667085!important;
+}
+body[data-theme="light"] #spaceCreateDialog .space-dialog-card select option,
+body[data-theme="light"] #spaceAddDialog .space-dialog-card select option {
+  background:#ffffff!important;
+  color:#172237!important;
+}

@@ -840,12 +840,6 @@ document.addEventListener("keydown",event=>{
     else if(dx<0&&startX>window.innerWidth-26)openAdjacentConversation(1);
   },{passive:true});
 })();
-const savedContactFilter = $("savedContactFilter");
-if(savedContactFilter) savedContactFilter.addEventListener("input", filterSavedContactsForNewChat);
-document.addEventListener("click",event=>{
-  const panel=$("newChatPopover"),button=$("topNewChatButton")||document.querySelector(".chats-new-button");
-  if(panel&&!panel.hidden&&!panel.contains(event.target)&&(!button||!button.contains(event.target)))toggleNewChatPopover(false);
-});
 $("sendMessageForm").addEventListener("submit",sendMessage);
 function handleAttachmentChange(input){
   const file=input.files[0];if(!file)return;

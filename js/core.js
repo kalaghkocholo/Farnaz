@@ -468,10 +468,9 @@ function filterSavedFarnazContacts(){
   const status=$("savedFarnazContactSearchStatus");
   if(!filter||!list||!status)return;
   const query=normalizeContactSearchText(filter.value);
-  let visible=0,total=0;
+  let visible=0;
   list.querySelectorAll(".contact-swipe-shell").forEach(shell=>{
-    total++;
-    const name=shell.querySelector(".list-name")?.textContent||"";
+    const name=shell.dataset.searchName||"";
     const matches=!query||normalizeContactSearchText(name).includes(query);
     shell.hidden=!matches;
     if(matches)visible++;
@@ -481,10 +480,10 @@ function filterSavedFarnazContacts(){
     :"";
 }
 function applyConversationSearch(){
-  const query=($("conversationSearch")?.value||"").trim().toLocaleLowerCase();
+  const query=normalizeContactSearchText($("conversationSearch")?.value||"");
   $("conversationList")?.querySelectorAll(".conversation-card").forEach(card=>{
-    const text=(card.textContent||"").toLocaleLowerCase();
-    card.hidden=!!query&&!text.includes(query);
+    const name=card.dataset.searchName||"";
+    card.hidden=!!query&&!normalizeContactSearchText(name).includes(query);
   });
 }
 function toggleContactsImport(force){
@@ -1673,7 +1672,10 @@ function renderSavedContactsSnapshot(entries){
   const sortedEntries=[...(entries||[])].sort((a,b)=>Number(!!(b.pinned??b.contact?.pinned))-Number(!!(a.pinned??a.contact?.pinned)));
   for(const entry of sortedEntries){
     const contact=entry?.contact;if(!contact?.user_id)continue;
-    list.appendChild(makeSavedContactRow(contact,entry.subtitle||"",entry.date||""));
+    const row=makeSavedContactRow(contact,entry.subtitle||"",entry.date||"");
+    const legacySearchName=contact.display_name!==contact.profile_display_name?contact.display_name:"";
+    row.dataset.searchName=String(contact.search_name??contact.local_contact_name??legacySearchName??"");
+    list.appendChild(row);
   }
   filterSavedFarnazContacts();
 }
@@ -1719,7 +1721,8 @@ async function refreshSavedContacts(){
       const contactId=String(item.contact_user_id||"");if(!contactId||seenContacts.has(contactId))return;seenContacts.add(contactId);
       const p=profilesById.get(contactId)||{};
       const preference=contactPreferences.get(contactId)||{};
-      const contact={user_id:contactId,display_name:preference.display_name||importedNames.get(contactId)||p.display_name||(english?"Farnaz user":"کاربر فرناز"),profile_display_name:p.display_name||"",avatar_url:p.avatar_url||"",phone:p.phone||"",pinned:!!preference.pinned};
+      const localContactName=String(preference.display_name||importedNames.get(contactId)||"").trim();
+      const contact={user_id:contactId,display_name:localContactName||p.display_name||(english?"Farnaz user":"کاربر فرناز"),profile_display_name:p.display_name||"",search_name:localContactName,avatar_url:p.avatar_url||"",phone:p.phone||"",pinned:!!preference.pinned};
       conversationPrefs.set(contactId,preference);
       contact.blocked=blockedContactIds.has(contactId);
       snapshot.push({contact,subtitle:p.phone?formatContactPhone(p.phone):(english?"Farnaz member":"عضو فرناز"),date:item.created_at?new Date(item.created_at).toLocaleDateString(english?"en":"fa-IR"):"",pinned:!!preference.pinned});
@@ -1901,10 +1904,11 @@ function renderConversationSnapshot(snapshot,myId){
   }
   for(const c of visible){
     const p=c.profile||{},pref=c.pref||{};
-    const name=pref.display_name||p.display_name||(english?"Farnaz user":"مخاطب فرناز");
+    const name=pref.display_name||c.local_contact_name||p.display_name||(english?"Farnaz user":"مخاطب فرناز");
     const preview=(c.lastSender===myId?(english?"You: ":"شما: "):"")+(pref.pinned?"📌 ":"")+(pref.archived?"🗄 ":"")+c.lastMessage;
     const contact={user_id:c.user_id,display_name:name,profile_display_name:p.display_name||"",avatar_url:p.avatar_url||""};
     const card=document.createElement("div");card.className="conversation-card"+(pref.pinned?" pinned":"")+(pref.archived?" archived":"");
+    card.dataset.searchName=String(pref.display_name||c.local_contact_name||"");
     const btn=makeContactButton(contact,preview,new Date(c.created_at).toLocaleString(english?"en":"fa-IR"));
     btn.addEventListener("contextmenu",e=>{e.preventDefault();showConversationActions(card,c.user_id);});
     let hold;btn.addEventListener("pointerdown",()=>{hold=setTimeout(()=>{btn.dataset.suppressOpen="1";showConversationActions(card,c.user_id);},550);});
@@ -1962,7 +1966,15 @@ async function refreshConversationList(){
     let profilesById=new Map(),profilesLoaded=true;
     try{profilesById=await getContactProfiles(entries.map(c=>c.user_id));}catch(e){profilesLoaded=false;console.warn("Conversation contact profiles:",e);setConnectionBanner(english?"Some conversation profiles could not load. Retrying…":"اطلاعات بعضی مخاطبان گفتگو بارگذاری نشد؛ دوباره تلاش می‌کنیم.");}
     if(currentUser?.id!==myId||request!==conversationListRequestNumber)return;
-    const snapshot=entries.map(c=>({...c,pref:prefFor(c.user_id),profile:profilesById.get(String(c.user_id))||{}}));
+    let importedPhoneNames=new Map();
+    try{
+      const phoneResult=await retryRead("conversation local contact names",()=>getClient().from("user_phone_contacts").select("display_name,matched_user_id").eq("user_id",myId).not("matched_user_id","is",null).limit(5000));
+      for(const item of phoneResult.data||[]){
+        const id=String(item.matched_user_id||"");
+        if(id&&!importedPhoneNames.has(id)&&String(item.display_name||"").trim())importedPhoneNames.set(id,String(item.display_name).trim());
+      }
+    }catch(phoneNameError){console.warn("Conversation local contact names:",phoneNameError);}
+    const snapshot=entries.map(c=>({...c,pref:prefFor(c.user_id),local_contact_name:String(prefFor(c.user_id).display_name||importedPhoneNames.get(String(c.user_id))||"").trim(),profile:profilesById.get(String(c.user_id))||{}}));
     renderConversationSnapshot(snapshot,myId);
     if(profilesLoaded){try{await window.FarnazLocalStore?.saveSnapshot(myId,"inbox",snapshot);}catch(cacheError){console.warn("Cached inbox save:",cacheError);}}
     // The visible inbox may be usable with cached data, but recovery is complete only

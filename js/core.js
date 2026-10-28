@@ -1135,7 +1135,7 @@ function showAvatarCropDialog(image){
  const title=document.createElement("h3");title.textContent=english?"Crop profile photo":"برش و ویرایش عکس پروفایل";title.style.cssText="margin:0;font-size:17px;text-align:center";
  const hint=document.createElement("p");hint.textContent=english?"Drag to reposition; use the slider to zoom.":"عکس را با انگشت جابه‌جا کن و با نوار زیر بزرگ‌نمایی را تنظیم کن.";hint.style.cssText="margin:0;font-size:13px;line-height:1.7;opacity:.8;text-align:center";
  const canvas=document.createElement("canvas");canvas.width=320;canvas.height=320;canvas.style.cssText="width:min(76vw,320px);height:min(76vw,320px);max-height:38vh;align-self:center;border-radius:50%;touch-action:none;background:#222;cursor:grab";
- const label=document.createElement("label");label.textContent=english?"Zoom":"بزرگ‌نمایی";
+ const label=document.createElement("label");label.textContent=english?"Zoom":"بزرگ‌نمایی";label.style.setProperty("display","block");label.style.setProperty("color",getComputedStyle(card).color||"#111","important");label.style.setProperty("font-size","14px","important");label.style.setProperty("font-weight","600","important");
  const zoom=document.createElement("input");zoom.type="range";zoom.min="1";zoom.max="3";zoom.step=".01";zoom.value="1";zoom.style.width="100%";
  const actions=document.createElement("div");actions.style.cssText="display:flex;gap:10px";
  const cancel=document.createElement("button");cancel.type="button";cancel.textContent=english?"Cancel":"انصراف";cancel.style.cssText="flex:1;padding:12px;border:1px solid var(--border,#888);border-radius:12px;background:transparent;color:inherit";

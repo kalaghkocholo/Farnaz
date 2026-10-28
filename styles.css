@@ -228,7 +228,7 @@ input[type=file]{font-size:11px;padding:9px}
   backdrop-filter:blur(15px)
 }
 .bottom-nav.visible{display:flex}
-.nav-inner{width:100%;max-width:560px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.nav-inner{width:100%;max-width:560px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
 .nav-button{
   min-height:57px;display:flex;flex-direction:column;
   justify-content:center;align-items:center;gap:4px;
@@ -1391,3 +1391,7 @@ body[data-theme="light"] .welcome-shell{background:radial-gradient(ellipse at 50
     transform:none!important;
   }
 }
+
+/* Main navigation now includes Settings as a first-class destination. */
+.bottom-nav .nav-button{min-width:0;padding-inline:2px;font-size:10px}
+.bottom-nav .nav-button .nav-icon{font-size:20px}

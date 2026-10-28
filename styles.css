@@ -1343,7 +1343,8 @@ body[data-theme="light"] .welcome-shell{background:radial-gradient(ellipse at 50
   top:4px!important;margin:0!important;z-index:5;
 }
 
-/* iOS home-screen safe-area calibration */
+/* iOS home-screen safe-area calibration: keep the app viewport full-height,
+   and reserve the safe areas inside the app instead of shrinking its outer box. */
 @media (display-mode: standalone) {
   html, body {
     min-height:100%;
@@ -1351,13 +1352,15 @@ body[data-theme="light"] .welcome-shell{background:radial-gradient(ellipse at 50
   }
   body {
     padding-top:0!important;
-    padding-bottom:env(safe-area-inset-bottom, 0px)!important;
+    padding-bottom:0!important;
     box-sizing:border-box!important;
   }
   .app:not(.chat-mode):not(.spaces-chat-mode) {
-    height:calc(100dvh - env(safe-area-inset-bottom, 0px))!important;
+    height:100dvh!important;
     min-height:0!important;
     margin-top:0!important;
+    padding-top:calc(10px + env(safe-area-inset-top, 0px))!important;
+    padding-bottom:calc(94px + env(safe-area-inset-bottom, 0px))!important;
     box-sizing:border-box!important;
   }
   #authBox {

@@ -1339,7 +1339,6 @@ async function renameCurrentContact(){
     renderAvatar($("contactInfoAvatar"),currentChatUser.avatar_url||"",displayName);
     $("contactInfoStatus").textContent=contactInfoText("نام مخاطب ذخیره شد.","Contact name saved.");
     await refreshSavedContacts();
-    await refreshConversationList();
   }catch(error){
     if(String(currentUser?.id)!==userId)return;
     $("contactInfoStatus").textContent=(english?"Could not save contact name: ":"ذخیرهٔ نام مخاطب ناموفق بود: ")+(error?.message||String(error));

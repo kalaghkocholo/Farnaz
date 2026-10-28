@@ -450,6 +450,7 @@ function renderAvatar(el,url,name){
 }
 let newPrivateChatModal=null;
 let newPrivateChatMovedNodes=[];
+let newPrivateChatReturnFocus=null;
 function markPrivateChatContactRows(active){
   $("savedContactsList")?.querySelectorAll(".contact-swipe-shell .list-item").forEach(button=>{
     if(active)button.dataset.openFromPage="chatsPage";
@@ -468,12 +469,15 @@ function closeNewPrivateChat(){
   newPrivateChatMovedNodes=[];
   modal.remove();
   newPrivateChatModal=null;
+  if(newPrivateChatReturnFocus?.isConnected)newPrivateChatReturnFocus.focus({preventScroll:true});
+  newPrivateChatReturnFocus=null;
 }
 function startNewChat(){
   if(!currentUser){openAuth();return;}
   if(newPrivateChatModal){closeNewPrivateChat();return;}
   const filter=$("savedFarnazContactFilter"),list=$("savedContactsList");
   if(!filter||!list)return;
+  newPrivateChatReturnFocus=document.activeElement instanceof HTMLElement?document.activeElement:null;
   const modal=document.createElement("div");
   modal.id="newPrivateChatModal";
   modal.className="new-private-chat-overlay";
@@ -488,6 +492,7 @@ function startNewChat(){
   title.textContent=english?"New private chat":"گفتگوی خصوصی جدید";
   hint.textContent=english?"Choose a contact to open your private conversation.":"مخاطب را انتخاب کن تا گفتگوی خصوصی او باز شود.";
   footer.textContent=english?"Cancel":"انصراف";
+  modal.querySelector(".new-private-chat-close").setAttribute("aria-label",english?"Close":"بستن");
   const movable=[filter,$("savedFarnazContactSearchStatus"),list,$("savedContactsStatus")].filter(Boolean);
   for(const node of movable){
     const placeholder=document.createComment("farnaz-private-chat-placeholder");
@@ -506,6 +511,7 @@ function startNewChat(){
   modal.querySelector(".new-private-chat-close").addEventListener("click",closeNewPrivateChat);
   footer.addEventListener("click",closeNewPrivateChat);
   modal.addEventListener("click",event=>{if(event.target===modal)closeNewPrivateChat();});
+  modal.addEventListener("keydown",event=>{if(event.key==="Escape"){event.preventDefault();closeNewPrivateChat();}});
   document.body.appendChild(modal);
   newPrivateChatModal=modal;
   requestAnimationFrame(()=>filter.focus({preventScroll:true}));

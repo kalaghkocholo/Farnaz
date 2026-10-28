@@ -1494,6 +1494,14 @@ async function refreshUnmatchedPhoneContacts(){
     if(currentUser?.id!==myId||request!==unmatchedPhoneContactsRequestNumber)return;
     if(error)throw error;
     for(const item of data||[]){
+      const shell=document.createElement("div");shell.className="phone-contact-swipe-shell";shell.dataset.phoneContactId=String(item.id);
+      const actions=document.createElement("div");actions.className="phone-contact-swipe-actions";
+      const remove=document.createElement("button");remove.type="button";remove.className="contact-swipe-action contact-swipe-delete";remove.setAttribute("aria-label",english?"Delete contact":"حذف مخاطب");remove.title=english?"Delete contact":"حذف مخاطب";
+      const glyph=document.createElement("span");glyph.className="contact-swipe-glyph";glyph.textContent="×";
+      const label=document.createElement("span");label.className="contact-swipe-label";label.textContent=english?"Delete":"حذف";
+      remove.append(glyph,label);
+      remove.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();deletePhoneContact(String(item.id),remove);});
+      actions.appendChild(remove);
       const row=document.createElement("div");row.className="phone-contact-row";
       const avatar=document.createElement("div");avatar.className="avatar";avatar.textContent=initials(item.display_name);
       const details=document.createElement("div");details.className="phone-contact-details";
@@ -1501,10 +1509,18 @@ async function refreshUnmatchedPhoneContacts(){
       const phone=document.createElement("span");setPhoneDisplay(phone,item.phone||"");
       const state=document.createElement("small");state.textContent=english?"Not on Farnaz yet":"هنوز در فرناز ثبت‌نام نکرده";
       details.append(name,phone,state);
-      const remove=document.createElement("button");remove.type="button";remove.className="contact-remove-button";remove.textContent="×";
-      remove.setAttribute("aria-label",english?"Delete contact":"حذف مخاطب");remove.title=english?"Delete contact":"حذف مخاطب";
-      remove.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();deletePhoneContact(String(item.id),remove);});
-      row.append(avatar,details,remove);list.appendChild(row);
+      row.append(avatar,details);shell.append(actions,row);list.appendChild(shell);
+      let startX=0,startY=0,tracking=false;
+      shell.addEventListener("pointerdown",event=>{if(event.target.closest(".phone-contact-swipe-actions"))return;startX=event.clientX;startY=event.clientY;tracking=true;},{passive:true});
+      shell.addEventListener("pointerup",event=>{
+        if(!tracking)return;tracking=false;
+        const dx=event.clientX-startX,dy=event.clientY-startY;
+        if(Math.abs(dx)>48&&Math.abs(dx)>Math.abs(dy)*1.25){
+          if(dx<0){shell.classList.add("is-open");shell.dataset.open="true";}
+          else{shell.classList.remove("is-open");shell.dataset.open="false";}
+        }
+      },{passive:true});
+      shell.addEventListener("pointercancel",()=>{tracking=false;},{passive:true});
     }
     setStatus("unmatchedPhoneContactsStatus",data?.length?(english?"These contacts are saved privately for your account.":"این مخاطبان به‌صورت خصوصی برای حساب خودت ذخیره شده‌اند."):(english?"No unmatched phone contacts. Import a VCF file to begin.":"مخاطب گوشیِ تطبیق‌نیافته‌ای نیست؛ برای شروع فایل VCF را وارد کن."));
   }catch(e){

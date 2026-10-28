@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" href="./farnaz-icon.svg?v=20261024-4">
 <meta name="description" content="فرناز؛ ارتباطی نزدیک‌تر، در هر کجا.">
 <title>فرناز | Farnaz</title>
-<link rel="preload" href="./js/core.js?v=20261028-24" as="script">
+<link rel="preload" href="./js/core.js?v=20261028-25" as="script">
 <link rel="preconnect" href="https://iemykhluluoymsbqpjsn.supabase.co" crossorigin>
 <style>
 :root{--bg:#101828;--panel:#172237;--panel2:#1d2b42;--border:#2b3a50;--mint:#50e3c2;--muted:#aab5c7;--white:#f8fafc}
@@ -21,7 +21,7 @@
 html,body{margin:0;min-height:100%;background:var(--bg);color:var(--white)}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px;min-height:100dvh;height:100dvh;overflow:hidden}
 button{font:inherit;cursor:pointer}
-.app{width:100%;max-width:560px;height:100dvh;min-height:0;margin:auto;overflow-y:auto;padding:12px 13px calc(94px + env(safe-area-inset-bottom))}
+.app{width:100%;max-width:560px;height:100dvh;min-height:0;margin:auto;overflow-y:auto;padding:calc(10px + env(safe-area-inset-top, 0px)) 13px calc(94px + env(safe-area-inset-bottom))}
 header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17px}
 .page{display:none}.page.active{display:block}
 #authBox{display:none}
@@ -38,9 +38,9 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
 .welcome-secondary{width:100%;max-width:300px;margin-top:9px;padding:12px;border:1px solid var(--border);border-radius:14px;background:transparent;color:var(--white);font-size:13px}
 @media(max-width:360px){.welcome-shell{min-height:62dvh;padding:24px 15px 20px}.welcome-shell h2{font-size:22px}.welcome-mark{width:86px;height:86px;border-radius:25px}.welcome-mark img{width:73px;height:73px}}
 </style>
-<link rel="stylesheet" href="./styles.css?v=20261028-56" media="print" onload="this.onload=null;this.media='all'">
-<noscript><link rel="stylesheet" href="./styles.css?v=20261028-56"></noscript>
-<link rel="stylesheet" href="./spaces.css?v=20261025-29" media="print" onload="this.onload=null;this.media='all'">
+<link rel="stylesheet" href="./styles.css?v=20261028-57" media="print" onload="this.onload=null;this.media='all'">
+<noscript><link rel="stylesheet" href="./styles.css?v=20261028-57"></noscript>
+<link rel="stylesheet" href="./spaces.css?v=20261028-30" media="print" onload="this.onload=null;this.media='all'">
 </head>
 <body data-auth-state="guest">
 <main class="app">
@@ -65,7 +65,7 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
 
 <!-- صفحه گفتگوها -->
 <section class="page" id="chatsPage">
-  <div class="chats-topline"><div class="page-heading" hidden><h2 id="chatsHeading">گفتگوها</h2><p id="chatsIntro">گفتگوهای اخیرت را اینجا می‌بینی.</p></div><button class="chats-new-button" type="button" onclick="startNewChat()" aria-label="گفتگوی جدید" title="گفتگوی جدید"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></div>
+  <div class="chats-topline"><div class="page-heading"><h2 id="chatsHeading">گفتگوها</h2><p id="chatsIntro">گفتگوهای اخیرت را اینجا می‌بینی.</p></div><button class="chats-new-button" type="button" onclick="startNewChat()" aria-label="گفتگوی جدید" title="گفتگوی جدید"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></div>
   <label class="conversation-search" for="conversationSearch"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg><input id="conversationSearch" type="search" autocomplete="off" placeholder="جستجوی گفتگوها" aria-label="جستجوی گفتگوها"></label>
   <div class="conversation-tools"><button class="mini-button" id="showActiveChats" type="button" onclick="setConversationView('active')">گفتگوها</button><button class="mini-button" id="showArchivedChats" type="button" onclick="setConversationView('archived')">آرشیو</button></div>
   <div class="list" id="conversationList"></div>
@@ -74,7 +74,7 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
 
 <!-- صفحه مخاطبان -->
 <section class="page" id="contactsPage">
-  <div class="page-heading" hidden><h2 id="contactsHeading">مخاطبان</h2></div>
+  <div class="page-heading"><h2 id="contactsHeading">مخاطبان</h2></div>
   <button class="contacts-import-toggle" id="contactsImportToggle" type="button" aria-expanded="false" aria-controls="phoneContactsImport" onclick="toggleContactsImport()" aria-label="افزودن یا همگام‌سازی مخاطب" title="افزودن یا همگام‌سازی مخاطب">＋</button>
   <section class="phone-contacts-import" id="phoneContactsImport" aria-labelledby="phoneContactsImportTitle" hidden>
     <div class="phone-contacts-import-heading"><span class="phone-contacts-import-icon" aria-hidden="true">▤</span><div><h3 id="phoneContactsImportTitle">افزودن و همگام‌سازی مخاطبان</h3><p id="phoneContactsImportIntro">می‌توانی مخاطب را دستی اضافه کنی یا از دفترچه تلفن انتخاب کنی. مخاطبان ذخیره‌شده فقط برای حساب خودت هستند.</p></div></div>
@@ -134,7 +134,7 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
 
 <!-- صفحه پروفایل -->
 <section class="page" id="profilePage">
-  <div class="page-heading" hidden><h2 id="profileHeading">پروفایل من</h2><p id="profileIntro">اطلاعات حساب خود را مدیریت کن.</p></div>
+  <div class="page-heading"><h2 id="profileHeading">پروفایل من</h2><p id="profileIntro">اطلاعات حساب خود را مدیریت کن.</p></div>
   <div class="panel">
     <div class="profile-top">
       <div class="avatar large" id="userAvatar">F</div>
@@ -252,11 +252,11 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
   
   <div class="settings-card" id="privacySettingsCard">
     <h3 id="privacyTitle">حضور و حریم خصوصی</h3>
-    <div class="setting-row"><div class="setting-copy"><strong>نمایش آنلاین بودن</strong><small>چه کسانی وضعیت آنلاین تو را ببینند؟</small></div><select class="setting-control" id="presenceVisibilitySetting" onchange="savePrivacySetting('presence_visibility',this.value)"><option value="everyone">همه</option><option value="contacts" selected>فقط مخاطبانم</option><option value="nobody">هیچ‌کس</option></select></div>
-    <div class="setting-row"><div class="setting-copy"><strong>آخرین بازدید</strong><small>چه کسانی زمان آخرین حضورت را ببینند؟</small></div><select class="setting-control" id="lastSeenVisibilitySetting" onchange="savePrivacySetting('last_seen_visibility',this.value)"><option value="everyone">همه</option><option value="contacts" selected>فقط مخاطبانم</option><option value="nobody">هیچ‌کس</option></select></div>
-    <label class="privacy-toggle"><input id="showTypingSetting" type="checkbox" checked onchange="savePrivacySetting('show_typing',this.checked)"><span><strong>نمایش «در حال نوشتن…»</strong><small>وضعیت نوشتن در گفتگوها نمایش داده شود.</small></span></label>
-    <label class="privacy-toggle"><input id="showReadReceiptsSetting" type="checkbox" checked onchange="savePrivacySetting('show_read_receipts',this.checked)"><span><strong>رسید خواندن پیام‌ها</strong><small>اجازه بده دیگران خوانده‌شدن پیام را ببینند.</small></span></label>
-    <label class="privacy-toggle"><input id="showSpaceOnlineCountSetting" type="checkbox" checked onchange="savePrivacySetting('show_space_online_count',this.checked)"><span><strong>تعداد اعضای آنلاین گروه</strong><small>نمایش تعداد آنلاین‌ها در گروه‌ها فعال باشد.</small></span></label>
+    <div class="setting-row"><div class="setting-copy"><strong id="presenceVisibilityLabel">نمایش آنلاین بودن</strong><small id="presenceVisibilityHint">چه کسانی وضعیت آنلاین تو را ببینند؟</small></div><select class="setting-control" id="presenceVisibilitySetting" aria-label="نمایش آنلاین بودن" onchange="savePrivacySetting('presence_visibility',this.value)"><option value="everyone">همه</option><option value="contacts" selected>فقط مخاطبانم</option><option value="nobody">هیچ‌کس</option></select></div>
+    <div class="setting-row"><div class="setting-copy"><strong id="lastSeenVisibilityLabel">آخرین بازدید</strong><small id="lastSeenVisibilityHint">چه کسانی زمان آخرین حضورت را ببینند؟</small></div><select class="setting-control" id="lastSeenVisibilitySetting" aria-label="آخرین بازدید" onchange="savePrivacySetting('last_seen_visibility',this.value)"><option value="everyone">همه</option><option value="contacts" selected>فقط مخاطبانم</option><option value="nobody">هیچ‌کس</option></select></div>
+    <label class="privacy-toggle"><input id="showTypingSetting" type="checkbox" checked onchange="savePrivacySetting('show_typing',this.checked)"><span><strong id="showTypingLabel">نمایش «در حال نوشتن…»</strong><small id="showTypingHint">وضعیت نوشتن در گفتگوها نمایش داده شود.</small></span></label>
+    <label class="privacy-toggle"><input id="showReadReceiptsSetting" type="checkbox" checked onchange="savePrivacySetting('show_read_receipts',this.checked)"><span><strong id="showReadReceiptsLabel">رسید خواندن پیام‌ها</strong><small id="showReadReceiptsHint">اجازه بده دیگران خوانده‌شدن پیام را ببینند.</small></span></label>
+    <label class="privacy-toggle"><input id="showSpaceOnlineCountSetting" type="checkbox" checked onchange="savePrivacySetting('show_space_online_count',this.checked)"><span><strong id="showSpaceOnlineCountLabel">تعداد اعضای آنلاین گروه</strong><small id="showSpaceOnlineCountHint">نمایش تعداد آنلاین‌ها در گروه‌ها فعال باشد.</small></span></label>
     <p id="privacySettingsStatus" class="status muted-note" role="status"></p>
   </div>
   <div class="settings-card">
@@ -468,7 +468,7 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
   });
   function loadLocalScripts(){
     const core=document.createElement("script");
-    core.src="./js/core.js?v=20261028-24";
+    core.src="./js/core.js?v=20261028-25";
     watchScript(core,()=>{
       // A script's load event can still fire after a runtime exception.
       // Verify the core boot contract before loading features or attempting
@@ -479,7 +479,7 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
       }
       const featureScripts=[
         "./js/chat-menu-v5.js?v=20261028-21",
-        "./js/spaces.js?v=20261026-3",
+        "./js/spaces.js?v=20261028-4",
         "./js/calls.js?v=20261026-4"
       ];
       let featureIndex=0;

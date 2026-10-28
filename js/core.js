@@ -107,6 +107,12 @@ function applySettingsLanguage(){
      notificationsLabel:["اعلان پیام‌ها","Message notifications"],
      notificationsHint:["اجازه نمایش اعلان روی این دستگاه؛ اعلان پس از بسته‌شدن برنامه به پیکربندی Push سرور هم نیاز دارد.","Allow notifications on this device. Push server setup is also required after the app is closed."],
      enableNotificationsButton:["فعال‌سازی اعلان","Enable notifications"],
+    privacyTitle:["حضور و حریم خصوصی","Presence & privacy"],
+    presenceVisibilityLabel:["نمایش آنلاین بودن","Online status"],presenceVisibilityHint:["چه کسانی وضعیت آنلاین تو را ببینند؟","Who can see when you are online?"],
+    lastSeenVisibilityLabel:["آخرین بازدید","Last seen"],lastSeenVisibilityHint:["چه کسانی زمان آخرین حضورت را ببینند؟","Who can see your last seen time?"],
+    showTypingLabel:["نمایش «در حال نوشتن…»","Show typing status"],showTypingHint:["وضعیت نوشتن در گفتگوها نمایش داده شود.","Show when you are typing in chats."],
+    showReadReceiptsLabel:["رسید خواندن پیام‌ها","Read receipts"],showReadReceiptsHint:["اجازه بده دیگران خوانده‌شدن پیام را ببینند.","Let others know when you have read their messages."],
+    showSpaceOnlineCountLabel:["تعداد اعضای آنلاین گروه","Online group members"],showSpaceOnlineCountHint:["نمایش تعداد آنلاین‌ها در گروه‌ها فعال باشد.","Show the number of members currently online in groups."],
     appearanceTitle:["ظاهر برنامه","Appearance"],themeLabel:["حالت نمایش","Theme"],
     themeHint:["روشن، تیره یا هماهنگ با دستگاه","Light, dark, or follow device"],
     fontSizeLabel:["اندازه نوشته","Text size"],fontSizeHint:["اندازه متن در سراسر برنامه","Text size across the app"],
@@ -128,7 +134,9 @@ function applySettingsLanguage(){
     themeSetting:[["dark","تیره","Dark"],["light","روشن","Light"],["system","مطابق دستگاه","System"]],
     fontSizeSetting:[["small","کوچک","Small"],["medium","معمولی","Medium"],["large","بزرگ","Large"]],
     fontFamilySetting:[["system","پیش‌فرض دستگاه","Device default"],["serif","سریف","Serif"],["rounded","گرد و نرم","Rounded"]],
-    fontColorSetting:[["auto","خودکار بر اساس تم","Automatic by theme"],["white","سفید","White"],["black","سیاه","Black"]]
+    fontColorSetting:[["auto","خودکار بر اساس تم","Automatic by theme"],["white","سفید","White"],["black","سیاه","Black"]],
+    presenceVisibilitySetting:[["everyone","همه","Everyone"],["contacts","فقط مخاطبانم","My contacts"],["nobody","هیچ‌کس","Nobody"]],
+    lastSeenVisibilitySetting:[["everyone","همه","Everyone"],["contacts","فقط مخاطبانم","My contacts"],["nobody","هیچ‌کس","Nobody"]]
   };
   Object.entries(optionSets).forEach(([id,items])=>{const el=$(id);if(el)Array.from(el.options).forEach((o,i)=>{o.textContent=items[i][english?2:1];});});
   if($("settingsLanguageButton"))$("settingsLanguageButton").textContent=english?"Switch to فارسی":"English / فارسی";

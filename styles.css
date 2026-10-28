@@ -41,12 +41,13 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{
 }
 .app{
   max-width:560px;margin:auto;min-height:100dvh;
-  padding:12px 13px calc(94px + env(safe-area-inset-bottom))
+  padding:calc(10px + env(safe-area-inset-top, 0px)) 13px calc(94px + env(safe-area-inset-bottom))
 }
-header{
-  display:flex;align-items:center;gap:10px;
-  min-height:48px;margin:4px 0 17px
+.app>header{
+  display:flex;align-items:center;gap:10px;min-height:48px;
+  margin:0 0 15px;padding:0 0 10px;border-bottom:1px solid var(--border)
 }
+.app>header:has(.logo-button[hidden]){display:none!important}
 .logo{
   width:40px;height:40px;flex-shrink:0;border-radius:13px;
   display:grid;place-items:center;background:var(--mint);
@@ -72,8 +73,9 @@ h1{font-size:20px;margin:0}
 .contact-search-popover select,.contact-search-popover input{padding:9px;font-size:14px}
 .contact-search-popover .action-button{margin-top:10px;padding:9px}
 .contact-search-popover .status{margin-bottom:0}
-.contact-search-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px;font-size:13px;font-weight:700}
-.contact-search-close{width:28px;height:28px;border:0;border-radius:8px;background:var(--panel2);color:var(--muted);font-size:18px}
+.contact-search-title{display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:10px;margin-bottom:5px;font-size:13px;font-weight:700;min-width:0}
+.contact-search-title>span{flex:1;min-width:0;overflow-wrap:anywhere}
+.contact-search-close{flex:0 0 28px;width:28px;height:28px;margin-inline-start:auto;border:0;border-radius:8px;background:var(--panel2);color:var(--muted);font-size:18px}
 .page{display:none;animation:appear .15s ease-out}
 .page.active{display:block}
 @keyframes appear{from{opacity:.65}to{opacity:1}}
@@ -101,8 +103,13 @@ p{color:#b6c1d1;line-height:1.7;font-size:12px}
   border:1px solid #526078;border-radius:10px;
   background:transparent;color:var(--white);font-size:12px
 }
-.page-heading{margin:5px 2px 13px}
-.page-heading p{margin:4px 0}
+.page-heading{min-width:0;margin:0 0 14px;padding:4px 2px 12px;border-bottom:1px solid color-mix(in srgb,var(--border) 82%,transparent)}
+.page-heading h2{margin:0;font-size:20px;line-height:1.45}
+.page-heading p{margin:4px 0 0;color:var(--muted);font-size:12px;line-height:1.55}
+#contactsPage>.page-heading{padding-inline-start:56px}
+#profilePage>.page-heading{margin-bottom:14px}
+#settingsPage>.page-heading{margin-bottom:16px}
+.chats-topline .page-heading,.spaces-head .page-heading{border:0;padding:0;margin:0}
 .panel{padding:14px 12px;margin-bottom:12px}
 .features{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}
 .feature{padding:12px 10px}
@@ -579,7 +586,7 @@ body[data-font-color="white"][data-theme] .bottom-nav .nav-button { color:#fffff
   display:flex!important;flex:1 1 auto!important;flex-direction:column!important;
   min-height:0!important;overflow:hidden!important
 }
-.app.spaces-chat-mode #spacesPage #spaceDetail .space-detail-head{flex:0 0 auto!important}
+.app.spaces-chat-mode #spacesPage #spaceDetail .space-detail-head{flex:0 0 auto!important;padding-bottom:10px!important;margin-bottom:10px!important;border-bottom:1px solid var(--border)!important}
 .app.spaces-chat-mode #spacesPage #spaceMessages{
   flex:1 1 0%!important;min-height:0!important;max-height:none!important;
   overflow-y:auto!important;overscroll-behavior:contain!important;
@@ -888,7 +895,8 @@ body.chat-mode .app.chat-mode #chatPage #sendMessageForm {
   display:flex!important;flex-direction:row!important;direction:ltr!important;
   align-items:center!important;justify-content:flex-start!important;flex-wrap:nowrap!important;
   gap:5px!important;width:100%!important;min-width:0!important;box-sizing:border-box!important;
-  padding:7px 6px!important;margin:0 0 10px!important;position:relative!important;top:auto!important;
+  padding:7px 6px 10px!important;margin:0 0 10px!important;position:relative!important;top:auto!important;
+  border-bottom:1px solid var(--border)!important;
 }
 .app.chat-mode #chatPage #backToChats{
   order:1!important;display:inline-flex!important;flex:0 0 auto!important;width:auto!important;
@@ -1240,9 +1248,9 @@ body[data-auth-state="guest"] #openSettingsButton{display:none!important;visibil
 .welcome-secondary{width:100%;max-width:300px;margin-top:9px;padding:12px;border:1px solid var(--border);border-radius:14px;background:transparent;color:var(--white);font-size:13px;font-weight:650}
 .welcome-footnote{display:flex;align-items:center;gap:8px;margin-top:28px;color:var(--muted);font-size:10px}
 .welcome-footnote span{width:6px;height:6px;border-radius:50%;background:var(--accent,#7896c5);box-shadow:0 0 12px var(--accent,#7896c5)}
-.chats-topline{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:6px 0 13px}
-.chats-topline .chats-new-button{margin-right:auto}
-.chats-topline .page-heading{margin:0;min-width:0}
+.chats-topline{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px;padding:4px 2px 12px;border-bottom:1px solid color-mix(in srgb,var(--border) 82%,transparent)}
+.chats-topline .chats-new-button{margin-inline-start:auto;flex:0 0 42px}
+.chats-topline .page-heading{margin:0;min-width:0;flex:1}
 .chats-topline .page-heading h2{font-size:22px;margin:0}
 .chats-topline .page-heading p{margin:3px 0 0;color:var(--muted);font-size:11px}
 .chats-new-button{width:42px;height:42px;flex:0 0 42px;display:grid;place-items:center;border:1px solid color-mix(in srgb,var(--accent,#7896c5) 35%,var(--border));border-radius:15px;background:var(--panel);color:var(--accent,#7896c5)}
@@ -1322,16 +1330,16 @@ body[data-theme="light"] .welcome-shell{background:radial-gradient(ellipse at 50
 #contactsPage{position:relative}
 #contactsPage .contacts-import-toggle{
   position:absolute;z-index:141;
-  top:0;left:10px;right:auto;bottom:auto;
+  top:0;inset-inline-start:10px;inset-inline-end:auto;left:auto;right:auto;bottom:auto;
   width:42px;height:42px;border:1px solid var(--border);
   border-radius:13px;background:var(--panel);color:var(--accent);
   box-shadow:0 4px 14px #0003;font-size:25px;line-height:1;
   display:grid;place-items:center;
 }
 #contactsPage .contacts-import-toggle[aria-expanded="true"]{
-  top:61px;left:24px;right:auto;bottom:auto;
-  width:36px;height:36px;border-radius:11px;
-  font-size:22px;box-shadow:none;
+  top:0;inset-inline-start:10px;inset-inline-end:auto;left:auto;right:auto;bottom:auto;
+  width:42px;height:42px;border-radius:13px;
+  font-size:22px;box-shadow:0 4px 14px #0003;
 }
 #contactsPage .phone-contacts-import[hidden]{display:none!important}
 #contactsPage .phone-contacts-import{
@@ -1351,12 +1359,12 @@ body[data-theme="light"] .welcome-shell{background:radial-gradient(ellipse at 50
     min-height:100dvh;
   }
   body {
-    padding-top:env(safe-area-inset-top, 0px)!important;
+    padding-top:0!important;
     padding-bottom:env(safe-area-inset-bottom, 0px)!important;
     box-sizing:border-box!important;
   }
   .app:not(.chat-mode):not(.spaces-chat-mode) {
-    height:calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))!important;
+    height:calc(100dvh - env(safe-area-inset-bottom, 0px))!important;
     min-height:0!important;
     margin-top:0!important;
     box-sizing:border-box!important;

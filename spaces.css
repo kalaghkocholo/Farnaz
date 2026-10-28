@@ -212,7 +212,8 @@
   display:flex;
   justify-content:space-between;
   align-items:center;
-  gap:12px
+  gap:12px;flex-wrap:nowrap;padding:4px 2px 12px;margin-bottom:14px;
+  border-bottom:1px solid color-mix(in srgb,var(--border) 82%,transparent)
 }
 #spacesPage .page-heading {
   flex:1;
@@ -300,8 +301,7 @@
 #spaceCreateDialog .space-dialog-card>.contact-search-close,#spaceAddDialog .space-dialog-card>.contact-search-close {
   position:absolute;
   top:calc(env(safe-area-inset-top, 0px) + 10px);
-  left:12px;
-  right:auto;
+  inset-inline-end:12px;left:auto;right:auto;
   margin:0;
   z-index:1
 }
@@ -836,7 +836,7 @@ body.spaces-chat-mode.keyboard-open #spacesPage #spaceComposer .composer-icon {
 #spaceInfoDialog .contact-search-close {
   position:absolute;
   top:calc(env(safe-area-inset-top, 0px) + 12px);
-  left:14px;
+  inset-inline-end:14px;left:auto;right:auto;
   z-index:2
 }
 #spaceInfoDialog .space-dialog-card {
@@ -855,7 +855,7 @@ body.spaces-chat-mode.keyboard-open #spacesPage #spaceComposer .composer-icon {
 #spaceEditDialog .contact-search-close {
   position:absolute;
   top:calc(env(safe-area-inset-top, 0px) + 12px);
-  left:14px;
+  inset-inline-end:14px;left:auto;right:auto;
   z-index:2
 }
 .space-avatar,.space-info-avatar {

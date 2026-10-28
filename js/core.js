@@ -1603,15 +1603,31 @@ async function refreshUnmatchedPhoneContacts(){
       const avatar=document.createElement("div");avatar.className="avatar";avatar.textContent=initials(group.display_name);
       const details=document.createElement("div");details.className="phone-contact-details";
       const name=document.createElement("strong");name.textContent=group.display_name||(english?"Phone contact":"مخاطب گوشی");
-      const phone=document.createElement("span");phone.textContent=rows.map(item=>formatContactPhone(item.phone)).filter(Boolean).join(" · ");
+      const primaryPhone=rows.find(item=>item.is_primary&&item.phone)||rows.find(item=>item.phone)||null;
+      const phone=document.createElement("span");phone.textContent=formatContactPhone(primaryPhone?.phone||"");
       phone.setAttribute("dir","ltr");phone.style.direction="ltr";phone.style.unicodeBidi="isolate";phone.style.textAlign="left";
+      const otherNumbers=rows.filter(item=>item.phone&&String(item.id)!==String(primaryPhone?.id));
+      const extraNumbers=document.createElement("details");extraNumbers.className="phone-contact-extra-numbers";
+      if(otherNumbers.length){
+        const summary=document.createElement("summary");
+        summary.textContent=english?"Other numbers ("+otherNumbers.length+")":"شماره‌های دیگر ("+otherNumbers.length+")";
+        summary.style.cursor="pointer";
+        const numberList=document.createElement("div");numberList.className="phone-contact-extra-number-list";
+        numberList.style.display="grid";numberList.style.gap="4px";numberList.style.marginTop="5px";
+        for(const item of otherNumbers){
+          const number=document.createElement("span");number.textContent=formatContactPhone(item.phone);
+          number.setAttribute("dir","ltr");number.style.direction="ltr";number.style.unicodeBidi="isolate";number.style.textAlign="left";
+          numberList.appendChild(number);
+        }
+        extraNumbers.append(summary,numberList);
+      }
       const state=document.createElement("small");
       if(resolvedIds.length>1){
         state.textContent=english?"Several Farnaz accounts match this person. Choose one:":"چند حساب فرناز برای این مخاطب پیدا شد؛ یکی را انتخاب کن:";
       }else{
         state.textContent=english?"Not on Farnaz yet":"هنوز در فرناز ثبت‌نام نکرده";
       }
-      details.append(name,phone,state);
+      details.append(name,phone);if(otherNumbers.length)details.appendChild(extraNumbers);details.appendChild(state);
       if(resolvedIds.length>1){
         const choices=document.createElement("div");choices.className="phone-contact-account-choices";
         for(const accountId of resolvedIds){

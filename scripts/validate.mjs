@@ -367,14 +367,14 @@ const authChecks = [
    coreSource.includes('return startFarnazPresence(forceRestart);') &&
    coreSource.includes('if(!currentUser||String(currentUser.id)!==uid||farnazPresenceChannel!==ownChannel)return;'),
     "js/core.js must re-evaluate overlapping presence starts and ignore stale contact results after account changes"],
-  [coreSource.includes('async function syncSelectedPhoneContacts(contacts,button,expectedUserId=null)') &&
-   coreSource.includes('await navigator.contacts.select(["name","tel"],{multiple:true});\n    if(String(currentUser?.id)!==myId)return;') &&
-   coreSource.includes('const fileText=await file.text();\n    if(String(currentUser?.id)!==myId)return;') &&
-   (coreSource.match(/syncSelectedPhoneContacts\(contacts,button,myId\)/g)||[]).length===2,
-    "js/core.js must keep phone-contact sync bound to the account that started the picker or VCF import"],
-
-
-
+  [coreSource.includes('async function choosePhoneContactAccount(groupId,accountId,button)') &&
+    coreSource.includes('contact_group_id') &&
+    coreSource.includes('phones,primary_phone') &&
+    coreSource.includes('async function syncSelectedPhoneContacts(contacts,button,expectedUserId=null)') &&
+    coreSource.includes('await navigator.contacts.select(["name","tel"],{multiple:true});\n    if(String(currentUser?.id)!==myId)return;') &&
+    coreSource.includes('const fileText=await file.text();\n    if(String(currentUser?.id)!==myId)return;') &&
+    (coreSource.match(/syncSelectedPhoneContacts\(contacts,button,myId\)/g)||[]).length===2,
+     "js/core.js must group multiple phone numbers per person, allow account selection, and keep sync bound to the initiating account"],
   [sources["js/calls.js"].includes("let signedInUserId=null,inboxChannel=null,activeCall=null,userSwitchSequence=0,callStartInProgress=false;") &&
    sources["js/calls.js"].includes("local call teardown is complete") && sources["js/calls.js"].includes("Call hangup signal:") &&
    sources["js/calls.js"].includes("new Promise(resolve=>setTimeout(resolve,1500))") &&

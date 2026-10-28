@@ -1220,7 +1220,12 @@ body[data-auth-state="guest"] #openSettingsButton{display:none!important;visibil
 .contact-swipe-shell .saved-contact-row.is-pinned:after{content:"📌";align-self:center;padding:0 10px;font-size:13px}
 @media (prefers-reduced-motion:reduce){.saved-contact-row{transition:none}}
 .contact-remove-button{flex:0 0 40px;width:40px;border:1px solid var(--border);border-radius:12px;background:var(--bg);color:var(--danger);font-size:18px}
-.phone-contact-row .contact-remove-button{margin-inline-start:auto;align-self:center}
+.phone-contact-swipe-shell{position:relative;isolation:isolate;overflow:hidden;border-radius:13px;margin-bottom:8px;min-width:0;background:var(--panel2);touch-action:pan-y}
+.phone-contact-swipe-actions{position:absolute;inset-block:0;right:0;width:88px;display:flex;direction:ltr;z-index:0}
+.phone-contact-swipe-actions .contact-swipe-action{width:88px;flex:none}
+.phone-contact-row{position:relative;z-index:1;transform:translateX(0);transition:transform .2s ease;border-radius:13px;margin-bottom:0}
+.phone-contact-swipe-shell.is-open .phone-contact-row{transform:translateX(-88px)}
+@media (prefers-reduced-motion:reduce){.phone-contact-row{transition:none}}
 .phone-contacts-subheading{margin:16px 0 8px}
 .phone-contact-row{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:13px;background:var(--panel);margin-bottom:8px;min-width:0}
 .phone-contact-details{display:flex;flex-direction:column;gap:4px;min-width:0;overflow-wrap:anywhere}

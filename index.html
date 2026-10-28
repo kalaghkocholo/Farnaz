@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" href="./farnaz-icon.svg?v=20261024-4">
 <meta name="description" content="فرناز؛ ارتباطی نزدیک‌تر، در هر کجا.">
 <title>فرناز | Farnaz</title>
-<link rel="preload" href="./js/core.js?v=20261028-26" as="script">
+<link rel="preload" href="./js/core.js?v=20261028-27" as="script">
 <link rel="preconnect" href="https://iemykhluluoymsbqpjsn.supabase.co" crossorigin>
 <style>
 :root{--bg:#101828;--panel:#172237;--panel2:#1d2b42;--border:#2b3a50;--mint:#50e3c2;--muted:#aab5c7;--white:#f8fafc}
@@ -38,8 +38,8 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
 .welcome-secondary{width:100%;max-width:300px;margin-top:9px;padding:12px;border:1px solid var(--border);border-radius:14px;background:transparent;color:var(--white);font-size:13px}
 @media(max-width:360px){.welcome-shell{min-height:62dvh;padding:24px 15px 20px}.welcome-shell h2{font-size:22px}.welcome-mark{width:86px;height:86px;border-radius:25px}.welcome-mark img{width:73px;height:73px}}
 </style>
-<link rel="stylesheet" href="./styles.css?v=20261028-58" media="print" onload="this.onload=null;this.media='all'">
-<noscript><link rel="stylesheet" href="./styles.css?v=20261028-58"></noscript>
+<link rel="stylesheet" href="./styles.css?v=20261028-59" media="print" onload="this.onload=null;this.media='all'">
+<noscript><link rel="stylesheet" href="./styles.css?v=20261028-59"></noscript>
 <link rel="stylesheet" href="./spaces.css?v=20261028-30" media="print" onload="this.onload=null;this.media='all'">
 </head>
 <body data-auth-state="guest">
@@ -112,21 +112,7 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
   <div class="list" id="unmatchedPhoneContactsList"></div>
   <p id="unmatchedPhoneContactsStatus" class="status muted-note" role="status"></p>
 
-  <div class="contact-search-popover" id="contactSearchPopover" hidden>
-    <div class="contact-search-title"><span id="contactSearchTitle">پیدا کردن مخاطب جدید</span><button class="contact-search-close" type="button" onclick="toggleContactSearch(false)" aria-label="بستن">×</button></div>
-    <form id="recipientForm" onsubmit="findRecipient(event)">
-      <label for="recipientValue" id="recipientLabel">ایمیل یا شماره تلفن با کد کشور</label>
-      <label for="recipientCountry" id="recipientCountryLabel">کد کشور شماره تلفن</label>
-      <select id="recipientCountry" aria-label="Phone country code" style="width:100%;border:1px solid #43516a;border-radius:10px;background:var(--bg);color:var(--white)">
-        <option value="98" selected>ایران (+98)</option><option value="49">آلمان (+49)</option><option value="1">آمریکا / کانادا (+1)</option><option value="44">بریتانیا (+44)</option><option value="90">ترکیه (+90)</option>
-      </select>
-      <input id="recipientValue" type="text" dir="ltr" required autocomplete="off" placeholder="email@example.com یا 0912...">
-      <button class="action-button" id="findRecipientBtn" type="submit">پیدا کردن مخاطب</button>
-    </form>
-    <p id="recipientStatus" class="status" role="status"></p>
-    <div id="foundContact"></div>
-    <p class="muted-note" id="contactNote">جست‌وجو فقط برای حساب‌های ثبت‌شده در فرناز انجام می‌شود.</p>
-  </div>
+
 </section>
 
 <!-- صفحه پروفایل -->
@@ -465,7 +451,7 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
   });
   function loadLocalScripts(){
     const core=document.createElement("script");
-    core.src="./js/core.js?v=20261028-26";
+    core.src="./js/core.js?v=20261028-27";
     watchScript(core,()=>{
       // A script's load event can still fire after a runtime exception.
       // Verify the core boot contract before loading features or attempting

@@ -1457,13 +1457,14 @@ body[data-theme="light"] .welcome-shell{background:radial-gradient(ellipse at 50
 #savedFarnazContactFilter{width:100%;margin:0 0 8px}
 @media (prefers-reduced-motion:reduce){.contacts-category-tab{transition:none}}
 
-/* Farnaz group-info: compact action buttons and independently scrollable accordions. */
-#spaceInfoDialog .space-dialog-card{position:relative;gap:0;padding:18px 16px 16px}
-.space-info-back{position:absolute;top:12px;left:16px;display:inline-flex;align-items:center;justify-content:flex-start;gap:7px;min-height:34px;margin:0;padding:5px 8px;border:0;border-radius:9px;background:transparent;color:var(--muted);font:inherit;font-size:13px;font-weight:650;align-self:auto;direction:ltr;z-index:2}
+/* Farnaz group-info: single authoritative responsive block. */
+#spaceInfoDialog .space-dialog-card{position:relative;gap:0;padding:calc(env(safe-area-inset-top,0px) + 52px) 16px calc(env(safe-area-inset-bottom,0px) + 18px)}
+.space-info-back{position:absolute;top:calc(env(safe-area-inset-top,0px) + 18px);left:16px;display:inline-flex;align-items:center;justify-content:flex-start;gap:7px;min-height:38px;margin:0;padding:6px 9px;border:0;border-radius:9px;background:transparent;color:var(--muted);font:inherit;font-size:13px;font-weight:650;align-self:auto;direction:ltr;z-index:2}
 .space-info-back span:first-child{font-size:20px;line-height:1;transform:translateY(-1px)}
 #spaceInfoTitle{margin:34px 0 8px;padding:0 78px;text-align:center;font-size:16px;font-weight:650;color:var(--muted);line-height:1.4}
 .space-info-top{display:flex;flex-direction:column;align-items:center;gap:7px;padding:12px 4px 17px;border:0;border-bottom:1px solid var(--border);margin:0 0 12px;text-align:center;position:relative}
-.space-info-avatar{width:94px;height:94px;flex:0 0 94px;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:var(--panel2);font-size:34px;box-shadow:0 0 0 4px color-mix(in srgb,var(--panel2) 60%,transparent)}
+.space-info-avatar{width:94px;height:94px;flex:0 0 94px;aspect-ratio:1/1;box-sizing:border-box;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:var(--panel2);font-size:34px;box-shadow:0 0 0 4px color-mix(in srgb,var(--panel2) 60%,transparent)}
+.space-info-avatar img,.space-info-avatar picture,.space-info-avatar picture img{display:block;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;max-width:none!important;max-height:none!important;aspect-ratio:1/1;object-fit:cover!important;object-position:center;border-radius:50%;flex:none}
 .space-info-top-copy{min-width:0;width:100%;flex:initial}
 .space-info-top-copy strong{display:block;font-size:18px;font-weight:750;line-height:1.45;overflow-wrap:anywhere}
 .space-info-meta{display:flex;justify-content:center;align-items:center;gap:7px;flex-wrap:wrap;margin-top:3px;color:var(--muted);font-size:12px;line-height:1.5}
@@ -1480,7 +1481,8 @@ body[data-theme="light"] .welcome-shell{background:radial-gradient(ellipse at 50
 .space-info-section-button{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:52px;padding:10px 13px;border:1px solid var(--border);border-radius:13px;background:var(--panel2);color:var(--white);font:inherit;font-size:13px;font-weight:650;text-align:start;transition:border-color .16s ease,background .16s ease}
 .space-info-section-button.is-expanded{border-color:color-mix(in srgb,var(--accent,#728cff) 42%,var(--border));background:color-mix(in srgb,var(--accent,#728cff) 6%,var(--panel2))}
 .space-info-section-leading,.space-info-section-trailing{display:flex;align-items:center;gap:10px;min-width:0}
-.space-info-section-icon{display:grid;place-items:center;flex:0 0 30px;width:30px;height:30px;border-radius:10px;background:var(--panel);color:var(--accent,#8ba0ff);font-size:18px}.space-info-section-icon svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.space-info-section-icon{display:grid;place-items:center;flex:0 0 30px;width:30px;height:30px;border-radius:10px;background:var(--panel);color:var(--accent,#8ba0ff);font-size:18px}
+.space-info-section-icon svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 .space-info-section-summary{color:var(--muted);font-size:12px;font-weight:600}
 .space-info-section-chevron{color:var(--muted);font-size:18px;line-height:1}
 .space-info-accordion-content{min-width:0;max-height:min(46dvh,390px);overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:2px 11px 12px;border:1px solid var(--border);border-radius:13px;background:var(--panel)}
@@ -1491,9 +1493,21 @@ body[data-theme="light"] .welcome-shell{background:radial-gradient(ellipse at 50
 .space-info-members-list .space-member-trigger{width:100%;min-height:54px;display:flex;align-items:center;gap:10px;text-align:inherit;background:transparent;color:inherit;border:0;padding:7px 2px}
 .space-info-members-list .space-member-copy{flex:1;min-width:0}
 .space-info-members-list .space-member-copy strong,.space-info-members-list .space-member-copy small{display:block;overflow-wrap:anywhere}
-.space-admin-settings{margin:10px 0;padding:0;border:0}
-.space-admin-settings h4{margin:8px 0 12px;font-size:14px}
+.space-admin-settings{margin:10px 0;padding:0;border:0;color:var(--white)}
+.space-admin-settings h4{margin:8px 0 12px;font-size:14px;color:var(--white)}
+.space-admin-settings>label:not(.space-setting-toggle){color:var(--muted)}
+.space-admin-settings .space-setting-toggle{color:var(--white);line-height:1.55}
+.space-admin-settings .space-setting-toggle span{color:inherit}
+.space-admin-settings select,.space-admin-settings input:not([type=checkbox]){color:var(--white)}
 .space-info-exit{width:100%;margin:12px 0 4px;min-height:38px;padding:8px 12px;border:1px solid #d45b62;border-radius:10px;background:transparent;color:#d45b62;font:inherit;font-size:13px;font-weight:650}
 .space-info-exit:disabled{opacity:.55}
-body[data-theme="light"] #spaceShowSettings{color:#25354b!important;background:#f5f7fb!important;border-color:#d8e0ea!important}body[data-theme="light"] #spaceShowSettings .space-info-section-leading>span:last-child{color:#25354b!important}body[data-theme="light"] #spaceShowSettings .space-info-section-icon{background:#e8eef8!important;color:#526f9d!important}body[data-theme="light"] #spaceShowSettings .space-info-section-chevron{color:#526074!important}body[data-theme="light"] #spaceShowMembers{color:#25354b!important}body[data-theme="light"] #spaceShowMembers .space-info-section-leading>span:last-child{color:#25354b!important}
+body[data-theme="light"] #spaceShowSettings,body[data-theme="light"] #spaceShowMembers{color:#25354b!important;background:#f5f7fb!important;border-color:#d8e0ea!important}
+body[data-theme="light"] #spaceShowSettings .space-info-section-leading>span:last-child,body[data-theme="light"] #spaceShowMembers .space-info-section-leading>span:last-child{color:#25354b!important}
+body[data-theme="light"] #spaceShowSettings .space-info-section-icon,body[data-theme="light"] #spaceShowMembers .space-info-section-icon{background:#e8eef8!important;color:#526f9d!important}
+body[data-theme="light"] #spaceShowSettings .space-info-section-chevron,body[data-theme="light"] #spaceShowMembers .space-info-section-chevron{color:#526074!important}
+body[data-theme="light"] #spaceSettingsAccordion .space-admin-settings,body[data-theme="light"] #spaceSettingsAccordion .space-admin-settings h4,body[data-theme="light"] #spaceSettingsAccordion .space-setting-toggle,body[data-theme="light"] #spaceSettingsAccordion .space-setting-toggle span{color:#25354b!important}
+body[data-theme="light"] #spaceSettingsAccordion .space-admin-settings>label:not(.space-setting-toggle){color:#526074!important}
+body[data-theme="light"] #spaceSettingsAccordion .space-admin-settings select{background:#fff!important;color:#25354b!important;border-color:#d8e0ea!important}
+body[data-theme="light"] #spaceSettingsAccordion .space-admin-settings input[type=checkbox]{accent-color:#526f9d}
+body[data-theme="light"] #spaceSettingsAccordion #saveSpaceSettings{color:#fff!important}
 @media(max-width:380px){.space-info-avatar{width:82px;height:82px;flex-basis:82px}.space-info-actions{gap:6px}.space-info-actions button{padding:7px 8px;font-size:11px}.space-info-action-icon{flex-basis:26px;width:26px;height:26px}}

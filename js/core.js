@@ -1546,22 +1546,9 @@ function openChat(contact,fromPage="chatsPage"){
   setStatus("sendMessageStatus","");
   currentChatPresenceLabel=english?"Private conversation":"گفتگوی خصوصی";
   navigate("chatPage");refreshPrivatePresence(contact.user_id);
-  const hiddenAt=prefFor(nextContactId).hidden_at;
-  if(hiddenAt){
-    const sendButton=$("sendMessageButton");
-    if(sendButton)sendButton.disabled=true;
-    setStatus("sendMessageStatus",english?"Reopening conversation…":"در حال بازگشایی گفتگو…");
-    saveConversationPref(nextContactId,{hidden_at:null}).then(()=>{
-      if(!currentUser||String(currentChatUser?.user_id)!==nextContactId)return;
-      if(sendButton)sendButton.disabled=false;
-      loadPrivateMessages();
-    }).catch(error=>{
-      if(!currentUser||String(currentChatUser?.user_id)!==nextContactId)return;
-      if(sendButton)sendButton.disabled=false;
-      setStatus("sendMessageStatus",(english?"Could not reopen conversation: ":"بازگشایی گفتگو ناموفق بود: ")+error.message,true);
-      loadPrivateMessages();
-    });
-  }else loadPrivateMessages();
+  // Keep the deletion boundary. Opening a chat must never undelete its old history.
+  // loadPrivateMessages filters both local cache and server results against hidden_at.
+  loadPrivateMessages();
 }
 function makeContactButton(contact,preview="",timeText="",fromPage="chatsPage"){
   const button=document.createElement("button");

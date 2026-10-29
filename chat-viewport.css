@@ -3,7 +3,7 @@
    while the message list scrolls independently when the keyboard opens. */
 html,body{overflow:hidden!important;overscroll-behavior:none!important}
 body.chat-mode .app.chat-mode,body.spaces-chat-mode .app.spaces-chat-mode{
- position:fixed!important;inset-inline:0!important;top:max(env(safe-area-inset-top,0px),44px)!important;bottom:auto!important;
+ position:fixed!important;inset-inline:0!important;top:calc(var(--chat-viewport-offset,0px) + max(env(safe-area-inset-top,0px),44px))!important;bottom:auto!important;
  height:calc(var(--chat-viewport-height,100dvh) - max(env(safe-area-inset-top,0px),44px))!important;
  max-height:calc(var(--chat-viewport-height,100dvh) - max(env(safe-area-inset-top,0px),44px))!important;
  min-height:0!important;width:100%!important;max-width:560px!important;margin:0 auto!important;padding:0!important;

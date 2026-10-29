@@ -1,5 +1,25 @@
-.nav-inner {
-  grid-template-columns:repeat(4,minmax(0,1fr))
+/* Main navigation is shared across the app: keep all five destinations on one row. */
+.bottom-nav .nav-inner {
+  display:grid!important;
+  grid-template-columns:repeat(5,minmax(0,1fr))!important;
+  grid-auto-flow:column!important;
+  grid-auto-columns:minmax(0,1fr)!important;
+  min-width:0!important;
+  gap:2px!important;
+}
+.bottom-nav .nav-button {
+  min-width:0!important;
+  width:100%!important;
+  flex:initial!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+}
+.bottom-nav .nav-button>span:not(.nav-icon) {
+  display:block!important;
+  max-width:100%!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:clip!important;
 }
 #spacesPage {
   padding-bottom:20px

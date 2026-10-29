@@ -1513,3 +1513,31 @@ body[data-theme="light"] #spaceSettingsAccordion .space-admin-settings select{ba
 body[data-theme="light"] #spaceSettingsAccordion .space-admin-settings input[type=checkbox]{accent-color:#526f9d}
 body[data-theme="light"] #spaceSettingsAccordion #saveSpaceSettings{color:#fff!important}
 @media(max-width:380px){.space-info-avatar{width:82px;height:82px;flex-basis:82px}.space-info-actions{gap:6px}.space-info-actions button{padding:7px 8px;font-size:11px}.space-info-action-icon{flex-basis:26px;width:26px;height:26px}}
+
+
+/* iOS keyboard alignment: preserve the safe-area header and remove the keyboard-edge gap. */
+body.chat-mode .app.chat-mode,
+body.spaces-chat-mode .app.spaces-chat-mode {
+  top:max(var(--chat-viewport-offset,0px),env(safe-area-inset-top,0px))!important;
+  height:calc(var(--chat-viewport-height,100dvh) - max(var(--chat-viewport-offset,0px),env(safe-area-inset-top,0px)))!important;
+  max-height:calc(var(--chat-viewport-height,100dvh) - max(var(--chat-viewport-offset,0px),env(safe-area-inset-top,0px)))!important;
+}
+body.chat-mode.keyboard-open .app.chat-mode>#chatPage #sendMessageForm,
+body.spaces-chat-mode.keyboard-open .app.spaces-chat-mode #spacesPage #spaceComposer {
+  margin-bottom:0!important;
+  padding-top:0!important;
+  padding-bottom:0!important;
+  transform:none!important;
+}
+body.chat-mode #chatPage #sendMessageStatus {
+  display:none!important;
+  flex:0 0 0!important;
+  width:0!important;
+  height:0!important;
+  min-height:0!important;
+  max-height:0!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  overflow:hidden!important;
+}

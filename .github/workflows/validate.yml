@@ -40,5 +40,7 @@ jobs:
         run: node scripts/validate.mjs
       - name: Validate call infrastructure security invariants
         run: node scripts/validate-call-infra.mjs
+      - name: Test isolated LiveKit adapter
+        run: node --test tests/livekit-adapter.test.mjs
       - name: Type-check LiveKit token endpoint
         run: deno check --no-config --no-lock supabase/functions/livekit-token/index.ts

@@ -2319,6 +2319,26 @@ async function refreshConversationList(){
 (function installChatKeyboardLayout(){
   const viewport=window.visualViewport;
   let keyboardWasOpen=false;
+  let layoutObserver=null;
+  function syncChatAnchors(){
+    const privatePage=document.getElementById("chatPage");
+    const spaceDetail=document.getElementById("spaceDetail");
+    const header=document.querySelector("body.chat-mode #chatPage>.chat-header")||document.querySelector("body.spaces-chat-mode #spaceDetail:not([hidden])>.space-detail-head");
+    const composer=document.querySelector("body.chat-mode #chatPage>#sendMessageForm")||document.querySelector("body.spaces-chat-mode #spaceComposer");
+    const page=document.body.classList.contains("spaces-chat-mode")?spaceDetail:privatePage;
+    if(!page||!header||!composer)return;
+    page.style.setProperty("--chat-header-height",Math.ceil(header.getBoundingClientRect().height||56)+"px");
+    page.style.setProperty("--chat-composer-height",Math.ceil(composer.getBoundingClientRect().height||76)+"px");
+    if(layoutObserver){layoutObserver.disconnect();layoutObserver=null;}
+    if(typeof ResizeObserver==="function"){
+      layoutObserver=new ResizeObserver(()=>{
+        if(!page.isConnected)return;
+        page.style.setProperty("--chat-header-height",Math.ceil(header.getBoundingClientRect().height||56)+"px");
+        page.style.setProperty("--chat-composer-height",Math.ceil(composer.getBoundingClientRect().height||76)+"px");
+      });
+      layoutObserver.observe(header);layoutObserver.observe(composer);
+    }
+  }
   const isChatActive=()=>document.body.classList.contains("chat-mode")||
     document.body.classList.contains("spaces-chat-mode");
   const messageList=()=>document.body.classList.contains("spaces-chat-mode")
@@ -2329,6 +2349,7 @@ async function refreshConversationList(){
       document.documentElement.style.removeProperty("--chat-viewport-offset");
       document.body.classList.remove("keyboard-open");
       keyboardWasOpen=false;
+      if(layoutObserver){layoutObserver.disconnect();layoutObserver=null;}
       return;
     }
     const height=Math.max(1,viewport?.height||window.innerHeight);
@@ -2336,10 +2357,11 @@ async function refreshConversationList(){
     // during keyboard focus/animation and drag the entire chat shell under the status bar.
     // Keep the shell anchored to the physical top; only its height follows the visual viewport.
     const standalonePWA=window.navigator.standalone===true||!!window.matchMedia?.("(display-mode: standalone)").matches;
-    const offset=standalonePWA?0:Math.max(0,viewport?.offsetTop||0);
+    const offset=0;
     const keyboardOpen=!!viewport&&(window.innerHeight-height>120);
     document.documentElement.style.setProperty("--chat-viewport-height",height+"px");
     document.documentElement.style.setProperty("--chat-viewport-offset",offset+"px");
+    syncChatAnchors();
     document.body.classList.toggle("keyboard-open",keyboardOpen);
     if(keyboardOpen&&!keyboardWasOpen){
       requestAnimationFrame(()=>{

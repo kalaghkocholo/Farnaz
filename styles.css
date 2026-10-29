@@ -1518,7 +1518,7 @@ body[data-theme="light"] #spaceSettingsAccordion #saveSpaceSettings{color:#fff!i
 /* iOS keyboard alignment: preserve the safe-area header and remove the keyboard-edge gap. */
 body.chat-mode .app.chat-mode,
 body.spaces-chat-mode .app.spaces-chat-mode {
-  top:max(var(--chat-viewport-offset,0px),env(safe-area-inset-top,0px))!important;
+  top:max(var(--chat-viewport-offset,0px),env(safe-area-inset-top,44px),44px)!important;
   height:calc(var(--chat-viewport-height,100dvh) - max(var(--chat-viewport-offset,0px),env(safe-area-inset-top,0px)))!important;
   max-height:calc(var(--chat-viewport-height,100dvh) - max(var(--chat-viewport-offset,0px),env(safe-area-inset-top,0px)))!important;
 }
@@ -1551,8 +1551,8 @@ body.spaces-chat-mode .app.spaces-chat-mode {
   position:fixed!important; inset-inline:0!important;
   top:max(var(--chat-viewport-offset,0px),env(safe-area-inset-top,0px))!important; bottom:auto!important;
   width:100%!important; max-width:560px!important; margin:0 auto!important;
-  height:calc(var(--chat-viewport-height,100dvh) + var(--chat-viewport-offset,0px) - max(var(--chat-viewport-offset,0px),env(safe-area-inset-top,0px)))!important;
-  max-height:calc(var(--chat-viewport-height,100dvh) + var(--chat-viewport-offset,0px) - max(var(--chat-viewport-offset,0px),env(safe-area-inset-top,0px)))!important;
+  height:calc(var(--chat-viewport-height,100dvh) + var(--chat-viewport-offset,0px) - max(var(--chat-viewport-offset,0px),env(safe-area-inset-top,44px),44px))!important;
+  max-height:calc(var(--chat-viewport-height,100dvh) + var(--chat-viewport-offset,0px) - max(var(--chat-viewport-offset,0px),env(safe-area-inset-top,44px),44px))!important;
   min-height:0!important; padding:0!important; overflow:hidden!important;
   transform:none!important;
 }

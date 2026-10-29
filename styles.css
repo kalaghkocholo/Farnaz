@@ -1574,4 +1574,5 @@ body.chat-mode.keyboard-open .app.chat-mode>#chatPage .composer-shell,
 body.spaces-chat-mode.keyboard-open .app.spaces-chat-mode #spaceComposer .composer-shell{
   margin-bottom:0!important;padding-bottom:0!important;transform:none!important
 }
-body.chat-mode.keyboard-open .app.chat-mode>header{display:flex!important}
+/* The app shell header must stay out of both active conversation views. */
+body.chat-mode .app.chat-mode>header,body.spaces-chat-mode .app.spaces-chat-mode>header{display:none!important}

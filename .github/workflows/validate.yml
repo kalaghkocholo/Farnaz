@@ -33,3 +33,5 @@ jobs:
           node --check scripts/validate.mjs
       - name: Validate application structure
         run: node scripts/validate.mjs
+      - name: Validate call infrastructure security invariants
+        run: node scripts/validate-call-infra.mjs

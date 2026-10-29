@@ -710,7 +710,7 @@ async function send(event){
  if(editId&&file){q("spaceMessageStatus").textContent=tr("برای ویرایش پیام، ابتدا پیوست را جداگانه ارسال کن.","Attachments cannot be changed while editing a message.");return;}
  const sameAccount=()=>String(currentUser?.id||"")===senderId;
  const sameSpace=()=>sameAccount()&&String(active?.id||"")===spaceId;
- sendingMessage=true;const btn=q("spaceSendButton");btn.disabled=true;input.readOnly=true;q("spaceMessageStatus").textContent=tr("در حال ارسال…","Sending…");
+ sendingMessage=true;const btn=q("spaceSendButton");btn.disabled=true;q("spaceMessageStatus").textContent=tr("در حال ارسال…","Sending…");
  let path=null;
  try{
   const client=getClient();
@@ -751,8 +751,8 @@ async function send(event){
   if(path)try{await getClient().storage.from("chat-attachments").remove([path]);}catch(_){}
   if(sameSpace())q("spaceMessageStatus").textContent=tr("ارسال پیام ناموفق بود: ","Could not send: ")+(e?.message||String(e));
  }finally{
-  sendingMessage=false;btn.disabled=false;input.readOnly=false;
-  if(restoreComposerFocus&&sameSpace()){try{input.focus({preventScroll:true});}catch(_){input.focus();}}
+  sendingMessage=false;btn.disabled=false;
+  if(sameSpace()){try{input.focus({preventScroll:true});}catch(_){input.focus();}}
  }
 }
 async function join(){const code=q("spaceInvite").value.trim().toUpperCase();if(!code)return;q("spacesStatus").textContent=tr("در حال عضویت…","Joining…");try{const {data,error}=await getClient().rpc("join_space_by_invite",{p_invite_code:code});if(error)throw error;q("spaceInvite").value="";const url=new URL(window.location.href);if(url.searchParams.has("join")){url.searchParams.delete("join");history.replaceState(history.state,"",url.pathname+url.search+url.hash);}await refresh();await open(data);}catch(e){q("spacesStatus").textContent=tr("عضویت ناموفق بود: ","Could not join: ")+e.message;}}

@@ -648,8 +648,11 @@ function navigate(pageId,options={}){
   if(pageId==="chatPage"&&!currentChatUser)return;
   const activePageId=document.querySelector(".page.active")?.id||null;
   if(activePageId!==pageId){
-    if(swipePageHistoryIndex<0){
-      swipePageHistory=activePageId?[activePageId,pageId]:[pageId];
+    // Welcome/login is an auth boundary, not a navigable page in signed-in history.
+    if(pageId==="homePage"){swipePageHistory=[];swipePageHistoryIndex=-1;}
+    else if(swipePageHistoryIndex<0){
+      const safePreviousPage=activePageId&&activePageId!=="homePage"&&currentUser?activePageId:null;
+      swipePageHistory=safePreviousPage?[safePreviousPage,pageId]:[pageId];
       swipePageHistoryIndex=swipePageHistory.length-1;
     }else if(swipePageHistory[swipePageHistoryIndex-1]===pageId)swipePageHistoryIndex--;
     else if(swipePageHistory[swipePageHistoryIndex+1]===pageId)swipePageHistoryIndex++;
@@ -685,7 +688,11 @@ function openAdjacentConversation(direction){
 /* Bidirectional page swipes use the same history as ordinary navigation. */
 function swipeHistoryTarget(direction){
   const index=swipePageHistoryIndex-direction;
-  return index>=0&&index<swipePageHistory.length?swipePageHistory[index]:null;
+  if(index<0||index>=swipePageHistory.length)return null;
+  const targetId=swipePageHistory[index];
+  // Never let an in-app gesture return to the welcome/auth screen.
+  if(!currentUser||!targetId||targetId==="homePage"||!document.getElementById(targetId))return null;
+  return targetId;
 }
 function clearSwipeTransition(){
   if(swipeTransitionTimer){clearTimeout(swipeTransitionTimer);swipeTransitionTimer=null;}
@@ -721,7 +728,10 @@ function installFarnazSwipeNavigation(){
     if(event.pointerType!=="touch"||!event.isPrimary||swipeGesture||swipeTransitionTimer)return;
     if(document.body.classList.contains("keyboard-open")||document.body.classList.contains("chat-mode")&&document.activeElement?.matches?.("input,textarea,[contenteditable='true']")||messageSelectionMode)return;
     const app=event.target?.closest?.(".app"),current=app?.querySelector(".page.active");
-    if(!app||!current||app.classList.contains("farnaz-swipe-active"))return;
+    if(!currentUser||!app||!current||current.id==="homePage"||app.classList.contains("farnaz-swipe-active"))return;
+    // Leave the outer 28px to iOS edge navigation; app swipes start in the content area.
+    const appRect=app.getBoundingClientRect();
+    if(event.clientX-appRect.left<28||appRect.right-event.clientX<28)return;
     if(event.target.closest("input,textarea,select,button,a,[contenteditable='true'],.bottom-nav,.conversation-card,.space-card,#conversationList,#spacesList,.dialog,.modal,.message-action-menu,.message-selection-toolbar,#sendMessageForm,#spaceComposer,.composer-shell"))return;
     if(!swipeHistoryTarget(-1)&&!swipeHistoryTarget(1))return;
     swipeGesture={app,current,target:null,targetId:null,startX:event.clientX,startY:event.clientY,lastX:event.clientX,lastTime:performance.now(),velocity:0,dx:0,width:Math.max(1,app.getBoundingClientRect().width),direction:0,locked:false};

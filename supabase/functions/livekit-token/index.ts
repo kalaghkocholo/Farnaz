@@ -24,7 +24,7 @@ function jsonResponse(
   });
   if (origin && allowedOrigins().has(origin)) {
     headers.set("Access-Control-Allow-Origin", origin);
-    headers.set("Access-Control-Allow-Headers", "authorization, apikey, content-type");
+    headers.set("Access-Control-Allow-Headers", "authorization, apikey, content-type, x-client-info");
     headers.set("Access-Control-Allow-Methods", "POST, OPTIONS");
   }
   return new Response(JSON.stringify(body), { status, headers });
@@ -42,7 +42,7 @@ Deno.serve(async (req: Request) => {
       status: 204,
       headers: {
         "Access-Control-Allow-Origin": origin ?? DEFAULT_ALLOWED_ORIGINS[0],
-        "Access-Control-Allow-Headers": "authorization, apikey, content-type",
+        "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
         "Access-Control-Allow-Methods": "POST, OPTIONS",
         "Access-Control-Max-Age": "600",
         "Vary": "Origin",

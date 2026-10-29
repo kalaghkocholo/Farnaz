@@ -682,7 +682,7 @@ function openAdjacentConversation(direction){
 }
 /* Bidirectional page swipes use the same history as ordinary navigation. */
 function swipeHistoryTarget(direction){
-  const index=swipePageHistoryIndex+direction;
+  const index=swipePageHistoryIndex-direction;
   return index>=0&&index<swipePageHistory.length?swipePageHistory[index]:null;
 }
 function clearSwipeTransition(){

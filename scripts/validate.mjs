@@ -202,6 +202,10 @@ const coreSource = sources["js/core.js"];
 if (!coreSource.includes("function installFarnazSwipeNavigation()") ||
     !coreSource.includes('const SWIPE_PAGE_ORDER=["profilePage","chatsPage","spacesPage","contactsPage","settingsPage"]') ||
     !coreSource.includes("const targetId=SWIPE_PAGE_ORDER[index+direction]") ||
+    !coreSource.includes('return "__privateChatBack__"') ||
+    !coreSource.includes('return "__spaceChatBack__"') ||
+    !coreSource.includes('document.getElementById("backSpaces")?.click()') ||
+    !coreSource.includes('navigate("chatsPage")') ||
     !coreSource.includes('document.body.classList.contains("keyboard-open")') ||
     !coreSource.includes('event.clientX-appRect.left<28||appRect.right-event.clientX<28') ||
     !coreSource.includes("document.querySelector(\".page.active\")===g.current") ||
@@ -210,13 +214,13 @@ if (!coreSource.includes("function installFarnazSwipeNavigation()") ||
 }
 
 const chatSource = sources["js/chat-menu-v5.js"];
-if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v229"') || !sources["service-worker.js"].includes('styles.css?v=20261030-96') || !sources["service-worker.js"].includes('core.js?v=20261030-61') || !sources["service-worker.js"].includes('local-store.js?v=20261026-3') || !sources["service-worker.js"].includes('calls.js?v=20261026-4') || !sources["service-worker.js"].includes('chat-menu-v5.js?v=20261029-2') || !html.includes('chat-menu-v5.js?v=20261029-2')) {
+if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v230"') || !sources["service-worker.js"].includes('styles.css?v=20261030-96') || !sources["service-worker.js"].includes('core.js?v=20261030-62') || !sources["service-worker.js"].includes('local-store.js?v=20261026-3') || !sources["service-worker.js"].includes('calls.js?v=20261026-4') || !sources["service-worker.js"].includes('chat-menu-v5.js?v=20261029-2') || !html.includes('chat-menu-v5.js?v=20261029-2')) {
   errors.push("service-worker.js must use the current shell cache and core asset versions");
 }
 const loaderChecks = [
   [html.includes('script.src="./js/supabase-sdk.js"') && html.includes("watchScript(script,()=>{") && html.includes("loadLocalScripts();"),
     "index.html must wait for the local Supabase SDK before loading the app core"],
-  [html.includes('core.src="./js/core.js?v=20261030-60"') && html.includes("watchScript(core,()=>{") && html.includes("بارگذاری هستهٔ برنامه ناموفق بود یا بیش از حد طول کشید"),
+  [html.includes('core.src="./js/core.js?v=20261030-62"') && html.includes("watchScript(core,()=>{") && html.includes("بارگذاری هستهٔ برنامه ناموفق بود یا بیش از حد طول کشید"),
     "index.html must handle successful, failed, and stalled core-script loading"],
   [html.includes("watchScript(script,loadNextFeature,()=>{") && html.includes("featureScripts[featureIndex++]") && html.includes('if(typeof window.FarnazBoot==="function")window.FarnazBoot();'),
     "index.html must load feature scripts sequentially and boot only after the loader sequence"],

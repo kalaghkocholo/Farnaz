@@ -256,9 +256,7 @@ footer{text-align:center;color:#718096;font-size:10px;padding:17px 0 7px}
   .hero{padding:15px 12px}
   }
 
-.app.chat-mode>header{display:none!important}
-.app.chat-mode>#chatPage{padding-top:2px}
-.app.chat-mode>#chatPage #sendMessageForm{margin:0;padding:0;flex:0 0 auto}
+
 .app.chat-mode>#chatPage .composer-shell{position:relative;display:grid;direction:ltr;grid-template-columns:40px minmax(0,1fr) auto;grid-template-rows:auto auto;grid-template-areas:"preview preview preview" "attach input controls";align-items:center;column-gap:5px;row-gap:4px;padding:5px 6px;border:1px solid var(--border);border-radius:24px;background:var(--panel)}
 .app.chat-mode>#chatPage .voice-preview{grid-area:preview;min-width:0}
 .app.chat-mode>#chatPage .send-row{grid-area:input;min-width:0;display:flex;align-items:center;gap:0}
@@ -1188,7 +1186,7 @@ body.spaces-chat-mode .app.spaces-chat-mode{
 body.chat-mode .app.chat-mode>#chatPage{
   position:relative!important;display:flex!important;flex:1 1 0!important;flex-direction:column!important;
   min-width:0!important;min-height:0!important;height:100%!important;max-height:100%!important;
-  margin:0!important;padding:0 13px!important;overflow:hidden!important;gap:0!important
+  margin:0!important;padding:2px 13px 0!important;overflow:hidden!important;gap:0!important
 }
 body.chat-mode .app.chat-mode>#chatPage>.chat-header,
 body.spaces-chat-mode .app.spaces-chat-mode #spaceDetail:not([hidden])>.space-detail-head{
@@ -1204,7 +1202,7 @@ body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceMessages{
   position:relative!important;z-index:1!important;display:flex!important;flex:1 1 0!important;
   min-height:0!important;height:auto!important;max-height:none!important;overflow-x:hidden!important;
   overflow-y:auto!important;overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important;
-  margin:0!important
+  padding:14px 2px!important;gap:8px!important;margin:0!important
 }
 body.chat-mode .app.chat-mode>#chatPage #sendMessageForm,
 body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceComposer{

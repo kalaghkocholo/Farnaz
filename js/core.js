@@ -2395,7 +2395,6 @@ async function refreshConversationList(){
     window.navigate=wrapped;
   }
   
-})();
 
   // Keep email sign-up/sign-in wired to the active core script loaded by index.html.
   const authForm=$("authForm");

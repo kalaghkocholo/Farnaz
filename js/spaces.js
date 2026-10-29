@@ -703,13 +703,14 @@ async function send(event){
  if(!active||sendingMessage||!currentUser)return;
  const senderId=String(currentUser.id),spaceId=String(active.id),editId=editingSpaceMessageId;
  const input=q("spaceText"),body=input.value.trim(),file=spaceRecordedVoiceFile||q("spaceAttachmentFile").files[0]||q("spacePhotoFile").files[0]||q("spaceCameraFile").files[0];
+ const restoreComposerFocus=document.activeElement===input;
  if(!body&&!file)return;
  if(spaceMediaRecorder?.state==="recording"){q("spaceMessageStatus").textContent=tr("پیش از ارسال، ضبط را متوقف کن.","Stop recording before sending.");return;}
  if(file&&file.size>20*1024*1024){q("spaceMessageStatus").textContent=tr("حجم فایل باید حداکثر ۲۰ مگابایت باشد.","Choose a file up to 20 MB.");return;}
  if(editId&&file){q("spaceMessageStatus").textContent=tr("برای ویرایش پیام، ابتدا پیوست را جداگانه ارسال کن.","Attachments cannot be changed while editing a message.");return;}
  const sameAccount=()=>String(currentUser?.id||"")===senderId;
  const sameSpace=()=>sameAccount()&&String(active?.id||"")===spaceId;
- sendingMessage=true;const btn=q("spaceSendButton");btn.disabled=true;input.disabled=true;q("spaceMessageStatus").textContent=tr("در حال ارسال…","Sending…");
+ sendingMessage=true;const btn=q("spaceSendButton");btn.disabled=true;input.readOnly=true;q("spaceMessageStatus").textContent=tr("در حال ارسال…","Sending…");
  let path=null;
  try{
   const client=getClient();
@@ -750,8 +751,8 @@ async function send(event){
   if(path)try{await getClient().storage.from("chat-attachments").remove([path]);}catch(_){}
   if(sameSpace())q("spaceMessageStatus").textContent=tr("ارسال پیام ناموفق بود: ","Could not send: ")+(e?.message||String(e));
  }finally{
-  sendingMessage=false;btn.disabled=false;input.disabled=false;
-  if(sameSpace())input.focus();
+  sendingMessage=false;btn.disabled=false;input.readOnly=false;
+  if(restoreComposerFocus&&sameSpace()){try{input.focus({preventScroll:true});}catch(_){input.focus();}}
  }
 }
 async function join(){const code=q("spaceInvite").value.trim().toUpperCase();if(!code)return;q("spacesStatus").textContent=tr("در حال عضویت…","Joining…");try{const {data,error}=await getClient().rpc("join_space_by_invite",{p_invite_code:code});if(error)throw error;q("spaceInvite").value="";const url=new URL(window.location.href);if(url.searchParams.has("join")){url.searchParams.delete("join");history.replaceState(history.state,"",url.pathname+url.search+url.hash);}await refresh();await open(data);}catch(e){q("spacesStatus").textContent=tr("عضویت ناموفق بود: ","Could not join: ")+e.message;}}

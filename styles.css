@@ -29,7 +29,7 @@ body.chat-mode{position:fixed;inset:0;width:100%;overflow:hidden}
 /* Preserve usable message space while the iOS keyboard is open. */
 body.chat-mode.keyboard-open .app.chat-mode>header{display:none!important}
 body.chat-mode.keyboard-open .app.chat-mode>#chatPage #messageList{padding-top:2px;padding-bottom:6px;gap:5px}
-body.chat-mode.keyboard-open .app.chat-mode>#chatPage #sendMessageForm{padding-top:2px;padding-bottom:max(2px,env(safe-area-inset-bottom))}
+body.chat-mode.keyboard-open .app.chat-mode>#chatPage #sendMessageForm{flex:0 0 auto;margin:0!important;padding-top:0!important;padding-bottom:0!important}
 body.chat-mode.keyboard-open .app.chat-mode>#chatPage .composer-shell{padding:3px;border-radius:14px}
 body.chat-mode.keyboard-open .app.chat-mode>#chatPage #messageText{max-height:64px;min-height:36px;padding-top:7px;padding-bottom:7px}
 body.chat-mode.keyboard-open .app.chat-mode>#chatPage #sendMessageStatus{max-height:22px;font-size:11px}

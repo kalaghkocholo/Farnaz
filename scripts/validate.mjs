@@ -200,17 +200,17 @@ for (const path of ["js/local-store.js", "js/core.js", "js/chat-menu-v5.js", "js
 // Keep shell cache and versioned local-store assets synchronized after cache behavior changes.
 const coreSource = sources["js/core.js"];
 if (!coreSource.includes("function installFarnazSwipeNavigation()") ||
-    !coreSource.includes("function swipeHistoryTarget(direction)") ||
+    !coreSource.includes('const SWIPE_PAGE_ORDER=["profilePage","chatsPage","spacesPage","contactsPage","settingsPage"]') ||
+    !coreSource.includes("const targetId=SWIPE_PAGE_ORDER[index+direction]") ||
     !coreSource.includes('document.body.classList.contains("keyboard-open")') ||
-    !coreSource.includes("const safePreviousPage=activePageId&&activePageId!==\"homePage\"&&currentUser?activePageId:null") ||
     !coreSource.includes('event.clientX-appRect.left<28||appRect.right-event.clientX<28') ||
-    !coreSource.includes('targetId==="homePage"') ||
+    !coreSource.includes("document.querySelector(\".page.active\")===g.current") ||
     !sources["styles.css"].includes(".app.farnaz-swipe-active>.page.farnaz-swipe-underlay")) {
-  errors.push("Farnaz must provide guarded bidirectional swipe navigation with initialized page history and a shared transition layer");
+  errors.push("Farnaz must provide deterministic ordered swipe navigation, auth/keyboard guards, and single-page transition commits");
 }
 
 const chatSource = sources["js/chat-menu-v5.js"];
-if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v228"') || !sources["service-worker.js"].includes('styles.css?v=20261030-96') || !sources["service-worker.js"].includes('core.js?v=20261030-60') || !sources["service-worker.js"].includes('local-store.js?v=20261026-3') || !sources["service-worker.js"].includes('calls.js?v=20261026-4') || !sources["service-worker.js"].includes('chat-menu-v5.js?v=20261029-2') || !html.includes('chat-menu-v5.js?v=20261029-2')) {
+if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v229"') || !sources["service-worker.js"].includes('styles.css?v=20261030-96') || !sources["service-worker.js"].includes('core.js?v=20261030-61') || !sources["service-worker.js"].includes('local-store.js?v=20261026-3') || !sources["service-worker.js"].includes('calls.js?v=20261026-4') || !sources["service-worker.js"].includes('chat-menu-v5.js?v=20261029-2') || !html.includes('chat-menu-v5.js?v=20261029-2')) {
   errors.push("service-worker.js must use the current shell cache and core asset versions");
 }
 const loaderChecks = [

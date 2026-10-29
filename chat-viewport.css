@@ -1,7 +1,6 @@
 /* Stable iOS Home Screen chat viewport.
-   Ignore visualViewport.offsetTop: iOS may pan the viewport automatically when the
-   composer receives focus, and applying that offset to fixed content moves the header
-   out of view. Resize only the shell height; keep the header and composer stationary. */
+   Keep the private-chat composer anchored to the bottom of the visible chat shell
+   while the message list scrolls independently when the keyboard opens. */
 html,body{overflow:hidden!important;overscroll-behavior:none!important}
 body.chat-mode .app.chat-mode,body.spaces-chat-mode .app.spaces-chat-mode{
  position:fixed!important;inset-inline:0!important;top:max(env(safe-area-inset-top,0px),44px)!important;bottom:auto!important;
@@ -26,14 +25,23 @@ body.chat-mode .app.chat-mode>#chatPage #replyPreview{flex:0 0 auto!important}
 body.chat-mode .app.chat-mode>#chatPage #messageList{
  position:relative!important;z-index:1!important;display:flex!important;flex:1 1 0!important;
  min-height:0!important;height:auto!important;max-height:none!important;overflow-x:hidden!important;overflow-y:auto!important;
- overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important;margin:0!important
+ padding-bottom:112px!important;overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important;margin:0!important
 }
+/* Absolute anchoring prevents iOS Home Screen focus auto-scrolling the composer
+   into the middle of the chat when the on-screen keyboard appears. */
 body.chat-mode .app.chat-mode>#chatPage #sendMessageForm{
- position:relative!important;inset:auto!important;z-index:4!important;display:block!important;flex:0 0 auto!important;
- width:100%!important;min-height:0!important;margin:0!important;padding:0 0 max(3px,env(safe-area-inset-bottom,0px))!important;
+ position:absolute!important;left:13px!important;right:13px!important;bottom:0!important;inset-block-start:auto!important;
+ z-index:10!important;display:block!important;flex:0 0 auto!important;width:auto!important;min-height:0!important;
+ margin:0!important;padding:0 0 max(3px,env(safe-area-inset-bottom,0px))!important;
  background:var(--bg)!important;transform:none!important
 }
 body.chat-mode #chatPage #sendMessageStatus{display:none!important;flex:0 0 0!important;width:0!important;height:0!important;min-height:0!important;max-height:0!important;margin:0!important;padding:0!important;border:0!important;overflow:hidden!important}
+body.chat-mode.keyboard-open .app.chat-mode>#chatPage #sendMessageForm{bottom:0!important;margin:0!important;padding-top:0!important;padding-bottom:0!important;transform:none!important}
+body.chat-mode.keyboard-open .app.chat-mode>#chatPage .composer-shell{margin-bottom:0!important;padding-bottom:0!important}
+body.chat-mode.keyboard-open .app.chat-mode>#chatPage>.chat-header{
+ display:flex!important;visibility:visible!important;opacity:1!important;position:relative!important;inset:auto!important;
+ z-index:100!important;flex:0 0 auto!important;min-height:56px!important;transform:none!important
+}
 body.spaces-chat-mode .app.spaces-chat-mode #spacesPage.active{
  display:flex!important;flex:1 1 0!important;flex-direction:column!important;min-width:0!important;min-height:0!important;
  height:100%!important;max-height:100%!important;padding:0 13px!important;overflow:hidden!important;gap:0!important
@@ -58,11 +66,5 @@ body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceComposer{
  min-height:0!important;width:100%!important;margin:0!important;padding:0 0 max(3px,env(safe-area-inset-bottom,0px))!important;
  background:var(--bg)!important;transform:none!important
 }
-body.chat-mode.keyboard-open .app.chat-mode>#chatPage #sendMessageForm,
 body.spaces-chat-mode.keyboard-open .app.spaces-chat-mode #spacesPage #spaceComposer{margin:0!important;padding-top:0!important;padding-bottom:0!important;transform:none!important}
-body.chat-mode.keyboard-open .app.chat-mode>#chatPage .composer-shell,
-body.spaces-chat-mode.keyboard-open .app.spaces-chat-mode #spaceComposer .composer-shell{margin-bottom:0!important;padding-bottom:0!important}
-body.chat-mode.keyboard-open .app.chat-mode>#chatPage>.chat-header{
- display:flex!important;visibility:visible!important;opacity:1!important;position:relative!important;inset:auto!important;
- z-index:100!important;flex:0 0 auto!important;min-height:56px!important;transform:none!important
-}
+body.spaces-chat-mode.keyboard-open .app.spaces-chat-mode #spacesPage #spaceComposer .composer-shell{margin-bottom:0!important;padding-bottom:0!important}

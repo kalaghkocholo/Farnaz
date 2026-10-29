@@ -9,6 +9,7 @@ let english=false,authMode="signup",farnazClient=null,currentUser=null;
 let currentProfileName="",currentAvatarUrl="",currentPhone="",currentChatPresenceLabel="گفتگوی خصوصی";
 let currentChatUser=null,messageSubscription=null,reconnectTimer=null,reconnectAttempts=0;
 let profileRequestNumber=0,chatRequestNumber=0,previousPage="chatsPage";
+let swipePageHistory=[],swipePageHistoryIndex=-1,swipeGesture=null,swipeTransitionTimer=null;
 let conversationView="active",conversationPrefs=new Map(),messageLoadedCount=50,messageHasMore=false;
 let contactsCategory="all";
 let selectedMessageIds=new Set(),replyTarget=null,editingMessageId=null,messageSelectionMode=false,preEditDraft="";
@@ -645,6 +646,13 @@ function navigate(pageId,options={}){
   if(!currentUser){openAuth();return;}
   if(!$(pageId))return;
   if(pageId==="chatPage"&&!currentChatUser)return;
+  const activePageId=document.querySelector(".page.active")?.id||null;
+  if(activePageId!==pageId){
+    if(swipePageHistoryIndex<0){swipePageHistory=[pageId];swipePageHistoryIndex=0;}
+    else if(swipePageHistory[swipePageHistoryIndex-1]===pageId)swipePageHistoryIndex--;
+    else if(swipePageHistory[swipePageHistoryIndex+1]===pageId)swipePageHistoryIndex++;
+    else{swipePageHistory=swipePageHistory.slice(0,swipePageHistoryIndex+1);swipePageHistory.push(pageId);swipePageHistoryIndex=swipePageHistory.length-1;}
+  }
   document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id===pageId));
   document.querySelector(".app").classList.toggle("chat-mode",pageId==="chatPage");
   document.body.classList.toggle("chat-mode",pageId==="chatPage");
@@ -672,7 +680,80 @@ function openAdjacentConversation(direction){
   if(nextIndex<0||nextIndex>=cards.length)return;
   cards[nextIndex].querySelector(".list-item")?.click();
 }
-/* Horizontal swipe navigation disabled: keep private chat stationary on mobile. */
+/* Bidirectional page swipes use the same history as ordinary navigation. */
+function swipeHistoryTarget(direction){
+  const index=swipePageHistoryIndex-direction;
+  return index>=0&&index<swipePageHistory.length?swipePageHistory[index]:null;
+}
+function clearSwipeTransition(){
+  if(swipeTransitionTimer){clearTimeout(swipeTransitionTimer);swipeTransitionTimer=null;}
+  document.querySelector(".app")?.classList.remove("farnaz-swipe-active");
+  document.querySelectorAll(".page.farnaz-swipe-current,.page.farnaz-swipe-underlay").forEach(page=>{
+    page.classList.remove("farnaz-swipe-current","farnaz-swipe-underlay");
+    page.style.removeProperty("transform");page.style.removeProperty("transition");
+  });
+  swipeGesture=null;
+}
+function finishSwipeNavigation(commit){
+  const g=swipeGesture;if(!g)return;
+  if(commit&&g.targetId){
+    g.current.style.transition="transform 220ms cubic-bezier(.22,.75,.25,1)";
+    g.target.style.transition=g.current.style.transition;
+    g.current.style.transform="translate3d("+(g.direction*g.width)+"px,0,0)";
+    g.target.style.transform="translate3d(0,0,0)";
+    swipeGesture=null;
+    swipeTransitionTimer=setTimeout(()=>{swipeTransitionTimer=null;navigate(g.targetId);clearSwipeTransition();},230);
+  }else{
+    g.current.style.transition="transform 180ms cubic-bezier(.22,.75,.25,1)";
+    g.target.style.transition=g.current.style.transition;
+    g.current.style.transform="translate3d(0,0,0)";
+    g.target.style.transform="translate3d("+(g.direction>0?-g.width:g.width)+"px,0,0)";
+    swipeGesture=null;
+    swipeTransitionTimer=setTimeout(()=>{swipeTransitionTimer=null;clearSwipeTransition();},190);
+  }
+}
+function installFarnazSwipeNavigation(){
+  if(document.documentElement.dataset.farnazSwipeNavigation==="ready")return;
+  document.documentElement.dataset.farnazSwipeNavigation="ready";
+  document.addEventListener("pointerdown",event=>{
+    if(event.pointerType!=="touch"||!event.isPrimary||swipeGesture||swipeTransitionTimer)return;
+    if(document.body.classList.contains("keyboard-open")||messageSelectionMode)return;
+    const app=event.target?.closest?.(".app"),current=app?.querySelector(".page.active");
+    if(!app||!current||app.classList.contains("farnaz-swipe-active"))return;
+    if(event.target.closest("input,textarea,select,button,a,[contenteditable='true'],.bottom-nav,.conversation-card,.space-card,#conversationList,#spacesList,.dialog,.modal,.message-action-menu,.message-selection-toolbar,#sendMessageForm,#spaceComposer,.composer-shell"))return;
+    if(!swipeHistoryTarget(-1)&&!swipeHistoryTarget(1))return;
+    swipeGesture={app,current,target:null,targetId:null,startX:event.clientX,startY:event.clientY,lastX:event.clientX,lastTime:performance.now(),velocity:0,dx:0,width:Math.max(1,app.getBoundingClientRect().width),direction:0,locked:false};
+  },{capture:true,passive:true});
+  document.addEventListener("pointermove",event=>{
+    const g=swipeGesture;if(!g||event.pointerType!=="touch")return;
+    const dx=event.clientX-g.startX,dy=event.clientY-g.startY,now=performance.now();
+    g.velocity=(event.clientX-g.lastX)/Math.max(1,now-g.lastTime);g.lastX=event.clientX;g.lastTime=now;g.dx=dx;
+    if(!g.locked){
+      if(Math.abs(dx)<12&&Math.abs(dy)<12)return;
+      if(Math.abs(dx)<Math.abs(dy)*1.2){swipeGesture=null;return;}
+      const direction=dx>0?1:-1,targetId=swipeHistoryTarget(direction);
+      if(!targetId){swipeGesture=null;return;}
+      const target=document.getElementById(targetId);if(!target){swipeGesture=null;return;}
+      g.direction=direction;g.targetId=targetId;g.target=target;g.locked=true;
+      g.app.classList.add("farnaz-swipe-active");g.current.classList.add("farnaz-swipe-current");target.classList.add("farnaz-swipe-underlay");
+      target.style.transition="none";g.current.style.transition="none";
+      target.style.transform="translate3d("+(direction>0?-g.width:g.width)+"px,0,0)";
+    }
+    if(g.locked){
+      if(event.cancelable)event.preventDefault();
+      const x=Math.max(-g.width,Math.min(g.width,dx));
+      g.current.style.transform="translate3d("+x+"px,0,0)";
+      g.target.style.transform="translate3d("+((g.direction>0?-g.width:g.width)+x)+"px,0,0)";
+    }
+  },{capture:true,passive:false});
+  document.addEventListener("pointerup",event=>{
+    const g=swipeGesture;if(!g||event.pointerType!=="touch")return;
+    if(!g.locked){swipeGesture=null;return;}
+    finishSwipeNavigation(Math.abs(g.dx)>=Math.max(72,g.width*.22)||(Math.abs(g.velocity)>.55&&Math.abs(g.dx)>44));
+  },{capture:true,passive:true});
+  document.addEventListener("pointercancel",()=>{if(swipeGesture?.locked)finishSwipeNavigation(false);else swipeGesture=null;},{capture:true,passive:true});
+}
+installFarnazSwipeNavigation();
 
 function setConversationView(view){conversationView=view;refreshConversationList();}
 $("conversationSearch")?.addEventListener("input",applyConversationSearch);
@@ -938,6 +1019,7 @@ async function showUser(user){
   }
 }
 function showGuest(){
+  swipePageHistory=[];swipePageHistoryIndex=-1;clearSwipeTransition();
   const previousUserId=currentUser?.id;
   if(previousUserId)window.FarnazLocalStore?.clearUser(previousUserId).catch(cacheError=>console.warn("Could not clear local account data:",cacheError));
   stopFarnazPresence().catch(()=>{});farnazPresenceContactCache.clear();

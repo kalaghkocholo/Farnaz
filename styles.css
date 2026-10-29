@@ -1579,3 +1579,11 @@ body.chat-mode.keyboard-open .app.chat-mode>#chatPage>.chat-header{
   position:relative!important;inset:auto!important;z-index:100!important;
   flex:0 0 auto!important;min-height:56px!important;transform:none!important;
 }
+
+
+/* One shared, history-aware horizontal transition for all app pages. */
+.app.farnaz-swipe-active{position:relative!important;overflow:hidden!important;touch-action:pan-y!important}
+.app.farnaz-swipe-active>.page.farnaz-swipe-current{position:relative!important;z-index:2!important;will-change:transform;backface-visibility:hidden}
+.app.farnaz-swipe-active>.page.farnaz-swipe-underlay{display:block!important;position:absolute!important;inset:0!important;z-index:1!important;width:100%!important;height:100%!important;min-height:0!important;overflow-x:hidden!important;overflow-y:auto!important;background:var(--bg)!important;will-change:transform;backface-visibility:hidden;overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important}
+.app.farnaz-swipe-active>.page.farnaz-swipe-current,.app.farnaz-swipe-active>.page.farnaz-swipe-underlay{box-sizing:border-box}
+@media(prefers-reduced-motion:reduce){.app.farnaz-swipe-active>.page.farnaz-swipe-current,.app.farnaz-swipe-active>.page.farnaz-swipe-underlay{transition-duration:1ms!important}}

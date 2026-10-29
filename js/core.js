@@ -2361,9 +2361,17 @@ async function refreshConversationList(){
   document.addEventListener("focusout",event=>{
     if(event.target?.matches("#messageText,#spaceText")){
       clearTimeout(blurTimer);
-      blurTimer=setTimeout(()=>{
-        if(!document.activeElement?.matches("#messageText,#spaceText"))syncViewport();
-      },180);
+      // iOS Home Screen apps can report the keyboard-closing viewport late.
+      // Re-measure after the transition so the composer returns to the true bottom.
+      const resync=()=>{
+        if(!document.activeElement?.matches("#messageText,#spaceText")){
+          syncViewport();
+          requestAnimationFrame(syncViewport);
+        }
+      };
+      blurTimer=setTimeout(resync,180);
+      setTimeout(resync,360);
+      setTimeout(resync,650);
     }
   });
   vv?.addEventListener("resize",syncViewport);

@@ -2353,9 +2353,10 @@ async function refreshConversationList(){
   document.addEventListener("focusin",event=>{
     if(event.target?.matches("#messageText,#spaceText")){
       clearTimeout(blurTimer);
+      // iOS Home Screen viewport metrics settle in stages during keyboard animation.
+      // Re-measure through the transition so the header and composer track the final viewport.
       requestAnimationFrame(syncViewport);
-      setTimeout(syncViewport,80);
-      setTimeout(syncViewport,220);
+      [60,120,200,320,480,700].forEach(delay=>setTimeout(syncViewport,delay));
     }
   });
   document.addEventListener("focusout",event=>{
@@ -2370,8 +2371,7 @@ async function refreshConversationList(){
         }
       };
       blurTimer=setTimeout(resync,180);
-      setTimeout(resync,360);
-      setTimeout(resync,650);
+      [300,480,700].forEach(delay=>setTimeout(resync,delay));
     }
   });
   vv?.addEventListener("resize",syncViewport);

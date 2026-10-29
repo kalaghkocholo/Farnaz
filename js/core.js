@@ -2326,7 +2326,7 @@ async function refreshConversationList(){
   function syncViewport(){
     if(!activeChat())return;
     const height=vv?vv.height:window.innerHeight;
-    const offset=vv?vv.offsetTop:0;
+    const offset=0; // Keep the chat frame pinned; iOS may pan visualViewport while focusing an input.
     document.documentElement.style.setProperty("--chat-viewport-height",Math.max(180,height)+"px");
     document.documentElement.style.setProperty("--chat-viewport-offset",Math.max(0,offset)+"px");
     const keyboardOpen=!!vv&&(window.innerHeight-height>120);
@@ -2349,6 +2349,7 @@ async function refreshConversationList(){
   document.addEventListener("focusin",event=>{
     if(event.target?.matches("#messageText,#spaceText")){
       clearTimeout(blurTimer);
+      window.scrollTo(0,0);
       requestAnimationFrame(syncViewport);
       setTimeout(syncViewport,80);
       setTimeout(syncViewport,220);

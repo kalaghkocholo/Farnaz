@@ -1,24 +1,34 @@
-/* Main navigation is shared across the app: keep all five destinations on one row. */
+/* Force a single, non-wrapping navigation strip on narrow iPhone screens. */
 .bottom-nav .nav-inner {
-  display:grid!important;
-  grid-template-columns:repeat(5,minmax(0,1fr))!important;
-  grid-auto-flow:row!important;
+  display:flex!important;
+  flex-flow:row nowrap!important;
+  align-items:stretch!important;
+  justify-content:space-between!important;
+  width:100%!important;
   min-width:0!important;
   gap:2px!important;
 }
 .bottom-nav .nav-button {
+  display:flex!important;
+  flex:1 1 0!important;
+  width:0!important;
   min-width:0!important;
-  width:100%!important;
-  flex:initial!important;
+  max-width:none!important;
+  margin:0!important;
+  padding-inline:0!important;
   white-space:nowrap!important;
   overflow:hidden!important;
 }
 .bottom-nav .nav-button>span:not(.nav-icon) {
   display:block!important;
+  width:100%!important;
   max-width:100%!important;
   white-space:nowrap!important;
   overflow:hidden!important;
   text-overflow:clip!important;
+  text-align:center!important;
+  font-size:clamp(7px,2.25vw,10px)!important;
+  line-height:1.2!important;
 }
 #spacesPage {
   padding-bottom:20px

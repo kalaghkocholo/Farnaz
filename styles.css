@@ -298,9 +298,9 @@ footer{text-align:center;color:#718096;font-size:10px;padding:17px 0 7px}
 .app.chat-mode>#chatPage #attachmentHint{display:none}
 .app.chat-mode>#chatPage .composer-icon{width:36px;height:36px;flex:0 0 36px;border-radius:50%}
 .app.chat-mode>#chatPage #attachmentMenu{inset-inline-start:4px;bottom:calc(100% + 8px)}
-.app.chat-mode.keyboard-open .app.chat-mode>#chatPage .app.chat-mode.keyboard-open .app.chat-mode>#chatPage .app.chat-mode.keyboard-open .app.chat-mode>#chatPage .composer-shell{padding:3px 5px;column-gap:4px}
-.app.chat-mode.keyboard-open .app.chat-mode>#chatPage .send-row textarea{min-height:36px;max-height:76px;padding-top:7px;padding-bottom:7px}
-.app.chat-mode.keyboard-open .app.chat-mode>#chatPage .composer-icon{width:34px;height:34px;flex-basis:34px}
+body.chat-mode.keyboard-open .app.chat-mode>#chatPage .composer-shell{padding:3px 5px;column-gap:4px}
+body.chat-mode.keyboard-open .app.chat-mode>#chatPage .send-row textarea{min-height:36px;max-height:76px;padding-top:7px;padding-bottom:7px}
+body.chat-mode.keyboard-open .app.chat-mode>#chatPage .composer-icon{width:34px;height:34px;flex-basis:34px}
 
 
 .app>header[hidden]{display:none!important}

@@ -1597,9 +1597,9 @@ body.spaces-chat-mode.keyboard-open .app.spaces-chat-mode #spacesPage #spaceComp
 @media (display-mode: standalone) {
   body.chat-mode .app.chat-mode,
   body.spaces-chat-mode .app.spaces-chat-mode {
-    top:env(safe-area-inset-top, 0px)!important;
-    height:calc(var(--chat-viewport-height, 100dvh) - env(safe-area-inset-top, 0px))!important;
-    max-height:calc(var(--chat-viewport-height, 100dvh) - env(safe-area-inset-top, 0px))!important;
+    top:max(var(--chat-viewport-offset,0px),env(safe-area-inset-top,0px))!important;
+    height:calc(var(--chat-viewport-height,100dvh) + var(--chat-viewport-offset,0px) - max(var(--chat-viewport-offset,0px),env(safe-area-inset-top,0px)))!important;
+    max-height:calc(var(--chat-viewport-height,100dvh) + var(--chat-viewport-offset,0px) - max(var(--chat-viewport-offset,0px),env(safe-area-inset-top,0px)))!important;
     min-height:0!important;
     display:flex!important;
     flex-direction:column!important;

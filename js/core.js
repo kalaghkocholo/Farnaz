@@ -691,7 +691,13 @@ function swipeHistoryTarget(direction){
   if(!currentUser)return null;
   const activePage=document.querySelector(".page.active");
   if(!activePage)return null;
-  // An open private conversation belongs to the conversations section.
+  // An open conversation is a nested view: a right swipe returns to its own list.
+  if(direction>0&&activePage.id==="chatPage")return "__privateChatBack__";
+  if(direction>0&&activePage.id==="spacesPage"){
+    const detail=document.getElementById("spaceDetail");
+    if(detail&&!detail.hidden)return "__spaceChatBack__";
+  }
+  if((activePage.id==="chatPage"||activePage.id==="spacesPage"&&document.getElementById("spaceDetail")&&!document.getElementById("spaceDetail").hidden)&&direction<0)return null;
   const currentId=activePage.id==="chatPage"?"chatsPage":activePage.id;
   const index=SWIPE_PAGE_ORDER.indexOf(currentId);
   if(index<0)return null;
@@ -709,6 +715,19 @@ function clearSwipeTransition(){
 }
 function finishSwipeNavigation(commit){
   const g=swipeGesture;if(!g)return;
+  if(g.action){
+    swipeGesture=null;
+    if(commit&&currentUser&&document.querySelector(".page.active")===g.current){
+      if(g.action==="__privateChatBack__"){
+        dismissMessageMenus();exitMessageSelection();cancelReply();cancelMessageEdit();
+        navigate("chatsPage");
+      }else if(g.action==="__spaceChatBack__"){
+        document.getElementById("backSpaces")?.click();
+      }
+    }
+    clearSwipeTransition();
+    return;
+  }
   if(commit&&g.targetId){
     g.current.style.transition="transform 220ms cubic-bezier(.22,.75,.25,1)";
     g.target.style.transition=g.current.style.transition;
@@ -754,14 +773,20 @@ function installFarnazSwipeNavigation(){
       if(Math.abs(dx)<Math.abs(dy)*1.2){swipeGesture=null;return;}
       const direction=dx>0?1:-1,targetId=swipeHistoryTarget(direction);
       if(!targetId){swipeGesture=null;return;}
+      g.direction=direction;g.targetId=targetId;g.locked=true;
+      if(targetId==="__privateChatBack__"||targetId==="__spaceChatBack__"){
+        g.action=targetId;
+        return;
+      }
       const target=document.getElementById(targetId);if(!target){swipeGesture=null;return;}
-      g.direction=direction;g.targetId=targetId;g.target=target;g.locked=true;
+      g.target=target;
       g.app.classList.add("farnaz-swipe-active");g.current.classList.add("farnaz-swipe-current");target.classList.add("farnaz-swipe-underlay");
       target.style.transition="none";g.current.style.transition="none";
       target.style.transform="translate3d("+(direction>0?-g.width:g.width)+"px,0,0)";
     }
     if(g.locked){
       if(event.cancelable)event.preventDefault();
+      if(g.action)return;
       const x=Math.max(-g.width,Math.min(g.width,dx));
       g.current.style.transform="translate3d("+x+"px,0,0)";
       g.target.style.transform="translate3d("+((g.direction>0?-g.width:g.width)+x)+"px,0,0)";

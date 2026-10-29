@@ -1,0 +1,164 @@
+import { createClient } from "npm:@supabase/supabase-js@2.118.0";
+import { AccessToken } from "npm:livekit-server-sdk@2.19.1";
+
+const DEFAULT_ALLOWED_ORIGINS = ["https://kalaghkocholo.github.io"];
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function allowedOrigins(): Set<string> {
+  const configured = Deno.env.get("FARNAZ_ALLOWED_ORIGINS");
+  const values = configured
+    ? configured.split(",").map((value) => value.trim()).filter(Boolean)
+    : DEFAULT_ALLOWED_ORIGINS;
+  return new Set(values);
+}
+
+function jsonResponse(
+  body: Record<string, unknown>,
+  status: number,
+  origin: string | null,
+): Response {
+  const headers = new Headers({
+    "Content-Type": "application/json; charset=utf-8",
+    "Cache-Control": "no-store",
+    "Vary": "Origin",
+  });
+  if (origin && allowedOrigins().has(origin)) {
+    headers.set("Access-Control-Allow-Origin", origin);
+    headers.set("Access-Control-Allow-Headers", "authorization, apikey, content-type");
+    headers.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+  }
+  return new Response(JSON.stringify(body), { status, headers });
+}
+
+Deno.serve(async (req: Request) => {
+  const origin = req.headers.get("origin");
+
+  if (origin && !allowedOrigins().has(origin)) {
+    return jsonResponse({ error: "Origin is not allowed." }, 403, null);
+  }
+
+  if (req.method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        "Access-Control-Allow-Origin": origin ?? DEFAULT_ALLOWED_ORIGINS[0],
+        "Access-Control-Allow-Headers": "authorization, apikey, content-type",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Max-Age": "600",
+        "Vary": "Origin",
+      },
+    });
+  }
+
+  if (req.method !== "POST") {
+    return jsonResponse({ error: "Method not allowed." }, 405, origin);
+  }
+
+  const authorization = req.headers.get("authorization") ?? "";
+  const bearerMatch = authorization.match(/^Bearer\s+(.+)$/i);
+  if (!bearerMatch) {
+    return jsonResponse({ error: "Sign in is required." }, 401, origin);
+  }
+  const userJwt = bearerMatch[1].trim();
+
+  const contentType = req.headers.get("content-type") ?? "";
+  if (!contentType.toLowerCase().includes("application/json")) {
+    return jsonResponse({ error: "Content-Type must be application/json." }, 415, origin);
+  }
+
+  const contentLength = Number(req.headers.get("content-length") ?? "0");
+  if (Number.isFinite(contentLength) && contentLength > 4096) {
+    return jsonResponse({ error: "Request is too large." }, 413, origin);
+  }
+
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return jsonResponse({ error: "Invalid JSON body." }, 400, origin);
+  }
+
+  if (!body || typeof body !== "object" || !("spaceId" in body)) {
+    return jsonResponse({ error: "A group spaceId is required." }, 400, origin);
+  }
+  const spaceId = (body as { spaceId?: unknown }).spaceId;
+  if (typeof spaceId !== "string" || !UUID_RE.test(spaceId)) {
+    return jsonResponse({ error: "Invalid group identifier." }, 400, origin);
+  }
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")
+    ?? Deno.env.get("SUPABASE_PUBLISHABLE_KEY");
+  const livekitApiKey = Deno.env.get("LIVEKIT_API_KEY");
+  const livekitApiSecret = Deno.env.get("LIVEKIT_API_SECRET");
+  const livekitUrl = Deno.env.get("LIVEKIT_URL");
+
+  if (!supabaseUrl || !supabaseKey || !livekitApiKey || !livekitApiSecret || !livekitUrl) {
+    console.error("LiveKit token endpoint is missing required server-side configuration.");
+    return jsonResponse({ error: "Call service is not configured." }, 503, origin);
+  }
+
+  try {
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      global: { headers: { Authorization: `Bearer ${userJwt}` } },
+      auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false },
+    });
+
+    // Validate the caller against Supabase Auth; never trust a user ID from the request body.
+    const { data: authData, error: authError } = await supabase.auth.getUser(userJwt);
+    if (authError || !authData.user) {
+      return jsonResponse({ error: "Session is invalid or expired." }, 401, origin);
+    }
+    const userId = authData.user.id;
+
+    // Require an actual membership row. Public channel visibility alone must not grant call access.
+    const { data: membership, error: membershipError } = await supabase
+      .from("space_members")
+      .select("space_id")
+      .eq("space_id", spaceId)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (membershipError) {
+      console.error("Could not verify group membership:", membershipError.message);
+      return jsonResponse({ error: "Could not verify group membership." }, 500, origin);
+    }
+    if (!membership) {
+      return jsonResponse({ error: "You are not a member of this group." }, 403, origin);
+    }
+
+    const { data: space, error: spaceError } = await supabase
+      .from("spaces")
+      .select("id, type")
+      .eq("id", spaceId)
+      .maybeSingle();
+
+    if (spaceError) {
+      console.error("Could not load call group:", spaceError.message);
+      return jsonResponse({ error: "Could not verify this group." }, 500, origin);
+    }
+    if (!space || space.type !== "group") {
+      return jsonResponse({ error: "Calls are only available for group spaces." }, 403, origin);
+    }
+
+    // Use an opaque room name and a short-lived token. API secrets never reach the client.
+    const roomName = `farnaz-group-${space.id}`;
+    const token = new AccessToken(livekitApiKey, livekitApiSecret, {
+      identity: userId,
+      ttl: "5m",
+    });
+    token.addGrant({
+      roomJoin: true,
+      room: roomName,
+      canPublish: true,
+      canSubscribe: true,
+      canPublishData: true,
+    });
+
+    const jwt = await token.toJwt();
+    return jsonResponse({ token: jwt, serverUrl: livekitUrl, roomName }, 200, origin);
+  } catch (error) {
+    console.error("LiveKit token issuance failed:", error instanceof Error ? error.message : "Unknown error");
+    return jsonResponse({ error: "Could not issue a call token." }, 500, origin);
+  }
+});

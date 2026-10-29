@@ -1549,7 +1549,7 @@ body.chat-mode .app.chat-mode,
 body.spaces-chat-mode .app.spaces-chat-mode {
   display:flex!important; flex-direction:column!important;
   position:fixed!important; inset-inline:0!important;
-  top:0!important; bottom:auto!important;
+  top:var(--chat-viewport-offset,0px)!important; bottom:auto!important;
   width:100%!important; max-width:560px!important; margin:0 auto!important;
   height:var(--chat-viewport-height,100dvh)!important;
   max-height:var(--chat-viewport-height,100dvh)!important;

@@ -1,0 +1,68 @@
+/* Stable iOS Home Screen chat viewport.
+   Ignore visualViewport.offsetTop: iOS may pan the viewport automatically when the
+   composer receives focus, and applying that offset to fixed content moves the header
+   out of view. Resize only the shell height; keep the header and composer stationary. */
+html,body{overflow:hidden!important;overscroll-behavior:none!important}
+body.chat-mode .app.chat-mode,body.spaces-chat-mode .app.spaces-chat-mode{
+ position:fixed!important;inset-inline:0!important;top:max(env(safe-area-inset-top,0px),44px)!important;bottom:auto!important;
+ height:calc(var(--chat-viewport-height,100dvh) - max(env(safe-area-inset-top,0px),44px))!important;
+ max-height:calc(var(--chat-viewport-height,100dvh) - max(env(safe-area-inset-top,0px),44px))!important;
+ min-height:0!important;width:100%!important;max-width:560px!important;margin:0 auto!important;padding:0!important;
+ overflow:hidden!important;display:flex!important;flex-direction:column!important;transform:none!important
+}
+body.chat-mode .app.chat-mode>#chatPage{
+ position:relative!important;display:flex!important;flex:1 1 0!important;flex-direction:column!important;
+ min-width:0!important;min-height:0!important;height:100%!important;max-height:100%!important;
+ margin:0!important;padding:0 13px!important;overflow:hidden!important;gap:0!important
+}
+body.chat-mode .app.chat-mode>#chatPage>.chat-header{
+ position:relative!important;inset:auto!important;z-index:3!important;display:flex!important;
+ flex:0 0 auto!important;width:100%!important;min-height:56px!important;margin:0!important;
+ background:var(--bg)!important;opacity:1!important;transform:none!important
+}
+body.chat-mode .app.chat-mode>#chatPage #selectionToolbar,
+body.chat-mode .app.chat-mode>#chatPage #loadOlderButton,
+body.chat-mode .app.chat-mode>#chatPage #replyPreview{flex:0 0 auto!important}
+body.chat-mode .app.chat-mode>#chatPage #messageList{
+ position:relative!important;z-index:1!important;display:flex!important;flex:1 1 0!important;
+ min-height:0!important;height:auto!important;max-height:none!important;overflow-x:hidden!important;overflow-y:auto!important;
+ overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important;margin:0!important
+}
+body.chat-mode .app.chat-mode>#chatPage #sendMessageForm{
+ position:relative!important;inset:auto!important;z-index:4!important;display:block!important;flex:0 0 auto!important;
+ width:100%!important;min-height:0!important;margin:0!important;padding:0 0 max(3px,env(safe-area-inset-bottom,0px))!important;
+ background:var(--bg)!important;transform:none!important
+}
+body.chat-mode #chatPage #sendMessageStatus{display:none!important;flex:0 0 0!important;width:0!important;height:0!important;min-height:0!important;max-height:0!important;margin:0!important;padding:0!important;border:0!important;overflow:hidden!important}
+body.spaces-chat-mode .app.spaces-chat-mode #spacesPage.active{
+ display:flex!important;flex:1 1 0!important;flex-direction:column!important;min-width:0!important;min-height:0!important;
+ height:100%!important;max-height:100%!important;padding:0 13px!important;overflow:hidden!important;gap:0!important
+}
+body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceDetail:not([hidden]){
+ position:relative!important;display:flex!important;flex:1 1 0!important;flex-direction:column!important;
+ min-width:0!important;min-height:0!important;height:100%!important;max-height:100%!important;overflow:hidden!important;gap:0!important
+}
+body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceDetail:not([hidden])>.space-detail-head{
+ position:relative!important;inset:auto!important;z-index:3!important;display:flex!important;flex:0 0 auto!important;
+ width:100%!important;min-height:56px!important;margin:0!important;background:var(--bg)!important;opacity:1!important
+}
+body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceDescription,
+body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceActions{flex:0 0 auto!important}
+body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceMessages{
+ position:relative!important;z-index:1!important;display:flex!important;flex:1 1 0!important;min-height:0!important;
+ height:auto!important;max-height:none!important;overflow-x:hidden!important;overflow-y:auto!important;
+ overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important;margin:0!important
+}
+body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceComposer{
+ position:relative!important;inset:auto!important;z-index:4!important;display:flex!important;flex:0 0 auto!important;
+ min-height:0!important;width:100%!important;margin:0!important;padding:0 0 max(3px,env(safe-area-inset-bottom,0px))!important;
+ background:var(--bg)!important;transform:none!important
+}
+body.chat-mode.keyboard-open .app.chat-mode>#chatPage #sendMessageForm,
+body.spaces-chat-mode.keyboard-open .app.spaces-chat-mode #spacesPage #spaceComposer{margin:0!important;padding-top:0!important;padding-bottom:0!important;transform:none!important}
+body.chat-mode.keyboard-open .app.chat-mode>#chatPage .composer-shell,
+body.spaces-chat-mode.keyboard-open .app.spaces-chat-mode #spaceComposer .composer-shell{margin-bottom:0!important;padding-bottom:0!important}
+body.chat-mode.keyboard-open .app.chat-mode>#chatPage>.chat-header{
+ display:flex!important;visibility:visible!important;opacity:1!important;position:relative!important;inset:auto!important;
+ z-index:100!important;flex:0 0 auto!important;min-height:56px!important;transform:none!important
+}

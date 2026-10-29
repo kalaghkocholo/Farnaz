@@ -717,7 +717,7 @@ function installFarnazSwipeNavigation(){
   document.documentElement.dataset.farnazSwipeNavigation="ready";
   document.addEventListener("pointerdown",event=>{
     if(event.pointerType!=="touch"||!event.isPrimary||swipeGesture||swipeTransitionTimer)return;
-    if(document.body.classList.contains("keyboard-open")||document.body.classList.contains("message-selection-mode"))return;
+    if(document.body.classList.contains("keyboard-open")||messageSelectionMode)return;
     const app=event.target?.closest?.(".app"),current=app?.querySelector(".page.active");
     if(!app||!current||app.classList.contains("farnaz-swipe-active"))return;
     if(event.target.closest("input,textarea,select,button,a,[contenteditable='true'],.bottom-nav,.conversation-card,.space-card,#conversationList,#spacesList,.dialog,.modal,.message-action-menu,.message-selection-toolbar,#sendMessageForm,#spaceComposer,.composer-shell"))return;
@@ -730,7 +730,7 @@ function installFarnazSwipeNavigation(){
     g.velocity=(event.clientX-g.lastX)/Math.max(1,now-g.lastTime);g.lastX=event.clientX;g.lastTime=now;g.dx=dx;
     if(!g.locked){
       if(Math.abs(dx)<12&&Math.abs(dy)<12)return;
-      if(Math.abs(dx)<Math.abs(dy)*1.2)return;
+      if(Math.abs(dx)<Math.abs(dy)*1.2){swipeGesture=null;return;}
       const direction=dx>0?1:-1,targetId=swipeHistoryTarget(direction);
       if(!targetId){swipeGesture=null;return;}
       const target=document.getElementById(targetId);if(!target){swipeGesture=null;return;}
@@ -1019,6 +1019,7 @@ async function showUser(user){
   }
 }
 function showGuest(){
+  swipePageHistory=[];swipePageHistoryIndex=-1;clearSwipeTransition();
   const previousUserId=currentUser?.id;
   if(previousUserId)window.FarnazLocalStore?.clearUser(previousUserId).catch(cacheError=>console.warn("Could not clear local account data:",cacheError));
   stopFarnazPresence().catch(()=>{});farnazPresenceContactCache.clear();

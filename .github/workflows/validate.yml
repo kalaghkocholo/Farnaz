@@ -21,6 +21,10 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: 22
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
       - name: Validate JavaScript syntax
         run: |
           node --check js/supabase-sdk.js
@@ -35,3 +39,5 @@ jobs:
         run: node scripts/validate.mjs
       - name: Validate call infrastructure security invariants
         run: node scripts/validate-call-infra.mjs
+      - name: Type-check LiveKit token endpoint
+        run: deno check --no-config --no-lock supabase/functions/livekit-token/index.ts

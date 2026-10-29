@@ -202,8 +202,9 @@ const coreSource = sources["js/core.js"];
 if (!coreSource.includes("function installFarnazSwipeNavigation()") ||
     !coreSource.includes("function swipeHistoryTarget(direction)") ||
     !coreSource.includes('document.body.classList.contains("keyboard-open")') ||
+    !coreSource.includes("swipePageHistory=activePageId?[activePageId,pageId]:[pageId]") ||
     !sources["styles.css"].includes(".app.farnaz-swipe-active>.page.farnaz-swipe-underlay")) {
-  errors.push("Farnaz must provide guarded bidirectional swipe navigation with a shared page transition layer");
+  errors.push("Farnaz must provide guarded bidirectional swipe navigation with initialized page history and a shared transition layer");
 }
 
 const chatSource = sources["js/chat-menu-v5.js"];

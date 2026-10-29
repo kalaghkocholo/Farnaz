@@ -1562,14 +1562,27 @@ body.chat-mode .app.chat-mode > #chatPage {
   max-height:none!important; margin:0!important; padding:0 13px 0!important;
   overflow:hidden!important;
 }
-body.chat-mode .app.chat-mode > #chatPage .chat-header { flex:0 0 auto!important; }
+/* The conversation header and composer are fixed flex siblings; only message history scrolls. */
+body.chat-mode .app.chat-mode > #chatPage > .chat-header,
+body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceDetail:not([hidden]) > .space-detail-head {
+  position:relative!important;
+  z-index:20!important;
+  isolation:isolate!important;
+  flex:0 0 auto!important;
+  width:100%!important;
+  background:var(--bg)!important;
+  opacity:1!important;
+}
 body.chat-mode .app.chat-mode > #chatPage #messageList {
-  display:flex!important; flex:1 1 auto!important; min-height:0!important;
-  height:auto!important; max-height:none!important; overflow-y:auto!important;
+  position:relative!important; z-index:0!important;
+  display:flex!important; flex:1 1 0%!important; min-height:0!important;
+  height:auto!important; max-height:none!important; overflow-x:hidden!important; overflow-y:auto!important;
+  overscroll-behavior:contain!important; -webkit-overflow-scrolling:touch!important;
 }
 body.chat-mode .app.chat-mode > #chatPage #sendMessageForm {
   display:block!important; flex:0 0 auto!important; width:100%!important;
   margin:0!important; position:relative!important; inset:auto!important;
+  z-index:20!important; background:var(--bg)!important; opacity:1!important;
 }
 body.spaces-chat-mode .app.spaces-chat-mode #spacesPage.active {
   display:flex!important; flex:1 1 auto!important; flex-direction:column!important;
@@ -1581,11 +1594,14 @@ body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceDetail:not([hidden
   min-height:0!important; height:auto!important; max-height:none!important; overflow:hidden!important;
 }
 body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceMessages {
-  display:flex!important; flex:1 1 auto!important; min-height:0!important;
-  height:auto!important; max-height:none!important; overflow-y:auto!important;
+  position:relative!important; z-index:0!important;
+  display:flex!important; flex:1 1 0%!important; min-height:0!important;
+  height:auto!important; max-height:none!important; overflow-x:hidden!important; overflow-y:auto!important;
+  overscroll-behavior:contain!important; -webkit-overflow-scrolling:touch!important;
 }
 body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceComposer {
   flex:0 0 auto!important; margin:0!important; position:relative!important; inset:auto!important;
+  z-index:20!important; background:var(--bg)!important; opacity:1!important;
 }
 body.chat-mode.keyboard-open .app.chat-mode>#chatPage #sendMessageForm,
 body.spaces-chat-mode.keyboard-open .app.spaces-chat-mode #spacesPage #spaceComposer {

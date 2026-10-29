@@ -47,6 +47,7 @@
       try {
         const authResult = await supabase.auth.getSession();
         if (authResult.error) throw authResult.error;
+        if (disposed) throw new Error("The call was cancelled before connecting.");
         const session = authResult.data && authResult.data.session;
         if (!session || !session.access_token) throw new Error("Sign in before joining a group call.");
 
@@ -54,6 +55,7 @@
           body: { spaceId: spaceId }
         });
         if (tokenResult.error) throw tokenResult.error;
+        if (disposed) throw new Error("The call was cancelled before connecting.");
         const credentials = tokenResult.data;
         if (!credentials || !credentials.token || !credentials.serverUrl || !credentials.roomName) {
           throw new Error("The call token service returned an invalid response.");

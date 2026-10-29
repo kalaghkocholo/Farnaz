@@ -33,6 +33,7 @@ jobs:
           node --check js/chat-menu-v5.js
           node --check js/spaces.js
           node --check js/calls.js
+          node --check js/livekit-calls.js
           node --check service-worker.js
           node --check scripts/validate.mjs
       - name: Validate application structure

@@ -821,7 +821,7 @@ async function sendMessage(event){
     if(String(currentUser?.id||"")!==senderId){if(pendingUploadPath)try{await getClient().storage.from("chat-attachments").remove([pendingUploadPath]);}catch(cleanupError){console.warn("Could not clean up abandoned attachment:",cleanupError);}return;}
     console.error("Send message:",e);
     if(String(currentChatUser?.user_id||"")===receiverId)setStatus("sendMessageStatus",(english?"Could not send: ":"ارسال پیام ناموفق بود: ")+e.message,true);
-  }finally{button.disabled=false;if(restoreComposerFocus&&sameChat()&&document.activeElement!==input){try{input.focus({preventScroll:true});}catch(_){input.focus();}}}
+  }finally{button.disabled=false;if(sameChat()){try{input.focus({preventScroll:true});}catch(_){input.focus();}}}
 }
 $("profileForm")?.addEventListener("submit",saveProfile);
 // Legacy recipient lookup form is not present in the current HTML.

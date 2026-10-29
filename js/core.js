@@ -2345,8 +2345,20 @@ async function refreshConversationList(){
     }
     keyboardWasOpen=keyboardOpen;
   }
+  function resyncAfterViewportTransition(){
+    requestAnimationFrame(syncViewport);
+    // iOS Safari and installed PWAs can publish the final visualViewport size
+    // in stages during keyboard animation; remeasure without forcing a scroll.
+    [80,180,320,500].forEach(delay=>setTimeout(syncViewport,delay));
+  }
   document.addEventListener("focusin",event=>{
-    if(event.target?.matches("#messageText,#spaceText"))requestAnimationFrame(syncViewport);
+    if(event.target?.matches("#messageText,#spaceText"))resyncAfterViewportTransition();
+  });
+  document.addEventListener("focusout",event=>{
+    if(!event.target?.matches("#messageText,#spaceText"))return;
+    [160,320,500].forEach(delay=>setTimeout(()=>{
+      if(!document.activeElement?.matches("#messageText,#spaceText"))syncViewport();
+    },delay));
   });
   viewport?.addEventListener("resize",syncViewport);
   viewport?.addEventListener("scroll",syncViewport);

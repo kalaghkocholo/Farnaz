@@ -38,7 +38,7 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
 .welcome-secondary{width:100%;max-width:300px;margin-top:9px;padding:12px;border:1px solid var(--border);border-radius:14px;background:transparent;color:var(--white);font-size:13px}
 @media(max-width:360px){.welcome-shell{min-height:62dvh;padding:24px 15px 20px}.welcome-shell h2{font-size:22px}.welcome-mark{width:86px;height:86px;border-radius:25px}.welcome-mark img{width:73px;height:73px}}
 </style>
-<link rel="stylesheet" href="./styles.css?v=20261029-87" media="print" onload="this.onload=null;this.media='all'">
+<link rel="stylesheet" href="./styles.css?v=20261029-88" media="print" onload="this.onload=null;this.media='all'">
 <noscript><link rel="stylesheet" href="./styles.css?v=20261029-87"></noscript>
 <link rel="stylesheet" href="./spaces.css?v=20261029-34" media="print" onload="this.onload=null;this.media='all'">
 </head>
@@ -303,7 +303,7 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
         <div class="composer-right">
           <button class="mini-button" id="cancelEditButton" type="button" onclick="cancelMessageEdit()" hidden>لغو ویرایش</button><span class="muted-note" id="attachmentHint">فایل تا ۲۰ مگابایت</span>
           <button class="composer-icon" id="recordAudioButton" type="button" onclick="toggleAudioRecording()" aria-label="ضبط پیام صوتی" title="پیام صوتی">🎙</button>
-          <button class="composer-icon send" id="sendMessageButton" type="submit" onclick="sendMessage(event)" aria-label="ارسال پیام" title="ارسال پیام">➤</button>
+          <button class="composer-icon send" id="sendMessageButton" type="submit" aria-label="ارسال پیام" title="ارسال پیام">➤</button>
         </div>
       </div>
       <div id="messageComposerTools"><input id="photoFile" type="file" accept="image/*"><input id="attachmentFile" type="file"><input id="cameraFile" type="file" accept="image/*" capture="environment"></div>

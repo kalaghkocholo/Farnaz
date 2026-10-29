@@ -2315,79 +2315,56 @@ async function refreshConversationList(){
   }
 }
 
-/* Track the iOS/Android visual viewport so chat composers follow the keyboard. */
+/* One viewport controller shared by private and group conversations. */
 (function installChatKeyboardLayout(){
-  const vv=window.visualViewport;
-  let blurTimer=null;
-  function activeChat(){
-    return document.body.classList.contains("chat-mode") ||
-      document.body.classList.contains("spaces-chat-mode");
-  }
+  const viewport=window.visualViewport;
+  let keyboardWasOpen=false;
+  const isChatActive=()=>document.body.classList.contains("chat-mode")||
+    document.body.classList.contains("spaces-chat-mode");
+  const messageList=()=>document.body.classList.contains("spaces-chat-mode")
+    ?document.getElementById("spaceMessages"):document.getElementById("messageList");
   function syncViewport(){
-    if(!activeChat())return;
-    const height=vv?vv.height:window.innerHeight;
-    // On iOS Safari the visual viewport can move vertically when the keyboard opens.
-    // Position the chat frame at that viewport's actual offset, not at layout-viewport top.
-    const offset=vv?vv.offsetTop:0;
-    // Use the actual visual viewport height. A fixed minimum (180px) can leave
-    // the composer floating far above the keyboard in iOS home-screen apps.
-    document.documentElement.style.setProperty("--chat-viewport-height",Math.max(1,height)+"px");
-    document.documentElement.style.setProperty("--chat-viewport-offset",Math.max(0,offset)+"px");
-    const keyboardOpen=!!vv&&(window.innerHeight-height>120);
+    if(!isChatActive()){
+      document.documentElement.style.removeProperty("--chat-viewport-height");
+      document.documentElement.style.removeProperty("--chat-viewport-offset");
+      document.body.classList.remove("keyboard-open");
+      keyboardWasOpen=false;
+      return;
+    }
+    const height=Math.max(1,viewport?.height||window.innerHeight);
+    const offset=Math.max(0,viewport?.offsetTop||0);
+    const keyboardOpen=!!viewport&&(window.innerHeight-height>120);
+    document.documentElement.style.setProperty("--chat-viewport-height",height+"px");
+    document.documentElement.style.setProperty("--chat-viewport-offset",offset+"px");
     document.body.classList.toggle("keyboard-open",keyboardOpen);
-    if(keyboardOpen){
+    if(keyboardOpen&&!keyboardWasOpen){
       requestAnimationFrame(()=>{
-        const privateList=document.getElementById("messageList");
-        const groupList=document.getElementById("spaceMessages");
-        if(document.body.classList.contains("chat-mode")&&privateList)privateList.scrollTop=privateList.scrollHeight;
-        if(document.body.classList.contains("spaces-chat-mode")&&groupList)groupList.scrollTop=groupList.scrollHeight;
+        const list=messageList();
+        if(list)list.scrollTop=list.scrollHeight;
       });
     }
-  }
-  function clearViewport(){
-    if(activeChat())return;
-    document.documentElement.style.removeProperty("--chat-viewport-height");
-    document.documentElement.style.removeProperty("--chat-viewport-offset");
-    document.body.classList.remove("keyboard-open");
+    keyboardWasOpen=keyboardOpen;
   }
   document.addEventListener("focusin",event=>{
-    if(event.target?.matches("#messageText,#spaceText")){
-      clearTimeout(blurTimer);
-      // iOS Home Screen viewport metrics settle in stages during keyboard animation.
-      // Re-measure through the transition so the header and composer track the final viewport.
-      requestAnimationFrame(syncViewport);
-      [60,120,200,320,480,700].forEach(delay=>setTimeout(syncViewport,delay));
-    }
+    if(event.target?.matches("#messageText,#spaceText"))requestAnimationFrame(syncViewport);
   });
-  document.addEventListener("focusout",event=>{
-    if(event.target?.matches("#messageText,#spaceText")){
-      clearTimeout(blurTimer);
-      // iOS Home Screen apps can report the keyboard-closing viewport late.
-      // Re-measure after the transition so the composer returns to the true bottom.
-      const resync=()=>{
-        if(!document.activeElement?.matches("#messageText,#spaceText")){
-          syncViewport();
-          requestAnimationFrame(syncViewport);
-        }
-      };
-      blurTimer=setTimeout(resync,180);
-      [300,480,700].forEach(delay=>setTimeout(resync,delay));
-    }
-  });
-  vv?.addEventListener("resize",syncViewport);
-  vv?.addEventListener("scroll",syncViewport);
+  viewport?.addEventListener("resize",syncViewport);
+  viewport?.addEventListener("scroll",syncViewport);
   window.addEventListener("resize",syncViewport);
   document.addEventListener("click",event=>{
-    if(event.target.closest("#backToChats,#backSpaces")||event.target.closest(".nav-button")){
-      setTimeout(clearViewport,0);
-    }
+    if(event.target.closest("#backToChats,#backSpaces,.nav-button"))requestAnimationFrame(syncViewport);
   });
   const originalNavigate=window.navigate;
   if(typeof originalNavigate==="function"&&!originalNavigate.__keyboardViewportWrapped){
-    const wrapped=function(id){originalNavigate(id);if(id==="chatPage"||id==="spacesPage")requestAnimationFrame(syncViewport);else clearViewport();};
+    const wrapped=function(id){
+      originalNavigate(id);
+      if(id==="chatPage"||id==="spacesPage")requestAnimationFrame(syncViewport);
+      else syncViewport();
+    };
     wrapped.__keyboardViewportWrapped=true;
     window.navigate=wrapped;
   }
+  requestAnimationFrame(syncViewport);
   
   // Keep email sign-up/sign-in wired to the active core script loaded by index.html.
   const authForm=$("authForm");

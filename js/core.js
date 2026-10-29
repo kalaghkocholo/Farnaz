@@ -2328,7 +2328,11 @@ async function refreshConversationList(){
     const height=vv?vv.height:window.innerHeight;
     // On iOS Safari the visual viewport can move vertically when the keyboard opens.
     // Position the chat frame at that viewport's actual offset, not at layout-viewport top.
-    const offset=vv?vv.offsetTop:0;
+    // In installed iOS PWAs, visualViewport.offsetTop can change during a drag/keyboard animation.
+     // Letting it reposition the app moves both the header and composer together. Keep the shell anchored;
+     // use only visualViewport.height to fit the area above the keyboard.
+     const standalone=!!(window.navigator.standalone===true || window.matchMedia?.("(display-mode: standalone)").matches);
+     const offset=vv&&!standalone?vv.offsetTop:0;
     // Use the actual visual viewport height. A fixed minimum (180px) can leave
     // the composer floating far above the keyboard in iOS home-screen apps.
     document.documentElement.style.setProperty("--chat-viewport-height",Math.max(1,height)+"px");

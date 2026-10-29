@@ -1570,24 +1570,7 @@ body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceComposer{
  min-height:0!important;width:100%!important;margin:0!important;padding:0 0 max(3px,env(safe-area-inset-bottom,0px))!important;
  background:var(--bg)!important;transform:none!important
 }
-/* Installed iOS PWA: pin headers to the status-bar-safe viewport, outside keyboard-resized flex flow. */
-@media (display-mode:standalone){
- body.chat-mode .app.chat-mode,
- body.spaces-chat-mode .app.spaces-chat-mode{
-  top:max(env(safe-area-inset-top,0px),44px)!important;
-  height:calc(var(--chat-viewport-height,100dvh) - max(env(safe-area-inset-top,0px),44px))!important;
-  max-height:calc(var(--chat-viewport-height,100dvh) - max(env(safe-area-inset-top,0px),44px))!important;
- }
- body.chat-mode .app.chat-mode>#chatPage{padding:56px 13px 0!important}
- body.chat-mode .app.chat-mode>#chatPage>.chat-header,
- body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceDetail:not([hidden])>.space-detail-head{
-  position:fixed!important;top:max(env(safe-area-inset-top,0px),44px)!important;
-  inset-inline:max(13px,calc((100vw - 560px)/2 + 13px))!important;
-  z-index:20!important;width:auto!important;min-height:56px!important;margin:0!important;
- }
- body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceDetail:not([hidden]){padding-top:56px!important}
- body.chat-mode .app.chat-mode>header{display:none!important}
-}
+/* Standalone iOS uses the same anchored app shell and flex layout as other chat modes. */
 body.chat-mode.keyboard-open .app.chat-mode>#chatPage #sendMessageForm,body.spaces-chat-mode.keyboard-open .app.spaces-chat-mode #spacesPage #spaceComposer{margin:0!important;padding-top:0!important;padding-bottom:0!important;transform:none!important}
 body.chat-mode.keyboard-open .app.chat-mode>#chatPage .composer-shell,body.spaces-chat-mode.keyboard-open .app.spaces-chat-mode #spaceComposer .composer-shell{margin-bottom:0!important;padding-bottom:0!important}
 body.chat-mode.keyboard-open .app.chat-mode>header{display:none!important}

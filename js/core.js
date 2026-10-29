@@ -2319,7 +2319,6 @@ async function refreshConversationList(){
 (function installChatKeyboardLayout(){
   const vv=window.visualViewport;
   let blurTimer=null;
-  let keyboardWasOpen=false;
   function activeChat(){
     return document.body.classList.contains("chat-mode") ||
       document.body.classList.contains("spaces-chat-mode");
@@ -2341,7 +2340,6 @@ async function refreshConversationList(){
       root.style.overflow="hidden";
       if(window.scrollY!==0)window.scrollTo(0,0);
     }
-    keyboardWasOpen=keyboardOpen;
   }
   function clearViewport(){
     if(activeChat())return;
@@ -2350,7 +2348,6 @@ async function refreshConversationList(){
     document.body.classList.remove("keyboard-open");
     document.documentElement.style.removeProperty("overflow");
     document.body.style.removeProperty("overflow");
-    keyboardWasOpen=false;
   }
   document.addEventListener("focusin",event=>{
     if(event.target?.matches("#messageText,#spaceText")){
@@ -2398,6 +2395,7 @@ async function refreshConversationList(){
     window.navigate=wrapped;
   }
   
+})();
 
   // Keep email sign-up/sign-in wired to the active core script loaded by index.html.
   const authForm=$("authForm");

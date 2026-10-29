@@ -1571,4 +1571,11 @@ body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceComposer{
 /* Standalone iOS keeps the header anchored while the shell bottom follows the visible viewport. */
 body.chat-mode.keyboard-open .app.chat-mode>#chatPage #sendMessageForm,body.spaces-chat-mode.keyboard-open .app.spaces-chat-mode #spacesPage #spaceComposer{margin:0!important;padding-top:0!important;padding-bottom:0!important;transform:none!important}
 body.chat-mode.keyboard-open .app.chat-mode>#chatPage .composer-shell,body.spaces-chat-mode.keyboard-open .app.spaces-chat-mode #spaceComposer .composer-shell{margin-bottom:0!important;padding-bottom:0!important}
-body.chat-mode.keyboard-open 
+body.chat-mode.keyboard-open
+
+/* Keep the actual private-conversation header visible while the iOS keyboard is open. */
+body.chat-mode.keyboard-open .app.chat-mode>#chatPage>.chat-header{
+  display:flex!important;visibility:visible!important;opacity:1!important;
+  position:relative!important;inset:auto!important;z-index:100!important;
+  flex:0 0 auto!important;min-height:56px!important;transform:none!important;
+}

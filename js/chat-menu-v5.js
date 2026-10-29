@@ -746,6 +746,7 @@ async function sendMessage(event){
   if(mediaRecorder&&mediaRecorder.state==="recording"){setStatus("sendMessageStatus",english?"Stop recording before sending.":"پیش از ارسال، ضبط صدا را متوقف کن.",true);return;}
   const senderId=String(currentUser.id),receiverId=String(currentChatUser.user_id);
   const input=$("messageText"),body=input.value.trim(),selectedFile=$("attachmentFile").files[0],photoFile=$("photoFile").files[0],cameraFile=$("cameraFile").files[0];
+  const restoreComposerFocus=document.activeElement===input;
   const file=recordedVoiceFile||selectedFile||photoFile||cameraFile;
   if(!body&&!file&&!editingMessageId)return;
   if(file&&file.size>20*1024*1024){setStatus("sendMessageStatus",english?"Choose a file up to 20 MB.":"حجم فایل باید حداکثر ۲۰ مگابایت باشد.",true);return;}
@@ -820,7 +821,7 @@ async function sendMessage(event){
     if(String(currentUser?.id||"")!==senderId){if(pendingUploadPath)try{await getClient().storage.from("chat-attachments").remove([pendingUploadPath]);}catch(cleanupError){console.warn("Could not clean up abandoned attachment:",cleanupError);}return;}
     console.error("Send message:",e);
     if(String(currentChatUser?.user_id||"")===receiverId)setStatus("sendMessageStatus",(english?"Could not send: ":"ارسال پیام ناموفق بود: ")+e.message,true);
-  }finally{button.disabled=false;}
+  }finally{button.disabled=false;if(restoreComposerFocus&&sameChat()&&document.activeElement!==input){try{input.focus({preventScroll:true});}catch(_){input.focus();}}}
 }
 $("profileForm")?.addEventListener("submit",saveProfile);
 // Legacy recipient lookup form is not present in the current HTML.

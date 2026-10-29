@@ -198,7 +198,7 @@ for (const path of ["js/local-store.js", "js/core.js", "js/chat-menu-v5.js", "js
 // Keep shell cache and versioned local-store assets synchronized after cache behavior changes.
 const coreSource = sources["js/core.js"];
 const chatSource = sources["js/chat-menu-v5.js"];
-if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v222"') || !sources["service-worker.js"].includes('styles.css?v=20261029-90') || !sources["service-worker.js"].includes('core.js?v=20261029-57') || !sources["service-worker.js"].includes('local-store.js?v=20261026-3') || !sources["service-worker.js"].includes('calls.js?v=20261026-4') || !sources["service-worker.js"].includes('chat-menu-v5.js?v=20261029-3') || !sources["service-worker.js"].includes('spaces.js?v=20261029-16') || !html.includes('chat-menu-v5.js?v=20261029-3') || !html.includes('spaces.js?v=20261029-16')) {
+if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v223"') || !sources["service-worker.js"].includes('styles.css?v=20261029-91') || !sources["service-worker.js"].includes('core.js?v=20261029-57') || !sources["service-worker.js"].includes('local-store.js?v=20261026-3') || !sources["service-worker.js"].includes('calls.js?v=20261026-4') || !sources["service-worker.js"].includes('chat-menu-v5.js?v=20261029-3') || !sources["service-worker.js"].includes('spaces.js?v=20261029-16') || !html.includes('chat-menu-v5.js?v=20261029-3') || !html.includes('spaces.js?v=20261029-16')) {
   errors.push("service-worker.js must use the current shell cache and core asset versions");
 }
 const loaderChecks = [

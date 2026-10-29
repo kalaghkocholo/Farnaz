@@ -648,8 +648,10 @@ function navigate(pageId,options={}){
   if(pageId==="chatPage"&&!currentChatUser)return;
   const activePageId=document.querySelector(".page.active")?.id||null;
   if(activePageId!==pageId){
-    if(swipePageHistoryIndex<0){swipePageHistory=[pageId];swipePageHistoryIndex=0;}
-    else if(swipePageHistory[swipePageHistoryIndex-1]===pageId)swipePageHistoryIndex--;
+    if(swipePageHistoryIndex<0){
+      swipePageHistory=activePageId?[activePageId,pageId]:[pageId];
+      swipePageHistoryIndex=swipePageHistory.length-1;
+    }else if(swipePageHistory[swipePageHistoryIndex-1]===pageId)swipePageHistoryIndex--;
     else if(swipePageHistory[swipePageHistoryIndex+1]===pageId)swipePageHistoryIndex++;
     else{swipePageHistory=swipePageHistory.slice(0,swipePageHistoryIndex+1);swipePageHistory.push(pageId);swipePageHistoryIndex=swipePageHistory.length-1;}
   }
@@ -717,7 +719,7 @@ function installFarnazSwipeNavigation(){
   document.documentElement.dataset.farnazSwipeNavigation="ready";
   document.addEventListener("pointerdown",event=>{
     if(event.pointerType!=="touch"||!event.isPrimary||swipeGesture||swipeTransitionTimer)return;
-    if(document.body.classList.contains("keyboard-open")||messageSelectionMode)return;
+    if(document.body.classList.contains("keyboard-open")||document.body.classList.contains("chat-mode")&&document.activeElement?.matches?.("input,textarea,[contenteditable='true']")||messageSelectionMode)return;
     const app=event.target?.closest?.(".app"),current=app?.querySelector(".page.active");
     if(!app||!current||app.classList.contains("farnaz-swipe-active"))return;
     if(event.target.closest("input,textarea,select,button,a,[contenteditable='true'],.bottom-nav,.conversation-card,.space-card,#conversationList,#spacesList,.dialog,.modal,.message-action-menu,.message-selection-toolbar,#sendMessageForm,#spaceComposer,.composer-shell"))return;

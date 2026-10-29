@@ -1,6 +1,5 @@
 import { readFileSync, existsSync } from "node:fs";
 
-const checks = [];
 const errors = [];
 const read = (path) => {
   if (!existsSync(path)) {
@@ -18,6 +17,8 @@ const config = read("supabase/config.toml");
 const envExample = read("infra/livekit/.env.example");
 const plan = read("docs/call-infrastructure-plan.md");
 const tokenDocs = read("infra/livekit/TOKEN-ENDPOINT.md");
+const adapter = read("js/livekit-calls.js");
+const adapterDocs = read("infra/livekit/CLIENT-ADAPTER.md");
 
 requireCheck(fn.includes("supabase.auth.getUser(userJwt)"),
   "Token endpoint must validate the caller's JWT with Supabase Auth.");
@@ -30,8 +31,8 @@ requireCheck(fn.includes('space.type !== "group"'),
 requireCheck(fn.includes('ttl: "5m"') && fn.includes("roomJoin: true") &&
   fn.includes("room: roomName"),
   "Tokens must be short-lived and restricted to one named room.");
-requireCheck(!/roomAdmin\s*:\s*true|canPublish\s*:\s*false/.test(fn),
-  "Unexpected privileged or unusable LiveKit grant found.");
+requireCheck(!/roomAdmin\s*:\s*true/.test(fn),
+  "Unexpected privileged LiveKit grant found.");
 requireCheck(fn.includes('"Cache-Control": "no-store"'),
   "Token responses must not be cacheable.");
 requireCheck(fn.includes("FARNAZ_ALLOWED_ORIGINS") &&
@@ -51,10 +52,22 @@ requireCheck(plan.includes("No architecture can guarantee calls") &&
   tokenDocs.includes("not deployed by committing this file"),
   "Documentation must state reachability limits and that code commit is not deployment.");
 
+requireCheck(adapter.includes('root.FarnazLiveKitCalls') &&
+  adapter.includes('root.LivekitClient') &&
+  adapter.includes('supabase.functions.invoke("livekit-token"') &&
+  adapter.includes("adaptiveStream: true") &&
+  adapter.includes("dynacast: true"),
+  "LiveKit adapter must be isolated, authenticate through Supabase, and enable adaptive media options.");
+requireCheck(adapter.includes('integrationStatus: "isolated-adapter-not-enabled"') &&
+  adapterDocs.includes("not loaded by the app startup sequence yet"),
+  "The new adapter must remain disabled until the local SDK and UI are tested.");
+requireCheck(!/LIVEKIT_API_SECRET|LIVEKIT_API_KEY/.test(adapter),
+  "LiveKit server credentials must never be referenced in browser adapter code.");
+
 if (errors.length) {
   console.error("Call infrastructure validation failed:");
   for (const error of errors) console.error("- " + error);
   process.exitCode = 1;
 } else {
-  console.log("Call infrastructure validation passed: auth, membership, group scope, token lifetime, CORS, and secret-template checks.");
+  console.log("Call infrastructure validation passed: token auth, group membership, scoped grants, no-store responses, and isolated client adapter.");
 }

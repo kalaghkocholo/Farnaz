@@ -1549,17 +1549,17 @@ body.chat-mode .app.chat-mode,
 body.spaces-chat-mode .app.spaces-chat-mode {
   display:flex!important; flex-direction:column!important;
   position:fixed!important; inset-inline:0!important;
-  top:var(--chat-viewport-offset,0px)!important; bottom:auto!important;
+  top:max(var(--chat-viewport-offset,0px),env(safe-area-inset-top,0px))!important; bottom:auto!important;
   width:100%!important; max-width:560px!important; margin:0 auto!important;
-  height:var(--chat-viewport-height,100dvh)!important;
-  max-height:var(--chat-viewport-height,100dvh)!important;
+  height:calc(var(--chat-viewport-height,100dvh) + var(--chat-viewport-offset,0px) - max(var(--chat-viewport-offset,0px),env(safe-area-inset-top,0px)))!important;
+  max-height:calc(var(--chat-viewport-height,100dvh) + var(--chat-viewport-offset,0px) - max(var(--chat-viewport-offset,0px),env(safe-area-inset-top,0px)))!important;
   min-height:0!important; padding:0!important; overflow:hidden!important;
   transform:none!important;
 }
 body.chat-mode .app.chat-mode > #chatPage {
   display:flex!important; flex:1 1 auto!important; flex-direction:column!important;
   min-width:0!important; min-height:0!important; height:auto!important;
-  max-height:none!important; margin:0!important; padding:0 13px 2px!important;
+  max-height:none!important; margin:0!important; padding:0 13px 0!important;
   overflow:hidden!important;
 }
 body.chat-mode .app.chat-mode > #chatPage .chat-header { flex:0 0 auto!important; }

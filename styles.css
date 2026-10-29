@@ -16,26 +16,8 @@ body{
 button,input,textarea{font:inherit}
 input,textarea{font-size:16px}
 .app{width:100%;max-width:560px;height:100dvh;min-height:0;margin:auto;overflow-y:auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch}
-.app.chat-mode{height:var(--chat-viewport-height,100dvh);min-height:0;overflow:hidden;display:flex;flex-direction:column;padding-bottom:0;transform:translateY(var(--chat-viewport-offset,0px))}
-.app.chat-mode>header{flex:0 0 auto;margin-bottom:6px}
-body.chat-mode .bottom-nav{display:none!important}
-body.chat-mode{height:var(--chat-viewport-height,100dvh);min-height:0}
-.app.chat-mode>#chatPage #sendMessageStatus{flex:0 0 auto;max-height:40px;overflow:auto}
 .app.chat-mode #footerText{display:none}
 .app.chat-mode>#connectionBanner{flex-shrink:0}
-.app.chat-mode>#chatPage #selectionToolbar,.app.chat-mode>#chatPage #loadOlderButton,.app.chat-mode>#chatPage #replyPreview,.app.chat-mode>#chatPage #sendMessageForm,.app.chat-mode>#chatPage #sendMessageStatus{flex-shrink:0}
-body.chat-mode{position:fixed;inset:0;width:100%;overflow:hidden}
-.app.chat-mode{position:fixed;inset-inline:0;top:var(--chat-viewport-offset,0px);height:var(--chat-viewport-height,100dvh);width:100%;max-width:560px;margin:0 auto;transform:none}
-/* Preserve usable message space while the iOS keyboard is open. */
-body.chat-mode.keyboard-open .app.chat-mode>header{display:none!important}
-body.chat-mode.keyboard-open .app.chat-mode>#chatPage #messageList{padding-top:2px;padding-bottom:6px;gap:5px}
-body.chat-mode.keyboard-open .app.chat-mode>#chatPage #sendMessageForm{flex:0 0 auto;margin:0!important;padding:0!important;min-height:0!important}
-body.chat-mode #chatPage #sendMessageStatus{display:none!important;height:0!important;min-height:0!important;margin:0!important;padding:0!important;border:0!important;overflow:hidden!important}
-body.chat-mode.keyboard-open .app.chat-mode>#chatPage .composer-shell{padding:3px;border-radius:14px}
-body.chat-mode.keyboard-open .app.chat-mode>#chatPage #messageText{max-height:64px;min-height:36px;padding-top:7px;padding-bottom:7px}
-body.chat-mode.keyboard-open .app.chat-mode>#chatPage #sendMessageStatus{display:none!important;height:0!important;max-height:0!important;margin:0!important;padding:0!important}
-body.chat-mode.keyboard-open .app.chat-mode>#chatPage .voice-preview{padding:5px 7px;gap:4px;margin-bottom:3px}
-body.chat-mode.keyboard-open .app.chat-mode>#chatPage .voice-preview audio{height:32px}
 button{cursor:pointer}
 button:disabled{opacity:.55;cursor:wait}
 button:focus-visible,input:focus-visible,textarea:focus-visible{
@@ -191,9 +173,6 @@ input[type=file]{font-size:11px;padding:9px}
 .voice-preview-remove{width:28px;height:28px;border:0;border-radius:50%;background:#ffffff12;color:var(--white);font-size:20px}
 .voice-preview audio{display:block;width:100%;max-width:100%;height:38px}
 .voice-preview-size{font-size:10px;color:var(--muted)}
-.app.chat-mode{padding-bottom:0!important}
-.app.chat-mode>#chatPage #sendMessageForm{padding-bottom:max(4px,env(safe-area-inset-bottom));margin-bottom:0}
-.app.chat-mode>#chatPage #sendMessageStatus{margin:0;padding:0 2px;line-height:1.35}
 .attachment-menu{position:absolute;z-index:120;bottom:calc(100% + 9px);inset-inline-start:5px;width:min(230px,calc(100vw - 42px));padding:7px;border:1px solid var(--border);border-radius:15px;background:var(--panel);box-shadow:0 12px 32px #0008}
 .attachment-menu[hidden]{display:none}
 .attachment-option{display:flex;align-items:center;gap:11px;width:100%;padding:11px 10px;border:0;border-radius:10px;background:transparent;color:var(--white);text-align:start;font-size:13px}
@@ -230,12 +209,8 @@ input[type=file]{font-size:11px;padding:9px}
 }
 .nav-button .nav-icon{font-size:21px;line-height:1.2}
 .nav-button.active{background:#202020;color:var(--white);font-weight:700}
-#chatPage{padding-bottom:5px}
-#messageList{
-  display:flex;flex-direction:column;gap:8px;
-  min-height:150px;max-height:calc(100dvh - 290px);
-  overflow-y:auto;padding:14px 2px
-}
+
+
 .message{
   max-width:86%;border-radius:13px;padding:9px 11px;
   overflow-wrap:anywhere;white-space:pre-wrap
@@ -244,11 +219,7 @@ input[type=file]{font-size:11px;padding:9px}
 .their-message{align-self:flex-end;background:#27364b}
 .message p{color:var(--white);font-size:12px;margin:0 0 5px;white-space:pre-wrap}
 .message time{display:block;color:#c0ccda;font-size:9px}
-#sendMessageForm{
-  position:sticky;bottom:0;background:var(--bg);
-  padding:8px 0 calc(4px + env(safe-area-inset-bottom));
-  border-top:1px solid var(--border)
-}
+
 .send-row{display:flex;align-items:flex-end;gap:7px}
 .send-row textarea{flex:1;min-height:42px;max-height:112px;resize:none;border:0;background:transparent;padding:10px 9px;line-height:1.5;font-size:16px;outline:none;box-shadow:none}
 .send-row button{width:45px;height:44px;flex-shrink:0;margin:0;padding:0}
@@ -547,339 +518,28 @@ body[data-font-color="white"]:not([data-theme="light"])[data-theme] .bottom-nav 
 
 
 
-/* Hide the global brand/settings header only while a group or channel conversation is open. */
-.app:has(#spacesPage.active #spaceDetail:not([hidden]))>header{display:none!important}
-
-/* Explicit class toggled by spaces.js while a group/channel conversation is open. */
-.app.spaces-chat-mode>header{display:none!important}
-
-
-/* Mobile chat layout: keep the composer directly above the on-screen keyboard. */
-.app.chat-mode,
-.app.spaces-chat-mode{
-  position:fixed!important;
-  inset-inline:0!important;
-  top:var(--chat-viewport-offset,0px)!important;
-  height:var(--chat-viewport-height,100dvh)!important;
-  min-height:0!important;
-  width:100%!important;
-  max-width:560px!important;
-  margin:0 auto!important;
-  overflow:hidden!important;
-  transform:none!important;
-}
-.app.spaces-chat-mode{display:flex!important;flex-direction:column!important;padding:0 13px 4px!important}
-.app.spaces-chat-mode #spacesPage.active{
-  display:flex!important;flex:1 1 auto!important;flex-direction:column!important;
-  min-height:0!important;overflow:hidden!important;padding-bottom:0!important
-}
-.app.spaces-chat-mode #spacesPage #spaceDetail:not([hidden]){
-  display:flex!important;flex:1 1 auto!important;flex-direction:column!important;
-  min-height:0!important;overflow:hidden!important
-}
-.app.spaces-chat-mode #spacesPage #spaceDetail .space-detail-head{flex:0 0 auto!important;padding-bottom:10px!important;margin-bottom:10px!important;border-bottom:1px solid var(--border)!important}
-.app.spaces-chat-mode #spacesPage #spaceMessages{
-  flex:1 1 0%!important;min-height:0!important;max-height:none!important;
-  overflow-y:auto!important;overscroll-behavior:contain!important;
-  -webkit-overflow-scrolling:touch!important;padding-bottom:10px!important
-}
-.app.spaces-chat-mode #spacesPage #spaceComposer{
-  position:sticky!important;bottom:0!important;z-index:45!important;
-  flex:0 0 auto!important;margin-top:0!important;padding:5px 0 max(3px,env(safe-area-inset-bottom))!important;
-  background:var(--bg)!important
-}
-/* Keep message direction rules; alignment is defined once in the final chat layout. */
-.app.chat-mode>#chatPage #messageList{direction:ltr!important;align-items:stretch!important}
-.app.chat-mode>#chatPage #messageList>.message{direction:rtl!important;text-align:right!important}
-.app.spaces-chat-mode #spacesPage #spaceMessages>.space-message{
-  direction:rtl!important;text-align:right!important
-}
-body.chat-mode.keyboard-open .app.chat-mode>#chatPage #sendMessageForm,
-body.spaces-chat-mode.keyboard-open .app.spaces-chat-mode #spaceComposer{
-  padding-bottom:2px!important
-}
-body.chat-mode.keyboard-open .app.chat-mode>#chatPage #messageList,
-body.spaces-chat-mode.keyboard-open .app.spaces-chat-mode #spaceMessages{
-  scroll-padding-bottom:8px!important
-}
-
-
-/* FINAL OVERRIDE: flex message stacks and viewport-sized chat screens. */
-html,body{overscroll-behavior:none}
-.app.chat-mode,.app.spaces-chat-mode{
- position:fixed!important;left:0!important;right:0!important;
- top:var(--chat-viewport-offset,0px)!important;
- height:var(--chat-viewport-height,100dvh)!important;
- max-height:var(--chat-viewport-height,100dvh)!important;
- min-height:0!important;overflow:hidden!important;
- transform:none!important;margin:0 auto!important;
- display:flex!important;flex-direction:column!important;
-}
-.app.chat-mode>#chatPage{
- display:flex!important;flex:1 1 0%!important;min-height:0!important;
- height:100%!important;overflow:hidden!important;flex-direction:column!important
-}
-.app.chat-mode>#chatPage #messageList{
- display:flex!important;flex-direction:column!important;align-items:stretch!important;
- flex:1 1 0%!important;min-height:0!important;max-height:none!important;
- overflow-y:auto!important;overscroll-behavior:contain!important
-}
-.app.chat-mode>#chatPage #sendMessageForm{
- position:relative!important;inset:auto!important;flex:0 0 auto!important;
- margin:0!important;padding:5px 0 max(3px,env(safe-area-inset-bottom))!important;
- background:var(--bg)!important;z-index:50!important
-}
+/* Message stack presentation only. Frame sizing and scrolling are defined once below. */
+.app.chat-mode>#chatPage #messageList{direction:ltr!important;flex-direction:column!important;align-items:stretch!important}
 .app.chat-mode>#chatPage #messageList>.message{
- width:fit-content!important;max-width:88%!important;box-sizing:border-box!important;
- float:none!important;clear:both!important
+  display:block!important;width:fit-content!important;max-width:88%!important;min-width:0!important;
+  box-sizing:border-box!important;float:none!important;clear:both!important;direction:rtl!important;
+  text-align:right!important;align-self:flex-start!important;margin-left:0!important;margin-right:auto!important
 }
-.app.chat-mode>#chatPage #messageList>.my-message{
- align-self:flex-end!important;margin-left:auto!important;margin-right:0!important
-}
-.app.chat-mode>#chatPage #messageList>.their-message{
- align-self:flex-start!important;margin-left:0!important;margin-right:auto!important
-}
-.app.spaces-chat-mode #spacesPage.active{
- display:flex!important;flex:1 1 0%!important;min-height:0!important;
- height:100%!important;overflow:hidden!important;flex-direction:column!important
-}
-.app.spaces-chat-mode #spacesPage #spaceDetail:not([hidden]){
- display:flex!important;flex:1 1 0%!important;min-height:0!important;
- height:100%!important;overflow:hidden!important;flex-direction:column!important
-}
-.app.spaces-chat-mode #spacesPage #spaceMessages{
- display:flex!important;flex-direction:column!important;align-items:stretch!important;
- flex:1 1 0%!important;min-height:0!important;max-height:none!important;
- overflow-y:auto!important;overscroll-behavior:contain!important
-}
+.app.chat-mode>#chatPage #messageList>.my-message{align-self:flex-end!important;margin-left:auto!important;margin-right:0!important}
+.app.chat-mode>#chatPage #messageList>.their-message{align-self:flex-start!important;margin-left:0!important;margin-right:auto!important}
+.app.spaces-chat-mode #spacesPage #spaceMessages{flex-direction:column!important;align-items:stretch!important}
 .app.spaces-chat-mode #spacesPage #spaceMessages>.space-message{
- display:block!important;width:fit-content!important;max-width:88%!important;
- box-sizing:border-box!important;float:none!important;clear:both!important
+  display:block!important;width:fit-content!important;max-width:88%!important;box-sizing:border-box!important;
+  float:none!important;clear:both!important;direction:rtl!important;text-align:right!important
 }
-.app.spaces-chat-mode #spacesPage #spaceMessages>.space-message.mine{
- align-self:flex-end!important;margin-left:auto!important;margin-right:0!important
-}
-.app.spaces-chat-mode #spacesPage #spaceMessages>.space-message:not(.mine){
- align-self:flex-start!important;margin-left:0!important;margin-right:auto!important
-}
-.app.spaces-chat-mode #spacesPage #spaceComposer{
- position:relative!important;inset:auto!important;bottom:auto!important;
- flex:0 0 auto!important;margin:0!important;
- padding:5px 0 max(3px,env(safe-area-inset-bottom))!important;
- background:var(--bg)!important;z-index:50!important
-}
-
-
-/* Corrective mobile chat layout: hide the global navigation and explicitly anchor bubbles. */
-body.chat-mode #bottomNav,
-body.spaces-chat-mode #bottomNav {
-  display:none!important;
-  visibility:hidden!important;
-  pointer-events:none!important;
-}
-body.chat-mode .app,
-body.spaces-chat-mode .app {
-  padding-bottom:0!important;
-}
-body.chat-mode .app.chat-mode #chatPage,
-body.spaces-chat-mode .app.spaces-chat-mode #spacesPage.active {
-  min-height:0!important;
-  height:100%!important;
-}
-body.chat-mode .app.chat-mode #chatPage #messageList,
-body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceMessages {
-  direction:ltr!important;
-  display:flex!important;
-  flex-direction:column!important;
-  align-items:stretch!important;
-  min-width:0!important;
-}
-body.chat-mode .app.chat-mode #chatPage #messageList > article.message {
-  display:block!important;
-  width:fit-content!important;
-  max-width:88%!important;
-  flex:0 0 auto!important;
-  position:relative!important;
-}
-body.chat-mode .app.chat-mode #chatPage #messageList > article.message.my-message {
-  align-self:flex-end!important;
-  margin-left:auto!important;
-  margin-right:0!important;
-}
-body.chat-mode .app.chat-mode #chatPage #messageList > article.message.their-message {
-  align-self:flex-start!important;
-  margin-left:0!important;
-  margin-right:auto!important;
-}
-body.chat-mode .app.chat-mode #chatPage #messageList > article.message {
-  direction:rtl!important;
-  text-align:right!important;
-}
-body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceMessages > .space-message {
-  display:block!important;
-  width:fit-content!important;
-  max-width:88%!important;
-  flex:0 0 auto!important;
-  direction:rtl!important;
-  text-align:right!important;
-}
-body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceMessages > .space-message.mine {
-  align-self:flex-end!important;
-  margin-left:auto!important;
-  margin-right:0!important;
-}
-body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceMessages > .space-message:not(.mine) {
-  align-self:flex-start!important;
-  margin-left:0!important;
-  margin-right:auto!important;
-}
-body.chat-mode .app.chat-mode #chatPage #sendMessageForm,
-body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceComposer {
-  flex:0 0 auto!important;
-  position:relative!important;
-  inset:auto!important;
-  margin-top:0!important;
-}
-
-
-/* Recovery fix: keep chat pages inside the app flex height; never force a 100% child height. */
-body.chat-mode .app.chat-mode {padding:0 13px 0!important;}
-body.chat-mode .app.chat-mode #chatPage {
-  height:auto!important;
-  min-height:0!important;
-  flex:1 1 0%!important;
-  overflow:hidden!important;
-  display:flex!important;
-  flex-direction:column!important;
-}
-body.chat-mode .app.chat-mode #chatPage #messageList {
-  display:flex!important;
-  flex:1 1 0%!important;
-  min-height:0!important;
-  height:auto!important;
-  max-height:none!important;
-  flex-direction:column!important;
-  align-items:stretch!important;
-  overflow-y:auto!important;
-}
-body.chat-mode .app.chat-mode #chatPage #messageList > .message {
-  display:block!important;
-  visibility:visible!important;
-  opacity:1!important;
-  flex:0 0 auto!important;
-  width:max-content!important;
-  max-width:88%!important;
-  min-width:0!important;
-}
-body.chat-mode .app.chat-mode #chatPage #messageList > .my-message {
-  align-self:flex-end!important;
-  margin-left:auto!important;
-  margin-right:0!important;
-}
-body.chat-mode .app.chat-mode #chatPage #messageList > .their-message {
-  align-self:flex-start!important;
-  margin-left:0!important;
-  margin-right:auto!important;
-}
-body.chat-mode .app.chat-mode #chatPage #sendMessageForm {
-  display:block!important;
-  visibility:visible!important;
-  flex:0 0 auto!important;
-  height:auto!important;
-  min-height:0!important;
-  position:relative!important;
-  margin:0!important;
-  z-index:60!important;
-}
-body.spaces-chat-mode .app.spaces-chat-mode {padding:0 13px 0!important;}
-body.spaces-chat-mode .app.spaces-chat-mode #spacesPage.active {
-  height:auto!important;min-height:0!important;flex:1 1 0%!important;
-}
-body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceDetail:not([hidden]) {
-  height:auto!important;min-height:0!important;flex:1 1 0%!important;
-}
-body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceComposer {
-  display:flex!important;visibility:visible!important;flex:0 0 auto!important;
-  height:auto!important;min-height:0!important;position:relative!important;z-index:60!important;
-}
-
-
-/* Private chat viewport containment and grid-based bubble alignment. */
-html, body {
-  width:100%!important;
-  max-width:100%!important;
-  overflow-x:hidden!important;
-  overscroll-behavior-x:none!important;
-}
-body.chat-mode {
-  position:fixed!important;
-  inset:0!important;
-  overflow:hidden!important;
-  touch-action:pan-y!important;
-}
-body.chat-mode .app.chat-mode {
-  left:0!important;
-  right:0!important;
-  width:100%!important;
-  max-width:560px!important;
-  margin-left:auto!important;
-  margin-right:auto!important;
-  box-sizing:border-box!important;
-  overflow-x:hidden!important;
-}
-body.chat-mode .app.chat-mode #chatPage {
-  width:100%!important;
-  min-width:0!important;
-  box-sizing:border-box!important;
-  overflow-x:hidden!important;
-}
-body.chat-mode .app.chat-mode #chatPage #messageList {
-  width:100%!important;
-  min-width:0!important;
-  box-sizing:border-box!important;
-  direction:ltr!important;
-  display:grid!important;
-  grid-template-columns:minmax(0,1fr)!important;
-  grid-auto-rows:min-content!important;
-  align-items:start!important;
-  gap:8px!important;
-  overflow-x:hidden!important;
-  overscroll-behavior-x:none!important;
-  touch-action:pan-y!important;
-}
-body.chat-mode .app.chat-mode #chatPage #messageList > article.message {
-  display:block!important;
-  width:fit-content!important;
-  max-width:88%!important;
-  min-width:0!important;
-  justify-self:start!important;
-  align-self:start!important;
-  margin:0!important;
-  float:none!important;
-  clear:both!important;
-  position:relative!important;
-  direction:rtl!important;
-  text-align:right!important;
-  box-sizing:border-box!important;
-}
-body.chat-mode .app.chat-mode #chatPage #messageList > article.message.my-message {
-  justify-self:end!important;
-  align-self:start!important;
-  margin:0!important;
-}
-body.chat-mode .app.chat-mode #chatPage #messageList > article.message.their-message {
-  justify-self:start!important;
-  align-self:start!important;
-  margin:0!important;
-}
-body.chat-mode .app.chat-mode #chatPage #sendMessageForm {
-  width:100%!important;
-  min-width:0!important;
-  box-sizing:border-box!important;
-}
-
-
-
+.app.spaces-chat-mode #spacesPage #spaceMessages>.space-message.mine{align-self:flex-end!important;margin-left:auto!important;margin-right:0!important}
+.app.spaces-chat-mode #spacesPage #spaceMessages>.space-message:not(.mine){align-self:flex-start!important;margin-left:0!important;margin-right:auto!important}
+body.chat-mode.keyboard-open .app.chat-mode>#chatPage #messageList{padding-top:2px!important;padding-bottom:6px!important;gap:5px!important}
+body.chat-mode.keyboard-open .app.chat-mode>#chatPage #sendMessageForm{flex:0 0 auto!important;margin:0!important;padding:0!important;min-height:0!important}
+body.chat-mode #chatPage #sendMessageStatus{display:none!important;height:0!important;min-height:0!important;margin:0!important;padding:0!important;border:0!important;overflow:hidden!important}
+body.spaces-chat-mode.keyboard-open .app.spaces-chat-mode #spaceComposer{padding-bottom:2px!important}
+body.chat-mode.keyboard-open .app.chat-mode>#chatPage #messageList,
+body.spaces-chat-mode.keyboard-open .app.spaces-chat-mode #spaceMessages{scroll-padding-bottom:8px!important}
 
 /* Private chat header mirrors the group header: back + calls on the left, identity on the right. */
 .app.chat-mode #chatPage .chat-header{

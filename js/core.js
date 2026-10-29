@@ -2356,7 +2356,6 @@ async function refreshConversationList(){
     // In iOS home-screen standalone mode, visualViewport.offsetTop can change
     // during keyboard focus/animation and drag the entire chat shell under the status bar.
     // Keep the shell anchored to the physical top; only its height follows the visual viewport.
-    const standalonePWA=window.navigator.standalone===true||!!window.matchMedia?.("(display-mode: standalone)").matches;
     const offset=0;
     const keyboardOpen=!!viewport&&(window.innerHeight-height>120);
     document.documentElement.style.setProperty("--chat-viewport-height",height+"px");

@@ -1520,9 +1520,10 @@ html,body{overflow:hidden!important;overscroll-behavior:none!important}
 body.chat-mode .app.chat-mode,
 body.spaces-chat-mode .app.spaces-chat-mode{
   position:fixed!important;inset-inline:0!important;bottom:auto!important;
-  top:var(--chat-viewport-offset,0px)!important;
-  height:var(--chat-viewport-height,100dvh)!important;
-  max-height:var(--chat-viewport-height,100dvh)!important;
+  /* Keep the entire chat surface below the iPhone status/battery area in every display mode. */
+  top:max(var(--chat-viewport-offset,0px),env(safe-area-inset-top,0px),44px)!important;
+  height:calc(var(--chat-viewport-height,100dvh) + var(--chat-viewport-offset,0px) - max(var(--chat-viewport-offset,0px),env(safe-area-inset-top,0px),44px))!important;
+  max-height:calc(var(--chat-viewport-height,100dvh) + var(--chat-viewport-offset,0px) - max(var(--chat-viewport-offset,0px),env(safe-area-inset-top,0px),44px))!important;
   min-height:0!important;width:100%!important;max-width:560px!important;
   margin:0 auto!important;padding:0!important;overflow:hidden!important;
   display:flex!important;flex-direction:column!important;transform:none!important;
@@ -1590,13 +1591,4 @@ body.chat-mode.keyboard-open .app.chat-mode>#chatPage .composer-shell,
 body.spaces-chat-mode.keyboard-open .app.spaces-chat-mode #spacesPage #spaceComposer .composer-shell{
   margin-bottom:0!important;padding-bottom:0!important;
 }
-/* In Home Screen mode, reserve the iPhone status-bar area and subtract it from height.
-   visualViewport.height is the visible height; offsetTop is its position in the layout viewport. */
-@media (display-mode:standalone){
-  body.chat-mode .app.chat-mode,
-  body.spaces-chat-mode .app.spaces-chat-mode{
-    top:max(var(--chat-viewport-offset,0px),env(safe-area-inset-top,0px),44px)!important;
-    height:calc(var(--chat-viewport-height,100dvh) + var(--chat-viewport-offset,0px) - max(var(--chat-viewport-offset,0px),env(safe-area-inset-top,0px),44px))!important;
-    max-height:calc(var(--chat-viewport-height,100dvh) + var(--chat-viewport-offset,0px) - max(var(--chat-viewport-offset,0px),env(safe-area-inset-top,0px),44px))!important;
-  }
-}
+/* Status-bar space is reserved by the authoritative viewport rule above in every display mode. */

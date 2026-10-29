@@ -2326,7 +2326,9 @@ async function refreshConversationList(){
   function syncViewport(){
     if(!activeChat())return;
     const height=vv?vv.height:window.innerHeight;
-    const offset=0; // Keep the chat frame pinned; iOS may pan visualViewport while focusing an input.
+    // On iOS Safari the visual viewport can move vertically when the keyboard opens.
+    // Position the chat frame at that viewport's actual offset, not at layout-viewport top.
+    const offset=vv?vv.offsetTop:0;
     document.documentElement.style.setProperty("--chat-viewport-height",Math.max(180,height)+"px");
     document.documentElement.style.setProperty("--chat-viewport-offset",Math.max(0,offset)+"px");
     const keyboardOpen=!!vv&&(window.innerHeight-height>120);

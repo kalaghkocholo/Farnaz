@@ -2326,12 +2326,11 @@ async function refreshConversationList(){
   function syncViewport(){
     if(!activeChat())return;
     const height=vv?vv.height:window.innerHeight;
-    const standalone=!!(window.navigator.standalone===true || window.matchMedia?.("(display-mode: standalone)").matches);
-    // Keep the header anchored below the status bar, but align the shell's bottom
-    // with the actual visible viewport bottom. iOS can pan the visual viewport while
-    // opening the keyboard; include offsetTop in shell height, never in shell top.
-    const offset=vv&&!standalone?vv.offsetTop:0;
-    const shellHeight=vv&&standalone?height+vv.offsetTop:height;
+    // Position the chat shell inside the visible viewport, including in iOS Home Screen mode.
+    // When iOS pans the visual viewport for the keyboard, offsetTop is the visible top;
+    // adding it to the shell height instead makes the shell too tall and pushes its header off-screen.
+    const offset=vv?vv.offsetTop:0;
+    const shellHeight=height;
     // Use the actual visual viewport height. A fixed minimum (180px) can leave
     // the composer floating far above the keyboard in iOS home-screen apps.
     document.documentElement.style.setProperty("--chat-viewport-height",Math.max(1,shellHeight)+"px");

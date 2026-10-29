@@ -2315,48 +2315,47 @@ async function refreshConversationList(){
   }
 }
 
-/* Track the iOS/Android visual viewport so chat composers follow the keyboard. */
+/* Keep chat screens fixed to iOS's visual viewport while the keyboard is open. */
 (function installChatKeyboardLayout(){
   const vv=window.visualViewport;
   let blurTimer=null;
+  let keyboardWasOpen=false;
   function activeChat(){
     return document.body.classList.contains("chat-mode") ||
       document.body.classList.contains("spaces-chat-mode");
   }
   function syncViewport(){
     if(!activeChat())return;
-    const height=vv?vv.height:window.innerHeight;
-    // Position the chat shell inside the visible viewport, including in iOS Home Screen mode.
-    // When iOS pans the visual viewport for the keyboard, offsetTop is the visible top;
-    // adding it to the shell height instead makes the shell too tall and pushes its header off-screen.
-    const offset=vv?vv.offsetTop:0;
-    const shellHeight=height;
-    // Use the actual visual viewport height. A fixed minimum (180px) can leave
-    // the composer floating far above the keyboard in iOS home-screen apps.
-    document.documentElement.style.setProperty("--chat-viewport-height",Math.max(1,shellHeight)+"px");
-    document.documentElement.style.setProperty("--chat-viewport-offset",Math.max(0,offset)+"px");
+    const height=Math.max(1,vv?vv.height:window.innerHeight);
+    const offset=Math.max(0,vv?vv.offsetTop:0);
     const keyboardOpen=!!vv&&(window.innerHeight-height>120);
+    const root=document.documentElement;
+    root.style.setProperty("--chat-viewport-height",height+"px");
+    root.style.setProperty("--chat-viewport-offset",offset+"px");
     document.body.classList.toggle("keyboard-open",keyboardOpen);
+    // The chat shell is positioned in layout-viewport coordinates, while
+    // visualViewport.offsetTop identifies the visible top after iOS pans.
+    // Do not scroll the page or force the message list to jump on resize.
     if(keyboardOpen){
-      requestAnimationFrame(()=>{
-        const privateList=document.getElementById("messageList");
-        const groupList=document.getElementById("spaceMessages");
-        if(document.body.classList.contains("chat-mode")&&privateList)privateList.scrollTop=privateList.scrollHeight;
-        if(document.body.classList.contains("spaces-chat-mode")&&groupList)groupList.scrollTop=groupList.scrollHeight;
-      });
+      document.body.style.overflow="hidden";
+      root.style.overflow="hidden";
+      if(window.scrollY!==0)window.scrollTo(0,0);
     }
+    keyboardWasOpen=keyboardOpen;
   }
   function clearViewport(){
     if(activeChat())return;
     document.documentElement.style.removeProperty("--chat-viewport-height");
     document.documentElement.style.removeProperty("--chat-viewport-offset");
     document.body.classList.remove("keyboard-open");
+    document.documentElement.style.removeProperty("overflow");
+    document.body.style.removeProperty("overflow");
+    keyboardWasOpen=false;
   }
   document.addEventListener("focusin",event=>{
     if(event.target?.matches("#messageText,#spaceText")){
       clearTimeout(blurTimer);
       // iOS Home Screen viewport metrics settle in stages during keyboard animation.
-      // Re-measure through the transition so the header and composer track the final viewport.
       requestAnimationFrame(syncViewport);
       [60,120,200,320,480,700].forEach(delay=>setTimeout(syncViewport,delay));
     }
@@ -2364,8 +2363,6 @@ async function refreshConversationList(){
   document.addEventListener("focusout",event=>{
     if(event.target?.matches("#messageText,#spaceText")){
       clearTimeout(blurTimer);
-      // iOS Home Screen apps can report the keyboard-closing viewport late.
-      // Re-measure after the transition so the composer returns to the true bottom.
       const resync=()=>{
         if(!document.activeElement?.matches("#messageText,#spaceText")){
           syncViewport();
@@ -2379,6 +2376,12 @@ async function refreshConversationList(){
   vv?.addEventListener("resize",syncViewport);
   vv?.addEventListener("scroll",syncViewport);
   window.addEventListener("resize",syncViewport);
+  // Prevent touch-driven document scrolling; keep native scrolling inside message history.
+  document.addEventListener("touchmove",event=>{
+    if(!activeChat())return;
+    if(event.target?.closest("#messageList,#spaceMessages,#sendMessageForm,#spaceComposer"))return;
+    event.preventDefault();
+  },{passive:false});
   document.addEventListener("click",event=>{
     if(event.target.closest("#backToChats,#backSpaces")||event.target.closest(".nav-button")){
       setTimeout(clearViewport,0);
@@ -2386,11 +2389,16 @@ async function refreshConversationList(){
   });
   const originalNavigate=window.navigate;
   if(typeof originalNavigate==="function"&&!originalNavigate.__keyboardViewportWrapped){
-    const wrapped=function(id){originalNavigate(id);if(id==="chatPage"||id==="spacesPage")requestAnimationFrame(syncViewport);else clearViewport();};
+    const wrapped=function(id){
+      originalNavigate(id);
+      if(id==="chatPage"||id==="spacesPage")requestAnimationFrame(syncViewport);
+      else clearViewport();
+    };
     wrapped.__keyboardViewportWrapped=true;
     window.navigate=wrapped;
   }
   
+
   // Keep email sign-up/sign-in wired to the active core script loaded by index.html.
   const authForm=$("authForm");
   if(authForm){

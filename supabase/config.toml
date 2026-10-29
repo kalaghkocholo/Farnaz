@@ -1,0 +1,5 @@
+# Farnaz Supabase local-development configuration.
+# The token endpoint verifies the Supabase user JWT itself with auth.getUser().
+# This avoids relying solely on the legacy gateway JWT verification layer.
+[functions.livekit-token]
+verify_jwt = false

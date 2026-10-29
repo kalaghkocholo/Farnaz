@@ -1570,7 +1570,7 @@ body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceComposer{
  min-height:0!important;width:100%!important;margin:0!important;padding:0 0 max(3px,env(safe-area-inset-bottom,0px))!important;
  background:var(--bg)!important;transform:none!important
 }
-/* Standalone iOS uses the same anchored app shell and flex layout as other chat modes. */
+/* Standalone iOS keeps the header anchored while the shell bottom follows the visible viewport. */
 body.chat-mode.keyboard-open .app.chat-mode>#chatPage #sendMessageForm,body.spaces-chat-mode.keyboard-open .app.spaces-chat-mode #spacesPage #spaceComposer{margin:0!important;padding-top:0!important;padding-bottom:0!important;transform:none!important}
 body.chat-mode.keyboard-open .app.chat-mode>#chatPage .composer-shell,body.spaces-chat-mode.keyboard-open .app.spaces-chat-mode #spaceComposer .composer-shell{margin-bottom:0!important;padding-bottom:0!important}
 body.chat-mode.keyboard-open .app.chat-mode>header{display:none!important}

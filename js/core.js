@@ -686,13 +686,17 @@ function openAdjacentConversation(direction){
   cards[nextIndex].querySelector(".list-item")?.click();
 }
 /* Bidirectional page swipes use the same history as ordinary navigation. */
+const SWIPE_PAGE_ORDER=["profilePage","chatsPage","spacesPage","contactsPage","settingsPage"];
 function swipeHistoryTarget(direction){
-  const index=swipePageHistoryIndex-direction;
-  if(index<0||index>=swipePageHistory.length)return null;
-  const targetId=swipePageHistory[index];
-  // Never let an in-app gesture return to the welcome/auth screen.
-  if(!currentUser||!targetId||targetId==="homePage"||!document.getElementById(targetId))return null;
-  return targetId;
+  if(!currentUser)return null;
+  const activePage=document.querySelector(".page.active");
+  if(!activePage)return null;
+  // An open private conversation belongs to the conversations section.
+  const currentId=activePage.id==="chatPage"?"chatsPage":activePage.id;
+  const index=SWIPE_PAGE_ORDER.indexOf(currentId);
+  if(index<0)return null;
+  const targetId=SWIPE_PAGE_ORDER[index+direction];
+  return targetId&&document.getElementById(targetId)?targetId:null;
 }
 function clearSwipeTransition(){
   if(swipeTransitionTimer){clearTimeout(swipeTransitionTimer);swipeTransitionTimer=null;}
@@ -711,7 +715,12 @@ function finishSwipeNavigation(commit){
     g.current.style.transform="translate3d("+(g.direction*g.width)+"px,0,0)";
     g.target.style.transform="translate3d(0,0,0)";
     swipeGesture=null;
-    swipeTransitionTimer=setTimeout(()=>{swipeTransitionTimer=null;navigate(g.targetId);clearSwipeTransition();},230);
+    swipeTransitionTimer=setTimeout(()=>{
+      swipeTransitionTimer=null;
+      // Commit only if the user is still on the page where this gesture began.
+      if(currentUser&&document.querySelector(".page.active")===g.current)navigate(g.targetId);
+      clearSwipeTransition();
+    },230);
   }else{
     g.current.style.transition="transform 180ms cubic-bezier(.22,.75,.25,1)";
     g.target.style.transition=g.current.style.transition;

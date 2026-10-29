@@ -2349,7 +2349,6 @@ async function refreshConversationList(){
   document.addEventListener("focusin",event=>{
     if(event.target?.matches("#messageText,#spaceText")){
       clearTimeout(blurTimer);
-      window.scrollTo(0,0);
       requestAnimationFrame(syncViewport);
       setTimeout(syncViewport,80);
       setTimeout(syncViewport,220);

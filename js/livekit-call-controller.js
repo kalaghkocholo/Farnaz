@@ -31,6 +31,7 @@
     let disposed = false;
     let mediaStartPromise = null;
     let mediaDisconnectPromise = null;
+    let activeCallId = null;
     let acceptedBeforeMedia = false;
     let ending = false;
 
@@ -78,7 +79,13 @@
 
     async function handleSessionEvent(event) {
       if (!event) return;
+      const eventCallId = event.session && String(event.session.id || "");
+      if (event.type === "incoming" || event.type === "outgoing") {
+        if (eventCallId) activeCallId = eventCallId;
+      }
       if (event.type === "accepted") {
+        if (eventCallId && activeCallId && eventCallId !== activeCallId) return;
+        if (eventCallId && !activeCallId) activeCallId = eventCallId;
         if (event.role === "caller") {
           if (media && media.getState().connected) {
             try { await media.setMicrophoneEnabled(true); }
@@ -91,6 +98,8 @@
           }
         }
       } else if (event.type === "finished") {
+        if (eventCallId && activeCallId && eventCallId !== activeCallId) return;
+        activeCallId = null;
         await disconnectMedia();
       }
       emit("session-" + event.type, event);
@@ -148,6 +157,7 @@
       assertReady();
       const manager = ensureSessions();
       const session = await manager.start(input);
+      activeCallId = String(session.id);
       try {
         await connectOutgoingMedia(session);
         return session;
@@ -166,6 +176,7 @@
         throw new Error("There is no incoming ringing call to answer.");
       }
       if (media) throw new Error("Media is already prepared for this call.");
+      activeCallId = String(state.session.id);
       if (mediaDisconnectPromise) await mediaDisconnectPromise;
       await ensureSdk();
       const instance = createMedia(state.session, true);
@@ -218,6 +229,7 @@
         await disconnectMedia();
       }
       disposed = true;
+      activeCallId = null;
       if (sessions) await sessions.close();
       emit("closed");
     }

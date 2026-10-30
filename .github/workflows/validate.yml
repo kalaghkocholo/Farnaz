@@ -34,6 +34,7 @@ jobs:
           node --check js/spaces.js
           node --check js/calls.js
           node --check js/livekit-calls.js
+          node --check js/livekit-sdk-loader.js
           node --check service-worker.js
           node --check scripts/validate.mjs
       - name: Validate application structure
@@ -41,6 +42,6 @@ jobs:
       - name: Validate call infrastructure security invariants
         run: node scripts/validate-call-infra.mjs
       - name: Test isolated LiveKit adapter
-        run: node --test tests/livekit-adapter.test.mjs
+        run: node --test tests/livekit-adapter.test.mjs tests/livekit-sdk-loader.test.mjs
       - name: Type-check LiveKit token endpoint
         run: deno check --no-config --no-lock supabase/functions/livekit-token/index.ts

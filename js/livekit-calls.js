@@ -7,6 +7,8 @@
     const settings = options || {};
     const supabase = settings.supabase;
     const spaceId = settings.spaceId;
+    const callSessionId = settings.callSessionId;
+    const isDirectCall = typeof callSessionId === "string";
     const callType = settings.callType === "video" ? "video" : "audio";
     const sdk = settings.livekitClient || root.LivekitClient;
     const onEvent = typeof settings.onEvent === "function" ? settings.onEvent : function () {};
@@ -28,8 +30,14 @@
       if (!sdk || typeof sdk.Room !== "function" || !sdk.RoomEvent || !sdk.Track) {
         throw new Error("LiveKit client SDK is not loaded. No external CDN is loaded automatically.");
       }
-      if (!UUID_RE.test(String(spaceId || ""))) {
-        throw new Error("A valid group identifier is required.");
+      const hasSpaceId = typeof spaceId === "string";
+      const hasCallSessionId = typeof callSessionId === "string";
+      if (hasSpaceId === hasCallSessionId) {
+        throw new Error("Provide exactly one group ID or direct call session ID.");
+      }
+      const targetId = isDirectCall ? callSessionId : spaceId;
+      if (!UUID_RE.test(String(targetId || ""))) {
+        throw new Error("A valid call target identifier is required.");
       }
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error("This browser does not support microphone/camera capture.");
@@ -51,14 +59,18 @@
         const session = authResult.data && authResult.data.session;
         if (!session || !session.access_token) throw new Error("Sign in before joining a group call.");
 
+        const tokenBody = isDirectCall
+          ? { callSessionId: callSessionId, callType: callType }
+          : { spaceId: spaceId, callType: callType };
         const tokenResult = await supabase.functions.invoke("livekit-token", {
-          body: { spaceId: spaceId }
+          body: tokenBody
         });
         if (tokenResult.error) throw tokenResult.error;
         if (disposed) throw new Error("The call was cancelled before connecting.");
         const credentials = tokenResult.data;
-        if (!credentials || !credentials.token || !credentials.serverUrl || !credentials.roomName) {
-          throw new Error("The call token service returned an invalid response.");
+        if (!credentials || !credentials.token || !credentials.serverUrl || !credentials.roomName ||
+          credentials.callType !== callType) {
+          throw new Error("The call token service returned an invalid or mismatched response.");
         }
 
         // Do not persist the participant token or expose any LiveKit API secret.
@@ -107,6 +119,8 @@
         emit("connected", {
           roomName: credentials.roomName,
           callType: callType,
+          callSessionId: isDirectCall ? callSessionId : null,
+          spaceId: isDirectCall ? null : spaceId,
           participantCount: room.remoteParticipants ? room.remoteParticipants.size + 1 : 1
         });
 
@@ -180,7 +194,8 @@
           disposed: disposed,
           localMediaEnabled: localMediaEnabled,
           callType: callType,
-          spaceId: spaceId
+          spaceId: isDirectCall ? null : spaceId,
+          callSessionId: isDirectCall ? callSessionId : null
         };
       }
     };

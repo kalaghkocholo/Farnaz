@@ -122,6 +122,7 @@
         const instance = createMedia(session, false);
         media = instance;
         await instance.connect();
+        if (media !== instance || disposed) throw new Error("The call ended while media was connecting.");
         if (acceptedBeforeMedia) {
           await instance.setMicrophoneEnabled(true);
           acceptedBeforeMedia = false;

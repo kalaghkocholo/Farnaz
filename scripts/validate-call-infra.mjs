@@ -19,6 +19,7 @@ const plan = read("docs/call-infrastructure-plan.md");
 const tokenDocs = read("infra/livekit/TOKEN-ENDPOINT.md");
 const adapter = read("js/livekit-calls.js");
 const sessions = read("js/livekit-call-sessions.js");
+const controller = read("js/livekit-call-controller.js");
 const appHtml = read("index.html");
 const adapterDocs = read("infra/livekit/CLIENT-ADAPTER.md");
 const sessionDocs = read("infra/livekit/CALL-SESSION-LIFECYCLE.md");
@@ -66,7 +67,8 @@ requireCheck(adapter.includes('root.FarnazLiveKitCalls') &&
   adapter.includes('root.LivekitClient') &&
   adapter.includes('supabase.functions.invoke("livekit-token"') &&
   adapter.includes("adaptiveStream: true") &&
-  adapter.includes("dynacast: true"),
+  adapter.includes("dynacast: true") &&
+  adapter.includes("publishMicrophoneOnConnect"),
   "LiveKit adapter must be isolated, authenticate through Supabase, and enable adaptive media options.");
 requireCheck(adapter.includes('integrationStatus: "isolated-adapter-not-enabled"') &&
   adapterDocs.includes("not loaded by the app startup sequence yet"),
@@ -86,6 +88,15 @@ requireCheck(sessions.includes("root.FarnazCallSessions") &&
 requireCheck(sessions.includes('integrationStatus: "isolated-session-lifecycle-not-enabled"') &&
   !appHtml.includes("livekit-call-sessions.js"),
   "The new call-session lifecycle must remain isolated and unloaded from the production app.");
+requireCheck(controller.includes("root.FarnazCallController") &&
+  controller.includes("publishMicrophoneOnConnect: false") &&
+  controller.includes("manager.answer()") &&
+  controller.includes("manager.reject()") &&
+  controller.includes("manager.end()") &&
+  controller.includes("root.FarnazLiveKitSdk") &&
+  controller.includes('integrationStatus: "isolated-audio-first-controller-not-enabled"') &&
+  !appHtml.includes("livekit-call-controller.js"),
+  "The audio-first controller must keep outgoing microphones muted until acceptance and remain unloaded from the production app.");
 
 if (errors.length) {
   console.error("Call infrastructure validation failed:");

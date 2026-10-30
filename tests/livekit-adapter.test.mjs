@@ -133,6 +133,27 @@ test("connects a one-to-one audio call using only its call session ID", async ()
   await call.disconnect();
 });
 
+test("joins a room silently and enables the microphone only after acceptance", async () => {
+  const { context, roomInstances } = loadAdapter();
+  const call = context.FarnazLiveKitCalls.create({
+    supabase: makeSupabase(),
+    spaceId: validSpaceId,
+    callType: "audio",
+    publishMicrophoneOnConnect: false
+  });
+
+  await call.connect();
+  assert.equal(roomInstances[0].microphoneEnabled, undefined);
+  assert.equal(call.getState().localMediaEnabled, false);
+  assert.equal(call.getState().microphoneEnabled, false);
+
+  await call.setMicrophoneEnabled(true);
+  assert.equal(roomInstances[0].microphoneEnabled, true);
+  assert.equal(call.getState().localMediaEnabled, true);
+  assert.equal(call.getState().microphoneEnabled, true);
+  await call.disconnect();
+});
+
 test("enables camera only for a video call", async () => {
   const { context, roomInstances } = loadAdapter();
   const call = context.FarnazLiveKitCalls.create({

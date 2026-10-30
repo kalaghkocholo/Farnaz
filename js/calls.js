@@ -235,6 +235,11 @@ async function endCall(notifyPeer){
   const d=byId("farnazCallDialog");if(d)d.hidden=true;
 }
 async function startCall(type){
+  if(root.FARNAZ_LIVEKIT_CALLS_ENABLED===true){
+    if(!root.FarnazLiveKitCallUI){alert(tr("بخش تماس جدید هنوز آماده نیست؛ صفحه را تازه‌سازی کن.","The new call module is not ready yet. Refresh the app."));return;}
+    try{await root.FarnazLiveKitCallUI.start(type);}catch(error){console.error("[Farnaz LiveKit call]",error);}
+    return;
+  }
   if(!signedInUserId||!currentUser){alert(tr("برای تماس ابتدا وارد حساب شو.","Sign in before starting a call."));return;}
   if(!currentChatUser?.user_id){alert(tr("تماس گروهی هنوز فعال نشده؛ فعلاً از گفت‌وگوی خصوصی تماس بگیر.","Group calls are not enabled yet. Start a call from a private chat."));return;}
   if(!navigator.mediaDevices?.getUserMedia||!window.RTCPeerConnection){alert(tr("این مرورگر امکان تماس WebRTC را ندارد.","This browser does not support WebRTC calls."));return;}
@@ -291,6 +296,12 @@ async function startCall(type){
 }
 async function setUser(userId){
   const request=++userSwitchSequence,next=userId?String(userId):null;
+  if(root.FARNAZ_LIVEKIT_CALLS_ENABLED===true){
+    signedInUserId=next;
+    if(!root.FarnazLiveKitCallUI)throw new Error("The feature-gated LiveKit call UI was not loaded.");
+    await root.FarnazLiveKitCallUI.setUser(next);
+    return;
+  }
   if(next===signedInUserId&&inboxChannel)return;
   if(activeCall)await endCall(false);
   if(request!==userSwitchSequence)return;

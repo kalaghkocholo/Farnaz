@@ -19,6 +19,8 @@
     let connecting = false;
     let disposed = false;
     let localMediaEnabled = false;
+    let microphoneEnabled = false;
+    let cameraEnabled = false;
 
     function emit(type, detail) {
       try { onEvent({ type: type, detail: detail || null }); }
@@ -102,6 +104,8 @@
           .on(events.Disconnected, function (reason) {
             connected = false;
             localMediaEnabled = false;
+            microphoneEnabled = false;
+            cameraEnabled = false;
             emit("disconnected", { reason: reason });
           })
           .on(events.AudioPlaybackStatusChanged, function () {
@@ -133,7 +137,9 @@
         if (callType === "video" && publishCameraOnConnect) {
           await room.localParticipant.setCameraEnabled(true);
         }
-        localMediaEnabled = publishMicrophoneOnConnect || (callType === "video" && publishCameraOnConnect);
+        microphoneEnabled = publishMicrophoneOnConnect;
+        cameraEnabled = callType === "video" && publishCameraOnConnect;
+        localMediaEnabled = microphoneEnabled || cameraEnabled;
         emit("local-media-enabled", {
           audio: publishMicrophoneOnConnect,
           video: callType === "video" && publishCameraOnConnect
@@ -155,8 +161,10 @@
 
     async function setMicrophoneEnabled(enabled) {
       if (!room || !connected) throw new Error("Not connected to a call.");
-      await room.localParticipant.setMicrophoneEnabled(Boolean(enabled));
-      emit("microphone-changed", { enabled: Boolean(enabled) });
+      microphoneEnabled = Boolean(enabled);
+      await room.localParticipant.setMicrophoneEnabled(microphoneEnabled);
+      localMediaEnabled = microphoneEnabled || cameraEnabled;
+      emit("microphone-changed", { enabled: microphoneEnabled });
     }
 
     async function setCameraEnabled(enabled) {
@@ -164,8 +172,10 @@
       if (enabled && callType !== "video") {
         throw new Error("This session was created as audio-only.");
       }
-      await room.localParticipant.setCameraEnabled(Boolean(enabled));
-      emit("camera-changed", { enabled: Boolean(enabled) });
+      cameraEnabled = Boolean(enabled);
+      await room.localParticipant.setCameraEnabled(cameraEnabled);
+      localMediaEnabled = microphoneEnabled || cameraEnabled;
+      emit("camera-changed", { enabled: cameraEnabled });
     }
 
     async function startAudioPlayback() {
@@ -182,6 +192,8 @@
       room = null;
       connected = false;
       localMediaEnabled = false;
+      microphoneEnabled = false;
+      cameraEnabled = false;
       if (currentRoom) {
         try { await currentRoom.disconnect(true); }
         finally { emit("ended"); }
@@ -202,6 +214,8 @@
           connecting: connecting,
           disposed: disposed,
           localMediaEnabled: localMediaEnabled,
+          microphoneEnabled: microphoneEnabled,
+          cameraEnabled: cameraEnabled,
           callType: callType,
           spaceId: isDirectCall ? null : spaceId,
           callSessionId: isDirectCall ? callSessionId : null

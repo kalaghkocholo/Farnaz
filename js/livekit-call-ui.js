@@ -106,9 +106,9 @@
     byId("farnazLiveKitDialog").hidden = false;
     byId("farnazLiveKitAccept").hidden = !incoming;
     byId("farnazLiveKitReject").hidden = !incoming;
-    byId("farnazLiveKitMute").hidden = incoming;
-    byId("farnazLiveKitSpeaker").hidden = incoming;
-    byId("farnazLiveKitCamera").hidden = incoming || callType !== "video";
+    byId("farnazLiveKitMute").hidden = true;
+    byId("farnazLiveKitSpeaker").hidden = true;
+    byId("farnazLiveKitCamera").hidden = true;
     byId("farnazLiveKitEnd").hidden = incoming;
     stopTimer();
     resetMedia();
@@ -129,17 +129,19 @@
     activeSession = session;
     activeRole = "receiver";
     callType = session.call_type === "video" ? "video" : "audio";
-    let name = tr("مخاطب فرناز", "Farnaz contact");
+    const title = callType === "video" ? tr("تماس تصویری ورودی", "Incoming video call") : tr("تماس صوتی ورودی", "Incoming audio call");
+    show(title, tr("تماس ورودی…", "Incoming call…"), true);
     try {
       const result = await getClient().rpc("get_farnaz_user_profile", { search_user_id: session.caller_id });
       const profile = Array.isArray(result.data) ? result.data[0] : result.data;
-      if (profile && profile.display_name) name = profile.display_name;
+      if (!activeSession || String(activeSession.id) !== String(session.id)) return;
+      if (profile && profile.display_name) {
+        byId("farnazLiveKitAvatar").textContent = profile.display_name.trim().charAt(0).toUpperCase();
+        setStatus(tr("تماس از طرف ", "Incoming call from ") + profile.display_name);
+      }
     } catch (error) {
       console.warn("[Farnaz LiveKit UI] Caller profile lookup failed:", error);
     }
-    if (!activeSession || String(activeSession.id) !== String(session.id)) return;
-    show(callType === "video" ? tr("تماس تصویری ورودی", "Incoming video call") : tr("تماس صوتی ورودی", "Incoming audio call"),
-      tr("تماس از طرف ", "Incoming call from ") + name, true);
   }
 
   function onControllerEvent(event) {
@@ -156,6 +158,10 @@
       activeSession = detail.session || activeSession;
       activeRole = detail.role || activeRole;
       setStatus(tr("تماس برقرار است", "Call connected"));
+      byId("farnazLiveKitMute").hidden = false;
+      byId("farnazLiveKitSpeaker").hidden = false;
+      byId("farnazLiveKitCamera").hidden = callType !== "video";
+      byId("farnazLiveKitEnd").hidden = false;
       startTimer();
     } else if (event.type === "session-finished") {
       activeSession = null;
@@ -193,7 +199,7 @@
         remoteAudioTracks.delete(track);
         if (remoteVideoTrack === track) remoteVideoTrack = null;
       }
-    } else if (event.type === "error") {
+    } else if (event.type === "error" || event.type === "media-error") {
       const error = detail.error || detail;
       setStatus(tr("خطا: ", "Call error: ") + String(error && error.message || error));
     } else if (event.type === "media-reconnecting") {
@@ -214,6 +220,8 @@
     stopTimer();
     resetMedia();
     if (previous) await previous.close();
+    const dialog = byId("farnazLiveKitDialog");
+    if (!next && dialog) dialog.hidden = true;
     if (!next) return;
     controller = root.FarnazCallController.create({
       supabase: getClient(),

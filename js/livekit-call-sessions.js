@@ -146,6 +146,19 @@
       }, ringingTimeoutMs);
     }
 
+    async function refreshSession(sessionId) {
+      const result = await supabase.from("call_sessions")
+        .select(SESSION_COLUMNS)
+        .eq("id", sessionId)
+        .maybeSingle();
+      if (result.error) throw result.error;
+      if (result.data) applySessionUpdate(result.data);
+      else if (activeSession && String(activeSession.id) === String(sessionId)) {
+        await clearActiveSession("ended", true);
+      }
+      return result.data || null;
+    }
+
     function applySessionUpdate(session) {
       if (!activeSession || String(activeSession.id) !== String(session.id)) return;
       activeSession = Object.assign({}, activeSession, session);
@@ -175,6 +188,8 @@
       try {
         await subscribeToSession(activeSession);
         if (!activeSession || String(activeSession.id) !== id) return;
+        await refreshSession(id);
+        if (!activeSession || String(activeSession.id) !== id || activeSession.status !== "ringing") return;
         emit("incoming", { session: activeSession, role: activeRole });
       } catch (error) {
         if (activeSession && String(activeSession.id) === id) {
@@ -209,7 +224,8 @@
       activeSession = Object.assign({}, result.data);
       activeRole = "caller";
       try {
-        await subscribeToSession(activeSession);
+          await subscribeToSession(activeSession);
+        await refreshSession(activeSession.id);
       } catch (error) {
         try {
           await supabase.from("call_sessions").update({ status: "ended" }).eq("id", activeSession.id).eq("status", "ringing");
@@ -217,9 +233,11 @@
         await clearActiveSession("ended", false);
         throw error;
       }
-      armRingingTimeout(activeSession);
-      emit("outgoing", { session: activeSession, role: activeRole });
-      return activeSession;
+      if (activeSession && activeSession.status === "ringing") {
+        armRingingTimeout(activeSession);
+        emit("outgoing", { session: activeSession, role: activeRole });
+      }
+      return Object.assign({}, result.data);
     }
 
     async function updateStatus(nextStatus) {

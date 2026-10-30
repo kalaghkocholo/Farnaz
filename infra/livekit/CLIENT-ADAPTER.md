@@ -4,7 +4,7 @@ File: `js/livekit-calls.js`
 
 ## Purpose
 
-This adapter is intentionally separate from `js/calls.js`. It does not change or replace the current private WebRTC call flow and is not loaded by the app startup sequence yet.
+This adapter is intentionally separate from `js/calls.js`. It does not change or replace the current private WebRTC call flow and is not loaded during the default app startup. Its SDK, adapter, session manager, controller, and call UI load only when the explicit pilot flag is enabled; that flag is currently `false`.
 
 It expects:
 - the existing authenticated Supabase client;
@@ -12,7 +12,7 @@ It expects:
 - the pinned LiveKit JavaScript client SDK version 2.23.0, served from a same-origin local asset;
 - a user-initiated action to call `connect()`, so iOS Safari can show microphone/camera permission prompts.
 
-The adapter does not download third-party scripts automatically. This avoids adding a new CDN dependency to every Farnaz startup and avoids silently depending on CDN reachability in restrictive networks. The lazy loader is implemented in `js/livekit-sdk-loader.js` and only requests `./vendor/livekit/livekit-client-2.23.0.umd.js` after an explicit call to `FarnazLiveKitSdk.load()`. It is not included in the startup sequence. The Apache-2.0 license notice is committed under `vendor/livekit/LICENSE`. The executable vendor bundle is deliberately not committed yet: its exact package bytes, registry integrity, SHA-256, and deployed size must be verified first. Do not enable the feature until that asset is present and tested.
+The adapter does not download third-party scripts automatically. This avoids adding a new CDN dependency to every Farnaz startup and avoids silently depending on CDN reachability in restrictive networks. The lazy loader is implemented in `js/livekit-sdk-loader.js` and only requests `./vendor/livekit/livekit-client-2.23.0.umd.js` after an explicit call to `FarnazLiveKitSdk.load()`. It is not included in the default startup path; it is loaded only behind the disabled pilot flag. The Apache-2.0 license notice is committed under `vendor/livekit/LICENSE`. The executable vendor bundle is committed at the exact path and its npm integrity and SHA-256 were verified. Do not enable the feature until the token endpoint and LiveKit host are deployed in a controlled pilot and real-device tests pass.
 
 ## Example integration contract
 
@@ -35,7 +35,7 @@ await session.startAudioPlayback(); // if Safari requires a user gesture
 await session.disconnect();
 ```
 
-Do not call this from the existing call buttons yet. The adapter is not active in `index.html` and does not render a UI.
+The existing call buttons route to the new UI only when `window.FARNAZ_LIVEKIT_CALLS_ENABLED` is explicitly changed to `true`. It is currently `false`, so the legacy WebRTC path remains active.
 
 ## Current capabilities
 
@@ -48,12 +48,11 @@ Do not call this from the existing call buttons yet. The adapter is not active i
 
 ## Remaining work before activation
 
-1. Add the verified `livekit-client@2.23.0` UMD bundle at the loader's exact same-origin path; preserve the Apache-2.0 license notice and record SHA-256 plus byte size.
-2. Run the adapter and lazy-loader unit tests with mocked SDK and token function.
-3. Add a separate experimental group-call UI behind a feature flag.
-4. Deploy the Edge Function to a non-production configuration and configure server-only LiveKit secrets.
-5. Run tests on iOS Safari/PWA, desktop, two devices, weak bandwidth and real target networks.
-6. Only then consider enabling the group-call controls. The existing one-to-one path stays intact until separately tested.
+1. Complete mocked UI/controller tests and review the full diff for lifecycle edge cases.
+2. Deploy the Edge Function to a non-production configuration and configure server-only LiveKit secrets.
+3. Provision a private pilot LiveKit host with TLS, TURN/TLS, firewall rules, and monitoring.
+4. Run tests on iOS Safari/PWA, desktop, two devices, weak bandwidth and target mobile networks.
+5. Only then consider enabling the pilot flag for a small test group. Keep the legacy one-to-one path available until the new path passes acceptance tests.
 
 
 ## SDK pin and loader status
@@ -62,5 +61,5 @@ Do not call this from the existing call buttons yet. The adapter is not active i
 - Browser bundle format: UMD; upstream documentation states it exposes `LivekitClient` globally.
 - Loader: `js/livekit-sdk-loader.js`; explicit lazy load only, same-origin relative path, no CDN fallback, request de-duplication, bounded timeout, API-shape validation.
 - Required asset path: `vendor/livekit/livekit-client-2.23.0.umd.js`.
-- Asset status: **not yet vendored**. No external SDK is loaded and no call UI uses the loader.
+- Asset status: **committed and integrity-verified**. The SDK remains lazy-loaded only after the pilot flag is enabled and a user starts or answers a call.
 - Before committing the bundle, verify its SHA-256 against the official package artifact, retain the Apache-2.0 license text, measure compressed/uncompressed size, and test service-worker offline caching.

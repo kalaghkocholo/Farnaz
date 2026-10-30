@@ -50,14 +50,14 @@
       if (connected) return api;
       if (connecting) throw new Error("This call session is already connecting.");
       connecting = true;
-      emit("connecting", { callType: callType, spaceId: spaceId });
+      emit("connecting", { callType: callType, spaceId: isDirectCall ? null : spaceId, callSessionId: isDirectCall ? callSessionId : null });
 
       try {
         const authResult = await supabase.auth.getSession();
         if (authResult.error) throw authResult.error;
         if (disposed) throw new Error("The call was cancelled before connecting.");
         const session = authResult.data && authResult.data.session;
-        if (!session || !session.access_token) throw new Error("Sign in before joining a group call.");
+        if (!session || !session.access_token) throw new Error("Sign in before joining a call.");
 
         const tokenBody = isDirectCall
           ? { callSessionId: callSessionId, callType: callType }
@@ -137,7 +137,7 @@
         }
         connected = false;
         localMediaEnabled = false;
-        emit("error", { message: String(error && error.message || error || "Could not connect to group call") });
+        emit("error", { message: String(error && error.message || error || "Could not connect to call") });
         throw error;
       } finally {
         connecting = false;

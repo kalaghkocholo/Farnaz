@@ -76,9 +76,9 @@ requireCheck(!/LIVEKIT_API_SECRET|LIVEKIT_API_KEY/.test(adapter),
 requireCheck(sessions.includes("root.FarnazCallSessions") &&
   sessions.includes("async function start(input)") &&
   sessions.includes("async function watchIncoming()") &&
-  sessions.includes('update({ status: "active" })') &&
-  sessions.includes('update({ status: "rejected" })') &&
-  sessions.includes('update({ status: "ended" })') &&
+  sessions.includes('async function answer() { return updateStatus("active"); }') &&
+  sessions.includes('async function reject() { return updateStatus("rejected"); }') &&
+  sessions.includes('async function end() { return updateStatus("ended"); }') &&
   sessions.includes("supabase.auth.getUser()") &&
   sessionDocs.includes("Only the receiver may change") &&
   sessionDocs.includes("does not capture media"),

@@ -31,7 +31,7 @@ await sessions.reject();
 // Either participant:
 await sessions.end();
 
-// On sign-out / manager disposal:
+// On sign-out, first end an active session if appropriate, disconnect the media adapter, then dispose subscriptions:
 await sessions.close();
 ```
 

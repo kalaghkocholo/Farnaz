@@ -12,7 +12,7 @@ It expects:
 - the pinned LiveKit JavaScript client SDK version 2.23.0, served from a same-origin local asset;
 - a user-initiated action to call `connect()`, so iOS Safari can show microphone/camera permission prompts.
 
-The adapter does not download third-party scripts automatically. This avoids adding a new CDN dependency to every Farnaz startup and avoids silently depending on CDN reachability in restrictive networks. The lazy loader is implemented in `js/livekit-sdk-loader.js` and only requests `./vendor/livekit/livekit-client-2.23.0.umd.min.js` after an explicit call to `FarnazLiveKitSdk.load()`. It is not included in the startup sequence. The vendor bundle is deliberately not committed yet: its exact package bytes, integrity digest, license notice, and deployed size must be verified first. Do not enable the feature until that asset is present and tested.
+The adapter does not download third-party scripts automatically. This avoids adding a new CDN dependency to every Farnaz startup and avoids silently depending on CDN reachability in restrictive networks. The lazy loader is implemented in `js/livekit-sdk-loader.js` and only requests `./vendor/livekit/livekit-client-2.23.0.umd.js` after an explicit call to `FarnazLiveKitSdk.load()`. It is not included in the startup sequence. The Apache-2.0 license notice is committed under `vendor/livekit/LICENSE`. The executable vendor bundle is deliberately not committed yet: its exact package bytes, registry integrity, SHA-256, and deployed size must be verified first. Do not enable the feature until that asset is present and tested.
 
 ## Example integration contract
 
@@ -61,6 +61,6 @@ Do not call this from the existing call buttons yet. The adapter is not active i
 - Upstream package: [`livekit-client`](https://www.npmjs.com/package/livekit-client), exact version `2.23.0` (Apache-2.0).
 - Browser bundle format: UMD; upstream documentation states it exposes `LivekitClient` globally.
 - Loader: `js/livekit-sdk-loader.js`; explicit lazy load only, same-origin relative path, no CDN fallback, request de-duplication, bounded timeout, API-shape validation.
-- Required asset path: `vendor/livekit/livekit-client-2.23.0.umd.min.js`.
+- Required asset path: `vendor/livekit/livekit-client-2.23.0.umd.js`.
 - Asset status: **not yet vendored**. No external SDK is loaded and no call UI uses the loader.
 - Before committing the bundle, verify its SHA-256 against the official package artifact, retain the Apache-2.0 license text, measure compressed/uncompressed size, and test service-worker offline caching.

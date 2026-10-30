@@ -41,10 +41,15 @@ The exact ports depend on the final LiveKit configuration. Use the official [por
 - Do not place the Supabase service-role key in browser code.
 - Do not issue tokens until the actual group membership schema and authorization policy have been inspected and tested.
 
+## Pinned browser SDK
+
+The self-hosted browser bundle is pinned to `livekit-client@2.23.0` at `vendor/livekit/livekit-client-2.23.0.umd.js`. The bundle was retrieved from the exact npm release, checked against npm's published SHA-512 package integrity, and checked against the independently recorded UMD SHA-256 before being committed. The accompanying `vendor/livekit/LICENSE` and `vendor/livekit/README.md` preserve the package licensing and provenance. Do not replace the bundle without repeating both integrity checks and reviewing the release version.
+
 ## Current status
 
 - [x] Architecture and baseline documented.
 - [x] Local-only setup and production safety boundary documented.
+- [x] Pinned browser SDK bundle retrieved and integrity-verified.
 - [ ] Local server smoke test run on a developer machine.
 - [ ] Token endpoint implemented and tested.
 - [ ] PWA adapter implemented behind a feature flag.

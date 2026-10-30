@@ -59,7 +59,7 @@ function loadAdapter({ sdk = true } = {}) {
   return { context, roomInstances };
 }
 
-function makeSupabase({ session = true } = {}) {
+function makeSupabase({ session = true, responseCallType = null } = {}) {
   const calls = [];
   return {
     calls,
@@ -77,7 +77,7 @@ function makeSupabase({ session = true } = {}) {
             token: "short-lived-test-token",
             serverUrl: "wss://calls.example.test",
             roomName: options.body.callSessionId ? "farnaz-direct-" + options.body.callSessionId : "farnaz-group-" + validSpaceId,
-            callType: options.body.callType
+            callType: responseCallType || options.body.callType
           },
           error: null
         };
@@ -159,6 +159,28 @@ test("rejects malformed group IDs before requesting a token", async () => {
   const call = context.FarnazLiveKitCalls.create({ supabase, spaceId: "not-a-uuid" });
   await assert.rejects(call.connect(), /valid call target identifier/);
   assert.equal(supabase.calls.length, 0);
+  assert.equal(roomInstances.length, 0);
+});
+
+test("rejects ambiguous target IDs before requesting a token", async () => {
+  const { context, roomInstances } = loadAdapter();
+  const supabase = makeSupabase();
+  const call = context.FarnazLiveKitCalls.create({
+    supabase, spaceId: validSpaceId, callSessionId: validCallSessionId
+  });
+  await assert.rejects(call.connect(), /exactly one group ID or direct call session ID/);
+  assert.equal(supabase.calls.length, 0);
+  assert.equal(roomInstances.length, 0);
+});
+
+test("rejects a server response with a mismatched call type", async () => {
+  const { context, roomInstances } = loadAdapter();
+  const call = context.FarnazLiveKitCalls.create({
+    supabase: makeSupabase({ responseCallType: "video" }),
+    callSessionId: validCallSessionId,
+    callType: "audio"
+  });
+  await assert.rejects(call.connect(), /invalid or mismatched response/);
   assert.equal(roomInstances.length, 0);
 });
 

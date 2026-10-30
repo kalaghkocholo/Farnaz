@@ -50,9 +50,9 @@ The self-hosted browser bundle is pinned to `livekit-client@2.23.0` at `vendor/l
 - [x] Architecture and baseline documented.
 - [x] Local-only setup and production safety boundary documented.
 - [x] Pinned browser SDK bundle retrieved and integrity-verified.
-- [ ] Local server smoke test run on a developer machine.
-- [ ] Token endpoint implemented and tested.
-- [ ] PWA adapter implemented behind a feature flag.
+- [ ] Local LiveKit server smoke test run on a developer machine.
+- [x] Token endpoint implemented and statically validated (not deployed).
+- [x] PWA adapter, call-session controller, and minimal call UI integrated behind a disabled-by-default feature flag.
 - [ ] iOS Safari/PWA and multi-network tests passed.
 - [ ] Production pilot deployed and reviewed.
 

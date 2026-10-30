@@ -19,7 +19,8 @@ Do not mark a test as passed until it has been run and its result recorded. Loca
 | L-13 | Direct-call invitation and answer lifecycle | Caller/receiver IDs, session status sequence, realtime events | Caller creates ringing session; receiver alone can answer/reject; both participants can end |
 | L-14 | Missed-call timeout and reconnect recovery | Ring duration, app suspension/reopen timing, final DB status | Unanswered call becomes missed; recent ringing invitations are recovered without duplicate incoming UI |
 | L-15 | Direct-call token authorization | Caller, receiver, nonparticipant, ended session, mismatched call type | Only a participant in a ringing/active matching session receives a room-scoped token |
-| A-01 | Isolated lifecycle unit tests | GitHub Actions run URL and commit SHA | Session lifecycle tests pass for outgoing, incoming, recovery, answer, reject, end, identity mismatch, and timeout |
+| L-16 | Audio-first publish sequence | Caller/receiver event order and microphone state | Caller joins muted while ringing; receiver publishes on answer; caller publishes only after acceptance |
+| A-01 | Isolated lifecycle/controller unit tests | GitHub Actions run URL and commit SHA | Session and controller tests pass for outgoing, incoming, recovery, answer, reject, end, identity mismatch, timeout, and muted-room join |
 
 For quality runs, record at minimum setup time, round-trip time (where measurable), jitter, packet loss, reconnect duration, device model, browser version, and whether audio/video remained usable. Do not collect message content or record calls for routine diagnostics.
 

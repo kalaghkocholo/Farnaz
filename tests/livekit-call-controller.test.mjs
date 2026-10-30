@@ -128,7 +128,7 @@ test("outgoing video caller enables microphone and camera after acceptance durin
 test("outgoing video caller enables camera when acceptance arrives after connection", async () => {
   const h = setup({ role: "caller", callType: "video" });
   await h.controller.start({ peerId: callSession.receiver_id, callType: "video" });
-  h.fire({ type: "accepted", role: "caller", session: { ...callSession, call_type: "video", status: "active" } });
+  await h.fire({ type: "accepted", role: "caller", session: { ...callSession, call_type: "video", status: "active" } });
 
   assert.equal(h.mediaInstances[0].getState().microphoneEnabled, true);
   assert.equal(h.mediaInstances[0].getState().cameraEnabled, true);

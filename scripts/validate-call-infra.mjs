@@ -20,6 +20,7 @@ const tokenDocs = read("infra/livekit/TOKEN-ENDPOINT.md");
 const adapter = read("js/livekit-calls.js");
 const sessions = read("js/livekit-call-sessions.js");
 const controller = read("js/livekit-call-controller.js");
+const callUi = read("js/livekit-call-ui.js");
 const appHtml = read("index.html");
 const adapterDocs = read("infra/livekit/CLIENT-ADAPTER.md");
 const sessionDocs = read("infra/livekit/CALL-SESSION-LIFECYCLE.md");
@@ -74,7 +75,18 @@ requireCheck(adapter.includes('root.FarnazLiveKitCalls') &&
 requireCheck(adapter.includes('integrationStatus: "isolated-adapter-not-enabled"') &&
   adapterDocs.includes("not loaded by the app startup sequence yet"),
   "The new adapter must remain disabled until the local SDK and UI are tested.");
-requireCheck(!/LIVEKIT_API_SECRET|LIVEKIT_API_KEY/.test(adapter),
+requireCheck(callUi.includes("root.FarnazLiveKitCallUI") &&
+  callUi.includes("controller.start({ peerId: peerId, callType: callType })") &&
+  callUi.includes("controller.answer()") &&
+  callUi.includes("controller.reject()") &&
+  callUi.includes("controller.setMicrophoneEnabled") &&
+  callUi.includes("controller.setCameraEnabled") &&
+  callUi.includes("controller.startAudioPlayback") &&
+  appHtml.includes("livekit-call-ui.js") &&
+  appHtml.includes("window.FARNAZ_LIVEKIT_CALLS_ENABLED = false"),
+  "The LiveKit call UI must expose incoming/outgoing, mute, audio playback, and video controls behind the disabled pilot flag.");
+requireCheck(!/FARNAZ_LIVEKIT_CALLS_ENABLED\s*=\s*true/.test(appHtml),
+  "The LiveKit pilot must not be enabled by default.");\n\nrequireCheck(!/LIVEKIT_API_SECRET|LIVEKIT_API_KEY/.test(adapter),
   "LiveKit server credentials must never be referenced in browser adapter code.");
 requireCheck(sessions.includes("root.FarnazCallSessions") &&
   sessions.includes("async function start(input)") &&
@@ -89,8 +101,10 @@ requireCheck(sessions.includes("root.FarnazCallSessions") &&
   controllerDocs.includes("answer action"),
   "The isolated call-session lifecycle must verify identity and own invitation, answer, reject, and end transitions.");
 requireCheck(sessions.includes('integrationStatus: "isolated-session-lifecycle-not-enabled"') &&
-  !appHtml.includes("livekit-call-sessions.js"),
-  "The new call-session lifecycle must remain isolated and unloaded from the production app.");
+  appHtml.includes("window.FARNAZ_LIVEKIT_CALLS_ENABLED = false") &&
+  appHtml.includes("if(window.FARNAZ_LIVEKIT_CALLS_ENABLED===true)") &&
+  appHtml.includes("livekit-call-sessions.js"),
+  "The call-session lifecycle must load only behind an explicit, disabled-by-default pilot flag.");
 requireCheck(controller.includes("root.FarnazCallController") &&
   controller.includes("function createMedia(session, publishMicrophone)") &&
   controller.includes("publishMicrophoneOnConnect: publishMicrophone") &&
@@ -103,8 +117,8 @@ requireCheck(controller.includes("root.FarnazCallController") &&
   controller.includes("manager.end()") &&
   controller.includes("root.FarnazLiveKitSdk") &&
   controller.includes('integrationStatus: "isolated-audio-first-controller-not-enabled"') &&
-  !appHtml.includes("livekit-call-controller.js"),
-  "The audio-first controller must keep outgoing microphones muted until acceptance and remain unloaded from the production app.");
+  appHtml.includes("livekit-call-controller.js"),
+  "The audio-first controller must keep outgoing microphones muted until acceptance and load only behind the disabled pilot flag.");
 
 if (errors.length) {
   console.error("Call infrastructure validation failed:");

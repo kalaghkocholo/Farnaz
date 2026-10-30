@@ -12,7 +12,7 @@ const callSession = {
   status: "ringing"
 };
 
-function setup({ role = "caller", acceptedDuringConnect = false } = {}) {
+function setup({ role = "caller", acceptedDuringConnect = false, disconnectDelayMs = 0 } = {}) {
   const context = { console, Promise, setTimeout, clearTimeout };
   context.window = context;
   context.globalThis = context;
@@ -80,7 +80,12 @@ function setup({ role = "caller", acceptedDuringConnect = false } = {}) {
         },
         async setCameraEnabled(enabled) { state.cameraEnabled = Boolean(enabled); },
         async startAudioPlayback() { return true; },
-        async disconnect() { order.push("media-disconnect"); state.connected = false; state.disposed = true; },
+        async disconnect() {
+          order.push("media-disconnect");
+          if (disconnectDelayMs) await new Promise(resolve => setTimeout(resolve, disconnectDelayMs));
+          state.connected = false;
+          state.disposed = true;
+        },
         getState() { return { ...state }; }
       };
       mediaInstances.push(instance);
@@ -126,11 +131,12 @@ test("remote call completion releases the local media room", async () => {
 });
 
 test("explicit end closes media and session lifecycle", async () => {
-  const h = setup({ role: "caller" });
+  const h = setup({ role: "caller", disconnectDelayMs: 25 });
   await h.controller.start({ peerId: callSession.receiver_id, callType: "audio" });
   await h.controller.end();
 
   assert.equal(h.mediaInstances[0].getState().connected, false);
+  assert.equal(h.mediaInstances[0].getState().disposed, true);
   assert.ok(h.order.includes("session-end"));
   assert.ok(h.order.includes("media-disconnect"));
   await h.controller.close();

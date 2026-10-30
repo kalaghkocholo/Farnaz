@@ -36,6 +36,7 @@ jobs:
           node --check js/livekit-calls.js
           node --check js/livekit-call-sessions.js
           node --check js/livekit-call-controller.js
+          node --check js/livekit-call-ui.js
           node --check js/livekit-sdk-loader.js
           node --check service-worker.js
           node --check scripts/validate.mjs

@@ -152,6 +152,8 @@
         }
         connected = false;
         localMediaEnabled = false;
+        microphoneEnabled = false;
+        cameraEnabled = false;
         emit("error", { message: String(error && error.message || error || "Could not connect to call") });
         throw error;
       } finally {

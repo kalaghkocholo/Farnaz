@@ -2,7 +2,7 @@
   "use strict";
 
   const VERSION = "2.23.0";
-  const SCRIPT_PATH = "./vendor/livekit/livekit-client-" + VERSION + ".umd.min.js";
+  const SCRIPT_PATH = "./vendor/livekit/livekit-client-" + VERSION + ".umd.js";
   const TIMEOUT_MS = 15000;
   let loadingPromise = null;
 

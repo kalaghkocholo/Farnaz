@@ -9,10 +9,10 @@ This adapter is intentionally separate from `js/calls.js`. It does not change or
 It expects:
 - the existing authenticated Supabase client;
 - the existing `livekit-token` Edge Function;
-- the pinned LiveKit JavaScript client SDK (documented upstream as version 2.21.0);
+- the pinned LiveKit JavaScript client SDK version 2.23.0, served from a same-origin local asset;
 - a user-initiated action to call `connect()`, so iOS Safari can show microphone/camera permission prompts.
 
-The adapter does not download third-party scripts automatically. This avoids adding a new CDN dependency to every Farnaz startup and avoids silently depending on CDN reachability in restrictive networks. Before enabling the feature, vendor the pinned SDK bundle as a same-origin asset and verify its license, integrity hash, file size, and offline/PWA caching behavior.
+The adapter does not download third-party scripts automatically. This avoids adding a new CDN dependency to every Farnaz startup and avoids silently depending on CDN reachability in restrictive networks. The lazy loader is implemented in `js/livekit-sdk-loader.js` and only requests `./vendor/livekit/livekit-client-2.23.0.umd.min.js` after an explicit call to `FarnazLiveKitSdk.load()`. It is not included in the startup sequence. The vendor bundle is deliberately not committed yet: its exact package bytes, integrity digest, license notice, and deployed size must be verified first. Do not enable the feature until that asset is present and tested.
 
 ## Example integration contract
 
@@ -48,9 +48,19 @@ Do not call this from the existing call buttons yet. The adapter is not active i
 
 ## Remaining work before activation
 
-1. Vendor and pin the browser SDK locally; record its upstream release and license.
-2. Run adapter unit tests with a mocked SDK and token function.
+1. Add the verified `livekit-client@2.23.0` UMD bundle at the loader's exact same-origin path; preserve the Apache-2.0 license notice and record SHA-256 plus byte size.
+2. Run the adapter and lazy-loader unit tests with mocked SDK and token function.
 3. Add a separate experimental group-call UI behind a feature flag.
 4. Deploy the Edge Function to a non-production configuration and configure server-only LiveKit secrets.
 5. Run tests on iOS Safari/PWA, desktop, two devices, weak bandwidth and real target networks.
 6. Only then consider enabling the group-call controls. The existing one-to-one path stays intact until separately tested.
+
+
+## SDK pin and loader status
+
+- Upstream package: [`livekit-client`](https://www.npmjs.com/package/livekit-client), exact version `2.23.0` (Apache-2.0).
+- Browser bundle format: UMD; upstream documentation states it exposes `LivekitClient` globally.
+- Loader: `js/livekit-sdk-loader.js`; explicit lazy load only, same-origin relative path, no CDN fallback, request de-duplication, bounded timeout, API-shape validation.
+- Required asset path: `vendor/livekit/livekit-client-2.23.0.umd.min.js`.
+- Asset status: **not yet vendored**. No external SDK is loaded and no call UI uses the loader.
+- Before committing the bundle, verify its SHA-256 against the official package artifact, retain the Apache-2.0 license text, measure compressed/uncompressed size, and test service-worker offline caching.

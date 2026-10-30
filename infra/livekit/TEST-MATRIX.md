@@ -20,10 +20,11 @@ Do not mark a test as passed until it has been run and its result recorded. Loca
 | L-14 | Missed-call timeout and reconnect recovery | Ring duration, app suspension/reopen timing, final DB status | Unanswered call becomes missed; recent ringing invitations are recovered without duplicate incoming UI |
 | L-15 | Direct-call token authorization | Caller, receiver, nonparticipant, ended session, mismatched call type | Only a participant in a ringing/active matching session receives a room-scoped token |
 | L-16 | Audio-first publish sequence | Caller/receiver event order and microphone state | Caller joins muted while ringing; receiver publishes on answer; caller publishes only after acceptance |
-| A-01 | Isolated lifecycle/controller unit tests | GitHub Actions run URL and commit SHA | Session and controller tests pass for outgoing, incoming, recovery, answer, reject, end, identity mismatch, timeout, and muted-room join |
+| A-01 | Isolated lifecycle/controller/adapter/SDK-loader unit tests | GitHub Actions run URL and commit SHA | Session, controller, adapter, and loader tests pass for outgoing, incoming, recovery, answer, reject, end, identity mismatch, timeout, and muted-room join |
+| A-02 | Feature-gated call UI lifecycle | GitHub Actions run URL and commit SHA | UI creates one incoming-call controller per signed-in user and closes it on sign-out; pilot flag remains off by default |
 
 For quality runs, record at minimum setup time, round-trip time (where measurable), jitter, packet loss, reconnect duration, device model, browser version, and whether audio/video remained usable. Do not collect message content or record calls for routine diagnostics.
 
 ## Test status
 
-No tests are pre-marked as passed. The repository can define the tests, but actual device/network tests require running the server and joining from the listed devices and networks.
+Automated unit/validation checks are running in GitHub Actions; run #1206 passed 27 tests and static/security validation on commit 823e9f7. This does not mark any device/network scenario above as passed. Real-device tests still require a deployed token function, a LiveKit server, and joining from the listed devices and networks.

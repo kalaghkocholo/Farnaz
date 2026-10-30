@@ -10,6 +10,8 @@
     const callSessionId = settings.callSessionId;
     const isDirectCall = typeof callSessionId === "string";
     const callType = settings.callType === "video" ? "video" : "audio";
+    const publishMicrophoneOnConnect = settings.publishMicrophoneOnConnect !== false;
+    const publishCameraOnConnect = settings.publishCameraOnConnect !== false;
     const sdk = settings.livekitClient || root.LivekitClient;
     const onEvent = typeof settings.onEvent === "function" ? settings.onEvent : function () {};
     let room = null;
@@ -124,11 +126,18 @@
           participantCount: room.remoteParticipants ? room.remoteParticipants.size + 1 : 1
         });
 
-        // This function must be called from a user-initiated action for iOS permission prompts.
-        await room.localParticipant.setMicrophoneEnabled(true);
-        if (callType === "video") await room.localParticipant.setCameraEnabled(true);
-        localMediaEnabled = true;
-        emit("local-media-enabled", { audio: true, video: callType === "video" });
+        // Keep media publication explicit. Outgoing callers can join the room silently
+        // while ringing, then enable the microphone only after the receiver accepts.
+        // Call connect from a user action on iOS when local media should be enabled.
+        if (publishMicrophoneOnConnect) await room.localParticipant.setMicrophoneEnabled(true);
+        if (callType === "video" && publishCameraOnConnect) {
+          await room.localParticipant.setCameraEnabled(true);
+        }
+        localMediaEnabled = publishMicrophoneOnConnect || (callType === "video" && publishCameraOnConnect);
+        emit("local-media-enabled", {
+          audio: publishMicrophoneOnConnect,
+          video: callType === "video" && publishCameraOnConnect
+        });
         return api;
       } catch (error) {
         if (room) {

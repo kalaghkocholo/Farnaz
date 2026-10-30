@@ -88,10 +88,11 @@
         if (eventCallId && !activeCallId) activeCallId = eventCallId;
         if (event.role === "caller") {
           if (media && media.getState().connected) {
-            try { await media.setMicrophoneEnabled(true); }
-            catch (error) {
-              emit("error", { phase: "enable-microphone-after-answer", error: error });
-              end().catch(failure => emit("error", { phase: "end-after-microphone-failure", error: failure }));
+            try {
+              await enableAcceptedMedia(media, event.session);
+            } catch (error) {
+              emit("error", { phase: "enable-media-after-answer", error: error });
+              end().catch(failure => emit("error", { phase: "end-after-media-failure", error: failure }));
             }
           } else {
             acceptedBeforeMedia = true;
@@ -103,6 +104,13 @@
         await disconnectMedia();
       }
       emit("session-" + event.type, event);
+    }
+
+    async function enableAcceptedMedia(instance, session) {
+      await instance.setMicrophoneEnabled(true);
+      if (session && session.call_type === "video") {
+        await instance.setCameraEnabled(true);
+      }
     }
 
     function createMedia(session, publishMicrophone) {
@@ -133,7 +141,7 @@
         await instance.connect();
         if (media !== instance || disposed) throw new Error("The call ended while media was connecting.");
         if (acceptedBeforeMedia) {
-          await instance.setMicrophoneEnabled(true);
+          await enableAcceptedMedia(instance, session);
           acceptedBeforeMedia = false;
         }
         emit("media-ready", { callSessionId: session.id, microphoneEnabled: instance.getState().microphoneEnabled });

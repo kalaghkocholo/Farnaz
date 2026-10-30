@@ -30,6 +30,7 @@
     let media = null;
     let disposed = false;
     let mediaStartPromise = null;
+    let mediaDisconnectPromise = null;
     let acceptedBeforeMedia = false;
     let ending = false;
 
@@ -62,12 +63,17 @@
     }
 
     async function disconnectMedia() {
+      if (mediaDisconnectPromise) return mediaDisconnectPromise;
       const current = media;
       media = null;
       acceptedBeforeMedia = false;
       if (!current) return;
-      try { await current.disconnect(); }
-      catch (error) { emit("error", { phase: "media-disconnect", error: error }); }
+      mediaDisconnectPromise = (async function () {
+        try { await current.disconnect(); }
+        catch (error) { emit("error", { phase: "media-disconnect", error: error }); }
+      })();
+      try { await mediaDisconnectPromise; }
+      finally { mediaDisconnectPromise = null; }
     }
 
     async function handleSessionEvent(event) {
@@ -110,6 +116,7 @@
     async function connectOutgoingMedia(session) {
       if (mediaStartPromise) return mediaStartPromise;
       mediaStartPromise = (async function () {
+        if (mediaDisconnectPromise) await mediaDisconnectPromise;
         await ensureSdk();
         if (disposed) throw new Error("The call controller was closed before media setup.");
         const instance = createMedia(session, false);
@@ -158,6 +165,7 @@
         throw new Error("There is no incoming ringing call to answer.");
       }
       if (media) throw new Error("Media is already prepared for this call.");
+      if (mediaDisconnectPromise) await mediaDisconnectPromise;
       await ensureSdk();
       const instance = createMedia(state.session, true);
       media = instance;

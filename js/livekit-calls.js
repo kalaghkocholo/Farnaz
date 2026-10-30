@@ -190,7 +190,7 @@
 
   root.FarnazLiveKitCalls = Object.freeze({
     create: create,
-    sdkVersion: "2.21.0",
+    sdkVersion: "2.23.0",
     integrationStatus: "isolated-adapter-not-enabled"
   });
 })(typeof window !== "undefined" ? window : globalThis);

@@ -172,6 +172,41 @@ test("receiver recovers an incoming invitation, answers, and ends it", async () 
   await manager.close();
 });
 
+test("recovers a ringing invitation that arrived before the inbox subscription", async () => {
+  const { supabase, api } = createHarness(receiverId);
+  supabase.seedCall({
+    id: callId, caller_id: callerId, receiver_id: receiverId,
+    call_type: "audio", status: "ringing",
+    created_at: new Date().toISOString(), updated_at: new Date().toISOString()
+  });
+  const events = [];
+  const manager = api.create({ supabase, userId: receiverId, onEvent: event => events.push(event.type) });
+  await manager.watchIncoming();
+
+  assert.equal(manager.getState().role, "receiver");
+  assert.equal(manager.getState().session.id, callId);
+  assert.ok(events.includes("incoming"));
+  await manager.reject();
+  assert.equal(supabase.rows.get(callId).status, "rejected");
+  await manager.close();
+});
+
+test("marks an unanswered outgoing invitation as missed after the timeout", async () => {
+  const { supabase, api } = createHarness(callerId);
+  const events = [];
+  const manager = api.create({
+    supabase, userId: callerId, ringingTimeoutMs: 1000,
+    onEvent: event => events.push(event.type)
+  });
+  await manager.start({ peerId: receiverId, callType: "audio" });
+  await new Promise(resolve => setTimeout(resolve, 1100));
+
+  assert.equal(supabase.rows.get(callId).status, "missed");
+  assert.equal(manager.getState().status, "idle");
+  assert.ok(events.includes("finished"));
+  await manager.close();
+});
+
 test("only the receiver can answer or reject a ringing invitation", async () => {
   const { supabase, api } = createHarness(callerId);
   const manager = api.create({ supabase, userId: callerId });

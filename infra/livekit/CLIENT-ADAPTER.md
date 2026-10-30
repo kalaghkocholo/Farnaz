@@ -19,7 +19,7 @@ The adapter does not download third-party scripts automatically. This avoids add
 ```js
 const session = window.FarnazLiveKitCalls.create({
   supabase: getClient(),
-  spaceId: selectedGroupId,
+  callSessionId: activeDirectCallSessionId, // direct calls; use spaceId for group calls
   callType: "audio", // or "video"
   onEvent(event) {
     // Connect these events to a dedicated call UI only after UI review.

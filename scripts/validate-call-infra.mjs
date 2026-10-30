@@ -18,6 +18,8 @@ const envExample = read("infra/livekit/.env.example");
 const plan = read("docs/call-infrastructure-plan.md");
 const tokenDocs = read("infra/livekit/TOKEN-ENDPOINT.md");
 const adapter = read("js/livekit-calls.js");
+const sessions = read("js/livekit-call-sessions.js");
+const appHtml = read("index.html");
 const adapterDocs = read("infra/livekit/CLIENT-ADAPTER.md");
 
 requireCheck(fn.includes("supabase.auth.getUser(userJwt)"),
@@ -70,11 +72,22 @@ requireCheck(adapter.includes('integrationStatus: "isolated-adapter-not-enabled"
   "The new adapter must remain disabled until the local SDK and UI are tested.");
 requireCheck(!/LIVEKIT_API_SECRET|LIVEKIT_API_KEY/.test(adapter),
   "LiveKit server credentials must never be referenced in browser adapter code.");
+requireCheck(sessions.includes("root.FarnazCallSessions") &&
+  sessions.includes("async function start(input)") &&
+  sessions.includes("async function watchIncoming()") &&
+  sessions.includes('update({ status: "active" })') &&
+  sessions.includes('update({ status: "rejected" })') &&
+  sessions.includes('update({ status: "ended" })') &&
+  sessions.includes("supabase.auth.getUser()"),
+  "The isolated call-session lifecycle must verify identity and own invitation, answer, reject, and end transitions.");
+requireCheck(sessions.includes('integrationStatus: "isolated-session-lifecycle-not-enabled"') &&
+  !appHtml.includes("livekit-call-sessions.js"),
+  "The new call-session lifecycle must remain isolated and unloaded from the production app.");
 
 if (errors.length) {
   console.error("Call infrastructure validation failed:");
   for (const error of errors) console.error("- " + error);
   process.exitCode = 1;
 } else {
-  console.log("Call infrastructure validation passed: token auth, direct-call participant checks, group membership, scoped grants, no-store responses, and isolated client adapter.");
+  console.log("Call infrastructure validation passed: token auth, direct-call participant checks, group membership, scoped grants, no-store responses, and isolated call-session/media modules.");
 }

@@ -78,12 +78,28 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: "Invalid JSON body." }, 400, origin);
   }
 
-  if (!body || typeof body !== "object" || !("spaceId" in body)) {
-    return jsonResponse({ error: "A group spaceId is required." }, 400, origin);
+  if (!body || typeof body !== "object") {
+    return jsonResponse({ error: "A call target is required." }, 400, origin);
   }
-  const spaceId = (body as { spaceId?: unknown }).spaceId;
-  if (typeof spaceId !== "string" || !UUID_RE.test(spaceId)) {
-    return jsonResponse({ error: "Invalid group identifier." }, 400, origin);
+  const requestBody = body as {
+    spaceId?: unknown;
+    callSessionId?: unknown;
+    callType?: unknown;
+  };
+  const hasSpaceId = typeof requestBody.spaceId === "string";
+  const hasCallSessionId = typeof requestBody.callSessionId === "string";
+  if (hasSpaceId === hasCallSessionId) {
+    return jsonResponse({ error: "Provide exactly one group spaceId or direct callSessionId." }, 400, origin);
+  }
+  if (requestBody.callType !== "audio" && requestBody.callType !== "video") {
+    return jsonResponse({ error: "Invalid call type." }, 400, origin);
+  }
+  const spaceId = hasSpaceId ? requestBody.spaceId as string : null;
+  const callSessionId = hasCallSessionId ? requestBody.callSessionId as string : null;
+  const callType = requestBody.callType;
+  const targetId = spaceId ?? callSessionId;
+  if (!targetId || !UUID_RE.test(targetId)) {
+    return jsonResponse({ error: "Invalid call target identifier." }, 400, origin);
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -111,38 +127,68 @@ Deno.serve(async (req: Request) => {
     }
     const userId = authData.user.id;
 
-    // Require an actual membership row. Public channel visibility alone must not grant call access.
-    const { data: membership, error: membershipError } = await supabase
-      .from("space_members")
-      .select("space_id")
-      .eq("space_id", spaceId)
-      .eq("user_id", userId)
-      .maybeSingle();
+    let roomName: string;
+    let authorizedCallType = callType;
 
-    if (membershipError) {
-      console.error("Could not verify group membership:", membershipError.message);
-      return jsonResponse({ error: "Could not verify group membership." }, 500, origin);
-    }
-    if (!membership) {
-      return jsonResponse({ error: "You are not a member of this group." }, 403, origin);
+    if (callSessionId) {
+      // RLS exposes a direct call session only to its caller and receiver.
+      // Still verify participant identity and live status explicitly before issuing a room token.
+      const { data: callSession, error: callSessionError } = await supabase
+        .from("call_sessions")
+        .select("id, caller_id, receiver_id, call_type, status")
+        .eq("id", callSessionId)
+        .maybeSingle();
+
+      if (callSessionError) {
+        console.error("Could not verify direct call session:", callSessionError.message);
+        return jsonResponse({ error: "Could not verify this call." }, 500, origin);
+      }
+      if (
+        !callSession ||
+        (callSession.caller_id !== userId && callSession.receiver_id !== userId) ||
+        (callSession.status !== "ringing" && callSession.status !== "active")
+      ) {
+        return jsonResponse({ error: "This call is not available to this account." }, 403, origin);
+      }
+      if (callSession.call_type !== callType) {
+        return jsonResponse({ error: "Requested call type does not match the call session." }, 403, origin);
+      }
+      authorizedCallType = callSession.call_type;
+      roomName = `farnaz-direct-${callSession.id}`;
+    } else {
+      // Require an actual membership row. Public channel visibility alone must not grant call access.
+      const { data: membership, error: membershipError } = await supabase
+        .from("space_members")
+        .select("space_id")
+        .eq("space_id", spaceId)
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (membershipError) {
+        console.error("Could not verify group membership:", membershipError.message);
+        return jsonResponse({ error: "Could not verify group membership." }, 500, origin);
+      }
+      if (!membership) {
+        return jsonResponse({ error: "You are not a member of this group." }, 403, origin);
+      }
+
+      const { data: space, error: spaceError } = await supabase
+        .from("spaces")
+        .select("id, type")
+        .eq("id", spaceId)
+        .maybeSingle();
+
+      if (spaceError) {
+        console.error("Could not load call group:", spaceError.message);
+        return jsonResponse({ error: "Could not verify this group." }, 500, origin);
+      }
+      if (!space || space.type !== "group") {
+        return jsonResponse({ error: "Calls are only available for group spaces." }, 403, origin);
+      }
+      roomName = `farnaz-group-${space.id}`;
     }
 
-    const { data: space, error: spaceError } = await supabase
-      .from("spaces")
-      .select("id, type")
-      .eq("id", spaceId)
-      .maybeSingle();
-
-    if (spaceError) {
-      console.error("Could not load call group:", spaceError.message);
-      return jsonResponse({ error: "Could not verify this group." }, 500, origin);
-    }
-    if (!space || space.type !== "group") {
-      return jsonResponse({ error: "Calls are only available for group spaces." }, 403, origin);
-    }
-
-    // Use an opaque room name and a short-lived token. API secrets never reach the client.
-    const roomName = `farnaz-group-${space.id}`;
+    // Room names are always derived server-side; API secrets never reach the client.
     const token = new AccessToken(livekitApiKey, livekitApiSecret, {
       identity: userId,
       ttl: "5m",
@@ -156,7 +202,7 @@ Deno.serve(async (req: Request) => {
     });
 
     const jwt = await token.toJwt();
-    return jsonResponse({ token: jwt, serverUrl: livekitUrl, roomName }, 200, origin);
+    return jsonResponse({ token: jwt, serverUrl: livekitUrl, roomName, callType: authorizedCallType }, 200, origin);
   } catch (error) {
     console.error("LiveKit token issuance failed:", error instanceof Error ? error.message : "Unknown error");
     return jsonResponse({ error: "Could not issue a call token." }, 500, origin);

@@ -161,15 +161,16 @@
 
     function applySessionUpdate(session) {
       if (!activeSession || String(activeSession.id) !== String(session.id)) return;
+      const previousStatus = activeSession.status;
       activeSession = Object.assign({}, activeSession, session);
       if (session.status === "active") {
         clearRingingTimer();
-        emit("accepted", { session: activeSession, role: activeRole });
+        if (previousStatus !== "active") emit("accepted", { session: activeSession, role: activeRole });
       } else if (TERMINAL.has(session.status)) {
         clearActiveSession(session.status, true).catch(function (error) {
           emit("error", { phase: "session-cleanup", error: error });
         });
-      } else {
+      } else if (previousStatus !== session.status) {
         emit("status", { session: activeSession, role: activeRole });
       }
     }
@@ -224,7 +225,7 @@
       activeSession = Object.assign({}, result.data);
       activeRole = "caller";
       try {
-          await subscribeToSession(activeSession);
+        await subscribeToSession(activeSession);
         await refreshSession(activeSession.id);
       } catch (error) {
         try {

@@ -46,7 +46,7 @@ test("loads only the pinned same-origin SDK asset and reuses concurrent requests
   const sdk = await first;
   assert.equal(typeof sdk.Room, "function");
   assert.equal(scripts.length, 1);
-  assert.equal(scripts[0].src, "./vendor/livekit/livekit-client-2.23.0.umd.min.js");
+  assert.equal(scripts[0].src, "./vendor/livekit/livekit-client-2.23.0.umd.js");
   assert.equal(scripts[0].async, true);
   assert.equal(context.FarnazLiveKitSdk.version, "2.23.0");
   assert.equal(context.FarnazLiveKitSdk.loadStatus, "lazy-local-only");

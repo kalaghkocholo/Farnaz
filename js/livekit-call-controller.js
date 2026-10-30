@@ -76,7 +76,10 @@
         if (event.role === "caller") {
           if (media && media.getState().connected) {
             try { await media.setMicrophoneEnabled(true); }
-            catch (error) { emit("error", { phase: "enable-microphone-after-answer", error: error }); }
+            catch (error) {
+              emit("error", { phase: "enable-microphone-after-answer", error: error });
+              end().catch(failure => emit("error", { phase: "end-after-microphone-failure", error: failure }));
+            }
           } else {
             acceptedBeforeMedia = true;
           }
@@ -167,7 +170,10 @@
       } catch (error) {
         await disconnectMedia();
         try {
-          if (manager.getState().session) await manager.end();
+          const latest = manager.getState();
+          if (latest.session && latest.status === "ringing" && latest.role === "receiver") {
+            await manager.end();
+          }
         } catch (_) {}
         emit("error", { phase: "answer", error: error });
         throw error;

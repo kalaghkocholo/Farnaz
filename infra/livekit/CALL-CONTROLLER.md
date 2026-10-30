@@ -1,8 +1,8 @@
 # Audio-first call controller
 
-Status: experimental and not loaded by the PWA.
+Status: experimental; loaded only when `window.FARNAZ_LIVEKIT_CALLS_ENABLED` is explicitly enabled. The flag is currently `false`.
 
-`js/livekit-call-controller.js` is the orchestration layer between the call-session lifecycle and the LiveKit media adapter. It does not render UI and it does not replace the existing `js/calls.js` flow.
+`js/livekit-call-controller.js` is the orchestration layer between the call-session lifecycle and the LiveKit media adapter. The separate `js/livekit-call-ui.js` module renders the pilot call surface. `js/calls.js` delegates to it only when the flag is enabled; otherwise the legacy WebRTC flow remains unchanged.
 
 ## Responsibilities
 
@@ -66,6 +66,6 @@ If the receiver accepts while the caller is still connecting, the controller pre
 
 ## Current boundary
 
-The controller, session manager, and media adapter are all separate source modules with isolated automated tests. None is loaded by `index.html`; the existing call UI and `window.startCall` path are unchanged. The local SDK executable bundle is still pending independent npm registry integrity verification, so the controller cannot yet be exercised against a real LiveKit server.
+The controller, session manager, and media adapter are all separate source modules with isolated automated tests. The modules are conditionally loaded by `index.html` only when the pilot flag is enabled; with the current `false` default, the legacy call UI and `window.startCall` path remain active. The local SDK bundle is committed and its package integrity and SHA-256 were verified. The token function and a LiveKit server are not deployed, so real calls cannot yet be exercised.
 
-Do not merge or enable this controller until the local SDK artifact, deployed token function, LiveKit host, TURN fallback, iOS Safari behavior, and two-device audio tests are verified.
+Do not enable the pilot flag until the deployed token function, LiveKit host, TURN fallback, iOS Safari behavior, and two-device audio/video tests are verified.

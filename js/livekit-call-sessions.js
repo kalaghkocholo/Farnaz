@@ -70,6 +70,7 @@
     }
 
     async function subscribeToSession(session) {
+      assertReady();
       if (callChannel) await removeChannel(callChannel);
       const channel = supabase.channel("farnaz-livekit-session-" + session.id);
       callChannel = channel;
@@ -178,7 +179,7 @@
     }
 
     async function adoptIncoming(session) {
-      if (!session || session.status !== "ringing" || String(session.receiver_id) !== currentUserId) return;
+      if (disposed || !session || session.status !== "ringing" || String(session.receiver_id) !== currentUserId) return;
       const id = String(session.id || "");
       if (!UUID_RE.test(id) || seenIncoming.has(id)) return;
       seenIncoming.add(id);
@@ -198,6 +199,11 @@
         if (activeSession && String(activeSession.id) === id) {
           activeSession = null;
           activeRole = null;
+        }
+        if (callChannel) {
+          const failedChannel = callChannel;
+          callChannel = null;
+          await removeChannel(failedChannel);
         }
         seenIncoming.delete(id);
         emit("error", { phase: "incoming-subscription", error: error, session: session });
@@ -338,6 +344,7 @@
           });
         });
 
+        if (disposed) return false;
         const since = new Date(Date.now() - recoveryWindowMs).toISOString();
         const pending = await supabase.from("call_sessions")
           .select(SESSION_COLUMNS)
@@ -347,6 +354,7 @@
           .order("created_at", { ascending: false })
           .limit(10);
         if (pending.error) throw pending.error;
+        if (disposed) return false;
         for (const session of pending.data || []) await adoptIncoming(session);
         emit("inbox-ready", { recovered: (pending.data || []).length });
         return true;

@@ -235,9 +235,9 @@ async function endCall(notifyPeer){
   const d=byId("farnazCallDialog");if(d)d.hidden=true;
 }
 async function startCall(type){
-  if(root.FARNAZ_LIVEKIT_CALLS_ENABLED===true){
-    if(!root.FarnazLiveKitCallUI){alert(tr("بخش تماس جدید هنوز آماده نیست؛ صفحه را تازه‌سازی کن.","The new call module is not ready yet. Refresh the app."));return;}
-    try{await root.FarnazLiveKitCallUI.start(type);}catch(error){console.error("[Farnaz LiveKit call]",error);}
+  if(window.FARNAZ_LIVEKIT_CALLS_ENABLED===true){
+    if(!window.FarnazLiveKitCallUI){alert(tr("بخش تماس جدید هنوز آماده نیست؛ صفحه را تازه‌سازی کن.","The new call module is not ready yet. Refresh the app."));return;}
+    try{await window.FarnazLiveKitCallUI.start(type);}catch(error){console.error("[Farnaz LiveKit call]",error);}
     return;
   }
   if(!signedInUserId||!currentUser){alert(tr("برای تماس ابتدا وارد حساب شو.","Sign in before starting a call."));return;}
@@ -296,10 +296,10 @@ async function startCall(type){
 }
 async function setUser(userId){
   const request=++userSwitchSequence,next=userId?String(userId):null;
-  if(root.FARNAZ_LIVEKIT_CALLS_ENABLED===true){
+  if(window.FARNAZ_LIVEKIT_CALLS_ENABLED===true){
     signedInUserId=next;
-    if(!root.FarnazLiveKitCallUI)throw new Error("The feature-gated LiveKit call UI was not loaded.");
-    await root.FarnazLiveKitCallUI.setUser(next);
+    if(!window.FarnazLiveKitCallUI)throw new Error("The feature-gated LiveKit call UI was not loaded.");
+    await window.FarnazLiveKitCallUI.setUser(next);
     return;
   }
   if(next===signedInUserId&&inboxChannel)return;

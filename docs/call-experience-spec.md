@@ -95,10 +95,15 @@ The public integration surface should be small and versioned, for example a sing
 ## Server-side authorization
 
 - Supabase Auth identifies the user; the server independently validates the user JWT.
-- A group token may be issued only when the requested `spaces.id` exists, `spaces.type = 'group'`, and `space_members` contains the authenticated user for that group.
-- Never trust a client-supplied room name, profile metadata, or client-side group roster as authorization.
+- For a one-to-one call, the token request must carry an existing `callSessionId`. The server must load that `call_sessions` row through the authenticated user's Supabase context and verify the caller is exactly `caller_id` or `receiver_id`, the session is in an allowed live state (`ringing` or `active`), and the room name is derived server-side from that session ID. The client must never choose the room name.
+- For a group call, a token may be issued only when the requested `spaces.id` exists, `spaces.type = 'group'`, and `space_members` contains the authenticated user for that group.
+- Never trust a client-supplied room name, profile metadata, or client-side group roster as authorization. Keep the direct-call and group-call authorization branches explicit and mutually exclusive.
 - LiveKit API credentials remain server-side. Participant tokens are short-lived, room-scoped, and never persisted in local storage or IndexedDB.
 - Re-check actual schema and RLS before deployment. Do not add broad RLS policies to make the call feature work.
+
+### Known implementation gap
+
+The current experimental `livekit-token` function and `js/livekit-calls.js` adapter currently accept only a group `spaceId`. They are not yet suitable for the first one-to-one audio phase. Before connecting the new audio UI, extend the token endpoint and adapter with the direct-call-session authorization contract above, add tests for caller/receiver/nonparticipant/ended-session cases, and keep the group branch unchanged.
 
 ## Connectivity and deployment
 

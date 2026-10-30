@@ -79,7 +79,10 @@ function setup({ role = "caller", acceptedDuringConnect = false, disconnectDelay
           order.push("microphone-" + enabled);
           state.microphoneEnabled = Boolean(enabled);
         },
-        async setCameraEnabled(enabled) { state.cameraEnabled = Boolean(enabled); },
+        async setCameraEnabled(enabled) {
+          order.push("camera-" + enabled);
+          state.cameraEnabled = Boolean(enabled);
+        },
         async startAudioPlayback() { return true; },
         async disconnect() {
           order.push("media-disconnect");
@@ -118,7 +121,7 @@ test("outgoing video caller enables microphone and camera after acceptance durin
   assert.equal(h.mediaInstances[0].getState().microphoneEnabled, true);
   assert.equal(h.mediaInstances[0].getState().cameraEnabled, true);
   assert.ok(h.order.indexOf("media-connect") < h.order.indexOf("microphone-true"));
-  assert.ok(h.order.indexOf("microphone-true") < h.order.indexOf("session-answer") || h.order.includes("camera-true"));
+  assert.ok(h.order.indexOf("microphone-true") < h.order.indexOf("camera-true"));
   await h.controller.close();
 });
 

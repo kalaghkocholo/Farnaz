@@ -28,6 +28,13 @@ requireCheck(fn.includes('.from("space_members")') &&
   "Token endpoint must check the authenticated user's actual group membership.");
 requireCheck(fn.includes('space.type !== "group"'),
   "Token endpoint must reject channels and non-group spaces.");
+requireCheck(fn.includes('.from("call_sessions")') &&
+  fn.includes('.eq("id", callSessionId)') &&
+  fn.includes('callSession.status !== "ringing"') &&
+  fn.includes('callSession.status !== "active"') &&
+  fn.includes('callSession.caller_id !== userId') &&
+  fn.includes('callSession.receiver_id !== userId'),
+  "Token endpoint must authorize direct calls only for a participant in a live call session.");
 requireCheck(fn.includes('ttl: "5m"') && fn.includes("roomJoin: true") &&
   fn.includes("room: roomName"),
   "Tokens must be short-lived and restricted to one named room.");
@@ -69,5 +76,5 @@ if (errors.length) {
   for (const error of errors) console.error("- " + error);
   process.exitCode = 1;
 } else {
-  console.log("Call infrastructure validation passed: token auth, group membership, scoped grants, no-store responses, and isolated client adapter.");
+  console.log("Call infrastructure validation passed: token auth, direct-call participant checks, group membership, scoped grants, no-store responses, and isolated client adapter.");
 }

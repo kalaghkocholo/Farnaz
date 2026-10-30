@@ -95,10 +95,12 @@
         }, 12000);
         channel.subscribe(function (status) {
           if (settled) {
-            if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
-              emit("error", { phase: "session-realtime", error: new Error("Call status updates were interrupted.") });
-            } else if (status === "SUBSCRIBED") {
-              emit("realtime-restored", { session: activeSession });
+            if (activeSession && String(activeSession.id) === String(session.id) && !disposed) {
+              if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+                emit("error", { phase: "session-realtime", error: new Error("Call status updates were interrupted.") });
+              } else if (status === "SUBSCRIBED") {
+                emit("realtime-restored", { session: activeSession });
+              }
             }
             return;
           }
@@ -336,10 +338,12 @@
           }, 12000);
           channel.subscribe(function (status) {
             if (settled) {
-              if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
-                emit("error", { phase: "inbox-realtime", error: new Error("Incoming-call listener lost its connection.") });
-              } else if (status === "SUBSCRIBED") {
-                emit("inbox-reconnected");
+              if (!disposed) {
+                if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+                  emit("error", { phase: "inbox-realtime", error: new Error("Incoming-call listener lost its connection.") });
+                } else if (status === "SUBSCRIBED") {
+                  emit("inbox-reconnected");
+                }
               }
               return;
             }

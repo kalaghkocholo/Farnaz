@@ -103,6 +103,10 @@
     byId("farnazLiveKitTitle").textContent = title;
     byId("farnazLiveKitAvatar").textContent = (title || "F").trim().charAt(0).toUpperCase();
     setStatus(status);
+    microphoneEnabled = true;
+    cameraEnabled = true;
+    byId("farnazLiveKitMute").textContent = tr("بی‌صدا", "Mute");
+    byId("farnazLiveKitCamera").textContent = tr("دوربین خاموش", "Turn camera off");
     byId("farnazLiveKitDialog").hidden = false;
     byId("farnazLiveKitAccept").hidden = !incoming;
     byId("farnazLiveKitReject").hidden = !incoming;
@@ -162,6 +166,8 @@
       byId("farnazLiveKitSpeaker").hidden = false;
       byId("farnazLiveKitCamera").hidden = callType !== "video";
       byId("farnazLiveKitEnd").hidden = false;
+      byId("farnazLiveKitMute").textContent = tr("بی‌صدا", "Mute");
+      byId("farnazLiveKitCamera").textContent = tr("دوربین خاموش", "Turn camera off");
       startTimer();
     } else if (event.type === "session-finished") {
       activeSession = null;
@@ -266,6 +272,10 @@
       byId("farnazLiveKitSpeaker").hidden = false;
       byId("farnazLiveKitCamera").hidden = callType !== "video";
       byId("farnazLiveKitEnd").hidden = false;
+      microphoneEnabled = true;
+      cameraEnabled = true;
+      byId("farnazLiveKitMute").textContent = tr("بی‌صدا", "Mute");
+      byId("farnazLiveKitCamera").textContent = tr("دوربین خاموش", "Turn camera off");
       setStatus(tr("در حال اتصال…", "Connecting…"));
       await controller.answer();
     } catch (error) {

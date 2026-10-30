@@ -103,7 +103,9 @@ The public integration surface should be small and versioned, for example a sing
 
 ### Known implementation gap
 
-The experimental `livekit-token` function and `js/livekit-calls.js` adapter now accept either a direct `callSessionId` or a group `spaceId`, never both. Direct-call authorization checks the authenticated participant, live session status, and matching call type; the room name is derived server-side. Adapter tests cover direct audio requests, ambiguous targets, and response call-type mismatch. The function is still not deployed, and its authorization path has not yet been exercised against live Supabase requests. Keep the existing PWA call flow unchanged until the end-to-end pilot passes.
+The experimental `livekit-token` function and `js/livekit-calls.js` adapter now accept either a direct `callSessionId` or a group `spaceId`, never both. Direct-call token authorization checks the authenticated participant, live session status, and matching call type; the room name is derived server-side. Adapter tests cover direct audio requests, ambiguous targets, and response call-type mismatch. The function is still not deployed, and its authorization path has not yet been exercised through live Supabase requests.
+
+The media adapter is not the invitation/ringing system. A separate call-session lifecycle module still needs to create/read the existing `call_sessions` row, deliver the incoming-call state, process answer/reject/timeout/hangup transitions, and then have both participants join the same LiveKit room. It must not reuse the legacy SDP/ICE WebRTC flow. The legacy path remains untouched and active while the new path is feature-flagged.
 
 ## Connectivity and deployment
 
@@ -144,7 +146,7 @@ The experimental `livekit-token` function and `js/livekit-calls.js` adapter now 
 
 - The current production `js/calls.js` implements one-to-one WebRTC signaling through `call_sessions` and `call_signals`.
 - Its peer connection currently configures public Google STUN servers and no TURN server.
-- The database contains `call_sessions` and `call_signals`; both have RLS enabled. Existing policies scope call reads/signals to participants and restrict call initiation to contacts.
+- The database contains `call_sessions` and `call_signals`; both have RLS enabled. Existing policies scope call reads/signals to participants and restrict call initiation to contacts. Two existing `call_sessions` triggers protect participant/type identity and enforce allowed status transitions; these were inspected read-only.
 - `spaces` and `space_members` exist with the expected `id/type` and `space_id/user_id` fields. The token function must still be tested against real membership and group/channel cases.
 - No Supabase Edge Functions are currently deployed in the connected Farnaz project.
 - The LiveKit adapter and lazy loader exist only on `feature/farnaz-call-infrastructure`; neither is loaded by the production app.

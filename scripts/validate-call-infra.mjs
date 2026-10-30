@@ -21,6 +21,7 @@ const adapter = read("js/livekit-calls.js");
 const sessions = read("js/livekit-call-sessions.js");
 const appHtml = read("index.html");
 const adapterDocs = read("infra/livekit/CLIENT-ADAPTER.md");
+const sessionDocs = read("infra/livekit/CALL-SESSION-LIFECYCLE.md");
 
 requireCheck(fn.includes("supabase.auth.getUser(userJwt)"),
   "Token endpoint must validate the caller's JWT with Supabase Auth.");
@@ -78,7 +79,9 @@ requireCheck(sessions.includes("root.FarnazCallSessions") &&
   sessions.includes('update({ status: "active" })') &&
   sessions.includes('update({ status: "rejected" })') &&
   sessions.includes('update({ status: "ended" })') &&
-  sessions.includes("supabase.auth.getUser()"),
+  sessions.includes("supabase.auth.getUser()") &&
+  sessionDocs.includes("Only the receiver may change") &&
+  sessionDocs.includes("does not capture media"),
   "The isolated call-session lifecycle must verify identity and own invitation, answer, reject, and end transitions.");
 requireCheck(sessions.includes('integrationStatus: "isolated-session-lifecycle-not-enabled"') &&
   !appHtml.includes("livekit-call-sessions.js"),

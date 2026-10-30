@@ -130,6 +130,22 @@ test("remote call completion releases the local media room", async () => {
   await h.controller.close();
 });
 
+test("ignores a late terminal event from a different call session", async () => {
+  const h = setup({ role: "caller" });
+  await h.controller.start({ peerId: callSession.receiver_id, callType: "audio" });
+  h.fire({
+    type: "finished",
+    status: "ended",
+    role: "caller",
+    session: { ...callSession, id: "d12f3456-7890-4123-8123-123456789abc" }
+  });
+  await new Promise(resolve => setTimeout(resolve, 0));
+
+  assert.equal(h.mediaInstances[0].getState().connected, true);
+  await h.controller.end();
+  await h.controller.close();
+});
+
 test("explicit end closes media and session lifecycle", async () => {
   const h = setup({ role: "caller", disconnectDelayMs: 25 });
   await h.controller.start({ peerId: callSession.receiver_id, callType: "audio" });

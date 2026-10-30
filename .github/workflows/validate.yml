@@ -47,3 +47,42 @@ jobs:
         run: node --test tests/livekit-adapter.test.mjs tests/livekit-call-sessions.test.mjs tests/livekit-call-controller.test.mjs tests/livekit-sdk-loader.test.mjs
       - name: Type-check LiveKit token endpoint
         run: deno check --no-config --no-lock supabase/functions/livekit-token/index.ts
+
+  provision-verified-sdk-bundle:
+    name: Provision verified LiveKit SDK bundle (temporary)
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'feature/farnaz-call-infrastructure'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out feature branch
+        uses: actions/checkout@v5
+        with:
+          ref: feature/farnaz-call-infrastructure
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Download exact npm release
+        run: npm pack livekit-client@2.23.0
+      - name: Verify npm-published package integrity and extract UMD bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          EXPECTED_INTEGRITY="$(npm view livekit-client@2.23.0 dist.integrity)"
+          ACTUAL_INTEGRITY="sha512-$(openssl dgst -sha512 -binary livekit-client-2.23.0.tgz | openssl base64 -A)"
+          test "$ACTUAL_INTEGRITY" = "$EXPECTED_INTEGRITY"
+          mkdir -p vendor/livekit
+          tar -xOf livekit-client-2.23.0.tgz package/dist/livekit-client.umd.js > vendor/livekit/livekit-client-2.23.0.umd.js
+          ACTUAL_SHA256="$(sha256sum vendor/livekit/livekit-client-2.23.0.umd.js | cut -d ' ' -f 1)"
+          EXPECTED_SHA256="fb646f2260d84f91238d0a2dc10726c456631d6a26c7cafc43cfee5959b4d31d"
+          test "$ACTUAL_SHA256" = "$EXPECTED_SHA256"
+          echo "Verified npm integrity: $ACTUAL_INTEGRITY"
+          echo "Verified UMD SHA-256: $ACTUAL_SHA256"
+      - name: Commit SDK bundle to feature branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add vendor/livekit/livekit-client-2.23.0.umd.js
+          git commit -m "Add verified LiveKit SDK bundle"
+          git push origin HEAD:feature/farnaz-call-infrastructure

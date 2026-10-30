@@ -103,7 +103,7 @@ The public integration surface should be small and versioned, for example a sing
 
 ### Known implementation gap
 
-The current experimental `livekit-token` function and `js/livekit-calls.js` adapter currently accept only a group `spaceId`. They are not yet suitable for the first one-to-one audio phase. Before connecting the new audio UI, extend the token endpoint and adapter with the direct-call-session authorization contract above, add tests for caller/receiver/nonparticipant/ended-session cases, and keep the group branch unchanged.
+The experimental `livekit-token` function and `js/livekit-calls.js` adapter now accept either a direct `callSessionId` or a group `spaceId`, never both. Direct-call authorization checks the authenticated participant, live session status, and matching call type; the room name is derived server-side. Adapter tests cover direct audio requests, ambiguous targets, and response call-type mismatch. The function is still not deployed, and its authorization path has not yet been exercised against live Supabase requests. Keep the existing PWA call flow unchanged until the end-to-end pilot passes.
 
 ## Connectivity and deployment
 

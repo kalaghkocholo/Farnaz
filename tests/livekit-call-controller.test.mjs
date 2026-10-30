@@ -12,17 +12,18 @@ const callSession = {
   status: "ringing"
 };
 
-function setup({ role = "caller", acceptedDuringConnect = false, disconnectDelayMs = 0 } = {}) {
+function setup({ role = "caller", acceptedDuringConnect = false, disconnectDelayMs = 0, callType = "audio" } = {}) {
   const context = { console, Promise, setTimeout, clearTimeout };
   context.window = context;
   context.globalThis = context;
   vm.runInNewContext(source, context, { filename: "js/livekit-call-controller.js" });
 
   let sessionEvent = null;
+  const testSession = { ...callSession, call_type: callType };
   let managerState = {
     role,
     status: "ringing",
-    session: { ...callSession }
+    session: { ...testSession }
   };
   const order = [];
   const mediaOptions = [];
@@ -31,7 +32,7 @@ function setup({ role = "caller", acceptedDuringConnect = false, disconnectDelay
   const sessionManager = {
     async start() {
       order.push("session-start");
-      return { ...callSession };
+      return { ...testSession };
     },
     async watchIncoming() { order.push("watch-incoming"); return true; },
     async answer() {
@@ -43,7 +44,7 @@ function setup({ role = "caller", acceptedDuringConnect = false, disconnectDelay
     async reject() {
       order.push("session-reject");
       managerState = { status: "idle", role: null, session: null };
-      sessionEvent({ type: "finished", status: "rejected", session: callSession, role: "receiver" });
+      sessionEvent({ type: "finished", status: "rejected", session: testSession, role: "receiver" });
     },
     async end() {
       order.push("session-end");
@@ -105,6 +106,29 @@ test("outgoing caller joins silently and publishes microphone only after accepta
   assert.equal(h.mediaInstances[0].getState().microphoneEnabled, true);
   assert.ok(h.order.indexOf("media-connect") < h.order.indexOf("microphone-true"));
   assert.equal(h.controller.getState().status, "active");
+  await h.controller.close();
+});
+
+test("outgoing video caller enables microphone and camera after acceptance during connection", async () => {
+  const h = setup({ role: "caller", acceptedDuringConnect: true, callType: "video" });
+  await h.controller.start({ peerId: callSession.receiver_id, callType: "video" });
+
+  assert.equal(h.mediaOptions[0].publishMicrophoneOnConnect, false);
+  assert.equal(h.mediaOptions[0].publishCameraOnConnect, false);
+  assert.equal(h.mediaInstances[0].getState().microphoneEnabled, true);
+  assert.equal(h.mediaInstances[0].getState().cameraEnabled, true);
+  assert.ok(h.order.indexOf("media-connect") < h.order.indexOf("microphone-true"));
+  assert.ok(h.order.indexOf("microphone-true") < h.order.indexOf("session-answer") || h.order.includes("camera-true"));
+  await h.controller.close();
+});
+
+test("outgoing video caller enables camera when acceptance arrives after connection", async () => {
+  const h = setup({ role: "caller", callType: "video" });
+  await h.controller.start({ peerId: callSession.receiver_id, callType: "video" });
+  h.fire({ type: "accepted", role: "caller", session: { ...callSession, call_type: "video", status: "active" } });
+
+  assert.equal(h.mediaInstances[0].getState().microphoneEnabled, true);
+  assert.equal(h.mediaInstances[0].getState().cameraEnabled, true);
   await h.controller.close();
 });
 

@@ -67,7 +67,8 @@ function setup({ role = "caller", acceptedDuringConnect = false } = {}) {
         async connect() {
           order.push("media-connect");
           if (acceptedDuringConnect) {
-            sessionEvent({ type: "accepted", role: "caller", session: callSession });
+            managerState = { ...managerState, status: "active", session: { ...managerState.session, status: "active" } };
+            sessionEvent({ type: "accepted", role: "caller", session: managerState.session });
           }
           state.connected = true;
           state.microphoneEnabled = Boolean(options.publishMicrophoneOnConnect);

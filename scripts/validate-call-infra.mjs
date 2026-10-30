@@ -92,7 +92,12 @@ requireCheck(sessions.includes('integrationStatus: "isolated-session-lifecycle-n
   !appHtml.includes("livekit-call-sessions.js"),
   "The new call-session lifecycle must remain isolated and unloaded from the production app.");
 requireCheck(controller.includes("root.FarnazCallController") &&
-  controller.includes("publishMicrophoneOnConnect: false") &&
+  controller.includes("function createMedia(session, publishMicrophone)") &&
+  controller.includes("publishMicrophoneOnConnect: publishMicrophone") &&
+  controller.includes("connectOutgoingMedia(session)") &&
+  controller.includes("createMedia(session, false)") &&
+  controller.includes("createMedia(state.session, true)") &&
+  controller.includes("await instance.setMicrophoneEnabled(true)") &&
   controller.includes("manager.answer()") &&
   controller.includes("manager.reject()") &&
   controller.includes("manager.end()") &&

@@ -21,6 +21,7 @@ const adapter = read("js/livekit-calls.js");
 const sessions = read("js/livekit-call-sessions.js");
 const controller = read("js/livekit-call-controller.js");
 const callUi = read("js/livekit-call-ui.js");
+const calls = read("js/calls.js");
 const appHtml = read("index.html");
 const adapterDocs = read("infra/livekit/CLIENT-ADAPTER.md");
 const sessionDocs = read("infra/livekit/CALL-SESSION-LIFECYCLE.md");
@@ -73,8 +74,12 @@ requireCheck(adapter.includes('root.FarnazLiveKitCalls') &&
   adapter.includes("publishMicrophoneOnConnect"),
   "LiveKit adapter must be isolated, authenticate through Supabase, and enable adaptive media options.");
 requireCheck(adapter.includes('integrationStatus: "isolated-adapter-not-enabled"') &&
-  adapterDocs.includes("not loaded by the app startup sequence yet"),
+  adapterDocs.includes("not loaded during the default app startup"),
   "The new adapter must remain disabled until the local SDK and UI are tested.");
+requireCheck(calls.includes("window.FARNAZ_LIVEKIT_CALLS_ENABLED===true") &&
+  calls.includes("window.FarnazLiveKitCallUI.start(type)") &&
+  calls.includes("window.FarnazLiveKitCallUI.setUser(next)"),
+  "Legacy call entry points must delegate to LiveKit only when the explicit pilot flag is enabled.");
 requireCheck(callUi.includes("root.FarnazLiveKitCallUI") &&
   callUi.includes("controller.start({ peerId: peerId, callType: callType })") &&
   callUi.includes("controller.answer()") &&

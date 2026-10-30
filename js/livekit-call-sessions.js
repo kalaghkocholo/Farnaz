@@ -129,9 +129,16 @@
             .select(SESSION_COLUMNS)
             .maybeSingle();
           if (result.error) throw result.error;
-          if (result.data) applySessionUpdate(result.data);
-          else if (activeSession && String(activeSession.id) === String(session.id)) {
-            await clearActiveSession("missed", true);
+          if (result.data) {
+            applySessionUpdate(result.data);
+          } else if (activeSession && String(activeSession.id) === String(session.id)) {
+            const latest = await supabase.from("call_sessions")
+              .select(SESSION_COLUMNS)
+              .eq("id", session.id)
+              .maybeSingle();
+            if (latest.error) throw latest.error;
+            if (latest.data) applySessionUpdate(latest.data);
+            else await clearActiveSession("missed", true);
           }
         } catch (error) {
           emit("error", { phase: "ringing-timeout", error: error });
@@ -250,22 +257,16 @@
       inboxStarting = (async function () {
         const channel = supabase.channel("farnaz-livekit-inbox-" + currentUserId);
         inboxChannel = channel;
-        channel
-          .on("postgres_changes", {
-            event: "INSERT",
-            schema: "public",
-            table: "call_sessions",
-            filter: "receiver_id=eq." + currentUserId
-          }, function (payload) {
-            adoptIncoming(payload && payload.new).catch(function (error) {
-              emit("error", { phase: "incoming-event", error: error });
-            });
-          })
-          .subscribe(function (status) {
-            if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-              emit("error", { phase: "inbox-realtime", error: new Error("Incoming-call listener lost its connection.") });
-            }
+        channel.on("postgres_changes", {
+          event: "INSERT",
+          schema: "public",
+          table: "call_sessions",
+          filter: "receiver_id=eq." + currentUserId
+        }, function (payload) {
+          adoptIncoming(payload && payload.new).catch(function (error) {
+            emit("error", { phase: "incoming-event", error: error });
           });
+        });
 
         await new Promise(function (resolve, reject) {
           let settled = false;
@@ -275,6 +276,9 @@
             reject(new Error("Incoming-call listener timed out."));
           }, 12000);
           channel.subscribe(function (status) {
+            if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+              emit("error", { phase: "inbox-realtime", error: new Error("Incoming-call listener lost its connection.") });
+            }
             if (settled) return;
             if (status === "SUBSCRIBED") {
               settled = true;

@@ -94,7 +94,14 @@
           reject(new Error("Call status channel timed out."));
         }, 12000);
         channel.subscribe(function (status) {
-          if (settled) return;
+          if (settled) {
+            if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+              emit("error", { phase: "session-realtime", error: new Error("Call status updates were interrupted.") });
+            } else if (status === "SUBSCRIBED") {
+              emit("realtime-restored", { session: activeSession });
+            }
+            return;
+          }
           if (status === "SUBSCRIBED") {
             settled = true;
             clearTimeout(timer);
@@ -328,10 +335,14 @@
             reject(new Error("Incoming-call listener timed out."));
           }, 12000);
           channel.subscribe(function (status) {
-            if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-              emit("error", { phase: "inbox-realtime", error: new Error("Incoming-call listener lost its connection.") });
+            if (settled) {
+              if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+                emit("error", { phase: "inbox-realtime", error: new Error("Incoming-call listener lost its connection.") });
+              } else if (status === "SUBSCRIBED") {
+                emit("inbox-reconnected");
+              }
+              return;
             }
-            if (settled) return;
             if (status === "SUBSCRIBED") {
               settled = true;
               clearTimeout(timer);

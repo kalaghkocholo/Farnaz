@@ -5,6 +5,7 @@ import test from "node:test";
 
 const source = readFileSync("js/livekit-calls.js", "utf8");
 const validSpaceId = "a12f3456-7890-4123-8123-123456789abc";
+const validCallSessionId = "b12f3456-7890-4123-8123-123456789abc";
 
 function loadAdapter({ sdk = true } = {}) {
   const context = {
@@ -72,7 +73,12 @@ function makeSupabase({ session = true } = {}) {
       invoke: async (name, options) => {
         calls.push({ name, options });
         return {
-          data: { token: "short-lived-test-token", serverUrl: "wss://calls.example.test", roomName: "farnaz-group-" + validSpaceId },
+          data: {
+            token: "short-lived-test-token",
+            serverUrl: "wss://calls.example.test",
+            roomName: options.body.callSessionId ? "farnaz-direct-" + options.body.callSessionId : "farnaz-group-" + validSpaceId,
+            callType: options.body.callType
+          },
           error: null
         };
       }
@@ -92,7 +98,7 @@ test("connects audio call with authenticated token endpoint and adaptive options
   await call.connect();
   assert.equal(supabase.calls.length, 1);
   assert.equal(supabase.calls[0].name, "livekit-token");
-  assert.deepEqual(JSON.parse(JSON.stringify(supabase.calls[0].options.body)), { spaceId: validSpaceId });
+  assert.deepEqual(JSON.parse(JSON.stringify(supabase.calls[0].options.body)), { spaceId: validSpaceId, callType: "audio" });
   assert.equal(roomInstances.length, 1);
   assert.equal(roomInstances[0].options.adaptiveStream, true);
   assert.equal(roomInstances[0].options.dynacast, true);
@@ -107,6 +113,24 @@ test("connects audio call with authenticated token endpoint and adaptive options
   assert.equal(roomInstances[0].disconnected, true);
   assert.equal(roomInstances[0].stopTracks, true);
   assert.equal(call.getState().disposed, true);
+});
+
+test("connects a one-to-one audio call using only its call session ID", async () => {
+  const { context, roomInstances } = loadAdapter();
+  const supabase = makeSupabase();
+  const call = context.FarnazLiveKitCalls.create({
+    supabase, callSessionId: validCallSessionId, callType: "audio"
+  });
+
+  await call.connect();
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(supabase.calls[0].options.body)),
+    { callSessionId: validCallSessionId, callType: "audio" }
+  );
+  assert.equal(roomInstances[0].token, "short-lived-test-token");
+  assert.equal(call.getState().callSessionId, validCallSessionId);
+  assert.equal(call.getState().spaceId, null);
+  await call.disconnect();
 });
 
 test("enables camera only for a video call", async () => {
@@ -133,7 +157,7 @@ test("rejects malformed group IDs before requesting a token", async () => {
   const { context, roomInstances } = loadAdapter();
   const supabase = makeSupabase();
   const call = context.FarnazLiveKitCalls.create({ supabase, spaceId: "not-a-uuid" });
-  await assert.rejects(call.connect(), /valid group identifier/);
+  await assert.rejects(call.connect(), /valid call target identifier/);
   assert.equal(supabase.calls.length, 0);
   assert.equal(roomInstances.length, 0);
 });

@@ -1587,3 +1587,27 @@ body.chat-mode.keyboard-open .app.chat-mode>#chatPage>.chat-header{
 .app.farnaz-swipe-active>.page.farnaz-swipe-underlay{display:block!important;position:absolute!important;inset:0!important;z-index:1!important;width:100%!important;height:100%!important;min-height:0!important;overflow-x:hidden!important;overflow-y:auto!important;background:var(--bg)!important;will-change:transform;backface-visibility:hidden;overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important}
 .app.farnaz-swipe-active>.page.farnaz-swipe-current,.app.farnaz-swipe-active>.page.farnaz-swipe-underlay{box-sizing:border-box}
 @media(prefers-reduced-motion:reduce){.app.farnaz-swipe-active>.page.farnaz-swipe-current,.app.farnaz-swipe-active>.page.farnaz-swipe-underlay{transition-duration:1ms!important}}
+
+/* Feature-gated LiveKit call surface: compact, accessible, and theme-aware. */
+.farnaz-livekit-dialog{position:fixed;inset:0;z-index:10060;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(5,12,24,.76);backdrop-filter:blur(8px)}
+.farnaz-livekit-dialog[hidden]{display:none!important}
+.farnaz-livekit-card{position:relative;width:min(100%,420px);max-height:min(88dvh,720px);overflow:auto;padding:30px 20px 22px;border:1px solid var(--border);border-radius:24px;background:var(--panel);color:var(--white);text-align:center;box-shadow:0 22px 80px #0007}
+.farnaz-livekit-close{position:absolute;inset-block-start:12px;inset-inline-end:12px;width:36px;height:36px;border:0;border-radius:50%;background:var(--panel2);color:inherit;font-size:23px}
+.farnaz-livekit-avatar{display:grid;place-items:center;width:84px;height:84px;margin:8px auto 16px;border-radius:50%;background:var(--panel2);color:var(--accent);font-size:30px;font-weight:750}
+.farnaz-livekit-card h2{margin:0 0 8px;font-size:19px}
+.farnaz-livekit-card p{min-height:24px;margin:0 0 8px;color:var(--muted);font-size:14px}
+.farnaz-livekit-card time{display:block;margin:8px 0 14px;font-variant-numeric:tabular-nums;font-size:22px;font-weight:650}
+.farnaz-livekit-media{display:grid;gap:8px;max-height:42dvh;overflow:hidden}
+.farnaz-livekit-media video{display:block;width:100%;max-height:42dvh;object-fit:cover;border-radius:16px;background:#050912}
+.farnaz-livekit-media video[hidden]{display:none}
+.farnaz-livekit-media audio{width:100%}
+.farnaz-livekit-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:9px;margin-top:20px}
+.farnaz-livekit-actions button{min-height:42px;padding:9px 14px;border:1px solid var(--border);border-radius:13px;background:var(--panel2);color:var(--white);font:inherit;font-size:13px;font-weight:650}
+.farnaz-livekit-actions button.is-accept{border-color:#168b5a;background:#168b5a;color:#fff}
+.farnaz-livekit-actions button.is-danger{border-color:#bd3948;background:#bd3948;color:#fff}
+.farnaz-livekit-actions button:disabled{opacity:.55}
+@media(prefers-reduced-motion:no-preference){.farnaz-livekit-card{animation:farnaz-livekit-enter .16s ease-out}@keyframes farnaz-livekit-enter{from{opacity:0;transform:translateY(8px) scale(.985)}to{opacity:1;transform:none}}}
+body[data-theme="light"] .farnaz-livekit-card{background:#fff;color:#25354b;border-color:#d8e0ea}
+body[data-theme="light"] .farnaz-livekit-card p{color:#526074}
+body[data-theme="light"] .farnaz-livekit-avatar{background:#edf2f8;color:#526f9d}
+body[data-theme="light"] .farnaz-livekit-actions button:not(.is-accept):not(.is-danger){background:#f5f7fb;color:#25354b;border-color:#d8e0ea}

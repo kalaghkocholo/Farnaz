@@ -22,6 +22,8 @@
     let ringingTimer = null;
     let disposed = false;
     let inboxStarting = null;
+    let startInProgress = false;
+    let transitionInProgress = false;
     const seenIncoming = new Set();
 
     function emit(type, details) {
@@ -203,66 +205,91 @@
     }
 
     async function start(input) {
-      await verifyUser();
-      if (activeSession) throw new Error("Another call is already active or ringing.");
-      const target = input || {};
-      const peerId = String(target.peerId || "");
-      const callType = target.callType === "video" ? "video" : "audio";
-      if (!UUID_RE.test(peerId) || peerId === currentUserId) throw new Error("A valid, different contact is required.");
-
-      const result = await supabase.from("call_sessions").insert({
-        caller_id: currentUserId,
-        receiver_id: peerId,
-        call_type: callType,
-        status: "ringing"
-      }).select(SESSION_COLUMNS).single();
-      if (result.error) throw result.error;
-      if (!result.data || String(result.data.caller_id) !== currentUserId ||
-          String(result.data.receiver_id) !== peerId || result.data.status !== "ringing") {
-        throw new Error("The call invitation returned an invalid session.");
-      }
-
-      activeSession = Object.assign({}, result.data);
-      activeRole = "caller";
+      assertReady();
+      if (startInProgress) throw new Error("A call invitation is already being created.");
+      startInProgress = true;
       try {
-        await subscribeToSession(activeSession);
-        await refreshSession(activeSession.id);
-      } catch (error) {
+        await verifyUser();
+        if (activeSession) throw new Error("Another call is already active or ringing.");
+        const target = input || {};
+        const peerId = String(target.peerId || "");
+        const callType = target.callType === "video" ? "video" : "audio";
+        if (!UUID_RE.test(peerId) || peerId === currentUserId) throw new Error("A valid, different contact is required.");
+
+        const result = await supabase.from("call_sessions").insert({
+          caller_id: currentUserId,
+          receiver_id: peerId,
+          call_type: callType,
+          status: "ringing"
+        }).select(SESSION_COLUMNS).single();
+        if (result.error) throw result.error;
+        const createdSession = result.data;
+        if (!createdSession || String(createdSession.caller_id) !== currentUserId ||
+            String(createdSession.receiver_id) !== peerId || createdSession.status !== "ringing") {
+          throw new Error("The call invitation returned an invalid session.");
+        }
+        if (disposed || activeSession) {
+          try {
+            await supabase.from("call_sessions").update({ status: "ended" })
+              .eq("id", createdSession.id).eq("status", "ringing");
+          } catch (_) {}
+          if (disposed) throw new Error("The call manager was closed while creating the invitation.");
+          throw new Error("Another incoming call arrived while this invitation was being created.");
+        }
+
+        activeSession = Object.assign({}, createdSession);
+        activeRole = "caller";
         try {
-          await supabase.from("call_sessions").update({ status: "ended" }).eq("id", activeSession.id).eq("status", "ringing");
-        } catch (_) {}
-        await clearActiveSession("ended", false);
-        throw error;
+          await subscribeToSession(activeSession);
+          await refreshSession(createdSession.id);
+        } catch (error) {
+          try {
+            await supabase.from("call_sessions").update({ status: "ended" })
+              .eq("id", createdSession.id).eq("status", "ringing");
+          } catch (_) {}
+          if (activeSession && String(activeSession.id) === String(createdSession.id)) {
+            await clearActiveSession("ended", false);
+          }
+          throw error;
+        }
+        if (activeSession && activeSession.status === "ringing") {
+          armRingingTimeout(activeSession);
+          emit("outgoing", { session: activeSession, role: activeRole });
+        }
+        return Object.assign({}, createdSession);
+      } finally {
+        startInProgress = false;
       }
-      if (activeSession && activeSession.status === "ringing") {
-        armRingingTimeout(activeSession);
-        emit("outgoing", { session: activeSession, role: activeRole });
-      }
-      return Object.assign({}, result.data);
     }
 
     async function updateStatus(nextStatus) {
-      await verifyUser();
-      if (!activeSession) throw new Error("There is no active call session.");
-      const session = activeSession;
-      if (nextStatus === "active" || nextStatus === "rejected") {
-        if (activeRole !== "receiver" || session.status !== "ringing") {
-          throw new Error("Only the receiver can answer or reject a ringing call.");
+      if (transitionInProgress) throw new Error("A call status change is already in progress.");
+      transitionInProgress = true;
+      try {
+        await verifyUser();
+        if (!activeSession) throw new Error("There is no active call session.");
+        const session = activeSession;
+        if (nextStatus === "active" || nextStatus === "rejected") {
+          if (activeRole !== "receiver" || session.status !== "ringing") {
+            throw new Error("Only the receiver can answer or reject a ringing call.");
+          }
+        } else if (nextStatus === "ended") {
+          if (!LIVE.has(session.status)) throw new Error("This call has already finished.");
+        } else {
+          throw new Error("Unsupported call-session transition.");
         }
-      } else if (nextStatus === "ended") {
-        if (!LIVE.has(session.status)) throw new Error("This call has already finished.");
-      } else {
-        throw new Error("Unsupported call-session transition.");
-      }
 
-      let query = supabase.from("call_sessions").update({ status: nextStatus }).eq("id", session.id);
-      if (nextStatus === "active" || nextStatus === "rejected") query = query.eq("receiver_id", currentUserId).eq("status", "ringing");
-      else query = query.in("status", ["ringing", "active"]);
-      const result = await query.select(SESSION_COLUMNS).maybeSingle();
-      if (result.error) throw result.error;
-      if (!result.data) throw new Error("The call changed or ended before this action completed.");
-      applySessionUpdate(result.data);
-      return result.data;
+        let query = supabase.from("call_sessions").update({ status: nextStatus }).eq("id", session.id);
+        if (nextStatus === "active" || nextStatus === "rejected") query = query.eq("receiver_id", currentUserId).eq("status", "ringing");
+        else query = query.in("status", ["ringing", "active"]);
+        const result = await query.select(SESSION_COLUMNS).maybeSingle();
+        if (result.error) throw result.error;
+        if (!result.data) throw new Error("The call changed or ended before this action completed.");
+        applySessionUpdate(result.data);
+        return result.data;
+      } finally {
+        transitionInProgress = false;
+      }
     }
 
     async function answer() { return updateStatus("active"); }

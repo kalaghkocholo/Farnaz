@@ -99,7 +99,7 @@ test("outgoing caller joins silently and publishes microphone only after accepta
   assert.equal(h.mediaInstances[0].getState().connected, true);
   assert.equal(h.mediaInstances[0].getState().microphoneEnabled, true);
   assert.ok(h.order.indexOf("media-connect") < h.order.indexOf("microphone-true"));
-  assert.equal(h.controller.getState().status, "ringing");
+  assert.equal(h.controller.getState().status, "active");
   await h.controller.close();
 });
 

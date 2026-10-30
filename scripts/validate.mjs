@@ -214,7 +214,7 @@ if (!coreSource.includes("function installFarnazSwipeNavigation()") ||
 }
 
 const chatSource = sources["js/chat-menu-v5.js"];
-if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v230"') || !sources["service-worker.js"].includes('styles.css?v=20261030-96') || !sources["service-worker.js"].includes('core.js?v=20261030-62') || !sources["service-worker.js"].includes('local-store.js?v=20261026-3') || !sources["service-worker.js"].includes('calls.js?v=20261026-4') || !sources["service-worker.js"].includes('chat-menu-v5.js?v=20261029-2') || !html.includes('chat-menu-v5.js?v=20261029-2')) {
+if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v231"') || !sources["service-worker.js"].includes('styles.css?v=20261030-livekit-ui1') || !sources["service-worker.js"].includes('core.js?v=20261030-62') || !sources["service-worker.js"].includes('local-store.js?v=20261026-3') || !sources["service-worker.js"].includes('calls.js?v=20261030-livekit-ui1') || !sources["service-worker.js"].includes('chat-menu-v5.js?v=20261029-2') || !html.includes('chat-menu-v5.js?v=20261029-2')) {
   errors.push("service-worker.js must use the current shell cache and core asset versions");
 }
 const loaderChecks = [

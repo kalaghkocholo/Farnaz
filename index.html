@@ -38,8 +38,8 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
 .welcome-secondary{width:100%;max-width:300px;margin-top:9px;padding:12px;border:1px solid var(--border);border-radius:14px;background:transparent;color:var(--white);font-size:13px}
 @media(max-width:360px){.welcome-shell{min-height:62dvh;padding:24px 15px 20px}.welcome-shell h2{font-size:22px}.welcome-mark{width:86px;height:86px;border-radius:25px}.welcome-mark img{width:73px;height:73px}}
 </style>
-<link rel="stylesheet" href="./styles.css?v=20261030-96" media="print" onload="this.onload=null;this.media='all'">
-<noscript><link rel="stylesheet" href="./styles.css?v=20261030-96"></noscript>
+<link rel="stylesheet" href="./styles.css?v=20261030-livekit-ui1" media="print" onload="this.onload=null;this.media='all'">
+<noscript><link rel="stylesheet" href="./styles.css?v=20261030-livekit-ui1"></noscript>
 <link rel="stylesheet" href="./spaces.css?v=20261029-34" media="print" onload="this.onload=null;this.media='all'">
 <link rel="stylesheet" href="./chat-viewport.css?v=20261029-3">
 </head>
@@ -364,6 +364,8 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
 <script src="./js/local-store.js?v=20261026-3"></script>
 <script>
 (function(){
+  // LiveKit call UI stays off until the pilot is explicitly enabled after device testing.
+  window.FARNAZ_LIVEKIT_CALLS_ENABLED = false;
   const SCRIPT_TIMEOUT_MS=20000;
   function watchScript(script,onload,onerror,timeoutMs=SCRIPT_TIMEOUT_MS){
     let settled=false;
@@ -472,8 +474,19 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
       const featureScripts=[
         "./js/chat-menu-v5.js?v=20261029-2",
         "./js/spaces.js?v=20261029-15",
-        "./js/calls.js?v=20261026-4"
+        "./js/calls.js?v=20261030-livekit-ui1"
       ];
+      // Do not download or initialize the experimental call stack unless the
+      // explicit pilot flag is enabled. The default startup path stays unchanged.
+      if(window.FARNAZ_LIVEKIT_CALLS_ENABLED===true){
+        featureScripts.push(
+          "./js/livekit-sdk-loader.js?v=20261030-ui1",
+          "./js/livekit-calls.js?v=20261030-ui1",
+          "./js/livekit-call-sessions.js?v=20261030-ui1",
+          "./js/livekit-call-controller.js?v=20261030-ui1",
+          "./js/livekit-call-ui.js?v=20261030-ui1"
+        );
+      }
       let featureIndex=0;
       const loadNextFeature=()=>{
         if(featureIndex>=featureScripts.length){

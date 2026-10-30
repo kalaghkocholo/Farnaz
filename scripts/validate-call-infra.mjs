@@ -86,7 +86,9 @@ requireCheck(callUi.includes("root.FarnazLiveKitCallUI") &&
   appHtml.includes("window.FARNAZ_LIVEKIT_CALLS_ENABLED = false"),
   "The LiveKit call UI must expose incoming/outgoing, mute, audio playback, and video controls behind the disabled pilot flag.");
 requireCheck(!/FARNAZ_LIVEKIT_CALLS_ENABLED\s*=\s*true/.test(appHtml),
-  "The LiveKit pilot must not be enabled by default.");\n\nrequireCheck(!/LIVEKIT_API_SECRET|LIVEKIT_API_KEY/.test(adapter),
+  "The LiveKit pilot must not be enabled by default.");
+
+requireCheck(!/LIVEKIT_API_SECRET|LIVEKIT_API_KEY/.test(adapter),
   "LiveKit server credentials must never be referenced in browser adapter code.");
 requireCheck(sessions.includes("root.FarnazCallSessions") &&
   sessions.includes("async function start(input)") &&

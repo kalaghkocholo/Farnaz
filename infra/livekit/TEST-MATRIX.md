@@ -16,6 +16,10 @@ Do not mark a test as passed until it has been run and its result recorded. Loca
 | L-10 | User not in a group requests group token | Membership fixture and response | Request is denied; no token is returned |
 | L-11 | Sign out during a call | UI and media-track state | Media stops and room session is disconnected |
 | L-12 | Iranian mobile/fixed-line networks | Operator, access technology, region, date, RTT/jitter/loss | Results recorded per network; no generalized reachability claim from a single test |
+| L-13 | Direct-call invitation and answer lifecycle | Caller/receiver IDs, session status sequence, realtime events | Caller creates ringing session; receiver alone can answer/reject; both participants can end |
+| L-14 | Missed-call timeout and reconnect recovery | Ring duration, app suspension/reopen timing, final DB status | Unanswered call becomes missed; recent ringing invitations are recovered without duplicate incoming UI |
+| L-15 | Direct-call token authorization | Caller, receiver, nonparticipant, ended session, mismatched call type | Only a participant in a ringing/active matching session receives a room-scoped token |
+| A-01 | Isolated lifecycle unit tests | GitHub Actions run URL and commit SHA | Session lifecycle tests pass for outgoing, incoming, recovery, answer, reject, end, identity mismatch, and timeout |
 
 For quality runs, record at minimum setup time, round-trip time (where measurable), jitter, packet loss, reconnect duration, device model, browser version, and whether audio/video remained usable. Do not collect message content or record calls for routine diagnostics.
 

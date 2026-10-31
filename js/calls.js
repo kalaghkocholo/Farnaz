@@ -251,8 +251,17 @@ async function startCall(type){
     if(blockError)throw blockError;
     if(blocked){alert(tr("این مخاطب را مسدود کرده‌ای؛ برای تماس ابتدا مسدودسازی را بردار.","This contact is blocked. Unblock them before calling."));return;}
     showDialog(type==="video"?tr("تماس تصویری","Video call"):tr("تماس صوتی","Audio call"),tr("در حال شروع تماس…","Starting call…"));
-    const {data,error}=await getClient().from("call_sessions").insert({caller_id:initiatingUserId,receiver_id:receiverId,call_type:type,status:"ringing"}).select("*").single();
+    // The database derives caller_id from auth.uid() inside a narrowly scoped
+    // SECURITY DEFINER RPC. This avoids relying on a possibly stale client auth
+    // event while preserving the saved-contact and block checks server-side.
+    const {data,error}=await getClient().rpc("start_farnaz_call",{
+      p_receiver_id:receiverId,
+      p_call_type:type
+    });
     if(error)throw error;
+    if(!data?.id||String(data.caller_id)!==initiatingUserId||String(data.receiver_id)!==receiverId){
+      throw new Error(tr("پاسخ سرور تماس معتبر نبود؛ دوباره وارد حساب شو و تلاش کن.","The server returned an invalid call session. Sign in again and retry."));
+    }
     if(String(signedInUserId)!==initiatingUserId||String(currentUser?.id||"")!==initiatingUserId||String(currentChatUser?.user_id||"")!==receiverId){
       try{await getClient().from("call_sessions").update({status:"ended"}).eq("id",data.id);}catch(_){}
       return;

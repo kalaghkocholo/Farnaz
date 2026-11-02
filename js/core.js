@@ -903,6 +903,7 @@ function updateAuthTexts(){
   $("authLoginTab").setAttribute("aria-pressed",String(authMode==="login"));
   $("authSignupTab").setAttribute("aria-pressed",String(authMode==="signup"));
   $("googleAuth").hidden=authMode==="signup";
+  document.querySelector(".social-auth").hidden=authMode==="signup";
   document.querySelector(".auth-divider").hidden=authMode==="signup";
   $("googleAuthLabel").textContent=v?"Continue with Google":"ادامه با Google";
   $("authOrLabel").textContent=v?"or continue with email":"یا با ایمیل";
@@ -932,7 +933,7 @@ function toggleLanguage(){
     welcome:["خوش آمدی به فرناز","WELCOME TO FARNAZ"],
     headline:["آدم‌های مهم زندگی‌ات، همیشه نزدیک تو","The people who matter, closer to you"],
     description:["یک فضای ساده برای گفتگو و ارتباط با کسانی که برایت مهم‌اند.","A simple space to stay connected."],
-    start:["شروع کنیم ←","Let's begin →"],f1:["گفتگوی خصوصی","Private chat"],
+    start:["ورود / ثبت‌نام","Sign in / Sign up"],f1:["گفتگوی خصوصی","Private chat"],
     f1d:["پیام‌هایت را مرتب دنبال کن.","Keep conversations organized."],
     f2:["عکس و فایل","Photos & files"],f2d:["لحظه‌ها و فایل‌ها را به اشتراک بگذار.","Share moments and files."],
     f3:["مخاطبان","Contacts"],f3d:["مخاطبان مهمت را ذخیره و سریع پیدا کن.","Save and find important contacts quickly."],
@@ -1054,6 +1055,18 @@ async function showUser(user){
       // Logout/account switching may happen while profile creation is pending.
       if(request!==profileRequestNumber||currentUser?.id!==user.id)return;
       profile=created.data;
+    }
+    // A database trigger may have created an empty profile before the email-confirmed
+    // sign-up metadata was available. Fill only a NULL phone on the current user's row.
+    if(profile&&!profile.phone&&user.user_metadata?.phone){
+      const metadataPhone=normalizePhone(user.user_metadata.phone,"98");
+      if(/^\+[1-9]\d{7,14}$/.test(metadataPhone)){
+        try{
+          const {error:phoneSaveError}=await getClient().from("profiles").update({phone:metadataPhone}).eq("id",user.id).is("phone",null);
+          if(phoneSaveError)throw phoneSaveError;
+          profile.phone=metadataPhone;
+        }catch(phoneSaveError){console.warn("Save sign-up phone to profile:",phoneSaveError);}
+      }
     }
     privacySettings={presence_visibility:profile?.presence_visibility||"contacts",last_seen_visibility:profile?.last_seen_visibility||"contacts",show_typing:profile?.show_typing!==false,show_read_receipts:profile?.show_read_receipts!==false,show_space_online_count:profile?.show_space_online_count!==false};
     applyPrivacySettings();
@@ -2562,7 +2575,7 @@ async function refreshConversationList(){
         const client=getClient();
         let result;
         if(authMode==="signup"){
-          if(!/^\\+[1-9]\\d{7,14}$/.test(phone))throw new Error(english?"Enter a valid mobile number with country code.":"شماره موبایل معتبر را با کد کشور وارد کن؛ مانند 0912... یا +98912...");
+          if(!/^\+[1-9]\d{7,14}$/.test(phone))throw new Error(english?"Enter a valid mobile number with country code.":"شماره موبایل معتبر را با کد کشور وارد کن؛ مانند 0912... یا +98912...");
           result=await client.auth.signUp({
             email,password,
             options:{

@@ -5,7 +5,7 @@ window.FARNAZ_CONFIG = {
   supabasePublishableKey: "sb_publishable_LhUmVjXJlazgYRtEvXna6g_GGKxi_kC"
 };
 
-let english=false,authMode="signup",farnazClient=null,currentUser=null;
+let english=false,authMode="login",farnazClient=null,currentUser=null;
 let currentProfileName="",currentAvatarUrl="",currentPhone="",currentChatPresenceLabel="گفتگوی خصوصی";
 let currentChatUser=null,messageSubscription=null,reconnectTimer=null,reconnectAttempts=0;
 let profileRequestNumber=0,chatRequestNumber=0,previousPage="chatsPage";
@@ -842,12 +842,14 @@ function openLogin(){authMode="login";openAuth();}
 function openAuth(){
   const signup=authMode==="signup";
   $("nameField").style.display=signup?"block":"none";
+  $("authPhoneField").hidden=!signup;
   $("authName").required=signup;
+  $("authPhone").required=signup;
   $("authPassword").autocomplete=signup?"new-password":"current-password";
   document.querySelector(".app")?.classList.add("auth-open");
   if($("headerFButton"))$("headerFButton").hidden=true;
   $("authBox").style.display="flex";setStatus("authStatus","");
-  $("authName").value="";$("authEmail").value="";$("authPassword").value="";
+  $("authName").value="";$("authPhone").value="";$("authEmail").value="";$("authPassword").value="";
   updateAuthTexts();
 }
 function closeAuth(){$("authBox").style.display="none";document.querySelector(".app")?.classList.remove("auth-open");}
@@ -873,20 +875,35 @@ async function signInSocial(provider="google"){
     if(button)button.disabled=false;
   }
 }
-function switchAuthMode(){
-  authMode=authMode==="signup"?"login":"signup";
+function setAuthMode(mode){
+  if(mode!=="login"&&mode!=="signup")return;
+  authMode=mode;
   const signup=authMode==="signup";
   $("nameField").style.display=signup?"block":"none";
+  $("authPhoneField").hidden=!signup;
   $("authName").required=signup;
+  $("authPhone").required=signup;
   $("authPassword").autocomplete=signup?"new-password":"current-password";
   setStatus("authStatus","");updateAuthTexts();
 }
+function switchAuthMode(){setAuthMode(authMode==="signup"?"login":"signup");}
 function updateAuthTexts(){
   const v=english;
   $("authTitle").textContent=authMode==="signup"?(v?"Create your Farnaz account":"ثبت‌نام در فرناز"):(v?"Sign in to Farnaz":"ورود به فرناز");
   $("authMessage").textContent=authMode==="signup"?(v?"Create an account to stay connected.":"برای ارتباط نزدیک‌تر، حساب خودت را بساز."):(v?"Sign in with your email and password.":"با ایمیل و رمز عبورت وارد شو.");
   $("authSubmit").textContent=authMode==="signup"?(v?"Sign up":"ثبت‌نام"):(v?"Sign in":"ورود");
-  $("authSwitch").textContent=authMode==="signup"?(v?"Already have an account? Sign in":"قبلاً حساب ساخته‌ام؛ ورود"):(v?"Need an account? Sign up":"حساب ندارم؛ ثبت‌نام");
+  $("authSwitch").textContent=authMode==="signup"?(v?"Your phone helps friends find you on Farnaz.":"شماره موبایل برای پیدا کردن شما در فرناز استفاده می‌شود."):(v?"Use your email and password to continue.":"با ایمیل و رمز عبورت وارد فرناز شو.");
+  $("authNameLabel").textContent=v?"Display name":"نام نمایشی";
+  $("authPhoneLabel").textContent=v?"Mobile number":"شماره موبایل";
+  $("authPhoneHint").textContent=v?"Used to match your phone contacts on Farnaz.":"برای تطبیق دفترچه تلفن و پیدا کردن مخاطبان عضو فرناز استفاده می‌شود.";
+  $("authLoginTab").textContent=v?"Sign in":"ورود";
+  $("authSignupTab").textContent=v?"Create account":"ثبت‌نام";
+  $("authLoginTab").classList.toggle("is-active",authMode==="login");
+  $("authSignupTab").classList.toggle("is-active",authMode==="signup");
+  $("authLoginTab").setAttribute("aria-pressed",String(authMode==="login"));
+  $("authSignupTab").setAttribute("aria-pressed",String(authMode==="signup"));
+  $("googleAuth").hidden=authMode==="signup";
+  document.querySelector(".auth-divider").hidden=authMode==="signup";
   $("googleAuthLabel").textContent=v?"Continue with Google":"ادامه با Google";
   $("authOrLabel").textContent=v?"or continue with email":"یا با ایمیل";
 }
@@ -1031,7 +1048,7 @@ async function showUser(user){
     if(!profile){
       const fallbackName=(user.user_metadata?.display_name||user.email?.split("@")[0]||"Farnaz user").trim();
       const created=await retryRead("create current user profile",()=>getClient().from("profiles")
-        .upsert({id:user.id,display_name:fallbackName,phone:user.phone||null,show_phone:true},{onConflict:"id"})
+        .upsert({id:user.id,display_name:fallbackName,phone:user.user_metadata?.phone||user.phone||null,show_phone:true},{onConflict:"id"})
         .select("id,display_name,avatar_url,phone,show_phone,presence_visibility,last_seen_visibility,show_typing,show_read_receipts,show_space_online_count").single(),2,18000);
       if(created.error)throw created.error;
       // Logout/account switching may happen while profile creation is pending.
@@ -2531,6 +2548,7 @@ async function refreshConversationList(){
       event.preventDefault();
       const button=$("authSubmit"),email=$("authEmail").value.trim();
       const password=$("authPassword").value,name=$("authName").value.trim();
+      const phone=authMode==="signup"?normalizePhone($("authPhone").value,"98"):"";
       if(!button)return;
       button.disabled=true;
       const authStartedAt=performance.now();
@@ -2544,11 +2562,12 @@ async function refreshConversationList(){
         const client=getClient();
         let result;
         if(authMode==="signup"){
+          if(!/^\\+[1-9]\\d{7,14}$/.test(phone))throw new Error(english?"Enter a valid mobile number with country code.":"شماره موبایل معتبر را با کد کشور وارد کن؛ مانند 0912... یا +98912...");
           result=await client.auth.signUp({
             email,password,
             options:{
               emailRedirectTo:"https://kalaghkocholo.github.io/Farnaz/",
-              data:{display_name:name}
+              data:{display_name:name,phone}
             }
           });
           if(result.error)throw result.error;

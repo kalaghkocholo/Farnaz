@@ -1166,8 +1166,9 @@ input,textarea,select,#messageSearchQuery,#messageSearchKind,#messageSearchFrom,
 .message-reaction-chip.mine{border-color:var(--accent)!important;background:color-mix(in srgb,var(--accent) 18%,var(--panel2))!important}
 .message-pinned-banner{border-color:var(--border)!important}
 .secondary-button{border-color:var(--border)!important;color:var(--white)!important}
-.auth-card{background:var(--panel)!important;color:var(--white)!important;border-color:var(--border)!important}
-#authBox{background:color-mix(in srgb,var(--bg) 88%,transparent)!important}
+.auth-card{background:var(--bg)!important;color:var(--white)!important;border:0!important;box-shadow:none!important}
+#authBox{background:var(--bg)!important}
+.social-auth[hidden],.auth-divider[hidden]{display:none!important}
 body[data-theme="light"] .hero,body[data-theme="light"] .panel,body[data-theme="light"] .feature,
 body[data-theme="light"] .settings-card,body[data-theme="light"] .list-item,
 body[data-theme="light"] body[data-theme="light"] .contact-search-popover,

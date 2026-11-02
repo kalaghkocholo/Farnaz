@@ -59,7 +59,6 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
     <h2 id="headline">آدم‌های مهم زندگی‌ات، همیشه نزدیک تو</h2>
     <p id="description">گفتگوهای خصوصی و گروهی، در فضایی ساده و آرام.</p>
     <button class="primary" id="start" type="button" onclick="openLogin()">ورود به فرناز <span aria-hidden="true">←</span></button>
-    <button class="welcome-secondary" type="button" onclick="openSignup()">ساخت حساب جدید</button>
     <div class="welcome-footnote"><span></span> ارتباطی نزدیک‌تر، در هر کجا</div>
   </div>
 </section>
@@ -338,9 +337,12 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
 
 <div id="authBox" role="dialog" aria-modal="true" aria-labelledby="authTitle">
   <div class="auth-card">
-    <button type="button" class="close-button" onclick="closeAuth()" aria-label="بستن">×</button>
-    <h2 id="authTitle">ثبت‌نام در فرناز</h2>
-    <p id="authMessage">برای ارتباط نزدیک‌تر، حساب خودت را بساز.</p>
+    <h2 id="authTitle">ورود به فرناز</h2>
+    <p id="authMessage">با ایمیل و رمز عبورت وارد شو.</p>
+    <div class="auth-mode-tabs" role="group" aria-label="ورود یا ثبت‌نام">
+      <button type="button" id="authLoginTab" class="auth-mode-tab is-active" aria-pressed="true" onclick="setAuthMode('login')">ورود</button>
+      <button type="button" id="authSignupTab" class="auth-mode-tab" aria-pressed="false" onclick="setAuthMode('signup')">ثبت‌نام</button>
+    </div>
     <div class="social-auth">
       <button type="button" id="googleAuth" class="social-auth-button" onclick="signInSocial('google')"><span class="google-mark" aria-hidden="true">G</span><span id="googleAuthLabel">ادامه با Google</span></button>
     </div>
@@ -350,6 +352,11 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
         <label for="authName" id="authNameLabel">نام نمایشی</label>
         <input id="authName" type="text" autocomplete="name" required maxlength="60" placeholder="نام شما">
       </div>
+      <div id="authPhoneField" hidden>
+        <label for="authPhone" id="authPhoneLabel">شماره موبایل</label>
+        <input id="authPhone" type="tel" dir="ltr" inputmode="tel" autocomplete="tel" maxlength="25" placeholder="0912... یا +98912...">
+        <small id="authPhoneHint" class="auth-field-hint">شماره برای پیدا کردن مخاطبان فرناز استفاده می‌شود.</small>
+      </div>
       <label for="authEmail" id="authEmailLabel">ایمیل</label>
       <input id="authEmail" type="email" autocomplete="email" required placeholder="you@example.com">
       <label for="authPassword" id="authPasswordLabel">رمز عبور (حداقل ۸ کاراکتر)</label>
@@ -357,7 +364,7 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
       <button id="authSubmit" class="auth-submit" type="submit">ثبت‌نام</button>
     </form>
     <p id="authStatus" class="status" role="status"></p>
-    <button id="authSwitch" class="auth-link" type="button" onclick="switchAuthMode()">قبلاً حساب ساخته‌ام؛ ورود</button>
+    <p id="authSwitch" class="auth-switch-hint">حساب کاربری داری؟ از بخش ورود استفاده کن.</p>
   </div>
 </div>
 

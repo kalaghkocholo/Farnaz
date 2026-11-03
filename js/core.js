@@ -2693,6 +2693,8 @@ async function refreshConversationList(){
         // No valid session is a normal guest state, not a connection failure.
         setConnectionBanner("",false);
         setStatus("profileStatus","");
+        // Guests land directly on the login/register screen; there is no welcome page.
+        openLogin();
         return;
       }
       sessionRestoreNeedsRetry=false;
@@ -2747,6 +2749,8 @@ async function refreshConversationList(){
       setConnectionBanner(english
         ?"Farnaz could not restore your saved session. Check your connection and try signing in again."
         :"بازیابی نشست ورود کامل نشد. اتصال را بررسی کن و دوباره برای ورود تلاش کن.");
+      // Keep the authentication screen available even when session restoration fails.
+      openLogin();
       if(/refresh token.*(invalid|not found|expired)|invalid refresh token|session not found/i.test(String(error?.message||""))){
         try{if(client)await client.auth.signOut({scope:"local"});}catch(_){}
       }

@@ -837,20 +837,22 @@ function showConversationActions(card,contactId){
   for(const [label,action] of items){const b=document.createElement("button");b.type="button";b.className="mini-button"+(action==="delete"?" danger":"");b.textContent=label;b.onclick=()=>conversationAction(contactId,action);menu.appendChild(b);}
   card.appendChild(menu);
 }
-function openSignup(){authMode="signup";openAuth();}
-function openLogin(){authMode="login";openAuth();}
+function openSignup(){setAuthMode("signup");}
+function openLogin(){setAuthMode("login");}
 function openAuth(){
-  const signup=authMode==="signup";
-  $("nameField").style.display=signup?"block":"none";
-  $("authName").required=signup;
-  $("authPassword").autocomplete=signup?"new-password":"current-password";
-  document.querySelector(".app")?.classList.add("auth-open");
+  const home=$("homePage");
+  if(home&&!home.classList.contains("active")){
+    document.querySelectorAll(".page").forEach(page=>page.classList.toggle("active",page===home));
+  }
+  $("authBox").style.display="block";
   if($("headerFButton"))$("headerFButton").hidden=true;
-  $("authBox").style.display="flex";setStatus("authStatus","");
-  $("authName").value="";$("authEmail").value="";$("authPassword").value="";
-  updateAuthTexts();
+  document.querySelector(".app")?.classList.remove("auth-open");
+  setAuthMode(authMode);
 }
-function closeAuth(){$("authBox").style.display="none";document.querySelector(".app")?.classList.remove("auth-open");}
+function closeAuth(){
+  $("authBox").style.display="none";
+  document.querySelector(".app")?.classList.remove("auth-open");
+}
 async function signInSocial(provider="google"){
   const button=$("googleAuth");
   const label=button?.querySelector("span:last-child");
@@ -873,38 +875,58 @@ async function signInSocial(provider="google"){
     if(button)button.disabled=false;
   }
 }
-function switchAuthMode(){
-  authMode=authMode==="signup"?"login":"signup";
+function openSignup(){setAuthMode("signup");}
+function openLogin(){setAuthMode("login");}
+function openAuth(){
+  const home=$("homePage");
+  if(home&&!home.classList.contains("active")){
+    document.querySelectorAll(".page").forEach(page=>page.classList.toggle("active",page===home));
+  }
+  $("authBox").style.display="block";
+  if($("headerFButton"))$("headerFButton").hidden=true;
+  document.querySelector(".app")?.classList.remove("auth-open");
+  setAuthMode(authMode);
+}
+function closeAuth(){
+  $("authBox").style.display="none";
+  document.querySelector(".app")?.classList.remove("auth-open");
+}
+function setAuthMode(mode){
+  authMode=mode==="login"?"login":"signup";
   const signup=authMode==="signup";
   $("nameField").style.display=signup?"block":"none";
   $("authName").required=signup;
   $("authPassword").autocomplete=signup?"new-password":"current-password";
-  setStatus("authStatus","");updateAuthTexts();
+  const signupTab=$("authSignupTab"),loginTab=$("authLoginTab");
+  if(signupTab){signupTab.classList.toggle("is-active",signup);signupTab.setAttribute("aria-pressed",String(signup));}
+  if(loginTab){loginTab.classList.toggle("is-active",!signup);loginTab.setAttribute("aria-pressed",String(!signup));}
+  setStatus("authStatus","");
+  updateAuthTexts();
 }
+function switchAuthMode(){setAuthMode(authMode==="signup"?"login":"signup");}
 function updateAuthTexts(){
-  const v=english;
-  $("authTitle").textContent=authMode==="signup"?(v?"Create your Farnaz account":"ثبت‌نام در فرناز"):(v?"Sign in to Farnaz":"ورود به فرناز");
-  $("authMessage").textContent=authMode==="signup"?(v?"Create an account to stay connected.":"برای ارتباط نزدیک‌تر، حساب خودت را بساز."):(v?"Sign in with your email and password.":"با ایمیل و رمز عبورت وارد شو.");
-  $("authSubmit").textContent=authMode==="signup"?(v?"Sign up":"ثبت‌نام"):(v?"Sign in":"ورود");
-  $("authSwitch").textContent=authMode==="signup"?(v?"Already have an account? Sign in":"قبلاً حساب ساخته‌ام؛ ورود"):(v?"Need an account? Sign up":"حساب ندارم؛ ثبت‌نام");
+  const v=english,signup=authMode==="signup";
+  $("authSubmit").textContent=signup?(v?"Sign up":"ثبت‌نام"):(v?"Sign in":"ورود");
+  $("authSignupTab").textContent=v?"Sign up":"ثبت‌نام";
+  $("authLoginTab").textContent=v?"Sign in":"ورود";
   $("googleAuthLabel").textContent=v?"Continue with Google":"ادامه با Google";
   $("authOrLabel").textContent=v?"or continue with email":"یا با ایمیل";
 }
-/* Keep one welcome language toggle globally; preserve the separate Settings language control. */
-function normalizeWelcomeLanguageButton(){
+/* Keep exactly one language control on the single authentication screen. */
+function normalizeAuthLanguageButton(){
   const home=document.getElementById("homePage");
   if(!home)return;
-  const buttons=Array.from(document.querySelectorAll(".welcome-language-switch, #welcomeLanguageButton"));
-  let keep=home.querySelector(":scope > #welcomeLanguageButton")||home.querySelector(".welcome-language-switch");
+  const buttons=Array.from(document.querySelectorAll(".auth-language-switch, #authLanguageButton"));
+  const keep=home.querySelector(":scope > #authLanguageButton")||home.querySelector(".auth-language-switch");
   if(!keep)return;
   buttons.forEach(button=>{if(button!==keep)button.remove();});
-  keep.id="welcomeLanguageButton";
-  keep.classList.add("welcome-language-switch");
+  keep.id="authLanguageButton";
+  keep.classList.add("auth-language-switch");
   if(keep.parentElement!==home)home.prepend(keep);
 }
-document.addEventListener("DOMContentLoaded",normalizeWelcomeLanguageButton);
-window.addEventListener("pageshow",normalizeWelcomeLanguageButton);
-setTimeout(normalizeWelcomeLanguageButton,0);
+document.addEventListener("DOMContentLoaded",normalizeAuthLanguageButton);
+window.addEventListener("pageshow",normalizeAuthLanguageButton);
+setTimeout(normalizeAuthLanguageButton,0);
 
 function toggleLanguage(){
   english=!english;
@@ -951,9 +973,9 @@ function toggleLanguage(){
   };
   Object.entries(labels).forEach(([id,pair])=>{if($(id))$(id).textContent=pair[english?1:0];});
   if($("language"))$("language").textContent=english?"فا":"EN";
-  if($("welcomeLanguageButton")){$("welcomeLanguageButton").textContent=english?"فا":"EN";$("welcomeLanguageButton").setAttribute("aria-label",english?"Switch to Persian":"Switch to English");}
+  if($("authLanguageButton")){$("authLanguageButton").textContent=english?"فا":"EN";$("authLanguageButton").setAttribute("aria-label",english?"Switch to Persian":"Switch to English");}
   if($("contactsImportToggle"))$("contactsImportToggle").textContent=$("phoneContactsImport")&&!$("phoneContactsImport").hidden?"×":"＋";
-  if($("start"))$("start").textContent=english?"Sign in to Farnaz →":"ورود به فرناز ←";
+  
   ["profilePhoneCountry"].forEach(id=>{
     const select=$(id);if(!select)return;
     const names=english?["Iran","Germany","United States / Canada","United Kingdom","Turkey"]:["ایران","آلمان","آمریکا / کانادا","بریتانیا","ترکیه"];

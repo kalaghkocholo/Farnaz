@@ -42,7 +42,8 @@ body[data-auth-state="guest"] .app>header{display:none!important}
 
 <!-- صفحه ورود و ثبت‌نام -->
 <section class="page active" id="homePage">
-  <button class="auth-language-switch" id="authLanguageButton" type="button" onclick="toggleLanguage()" aria-label="Switch to English" style="position:absolute;top:0;right:0;left:auto">EN</button>
+  <button class="auth-language-switch auth-language-en" id="authLanguageEnButton" type="button" onclick="setLanguage('en')" aria-label="English" aria-pressed="false">EN</button>
+  <button class="auth-language-switch auth-language-fa" id="authLanguageFaButton" type="button" onclick="setLanguage('fa')" aria-label="فارسی" aria-pressed="true">فا</button>
   <section id="authBox" aria-label="ورود و ثبت‌نام">
     <div class="auth-card">
       <div class="auth-mode-tabs" role="group" aria-label="ورود یا ثبت‌نام">

@@ -880,7 +880,6 @@ function setAuthMode(mode){
   const signup=authMode==="signup";
   $("nameField").style.display=signup?"block":"none";
   $("authName").required=signup;
-  $("authPhone").required=false;
   $("authPassword").autocomplete=signup?"new-password":"current-password";
   setStatus("authStatus","");updateAuthTexts();
 }
@@ -890,7 +889,7 @@ function updateAuthTexts(){
   $("authTitle").textContent=authMode==="signup"?(v?"Create your Farnaz account":"ثبت‌نام در فرناز"):(v?"Sign in to Farnaz":"ورود به فرناز");
   $("authMessage").textContent=authMode==="signup"?(v?"Create an account to stay connected.":"برای ارتباط نزدیک‌تر، حساب خودت را بساز."):(v?"Sign in with your email and password.":"با ایمیل و رمز عبورت وارد شو.");
   $("authSubmit").textContent=authMode==="signup"?(v?"Sign up":"ثبت‌نام"):(v?"Sign in":"ورود");
-  $("authSwitch").textContent=authMode==="signup"?(v?"Your phone helps friends find you on Farnaz.":"شماره موبایل برای پیدا کردن شما در فرناز استفاده می‌شود."):(v?"Use your email and password to continue.":"با ایمیل و رمز عبورت وارد فرناز شو.");
+  $("authSwitch").textContent=authMode==="signup"?(v?"You can add your mobile number after email confirmation.":"شماره موبایل را پس از تأیید ایمیل تکمیل می‌کنی."):(v?"Use your email and password to continue.":"با ایمیل و رمز عبورت وارد فرناز شو.");
   $("authNameLabel").textContent=v?"Display name":"نام نمایشی";
   $("authLoginTab").textContent=v?"Sign in":"ورود";
   $("authSignupTab").textContent=v?"Create account":"ثبت‌نام";
@@ -1089,6 +1088,7 @@ async function showUser(user){
       setStatus("profileStatus",english?"Showing saved profile; server refresh failed.":"پروفایل ذخیره‌شده نمایش داده می‌شود؛ به‌روزرسانی سرور ناموفق بود.");
       return;
     }
+    navigate("profilePage",{refreshData:false});
     setStatus("profileStatus",(english?"Could not load profile: ":"بارگذاری پروفایل ناموفق بود: ")+e.message,true);
   }
 }

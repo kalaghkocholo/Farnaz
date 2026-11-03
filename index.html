@@ -135,7 +135,7 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
         <div class="profile-phone" id="userPhone"></div>
       </div>
     </div>
-    <form id="profileForm">
+    <form id="profileForm" onsubmit="saveProfile(event)">
       <label for="profileNameInput" id="profileNameLabel">نام نمایشی</label>
       <input id="profileNameInput" maxlength="60" required autocomplete="nickname">
       <label for="profilePhoneInput" id="profilePhoneLabel">شماره موبایل با کد کشور</label>
@@ -351,11 +351,6 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
       <div id="nameField">
         <label for="authName" id="authNameLabel">نام نمایشی</label>
         <input id="authName" type="text" autocomplete="name" required maxlength="60" placeholder="نام شما">
-      </div>
-      <div id="authPhoneField" hidden>
-        <label for="authPhone" id="authPhoneLabel">شماره موبایل</label>
-        <input id="authPhone" type="tel" dir="ltr" inputmode="tel" autocomplete="tel" maxlength="25" placeholder="0912... یا +98912...">
-        <small id="authPhoneHint" class="auth-field-hint">شماره برای پیدا کردن مخاطبان فرناز استفاده می‌شود.</small>
       </div>
       <label for="authEmail" id="authEmailLabel">ایمیل</label>
       <input id="authEmail" type="email" autocomplete="email" required placeholder="you@example.com">

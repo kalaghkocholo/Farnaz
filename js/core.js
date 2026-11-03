@@ -5,7 +5,7 @@ window.FARNAZ_CONFIG = {
   supabasePublishableKey: "sb_publishable_LhUmVjXJlazgYRtEvXna6g_GGKxi_kC"
 };
 
-let english=false,authMode="login",farnazClient=null,currentUser=null;
+let english=false,authMode="login",farnazClient=null,currentUser=null,profileCompletionRequired=false;
 let currentProfileName="",currentAvatarUrl="",currentPhone="",currentChatPresenceLabel="گفتگوی خصوصی";
 let currentChatUser=null,messageSubscription=null,reconnectTimer=null,reconnectAttempts=0;
 let profileRequestNumber=0,chatRequestNumber=0,previousPage="chatsPage";
@@ -644,6 +644,7 @@ document.addEventListener("click",event=>{
 });
 function navigate(pageId,options={}){
   if(!currentUser){openAuth();return;}
+  if(profileCompletionRequired&&pageId!=="profilePage")pageId="profilePage";
   if(!$(pageId))return;
   if(pageId==="chatPage"&&!currentChatUser)return;
   const activePageId=document.querySelector(".page.active")?.id||null;
@@ -842,9 +843,9 @@ function openLogin(){authMode="login";openAuth();}
 function openAuth(){
   const signup=authMode==="signup";
   $("nameField").style.display=signup?"block":"none";
-  $("authPhoneField").hidden=!signup;
+  $("authPhoneField").hidden=true;
   $("authName").required=signup;
-  $("authPhone").required=signup;
+  $("authPhone").required=false;
   $("authPassword").autocomplete=signup?"new-password":"current-password";
   document.querySelector(".app")?.classList.add("auth-open");
   if($("headerFButton"))$("headerFButton").hidden=true;
@@ -882,7 +883,7 @@ function setAuthMode(mode){
   $("nameField").style.display=signup?"block":"none";
   $("authPhoneField").hidden=!signup;
   $("authName").required=signup;
-  $("authPhone").required=signup;
+  $("authPhone").required=false;
   $("authPassword").autocomplete=signup?"new-password":"current-password";
   setStatus("authStatus","");updateAuthTexts();
 }
@@ -902,9 +903,9 @@ function updateAuthTexts(){
   $("authSignupTab").classList.toggle("is-active",authMode==="signup");
   $("authLoginTab").setAttribute("aria-pressed",String(authMode==="login"));
   $("authSignupTab").setAttribute("aria-pressed",String(authMode==="signup"));
-  $("googleAuth").hidden=authMode==="signup";
-  document.querySelector(".social-auth").hidden=authMode==="signup";
-  document.querySelector(".auth-divider").hidden=authMode==="signup";
+  $("googleAuth").hidden=false;
+  document.querySelector(".social-auth").hidden=false;
+  document.querySelector(".auth-divider").hidden=false;
   $("googleAuthLabel").textContent=v?"Continue with Google":"ادامه با Google";
   $("authOrLabel").textContent=v?"or continue with email":"یا با ایمیل";
 }
@@ -1020,6 +1021,7 @@ function renderUser(user,name){
   renderAvatar($("userAvatar"),currentAvatarUrl,$("userName").textContent);
 }
 async function showUser(user){
+  profileCompletionRequired=true;
   const request=++profileRequestNumber;
   currentUser=user;renderUser(user,user.user_metadata?.display_name||"");
   if(!window.__farnazPersistenceRequested){window.__farnazPersistenceRequested=true;void window.FarnazLocalStore?.requestPersistentStorage().catch(error=>console.warn("Persistent storage request:",error));}
@@ -1049,24 +1051,12 @@ async function showUser(user){
     if(!profile){
       const fallbackName=(user.user_metadata?.display_name||user.email?.split("@")[0]||"Farnaz user").trim();
       const created=await retryRead("create current user profile",()=>getClient().from("profiles")
-        .upsert({id:user.id,display_name:fallbackName,phone:user.user_metadata?.phone||user.phone||null,show_phone:true},{onConflict:"id"})
+        .upsert({id:user.id,display_name:fallbackName,phone:user.phone||null,show_phone:true},{onConflict:"id"})
         .select("id,display_name,avatar_url,phone,show_phone,presence_visibility,last_seen_visibility,show_typing,show_read_receipts,show_space_online_count").single(),2,18000);
       if(created.error)throw created.error;
       // Logout/account switching may happen while profile creation is pending.
       if(request!==profileRequestNumber||currentUser?.id!==user.id)return;
       profile=created.data;
-    }
-    // A database trigger may have created an empty profile before the email-confirmed
-    // sign-up metadata was available. Fill only a NULL phone on the current user's row.
-    if(profile&&!profile.phone&&user.user_metadata?.phone){
-      const metadataPhone=normalizePhone(user.user_metadata.phone,"98");
-      if(/^\+[1-9]\d{7,14}$/.test(metadataPhone)){
-        try{
-          const {error:phoneSaveError}=await getClient().from("profiles").update({phone:metadataPhone}).eq("id",user.id).is("phone",null);
-          if(phoneSaveError)throw phoneSaveError;
-          profile.phone=metadataPhone;
-        }catch(phoneSaveError){console.warn("Save sign-up phone to profile:",phoneSaveError);}
-      }
     }
     privacySettings={presence_visibility:profile?.presence_visibility||"contacts",last_seen_visibility:profile?.last_seen_visibility||"contacts",show_typing:profile?.show_typing!==false,show_read_receipts:profile?.show_read_receipts!==false,show_space_online_count:profile?.show_space_online_count!==false};
     applyPrivacySettings();
@@ -1081,7 +1071,20 @@ async function showUser(user){
     try{await window.FarnazLocalStore?.saveSnapshot(user.id,"profile",profile);}catch(cacheError){console.warn("Cached profile save:",cacheError);}
     // A completed cache write must not let a stale profile request update the UI after logout.
     if(request!==profileRequestNumber||currentUser?.id!==user.id)return;
-    setStatus("profileStatus",english?"Profile loaded.":"پروفایل بارگذاری شد.");
+    profileCompletionRequired=!(String(profile?.display_name||"").trim()&&String(profile?.phone||"").trim());
+    if(profileCompletionRequired){
+      $("profileIntro").textContent=english
+        ?"Complete your profile to continue. Your mobile number helps friends find you on Farnaz; it is not SMS-verified."
+        :"برای ادامه، تکمیل پروفایل الزامی است. شماره موبایل برای پیدا کردن مخاطبان در فرناز استفاده می‌شود و تأیید پیامکی نمی‌شود.";
+      $("profileHeading").textContent=english?"Complete your profile":"تکمیل پروفایل";
+      navigate("profilePage",{refreshData:false});
+      setStatus("profileStatus",english?"Add your name and mobile number, then save to continue.":"نام و شماره موبایل را وارد کن و ذخیره را بزن تا وارد فرناز شوی.");
+    }else{
+      $("profileHeading").textContent=english?"My profile":"پروفایل من";
+      $("profileIntro").textContent=english?"Manage your account information.":"اطلاعات حساب خود را مدیریت کن.";
+      if(document.querySelector(".page.active")?.id==="profilePage")navigate("chatsPage",{refreshData:false});
+      setStatus("profileStatus",english?"Profile loaded.":"پروفایل بارگذاری شد.");
+    }
   }catch(e){
     // Ignore a late profile failure after logout or a newer account/profile request.
     // Otherwise it can overwrite the cleared guest UI with a stale loading/error status.
@@ -1096,6 +1099,7 @@ async function showUser(user){
 }
 function showGuest(){
   swipePageHistory=[];swipePageHistoryIndex=-1;clearSwipeTransition();
+  profileCompletionRequired=false;
   const previousUserId=currentUser?.id;
   if(previousUserId)window.FarnazLocalStore?.clearUser(previousUserId).catch(cacheError=>console.warn("Could not clear local account data:",cacheError));
   stopFarnazPresence().catch(()=>{});farnazPresenceContactCache.clear();
@@ -1325,6 +1329,9 @@ async function saveProfile(event){
   if(!name||name.length>60){
     setStatus("profileStatus",english?"Enter a name up to 60 characters.":"نامی بین ۱ تا ۶۰ نویسه وارد کن.",true);return;
   }
+  if(profileCompletionRequired&&!phone){
+    setStatus("profileStatus",english?"A mobile number is required to continue.":"برای ادامه، واردکردن شماره موبایل الزامی است.",true);return;
+  }
   if(phone&&!/^\+[1-9]\d{7,14}$/.test(phone)){
     setStatus("profileStatus",english?"Use international phone format, e.g. +98912...":"شماره را با کد کشور وارد کن؛ مثل +98912...",true);return;
   }
@@ -1368,7 +1375,13 @@ async function saveProfile(event){
     renderUser(currentUser,currentProfileName);$("avatarFile").value="";
     try{await window.FarnazLocalStore?.saveSnapshot(userId,"profile",{...data,...profilePrivacy});}catch(cacheError){console.warn("Cached profile update:",cacheError);}
     if(String(currentUser?.id)!==userId)return;
-    setStatus("profileStatus",english?"Profile saved.":"پروفایل ذخیره شد.");
+    if(profileCompletionRequired){
+      profileCompletionRequired=false;
+      $("profileHeading").textContent=english?"My profile":"پروفایل من";
+      $("profileIntro").textContent=english?"Manage your account information.":"اطلاعات حساب خود را مدیریت کن.";
+      setStatus("profileStatus",english?"Profile complete. Welcome to Farnaz!":"پروفایل تکمیل شد؛ به فرناز خوش آمدی!");
+      navigate("chatsPage",{refreshData:true});
+    }else setStatus("profileStatus",english?"Profile saved.":"پروفایل ذخیره شد.");
   }catch(e){
     if(String(currentUser?.id)!==userId)return;
     console.error("Profile save:",e);
@@ -2561,7 +2574,7 @@ async function refreshConversationList(){
       event.preventDefault();
       const button=$("authSubmit"),email=$("authEmail").value.trim();
       const password=$("authPassword").value,name=$("authName").value.trim();
-      const phone=authMode==="signup"?normalizePhone($("authPhone").value,"98"):"";
+      const phone="";
       if(!button)return;
       button.disabled=true;
       const authStartedAt=performance.now();
@@ -2575,12 +2588,11 @@ async function refreshConversationList(){
         const client=getClient();
         let result;
         if(authMode==="signup"){
-          if(!/^\+[1-9]\d{7,14}$/.test(phone))throw new Error(english?"Enter a valid mobile number with country code.":"شماره موبایل معتبر را با کد کشور وارد کن؛ مانند 0912... یا +98912...");
           result=await client.auth.signUp({
             email,password,
             options:{
               emailRedirectTo:"https://kalaghkocholo.github.io/Farnaz/",
-              data:{display_name:name,phone}
+              data:{display_name:name}
             }
           });
           if(result.error)throw result.error;
@@ -2603,6 +2615,7 @@ async function refreshConversationList(){
         // opens the auth form when currentUser is empty; navigating first used to
         // reopen the form and erase the email/password immediately after login.
         currentUser=authenticatedUser;
+        profileCompletionRequired=true;
         closeAuth();
         navigate("chatsPage",{refreshData:false});
         // Authentication has succeeded. Keep profile and inbox initialization
@@ -2689,6 +2702,7 @@ async function refreshConversationList(){
       }
       sessionRestoreNeedsRetry=false;
       currentUser=session.user;
+      profileCompletionRequired=true;
       document.body.dataset.authState="authenticated";
       closeAuth();
       navigate("chatsPage",{refreshData:false});

@@ -986,9 +986,8 @@ function setLanguage(language){
     Array.from(select.options).forEach((option,i)=>{option.textContent=names[i]+" (+"+option.value+")";});
   });
   // The old welcome-screen footer was removed from the single-page auth layout.
-  $("messageText").placeholder=english?"Write a message...":"پیامت را بنویس...";
-}
-function toggleLanguage(){setLanguage(english?"fa":"en");}
+  const messageInput=$("messageText");
+  if(messageInput)messageInput.placeholder=english?"Write a message...":"پیامت را بنویس...";
   $("showActiveChats").textContent=english?"Chats":"گفتگوها";$("showArchivedChats").textContent=english?"Archive":"آرشیو";
   $("attachmentMenuButton").title=english?"Add attachment":"افزودن پیوست";
   $("attachmentPhotoOption").lastElementChild.textContent=english?"Choose photo":"انتخاب عکس";
@@ -1021,6 +1020,7 @@ function toggleLanguage(){setLanguage(english?"fa":"en");}
   applySettingsLanguage();
   if(currentUser){refreshConversationList();refreshSavedContacts();}
 }
+function toggleLanguage(){setLanguage(english?"fa":"en");}
 function renderUser(user,name){
   currentUser=user;currentProfileName=(name||"").trim();
   document.body.dataset.authState="user";

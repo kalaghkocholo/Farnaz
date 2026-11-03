@@ -168,6 +168,7 @@ async function preparePeer(session,role){
   const local=byId("farnazLocalVideo");local.srcObject=media;local.hidden=type!=="video";
   const pc=new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun1.l.google.com:19302"}]});
   call.pc=pc;
+  refreshCallControls();
   media.getTracks().forEach(track=>pc.addTrack(track,media));
   pc.ontrack=event=>{
     if(activeCall!==call)return;

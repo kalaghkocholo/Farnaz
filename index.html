@@ -24,19 +24,9 @@ button{font:inherit;cursor:pointer}
 .app{width:100%;max-width:560px;height:100dvh;min-height:0;margin:auto;overflow-y:auto;padding:calc(10px + env(safe-area-inset-top, 0px)) 13px calc(94px + env(safe-area-inset-bottom))}
 header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17px}
 .page{display:none}.page.active{display:block}
-#authBox{display:none}
 .bottom-nav{display:none}
 #homePage{position:relative}
-#homePage>.welcome-language-switch{position:fixed;top:calc(env(safe-area-inset-top,0px) + 14px);right:max(16px,calc((100vw - 560px)/2 + 16px));z-index:9999;width:42px;height:34px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--muted);font-weight:700}
-.welcome-shell{position:relative;isolation:isolate;overflow:hidden;min-height:min(68dvh,620px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px 22px 25px;border:1px solid var(--border);border-radius:28px;background:radial-gradient(ellipse at 50% 5%,color-mix(in srgb,#7896c5 19%,transparent),transparent 55%),linear-gradient(155deg,var(--panel),var(--bg))}
-.welcome-mark{width:100px;height:100px;display:grid;place-items:center;margin-bottom:22px;border:1px solid color-mix(in srgb,#7896c5 38%,var(--border));border-radius:30px;background:var(--panel2);box-shadow:0 15px 45px #0002}
-.welcome-mark img{width:84px;height:84px;object-fit:contain}
-.welcome-kicker{font-size:10px;letter-spacing:3px;font-weight:800;color:#7896c5;direction:ltr}
-.welcome-shell h2{max-width:290px;font-size:25px;line-height:1.7;margin:13px 0 4px}
-.welcome-shell>p{max-width:280px;margin:0 0 20px;color:var(--muted);font-size:13px}
-.welcome-shell .primary{max-width:300px;min-height:48px;border-radius:15px;background:#7896c5;color:#fff}
-.welcome-secondary{width:100%;max-width:300px;margin-top:9px;padding:12px;border:1px solid var(--border);border-radius:14px;background:transparent;color:var(--white);font-size:13px}
-@media(max-width:360px){.welcome-shell{min-height:62dvh;padding:24px 15px 20px}.welcome-shell h2{font-size:22px}.welcome-mark{width:86px;height:86px;border-radius:25px}.welcome-mark img{width:73px;height:73px}}
+body[data-auth-state="guest"] .app>header{display:none!important}
 </style>
 <link rel="stylesheet" href="./styles.css?v=20261030-96" media="print" onload="this.onload=null;this.media='all'">
 <noscript><link rel="stylesheet" href="./styles.css?v=20261030-96"></noscript>
@@ -50,18 +40,33 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
 </header>
 <div id="connectionBanner" class="connection-banner" role="status" aria-live="polite" hidden></div>
 
-<!-- صفحه شروع -->
+<!-- صفحه ورود و ثبت‌نام -->
 <section class="page active" id="homePage">
-  <button class="welcome-language-switch" id="welcomeLanguageButton" type="button" onclick="toggleLanguage()" aria-label="Change language">EN</button>
-  <div class="welcome-shell">
-    <div class="welcome-mark"><img src="./farnaz-icon.svg?v=20261024-4" alt="Farnaz"></div>
-    <div class="welcome-kicker">FARNAZ · CONNECT</div>
-    <h2 id="headline">آدم‌های مهم زندگی‌ات، همیشه نزدیک تو</h2>
-    <p id="description">گفتگوهای خصوصی و گروهی، در فضایی ساده و آرام.</p>
-    <button class="primary" id="start" type="button" onclick="openLogin()">ورود به فرناز <span aria-hidden="true">←</span></button>
-    <button class="welcome-secondary" type="button" onclick="openSignup()">ساخت حساب جدید</button>
-    <div class="welcome-footnote"><span></span> ارتباطی نزدیک‌تر، در هر کجا</div>
-  </div>
+  <button class="auth-language-switch" id="authLanguageButton" type="button" onclick="toggleLanguage()" aria-label="Switch to English">EN</button>
+  <section id="authBox" aria-label="ورود و ثبت‌نام">
+    <div class="auth-card">
+      <div class="auth-mode-tabs" role="group" aria-label="ورود یا ثبت‌نام">
+        <button type="button" id="authSignupTab" class="auth-mode-tab is-active" aria-pressed="true" onclick="setAuthMode('signup')">ثبت‌نام</button>
+        <button type="button" id="authLoginTab" class="auth-mode-tab" aria-pressed="false" onclick="setAuthMode('login')">ورود</button>
+      </div>
+      <div class="social-auth">
+        <button type="button" id="googleAuth" class="social-auth-button" onclick="signInSocial('google')"><span class="google-mark" aria-hidden="true">G</span><span id="googleAuthLabel">ادامه با Google</span></button>
+      </div>
+      <div class="auth-divider"><span id="authOrLabel">یا با ایمیل</span></div>
+      <form id="authForm">
+        <div id="nameField">
+          <label for="authName" id="authNameLabel">نام نمایشی</label>
+          <input id="authName" type="text" autocomplete="name" required maxlength="60" placeholder="نام شما">
+        </div>
+        <label for="authEmail" id="authEmailLabel">ایمیل</label>
+        <input id="authEmail" type="email" autocomplete="email" required placeholder="you@example.com">
+        <label for="authPassword" id="authPasswordLabel">رمز عبور (حداقل ۸ کاراکتر)</label>
+        <input id="authPassword" type="password" autocomplete="new-password" minlength="8" required placeholder="رمز عبور">
+        <button id="authSubmit" class="auth-submit" type="submit">ثبت‌نام</button>
+      </form>
+      <p id="authStatus" class="status" role="status"></p>
+    </div>
+  </section>
 </section>
 
 <!-- صفحه گفتگوها -->
@@ -336,30 +341,7 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
   </div>
 </nav>
 
-<div id="authBox" role="dialog" aria-modal="true" aria-labelledby="authTitle">
-  <div class="auth-card">
-    <button type="button" class="close-button" onclick="closeAuth()" aria-label="بستن">×</button>
-    <h2 id="authTitle">ثبت‌نام در فرناز</h2>
-    <p id="authMessage">برای ارتباط نزدیک‌تر، حساب خودت را بساز.</p>
-    <div class="social-auth">
-      <button type="button" id="googleAuth" class="social-auth-button" onclick="signInSocial('google')"><span class="google-mark" aria-hidden="true">G</span><span id="googleAuthLabel">ادامه با Google</span></button>
-    </div>
-    <div class="auth-divider"><span id="authOrLabel">یا با ایمیل</span></div>
-    <form id="authForm">
-      <div id="nameField">
-        <label for="authName" id="authNameLabel">نام نمایشی</label>
-        <input id="authName" type="text" autocomplete="name" required maxlength="60" placeholder="نام شما">
-      </div>
-      <label for="authEmail" id="authEmailLabel">ایمیل</label>
-      <input id="authEmail" type="email" autocomplete="email" required placeholder="you@example.com">
-      <label for="authPassword" id="authPasswordLabel">رمز عبور (حداقل ۸ کاراکتر)</label>
-      <input id="authPassword" type="password" autocomplete="new-password" minlength="8" required placeholder="رمز عبور">
-      <button id="authSubmit" class="auth-submit" type="submit">ثبت‌نام</button>
-    </form>
-    <p id="authStatus" class="status" role="status"></p>
-    <button id="authSwitch" class="auth-link" type="button" onclick="switchAuthMode()">قبلاً حساب ساخته‌ام؛ ورود</button>
-  </div>
-</div>
+
 
 <script src="./js/local-store.js?v=20261026-3"></script>
 <script>

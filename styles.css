@@ -259,19 +259,12 @@ input[type=file]{font-size:11px;padding:9px}
 footer{text-align:center;color:#718096;font-size:10px;padding:17px 0 7px}
 .connection-banner{margin:0 0 12px;padding:10px 12px;border:1px solid #8b6b32;border-radius:12px;background:#332b1b;color:#ffe2a8;font-size:12px;line-height:1.6}
 .connection-banner[hidden]{display:none!important}
-#authBox{
-  display:none;position:fixed;inset:0;background:#101828ee;
-  z-index:9999;align-items:center;justify-content:center;
-  padding:12px;overflow-y:auto
-}
-.auth-card{
-  background:#182437;padding:18px;border:1px solid #35445a;
-  border-radius:16px;width:100%;max-width:370px;margin:auto
-}
-.auth-card h2{font-size:18px}
-.close-button{float:left;background:none;color:white;border:0;font-size:24px}
+#authBox{display:block;position:static;inset:auto;width:100%;margin:0;padding:0;background:transparent;z-index:auto;overflow:visible}
+.auth-card{background:transparent;padding:0;border:0;border-radius:0;width:100%;max-width:420px;margin:0 auto}
+.auth-mode-tabs{display:flex;flex-direction:row;gap:8px;width:100%;margin:48px 0 18px}
+.auth-mode-tab{flex:1;min-width:0;min-height:44px;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:var(--panel);color:var(--muted);font-size:14px;font-weight:700}
+.auth-mode-tab.is-active{background:var(--accent,var(--mint));border-color:var(--accent,var(--mint));color:var(--accent-ink,#101828)}
 .auth-submit{width:100%;margin-top:14px}
-.auth-link{background:none;color:var(--mint);border:0;padding:12px 0;font-size:12px}
 .social-auth{display:grid;gap:9px;margin:14px 0 12px}
 .social-auth-button{width:100%;min-height:44px;border:1px solid #8490a0;border-radius:999px;background:#fff;color:#222;display:flex;align-items:center;justify-content:center;gap:10px;font-size:14px;font-weight:600;padding:10px 14px}
 .social-auth-button:disabled{opacity:.65}
@@ -1157,8 +1150,8 @@ input,textarea,select,#messageSearchQuery,#messageSearchKind,#messageSearchFrom,
 .message-reaction-chip.mine{border-color:var(--accent)!important;background:color-mix(in srgb,var(--accent) 18%,var(--panel2))!important}
 .message-pinned-banner{border-color:var(--border)!important}
 .secondary-button{border-color:var(--border)!important;color:var(--white)!important}
-.auth-card{background:var(--panel)!important;color:var(--white)!important;border-color:var(--border)!important}
-#authBox{background:color-mix(in srgb,var(--bg) 88%,transparent)!important}
+.auth-card{background:transparent!important;color:var(--white)!important;border-color:transparent!important}
+#authBox{background:transparent!important}
 body[data-theme="light"] .hero,body[data-theme="light"] .panel,body[data-theme="light"] .feature,
 body[data-theme="light"] .settings-card,body[data-theme="light"] .list-item,
 body[data-theme="light"] body[data-theme="light"] .contact-search-popover,
@@ -1227,18 +1220,6 @@ body[data-auth-state="guest"] #openSettingsButton{display:none!important;visibil
 .phone-contact-account-choice{width:auto;min-width:0;max-width:100%;padding:7px 10px;white-space:normal;text-align:start}
 
 
-/* Farnaz conversation-first home refresh */
-.welcome-shell{position:relative;isolation:isolate;overflow:hidden;min-height:min(68dvh,620px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px 22px 25px;border:1px solid var(--border);border-radius:28px;background:radial-gradient(ellipse at 50% 5%,color-mix(in srgb,var(--accent,#7896c5) 19%,transparent),transparent 55%),linear-gradient(155deg,var(--panel),var(--bg))}
-.welcome-shell:before{content:"";position:absolute;z-index:-1;width:230px;height:230px;border:1px solid color-mix(in srgb,var(--accent,#7896c5) 18%,transparent);border-radius:50%;top:-115px;inset-inline-start:-90px}
-.welcome-mark{width:100px;height:100px;display:grid;place-items:center;margin-bottom:22px;border:1px solid color-mix(in srgb,var(--accent,#7896c5) 38%,var(--border));border-radius:30px;background:var(--panel2);box-shadow:0 15px 45px #0002}
-.welcome-mark img{width:84px;height:84px;object-fit:contain}
-.welcome-kicker{font-size:10px;letter-spacing:3px;font-weight:800;color:var(--accent,#7896c5);direction:ltr}
-.welcome-shell h2{max-width:290px;font-size:25px;line-height:1.7;margin:13px 0 4px}
-.welcome-shell>p{max-width:280px;margin:0 0 20px;color:var(--muted);font-size:13px}
-.welcome-shell .primary{max-width:300px;min-height:48px;border-radius:15px;background:var(--accent,#7896c5);color:#fff}
-.welcome-secondary{width:100%;max-width:300px;margin-top:9px;padding:12px;border:1px solid var(--border);border-radius:14px;background:transparent;color:var(--white);font-size:13px;font-weight:650}
-.welcome-footnote{display:flex;align-items:center;gap:8px;margin-top:28px;color:var(--muted);font-size:10px}
-.welcome-footnote span{width:6px;height:6px;border-radius:50%;background:var(--accent,#7896c5);box-shadow:0 0 12px var(--accent,#7896c5)}
 .chats-topline{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px;padding:4px 2px 12px;border-bottom:1px solid color-mix(in srgb,var(--border) 82%,transparent)}
 .chats-topline .chats-new-button{margin-inline-start:auto;flex:0 0 42px}
 .chats-topline .page-heading{margin:0;min-width:0;flex:1}
@@ -1261,8 +1242,6 @@ body[data-auth-state="guest"] #openSettingsButton{display:none!important;visibil
 #conversationList .list-name{font-size:13px}
 #conversationList .list-preview{font-size:11px;max-width:100%}
 #conversationList .list-time{white-space:nowrap}
-body[data-theme="light"] .welcome-shell{background:radial-gradient(ellipse at 50% 5%,color-mix(in srgb,var(--accent,#7896c5) 13%,transparent),transparent 55%),linear-gradient(155deg,#fff,#f3f6fb)}
-@media(max-width:360px){.welcome-shell{min-height:62dvh;padding:24px 15px 20px}.welcome-shell h2{font-size:22px}.welcome-mark{width:86px;height:86px;border-radius:25px}.welcome-mark img{width:73px;height:73px}}
 
 /* Header F mark is a compact, accessible button. */
 .logo-button{border:0;padding:0;cursor:pointer;font-family:inherit;line-height:1}
@@ -1273,20 +1252,19 @@ body[data-theme="light"] .welcome-shell{background:radial-gradient(ellipse at 50
 .app>header .brand-stack{display:flex!important;flex-direction:row!important;align-items:center!important;gap:0!important}
 .app>header .logo.logo-button{display:grid!important;place-items:center!important;width:40px!important;height:40px!important;min-width:40px!important;border-radius:13px!important;font-size:23px!important;font-weight:800!important}
 
-/* Keep the global F mark on app pages, but hide it behind the login/signup dialog. */
-.app.auth-open>header,.app.auth-open>header .logo-button{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important}
-
+/* Keep the app header hidden until authentication succeeds. */
+body[data-auth-state="guest"] .app>header{display:none!important;visibility:hidden!important;pointer-events:none!important}
 #headerFButton[hidden]{display:none!important}
 
 
-/* Single welcome language toggle: aligned to the app column and blended into the page. */
-#homePage > #welcomeLanguageButton{
+/* Language control stays at the upper-left edge of the single auth screen. */
+#homePage > #authLanguageButton{
   position:fixed!important;
   top:calc(env(safe-area-inset-top, 0px) + 14px)!important;
-  right:max(16px,calc((100vw - 560px)/2 + 16px))!important;
-  left:auto!important;
+  left:max(16px,calc((100vw - 560px)/2 + 16px))!important;
+  right:auto!important;
   inset-inline-start:auto!important;
-  inset-inline-end:max(16px,calc((100vw - 560px)/2 + 16px))!important;
+  inset-inline-end:auto!important;
   transform:none!important;
   z-index:9999!important;
   box-sizing:border-box!important;
@@ -1308,8 +1286,7 @@ body[data-theme="light"] .welcome-shell{background:radial-gradient(ellipse at 50
   line-height:1!important;
   box-shadow:none!important;
 }
-#homePage:not(.active) > #welcomeLanguageButton{display:none!important}
-#homePage .welcome-shell .welcome-language-switch{display:none!important}
+#homePage:not(.active) > #authLanguageButton{display:none!important}
 
 
 /* Canonical contact-import layout, saved-contact sizing, and header placement. */

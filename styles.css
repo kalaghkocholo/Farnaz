@@ -1238,9 +1238,9 @@ body[data-auth-state="guest"] #openSettingsButton{display:none!important;visibil
 
 
 /* Farnaz conversation-first home refresh */
-.welcome-shell{position:relative;isolation:isolate;overflow:hidden;min-height:min(68dvh,620px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px 22px 25px;border:1px solid var(--border);border-radius:28px;background:radial-gradient(ellipse at 50% 5%,color-mix(in srgb,var(--accent,#7896c5) 19%,transparent),transparent 55%),linear-gradient(155deg,var(--panel),var(--bg))}
+.welcome-shell{position:relative;min-height:min(68dvh,620px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28px 20px 22px;border:0;border-radius:0;background:transparent}
 .welcome-shell:before{content:"";position:absolute;z-index:-1;width:230px;height:230px;border:1px solid color-mix(in srgb,var(--accent,#7896c5) 18%,transparent);border-radius:50%;top:-115px;inset-inline-start:-90px}
-.welcome-mark{width:100px;height:100px;display:grid;place-items:center;margin-bottom:22px;border:1px solid color-mix(in srgb,var(--accent,#7896c5) 38%,var(--border));border-radius:30px;background:var(--panel2);box-shadow:0 15px 45px #0002}
+.welcome-mark{width:82px;height:82px;display:grid;place-items:center;margin-bottom:16px;border:0;border-radius:0;background:transparent;box-shadow:none}
 .welcome-mark img{width:84px;height:84px;object-fit:contain}
 .welcome-kicker{font-size:10px;letter-spacing:3px;font-weight:800;color:var(--accent,#7896c5);direction:ltr}
 .welcome-shell h2{max-width:290px;font-size:25px;line-height:1.7;margin:13px 0 4px}

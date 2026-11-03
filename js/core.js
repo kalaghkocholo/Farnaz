@@ -912,24 +912,28 @@ function updateAuthTexts(){
   $("googleAuthLabel").textContent=v?"Continue with Google":"ادامه با Google";
   $("authOrLabel").textContent=v?"or continue with email":"یا با ایمیل";
 }
-/* Keep exactly one language control on the single authentication screen. */
-function normalizeAuthLanguageButton(){
+/* Keep both explicit language choices on the single authentication screen. */
+function normalizeAuthLanguageButtons(){
   const home=document.getElementById("homePage");
   if(!home)return;
-  const buttons=Array.from(document.querySelectorAll(".auth-language-switch, #authLanguageButton"));
-  const keep=home.querySelector(":scope > #authLanguageButton")||home.querySelector(".auth-language-switch");
-  if(!keep)return;
-  buttons.forEach(button=>{if(button!==keep)button.remove();});
-  keep.id="authLanguageButton";
-  keep.classList.add("auth-language-switch");
-  if(keep.parentElement!==home)home.prepend(keep);
+  ["authLanguageEnButton","authLanguageFaButton"].forEach(id=>{
+    const button=document.getElementById(id);
+    if(button&&button.parentElement!==home)home.append(button);
+  });
+  updateAuthLanguageButtons();
 }
-document.addEventListener("DOMContentLoaded",normalizeAuthLanguageButton);
-window.addEventListener("pageshow",normalizeAuthLanguageButton);
-setTimeout(normalizeAuthLanguageButton,0);
+document.addEventListener("DOMContentLoaded",normalizeAuthLanguageButtons);
+window.addEventListener("pageshow",normalizeAuthLanguageButtons);
+setTimeout(normalizeAuthLanguageButtons,0);
 
-function toggleLanguage(){
-  english=!english;
+function updateAuthLanguageButtons(){
+  const en=$("authLanguageEnButton"),fa=$("authLanguageFaButton");
+  if(en){en.setAttribute("aria-pressed",String(english));en.classList.toggle("is-selected",english);}
+  if(fa){fa.setAttribute("aria-pressed",String(!english));fa.classList.toggle("is-selected",!english);}
+}
+function setLanguage(language){
+  english=language==="en";
+
   document.documentElement.lang=english?"en":"fa";
   document.documentElement.dir=english?"ltr":"rtl";
   const labels={
@@ -973,7 +977,7 @@ function toggleLanguage(){
   };
   Object.entries(labels).forEach(([id,pair])=>{if($(id))$(id).textContent=pair[english?1:0];});
   if($("language"))$("language").textContent=english?"فا":"EN";
-  if($("authLanguageButton")){$("authLanguageButton").textContent=english?"فا":"EN";$("authLanguageButton").setAttribute("aria-label",english?"Switch to Persian":"Switch to English");}
+  updateAuthLanguageButtons();
   if($("contactsImportToggle"))$("contactsImportToggle").textContent=$("phoneContactsImport")&&!$("phoneContactsImport").hidden?"×":"＋";
   
   ["profilePhoneCountry"].forEach(id=>{
@@ -983,6 +987,8 @@ function toggleLanguage(){
   });
   // The old welcome-screen footer was removed from the single-page auth layout.
   $("messageText").placeholder=english?"Write a message...":"پیامت را بنویس...";
+}
+function toggleLanguage(){setLanguage(english?"fa":"en");}
   $("showActiveChats").textContent=english?"Chats":"گفتگوها";$("showArchivedChats").textContent=english?"Archive":"آرشیو";
   $("attachmentMenuButton").title=english?"Add attachment":"افزودن پیوست";
   $("attachmentPhotoOption").lastElementChild.textContent=english?"Choose photo":"انتخاب عکس";

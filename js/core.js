@@ -928,8 +928,18 @@ setTimeout(normalizeAuthLanguageButtons,0);
 
 function updateAuthLanguageButtons(){
   const en=$("authLanguageEnButton"),fa=$("authLanguageFaButton");
-  if(en){en.setAttribute("aria-pressed",String(english));en.classList.toggle("is-selected",english);}
-  if(fa){fa.setAttribute("aria-pressed",String(!english));fa.classList.toggle("is-selected",!english);}
+  if(en){
+    en.classList.toggle("is-current-language",english);
+    en.removeAttribute("aria-pressed");
+    en.setAttribute("aria-label","Switch to English");
+    en.title="English";
+  }
+  if(fa){
+    fa.classList.toggle("is-current-language",!english);
+    fa.removeAttribute("aria-pressed");
+    fa.setAttribute("aria-label","تغییر زبان به فارسی");
+    fa.title="فارسی";
+  }
 }
 function setLanguage(language){
   english=language==="en";

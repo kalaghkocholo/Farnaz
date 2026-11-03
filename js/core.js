@@ -981,7 +981,7 @@ function toggleLanguage(){
     const names=english?["Iran","Germany","United States / Canada","United Kingdom","Turkey"]:["ایران","آلمان","آمریکا / کانادا","بریتانیا","ترکیه"];
     Array.from(select.options).forEach((option,i)=>{option.textContent=names[i]+" (+"+option.value+")";});
   });
-  $("footerText").textContent="Farnaz · Closer, wherever you are.";
+  // The old welcome-screen footer was removed from the single-page auth layout.
   $("messageText").placeholder=english?"Write a message...":"پیامت را بنویس...";
   $("showActiveChats").textContent=english?"Chats":"گفتگوها";$("showArchivedChats").textContent=english?"Archive":"آرشیو";
   $("attachmentMenuButton").title=english?"Add attachment":"افزودن پیوست";

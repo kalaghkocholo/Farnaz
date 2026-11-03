@@ -957,6 +957,11 @@ body.chat-mode .app.chat-mode #chatPage #sendMessageForm {
 .farnaz-call-media{display:grid;grid-template-columns:1fr;gap:8px}
 .farnaz-call-media video{width:100%;max-height:38dvh;object-fit:cover;background:#050912;border-radius:16px}
 .farnaz-call-media audio{width:100%}
+.farnaz-call-controls{display:flex;gap:8px;justify-content:center;align-items:stretch;flex-wrap:wrap;margin-top:12px}
+.farnaz-call-controls[hidden]{display:none!important}
+.farnaz-call-controls button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-width:76px;min-height:64px;padding:9px 11px;border:1px solid var(--border,#2b3a50);border-radius:14px;background:var(--panel2,#1d2b42);color:inherit;font:inherit;font-size:12px;font-weight:650}
+.farnaz-call-controls button[aria-pressed="true"]{border-color:var(--mint,#3dd6b0);background:rgba(61,214,176,.14);color:var(--mint,#3dd6b0)}
+.farnaz-call-control-icon{font-size:19px;line-height:1.1}
 .farnaz-call-actions{display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap}
 .farnaz-call-actions button{border:0;border-radius:13px;padding:12px 18px;font:inherit;font-weight:700}
 .farnaz-call-accept{background:#20a66a;color:white}

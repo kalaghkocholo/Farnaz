@@ -843,14 +843,12 @@ function openLogin(){authMode="login";openAuth();}
 function openAuth(){
   const signup=authMode==="signup";
   $("nameField").style.display=signup?"block":"none";
-  $("authPhoneField").hidden=true;
   $("authName").required=signup;
-  $("authPhone").required=false;
   $("authPassword").autocomplete=signup?"new-password":"current-password";
   document.querySelector(".app")?.classList.add("auth-open");
   if($("headerFButton"))$("headerFButton").hidden=true;
   $("authBox").style.display="flex";setStatus("authStatus","");
-  $("authName").value="";$("authPhone").value="";$("authEmail").value="";$("authPassword").value="";
+  $("authName").value="";$("authEmail").value="";$("authPassword").value="";
   updateAuthTexts();
 }
 function closeAuth(){$("authBox").style.display="none";document.querySelector(".app")?.classList.remove("auth-open");}
@@ -881,7 +879,6 @@ function setAuthMode(mode){
   authMode=mode;
   const signup=authMode==="signup";
   $("nameField").style.display=signup?"block":"none";
-  $("authPhoneField").hidden=!signup;
   $("authName").required=signup;
   $("authPhone").required=false;
   $("authPassword").autocomplete=signup?"new-password":"current-password";
@@ -895,8 +892,6 @@ function updateAuthTexts(){
   $("authSubmit").textContent=authMode==="signup"?(v?"Sign up":"ثبت‌نام"):(v?"Sign in":"ورود");
   $("authSwitch").textContent=authMode==="signup"?(v?"Your phone helps friends find you on Farnaz.":"شماره موبایل برای پیدا کردن شما در فرناز استفاده می‌شود."):(v?"Use your email and password to continue.":"با ایمیل و رمز عبورت وارد فرناز شو.");
   $("authNameLabel").textContent=v?"Display name":"نام نمایشی";
-  $("authPhoneLabel").textContent=v?"Mobile number":"شماره موبایل";
-  $("authPhoneHint").textContent=v?"Used to match your phone contacts on Farnaz.":"برای تطبیق دفترچه تلفن و پیدا کردن مخاطبان عضو فرناز استفاده می‌شود.";
   $("authLoginTab").textContent=v?"Sign in":"ورود";
   $("authSignupTab").textContent=v?"Create account":"ثبت‌نام";
   $("authLoginTab").classList.toggle("is-active",authMode==="login");

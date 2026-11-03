@@ -1123,6 +1123,8 @@ function showGuest(){
   $("unmatchedPhoneContactsList").replaceChildren();setStatus("unmatchedPhoneContactsStatus","");
   $("messageList").replaceChildren();
   document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id==="homePage"));
+  $("authBox").style.display="block";
+  setAuthMode("signup");
 }
 
 

@@ -1293,6 +1293,8 @@ body[data-auth-state="guest"] .app>header{display:none!important;visibility:hidd
   border-color:var(--mint)!important;
   color:var(--mint)!important;
 }
+/* Show only the control for switching away from the current language. */
+#homePage > .auth-language-switch.is-current-language{display:none!important}
 #homePage:not(.active) > .auth-language-switch{display:none!important}
 
 

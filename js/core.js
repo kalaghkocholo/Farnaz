@@ -860,7 +860,7 @@ async function signInSocial(provider="google"){
     const client=getClient();
     const {error}=await client.auth.signInWithOAuth({
       provider,
-      options:{redirectTo:"https://kalaghkocholo.github.io/Farnaz/"}
+      options:{redirectTo:window.location.origin+window.location.pathname}
     });
     if(error)throw error;
   }catch(e){
@@ -2547,7 +2547,7 @@ async function refreshConversationList(){
           result=await client.auth.signUp({
             email,password,
             options:{
-              emailRedirectTo:"https://kalaghkocholo.github.io/Farnaz/",
+              emailRedirectTo:window.location.origin+window.location.pathname,
               data:{display_name:name}
             }
           });

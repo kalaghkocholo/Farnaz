@@ -12,19 +12,113 @@ function ensureDialog(){
   dialog.id="farnazCallDialog";dialog.className="farnaz-call-dialog";dialog.hidden=true;
   dialog.setAttribute("role","dialog");dialog.setAttribute("aria-modal","true");
   dialog.setAttribute("aria-labelledby","farnazCallTitle");
-  dialog.innerHTML='<div class="farnaz-call-card"><div class="farnaz-call-top"><strong id="farnazCallTitle">تماس فرناز</strong><button type="button" id="farnazCallClose" aria-label="بستن پنجره تماس">×</button></div><p id="farnazCallStatus" role="status" aria-live="polite"></p><div class="farnaz-call-media"><video id="farnazLocalVideo" autoplay muted playsinline hidden></video><video id="farnazRemoteVideo" autoplay playsinline hidden></video><audio id="farnazRemoteAudio" autoplay playsinline></audio></div><div class="farnaz-call-actions"><button type="button" id="farnazCallAccept" class="farnaz-call-accept" hidden>پاسخ</button><button type="button" id="farnazCallReject" class="farnaz-call-reject" hidden>رد تماس</button><button type="button" id="farnazCallHangup" class="farnaz-call-reject" hidden>پایان تماس</button></div></div>';
+  dialog.innerHTML='<div class="farnaz-call-card"><div class="farnaz-call-top"><strong id="farnazCallTitle">تماس فرناز</strong><button type="button" id="farnazCallClose" aria-label="بستن پنجره تماس">×</button></div><p id="farnazCallStatus" role="status" aria-live="polite"></p><div class="farnaz-call-media"><video id="farnazLocalVideo" autoplay muted playsinline hidden></video><video id="farnazRemoteVideo" autoplay playsinline hidden></video><audio id="farnazRemoteAudio" autoplay playsinline></audio></div><div class="farnaz-call-controls" id="farnazCallControls" hidden><button type="button" id="farnazCallSpeaker" aria-pressed="false" title="بلندگو"><span class="farnaz-call-control-icon">🔊</span><span id="farnazCallSpeakerLabel">بلندگو</span></button><button type="button" id="farnazCallMic" aria-pressed="true" title="میکروفون"><span class="farnaz-call-control-icon">🎙</span><span id="farnazCallMicLabel">میکروفون روشن</span></button><button type="button" id="farnazCallCamera" aria-pressed="true" title="دوربین" hidden><span class="farnaz-call-control-icon">📷</span><span id="farnazCallCameraLabel">دوربین روشن</span></button><button type="button" id="farnazCallSwitchCamera" title="تعویض دوربین" hidden><span class="farnaz-call-control-icon">🔄</span><span>تعویض دوربین</span></button></div><div class="farnaz-call-actions"><button type="button" id="farnazCallAccept" class="farnaz-call-accept" hidden>پاسخ</button><button type="button" id="farnazCallReject" class="farnaz-call-reject" hidden>رد تماس</button><button type="button" id="farnazCallHangup" class="farnaz-call-reject" hidden>پایان تماس</button></div></div>';
   document.body.appendChild(dialog);
   byId("farnazCallClose").onclick=()=>{if(activeCall)endCall(true);else dialog.hidden=true;};
   byId("farnazCallAccept").onclick=acceptIncoming;
   byId("farnazCallReject").onclick=rejectIncoming;
   byId("farnazCallHangup").onclick=()=>endCall(true);
+  byId("farnazCallSpeaker").onclick=toggleSpeaker;
+  byId("farnazCallMic").onclick=toggleMicrophone;
+  byId("farnazCallCamera").onclick=toggleCamera;
+  byId("farnazCallSwitchCamera").onclick=switchCamera;
   return dialog;
 }
 function setCallStatus(text){const p=byId("farnazCallStatus");if(p)p.textContent=text;}
+function refreshCallControls(){
+  const call=activeCall,controls=byId("farnazCallControls");
+  if(!controls)return;
+  const ready=!!(call&&call.localStream&&call.pc);
+  controls.hidden=!ready;
+  if(!ready)return;
+  const video=call.session.call_type==="video";
+  byId("farnazCallCamera").hidden=!video;
+  byId("farnazCallSwitchCamera").hidden=!video;
+  const micEnabled=(call.localStream.getAudioTracks()[0]?.enabled)!==false;
+  const cameraEnabled=(call.localStream.getVideoTracks()[0]?.enabled)!==false;
+  byId("farnazCallMic").setAttribute("aria-pressed",String(micEnabled));
+  byId("farnazCallMicLabel").textContent=tr(micEnabled?"میکروفون روشن":"میکروفون خاموش",micEnabled?"Microphone on":"Microphone off");
+  byId("farnazCallCamera").setAttribute("aria-pressed",String(cameraEnabled));
+  byId("farnazCallCameraLabel").textContent=tr(cameraEnabled?"دوربین روشن":"دوربین خاموش",cameraEnabled?"Camera on":"Camera off");
+  byId("farnazCallSpeaker").setAttribute("aria-pressed",String(!!call.speakerDeviceId));
+  byId("farnazCallSpeakerLabel").textContent=call.speakerDeviceId?tr("بلندگو فعال","Speaker on"):tr("بلندگو / خروجی صدا","Speaker / audio output");
+}
+async function toggleSpeaker(){
+  const call=activeCall,audio=byId("farnazRemoteAudio");
+  if(!call||!audio)return;
+  if(typeof audio.setSinkId!=="function"){
+    setCallStatus(tr("این مرورگر تغییر مستقیم خروجی صدا را پشتیبانی نمی‌کند؛ مسیر صدا را از تنظیمات دستگاه انتخاب کن.","This browser cannot switch audio output directly. Choose the audio route in your device settings."));
+    return;
+  }
+  try{
+    const devices=await navigator.mediaDevices.enumerateDevices();
+    if(activeCall!==call)return;
+    const outputs=devices.filter(d=>d.kind==="audiooutput");
+    const current=call.speakerDeviceId||audio.sinkId||"";
+    const preferred=outputs.find(d=>/speaker|loudspeaker|haut-parleur|lautsprecher|بلندگو/i.test(d.label||""));
+    const alternate=outputs.find(d=>d.deviceId!==current&&d.deviceId!=="default");
+    let target=null;
+    if(call.speakerDeviceId){
+      target=outputs.find(d=>/receiver|earpiece|hörer|écouteur|گوشی/i.test(d.label||""))||outputs.find(d=>d.deviceId==="default");
+    }else{
+      target=preferred&&preferred.deviceId!==current?preferred:alternate;
+    }
+    if(!target){
+      setCallStatus(tr("دستگاه خروجی جداگانه‌ای در این مرورگر شناسایی نشد. اگر هندزفری متصل است، آن را از تنظیمات صوتی دستگاه انتخاب کن.","No separate audio output was exposed by this browser. If a headset is connected, select it in your device audio settings."));
+      return;
+    }
+    await audio.setSinkId(target.deviceId);
+    if(activeCall!==call)return;
+    call.speakerDeviceId=target.deviceId;
+    refreshCallControls();
+    setCallStatus(tr("مسیر خروجی صدا تغییر کرد.","Audio output changed."));
+  }catch(error){
+    console.warn("Speaker output switch:",error);
+    setCallStatus(tr("تغییر خروجی صدا انجام نشد؛ از مسیر صوتی دستگاه استفاده کن.","Could not change audio output. Use your device audio controls."));
+  }
+}
+function toggleMicrophone(){
+  const call=activeCall,track=call?.localStream?.getAudioTracks()[0];
+  if(!track)return;
+  track.enabled=!track.enabled;
+  refreshCallControls();
+}
+function toggleCamera(){
+  const call=activeCall,track=call?.localStream?.getVideoTracks()[0];
+  if(!track)return;
+  track.enabled=!track.enabled;
+  refreshCallControls();
+}
+async function switchCamera(){
+  const call=activeCall;
+  if(!call?.pc||!call.localStream)return;
+  const oldTrack=call.localStream.getVideoTracks()[0];
+  if(!oldTrack)return;
+  try{
+    const devices=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==="videoinput");
+    const currentId=oldTrack.getSettings().deviceId;
+    const next=devices.find(d=>d.deviceId!==currentId);
+    if(!next){setCallStatus(tr("دوربین دیگری پیدا نشد.","No alternate camera was found."));return;}
+    const stream=await navigator.mediaDevices.getUserMedia({video:{deviceId:{exact:next.deviceId}},audio:false});
+    if(activeCall!==call){stream.getTracks().forEach(t=>t.stop());return;}
+    const newTrack=stream.getVideoTracks()[0];
+    const sender=call.pc.getSenders().find(s=>s.track?.kind==="video");
+    if(!sender||!newTrack){stream.getTracks().forEach(t=>t.stop());throw new Error("Camera track could not be replaced.");}
+    await sender.replaceTrack(newTrack);
+    call.localStream.removeTrack(oldTrack);call.localStream.addTrack(newTrack);
+    oldTrack.stop();
+    const local=byId("farnazLocalVideo");local.srcObject=call.localStream;
+    refreshCallControls();
+  }catch(error){
+    console.warn("Switch camera:",error);
+    setCallStatus(tr("تعویض دوربین انجام نشد.","Could not switch camera."));
+  }
+}
 function showDialog(title,status){
   const d=ensureDialog();byId("farnazCallTitle").textContent=title;setCallStatus(status);d.hidden=false;
   byId("farnazCallAccept").hidden=true;byId("farnazCallReject").hidden=true;byId("farnazCallHangup").hidden=true;
   byId("farnazLocalVideo").hidden=true;byId("farnazRemoteVideo").hidden=true;
+  byId("farnazCallControls").hidden=true;
 }
 async function notifyBackground(title,body,tag){
   if(!("Notification" in window)||Notification.permission!=="granted")return;
@@ -62,12 +156,15 @@ async function preparePeer(session,role){
   const call=activeCall;
   if(!call||String(call.session?.id)!==String(session.id))throw new Error("Call is no longer active.");
   const type=session.call_type==="video"?"video":"audio";
+  try{if(navigator.audioSession)navigator.audioSession.type="play-and-record";}catch(error){console.warn("Audio session mode:",error);}
   const media=await navigator.mediaDevices.getUserMedia({audio:true,video:type==="video"});
   // The permission prompt can remain open after the caller cancels or signs out.
   // Never attach a late media stream to a different call, and always release it.
   if(activeCall!==call){media.getTracks().forEach(track=>track.stop());throw new Error("Call was cancelled before media became ready.");}
   call.localStream=media;
+  call.speakerDeviceId=null;
   call.pendingCandidates=call.pendingCandidates||[];
+  refreshCallControls();
   const local=byId("farnazLocalVideo");local.srcObject=media;local.hidden=type!=="video";
   const pc=new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun1.l.google.com:19302"}]});
   call.pc=pc;
@@ -196,6 +293,8 @@ async function cleanupCall(updateStatus){
     if(call.localStream)call.localStream.getTracks().forEach(track=>{try{track.stop();}catch(_){}});
   }
   ["farnazLocalVideo","farnazRemoteVideo","farnazRemoteAudio"].forEach(id=>{const el=byId(id);if(el){el.pause?.();el.srcObject=null;el.hidden=true;}});
+  const controls=byId("farnazCallControls");if(controls)controls.hidden=true;
+  try{if(navigator.audioSession)navigator.audioSession.type="auto";}catch(error){console.warn("Audio session reset:",error);}
   if(!call)return;
   // Realtime removal and status persistence are best-effort. They may continue
   // in the background, but neither is allowed to delay local call teardown.

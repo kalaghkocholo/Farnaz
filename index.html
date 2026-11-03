@@ -50,19 +50,6 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
 </header>
 <div id="connectionBanner" class="connection-banner" role="status" aria-live="polite" hidden></div>
 
-<!-- صفحه شروع -->
-<section class="page active" id="homePage">
-  <button class="welcome-language-switch" id="welcomeLanguageButton" type="button" onclick="toggleLanguage()" aria-label="Change language">EN</button>
-  <div class="welcome-shell">
-    <div class="welcome-mark"><img src="./farnaz-icon.svg?v=20261024-4" alt="Farnaz"></div>
-    <div class="welcome-kicker">FARNAZ · CONNECT</div>
-    <h2 id="headline">آدم‌های مهم زندگی‌ات، همیشه نزدیک تو</h2>
-    <p id="description">گفتگوهای خصوصی و گروهی، در فضایی ساده و آرام.</p>
-    <button class="primary" id="start" type="button" onclick="openLogin()">ورود / ثبت‌نام <span aria-hidden="true">←</span></button>
-    <div class="welcome-footnote"><span></span> ارتباطی نزدیک‌تر، در هر کجا</div>
-  </div>
-</section>
-
 <!-- صفحه گفتگوها -->
 <section class="page" id="chatsPage">
   <div class="chats-topline"><div class="page-heading"><h2 id="chatsHeading">گفتگوها</h2><p id="chatsIntro">گفتگوهای اخیرت را اینجا می‌بینی.</p></div><button class="chats-new-button" type="button" onclick="startNewChat()" aria-label="گفتگوی جدید" title="گفتگوی جدید"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></div>

@@ -25,7 +25,7 @@ body.chat-mode .app.chat-mode>#chatPage #replyPreview{flex:0 0 auto!important}
 body.chat-mode .app.chat-mode>#chatPage #messageList{
  position:relative!important;z-index:1!important;display:flex!important;flex:1 1 0!important;
  min-height:0!important;height:auto!important;max-height:none!important;overflow-x:hidden!important;overflow-y:auto!important;
- padding-bottom:112px!important;overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important;margin:0!important
+ padding-bottom:112px!important;padding:14px 2px 112px!important;gap:8px!important;overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important;margin:0!important
 }
 /* Absolute anchoring prevents iOS Home Screen focus auto-scrolling the composer
    into the middle of the chat when the on-screen keyboard appears. */
@@ -58,7 +58,7 @@ body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceDescription,
 body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceActions{flex:0 0 auto!important}
 body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceMessages{
  position:relative!important;z-index:1!important;display:flex!important;flex:1 1 0!important;min-height:0!important;
- height:auto!important;max-height:none!important;overflow-x:hidden!important;overflow-y:auto!important;padding-bottom:112px!important;
+ height:auto!important;max-height:none!important;overflow-x:hidden!important;overflow-y:auto!important;padding:14px 2px 112px!important;gap:8px!important;
  overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important;margin:0!important
 }
 body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceComposer{

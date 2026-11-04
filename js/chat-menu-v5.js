@@ -272,7 +272,7 @@ async function makeMessageElement(m,myId,fromCache=false){
   item.addEventListener("touchend",event=>{
     if(!event.changedTouches.length||interactiveTarget(event.target))return;
     const dx=event.changedTouches[0].clientX-swipeStartX,dy=event.changedTouches[0].clientY-swipeStartY;
-    if(dx>58&&Math.abs(dy)<48){event.preventDefault();setReplyTarget(m);}
+    if(dx>58&&Math.abs(dy)<48){event.preventDefault();event.stopPropagation();setReplyTarget(m);}
   });
   item.addEventListener("contextmenu",e=>{
     e.preventDefault();e.stopPropagation();

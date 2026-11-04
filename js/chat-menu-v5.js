@@ -812,8 +812,8 @@ async function sendMessage(event){
         const ext=(safeName.split(".").pop()||"bin").toLowerCase().replace(/[^a-z0-9]/g,"")||"bin";
         pendingSend.attachmentPath=pendingSend.attachmentPath||senderId+"/"+pendingSend.id+"."+ext;
         attachmentPath=pendingSend.attachmentPath;pendingUploadPath=attachmentPath;
-        const {error:uploadError}=await client.storage.from("chat-attachments").upload(attachmentPath,file,{contentType:file.type||"application/octet-stream",upsert:true});
-        if(uploadError)throw uploadError;
+        const {error:uploadError}=await client.storage.from("chat-attachments").upload(attachmentPath,file,{contentType:file.type||"application/octet-stream",upsert:false});
+        if(uploadError){const conflict=String(uploadError.statusCode||uploadError.status||"")==="409"||/already exists|duplicate/i.test(String(uploadError.message||""));if(!conflict)throw uploadError;}
         if(String(currentUser?.id||"")!==senderId)throw new Error("Account changed while uploading; sign in again before sending.");
         attachmentName=safeName;attachmentMime=file.type||"application/octet-stream";attachmentSize=file.size;
       }
@@ -854,9 +854,10 @@ async function sendMessage(event){
     }
     await refreshConversationList();
   }catch(e){
-    if(String(currentUser?.id||"")!==senderId){if(pendingUploadPath)try{await getClient().storage.from("chat-attachments").remove([pendingUploadPath]);}catch(cleanupError){console.warn("Could not clean up abandoned attachment:",cleanupError);}return;}
+    // The insert may have committed even if its response was lost. Never delete a stable retry path here.
+    if(String(currentUser?.id||"")!==senderId)return;
     console.error("Send message:",e);
-    if(String(currentChatUser?.user_id||"")===receiverId)setStatus("sendMessageStatus",(english?"Could not send: ":"ارسال پیام ناموفق بود: ")+e.message,true);
+    if(String(currentChatUser?.user_id||"")===receiverId)setStatus("sendMessageStatus",(english?"Could not send; your text and attachment are preserved. Tap Send to retry: ":"ارسال ناموفق بود؛ متن و پیوستت حفظ شده است. برای تلاش دوباره دکمه ارسال را بزن: ")+e.message,true);
   }finally{button.disabled=false;if(restoreComposerFocus&&sameChat()&&document.activeElement!==input){try{input.focus({preventScroll:true});}catch(_){input.focus();}}}
 }
 $("profileForm")?.addEventListener("submit",saveProfile);

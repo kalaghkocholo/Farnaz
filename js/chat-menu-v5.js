@@ -206,9 +206,18 @@ async function makeMessageElement(m,myId,fromCache=false){
     const pin=document.createElement("div");pin.className="message-pin-indicator";
     pin.textContent=english?"📌 Pinned":"📌 سنجاق‌شده";item.appendChild(pin);
   }
-  if(m.reply_to_id&&!fromCache){
-    try{const {data}=await getClient().from("messages").select("body,attachment_name").eq("id",m.reply_to_id).maybeSingle();
-      if(data){const q=document.createElement("div");q.className="message-quote";q.textContent=(english?"Replying to: ":"در پاسخ به: ")+(data.body||data.attachment_name||"");item.appendChild(q);}}catch(e){console.warn(e);}
+  if(m.reply_to_id){
+    try{
+      const {data}=await getClient().from("messages").select("id,sender_id,body,attachment_name,message_type").eq("id",m.reply_to_id).maybeSingle();
+      const quote=document.createElement("button");quote.type="button";quote.className="message-quote";quote.dataset.replyTarget=String(m.reply_to_id);
+      quote.style.cssText="display:block;width:100%;text-align:start;border:0;border-inline-start:3px solid var(--accent,#22b8a5);border-radius:7px;padding:6px 9px;margin:0 0 6px;background:rgba(120,130,145,.12);color:inherit;font:inherit;cursor:pointer";
+      const author=document.createElement("strong");author.style.cssText="display:block;font-size:11px;color:var(--accent,#159b8c)";
+      author.textContent=data?(String(data.sender_id)===String(myId)?(english?"You":"شما"):(english?"Contact":"مخاطب")):(english?"Original message":"پیام اصلی");
+      const preview=document.createElement("span");preview.style.cssText="display:block;font-size:12px;opacity:.82;overflow:hidden;text-overflow:ellipsis;white-space:nowrap";
+      preview.textContent=data?(data.body||data.attachment_name||(english?"Attachment":"پیوست")):(english?"Message unavailable":"پیام در دسترس نیست");
+      quote.append(author,preview);quote.addEventListener("click",event=>{event.stopPropagation();const target=$("messageList")?.querySelector('[data-message-id="'+String(m.reply_to_id)+'"]');if(target){target.scrollIntoView({behavior:"smooth",block:"center"});target.classList.add("contact-info-search-match");setTimeout(()=>target.classList.remove("contact-info-search-match"),1800);}else if(typeof openMessageFromSearch==="function")openMessageFromSearch(m.reply_to_id,m.created_at,currentChatUser?.user_id);});
+      item.appendChild(quote);
+    }catch(e){console.warn("Could not load replied-to message:",e);}
   }
   if(m.body){const body=document.createElement("p");body.textContent=m.body;item.appendChild(body);}
   if(m.attachment_path&&fromCache){
@@ -247,7 +256,7 @@ async function makeMessageElement(m,myId,fromCache=false){
     }
     item.appendChild(reactionBar);
   }
-  let pointerHold=null,touchHold=null,holdTriggered=false,holdX=0,holdY=0;
+  let pointerHold=null,touchHold=null,holdTriggered=false,holdX=0,holdY=0,lastMessageTap=0,swipeStartX=0,swipeStartY=0;
   const interactiveTarget=target=>!!target.closest("a,button,audio,video,input,textarea,select");
   const cancelPointerHold=()=>{clearTimeout(pointerHold);pointerHold=null;};
   const cancelTouchHold=()=>{clearTimeout(touchHold);touchHold=null;};
@@ -255,6 +264,15 @@ async function makeMessageElement(m,myId,fromCache=false){
     if(holdTriggered){event.preventDefault();event.stopPropagation();holdTriggered=false;return;}
     if(messageSelectionMode){toggleMessageSelection(m.id,item);return;}
     if(interactiveTarget(event.target))return;
+    const now=Date.now();
+    if(now-lastMessageTap<330){lastMessageTap=0;toggleMessageReaction(m.id,"👍");}
+    else lastMessageTap=now;
+  });
+  item.addEventListener("touchstart",event=>{if(event.touches.length===1&&!interactiveTarget(event.target)){swipeStartX=event.touches[0].clientX;swipeStartY=event.touches[0].clientY;}},{passive:true});
+  item.addEventListener("touchend",event=>{
+    if(!event.changedTouches.length||interactiveTarget(event.target))return;
+    const dx=event.changedTouches[0].clientX-swipeStartX,dy=event.changedTouches[0].clientY-swipeStartY;
+    if(dx>58&&Math.abs(dy)<48){event.preventDefault();setReplyTarget(m);}
   });
   item.addEventListener("contextmenu",e=>{
     e.preventDefault();e.stopPropagation();
@@ -348,6 +366,9 @@ function showMessageActions(m,item){
   const menu=document.createElement("div");menu.className="message-tools message-tools-floating";
   const closeMenu=()=>{menu.remove();restoreItem();clearMessageActionOverlay();};
   const add=(label,fn,cls="mini-button")=>{const b=document.createElement("button");b.type="button";b.className=cls;b.textContent=label;b.onclick=()=>{closeMenu();fn();};menu.appendChild(b);};
+  const quickReactions=document.createElement("div");quickReactions.className="message-quick-reactions";quickReactions.style.cssText="display:flex;align-items:center;justify-content:space-around;gap:7px;padding:7px 5px;margin:0 0 5px;border-radius:14px;background:var(--surface-2,rgba(128,128,128,.12))";
+  for(const emoji of MESSAGE_REACTION_CHOICES){const reaction=document.createElement("button");reaction.type="button";reaction.className="message-quick-reaction";reaction.textContent=emoji;reaction.setAttribute("aria-label",(english?"React ":"واکنش ")+emoji);reaction.style.cssText="border:0;background:transparent;padding:5px;font-size:22px;line-height:1;cursor:pointer";reaction.onclick=()=>{closeMenu();toggleMessageReaction(m.id,emoji);};quickReactions.appendChild(reaction);}
+  menu.appendChild(quickReactions);
   add("📌  "+(pinnedMessageIds.has(String(m.id))?(english?"Unpin message":"برداشتن سنجاق"):(english?"Pin message":"سنجاق پیام")),()=>toggleMessagePin(m.id),"mini-button message-pin-action");
   add("↩  "+(english?"Reply":"پاسخ"),()=>setReplyTarget(m));
   add("➦  "+(english?"Forward":"فوروارد"),()=>{selectedMessageIds.clear();selectedMessageIds.add(m.id);messageSelectionMode=true;updateSelectionToolbar();forwardSelectedMessages();});

@@ -98,6 +98,9 @@ p{color:#b6c1d1;line-height:1.7;font-size:12px}
 .page-heading p{margin:4px 0 0;color:var(--muted);font-size:12px;line-height:1.55}
 #contactsPage>.page-heading{padding-inline-start:56px}
 #profilePage>.page-heading{margin-bottom:14px}
+.profile-required-notice{margin:0 0 12px;padding:13px 14px;border:1px solid var(--accent);border-radius:12px;background:var(--panel2);color:var(--white);font-size:13px;line-height:1.85;overflow-wrap:anywhere}
+body[data-theme="light"] .profile-required-notice{color:#172033;border-color:var(--accent);background:#eef4fb}
+.profile-required-notice[hidden]{display:none}
 #settingsPage>.page-heading{margin-bottom:16px}
 .chats-topline .page-heading,.spaces-head .page-heading{border:0;padding:0;margin:0}
 .panel{padding:14px 12px;margin-bottom:12px}

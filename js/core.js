@@ -5,7 +5,7 @@ window.FARNAZ_CONFIG = {
   supabasePublishableKey: "sb_publishable_LhUmVjXJlazgYRtEvXna6g_GGKxi_kC"
 };
 
-let english=false,authMode="login",farnazClient=null,currentUser=null,profileCompletionRequired=false;
+let english=false,authMode="signup",farnazClient=null,currentUser=null,profileCompletionRequired=false;
 let currentProfileName="",currentAvatarUrl="",currentPhone="",currentChatPresenceLabel="گفتگوی خصوصی";
 let currentChatUser=null,messageSubscription=null,reconnectTimer=null,reconnectAttempts=0;
 let profileRequestNumber=0,chatRequestNumber=0,previousPage="chatsPage";
@@ -902,6 +902,8 @@ function updateAuthTexts(){
   document.querySelector(".auth-divider").hidden=false;
   $("googleAuthLabel").textContent=v?"Continue with Google":"ادامه با Google";
   $("authOrLabel").textContent=v?"or continue with email":"یا با ایمیل";
+  const languageButton=$("authLanguageButton");
+  if(languageButton)languageButton.textContent=v?"فا":"EN";
 }
 /* Keep one welcome language toggle globally; preserve the separate Settings language control. */
 function normalizeWelcomeLanguageButton(){
@@ -2694,7 +2696,7 @@ async function refreshConversationList(){
         setConnectionBanner("",false);
         setStatus("profileStatus","");
         // Guests land directly on the login/register screen; there is no welcome page.
-        openLogin();
+        openSignup();
         return;
       }
       sessionRestoreNeedsRetry=false;
@@ -2750,7 +2752,7 @@ async function refreshConversationList(){
         ?"Farnaz could not restore your saved session. Check your connection and try signing in again."
         :"بازیابی نشست ورود کامل نشد. اتصال را بررسی کن و دوباره برای ورود تلاش کن.");
       // Keep the authentication screen available even when session restoration fails.
-      openLogin();
+      openSignup();
       if(/refresh token.*(invalid|not found|expired)|invalid refresh token|session not found/i.test(String(error?.message||""))){
         try{if(client)await client.auth.signOut({scope:"local"});}catch(_){}
       }

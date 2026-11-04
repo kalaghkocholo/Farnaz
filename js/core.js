@@ -705,7 +705,8 @@ function swipePageHistoryKey(pageId,tab){
   return pageId+"|"+(pageId==="spacesPage"?(["group","channel"].includes(tab)?tab:"group"):"");
 }
 function swipePageHistoryId(entry){return String(entry||"").split("|")[0];}
-const FARNAZ_SWIPE_PAGE_ORDER=["chatsPage","contactsPage","settingsPage"];
+// Fixed physical screen order from left to right; independent of Persian/English text direction.
+const FARNAZ_SWIPE_PAGE_ORDER=["settingsPage","contactsPage","chatsPage","profilePage"];
 function swipeNavigationBasePage(pageId){
   if(pageId==="callsPage"||pageId==="spacesPage")return "chatsPage";
   return FARNAZ_SWIPE_PAGE_ORDER.includes(pageId)?pageId:null;
@@ -793,8 +794,9 @@ function installFarnazSwipeNavigation(){
     const app=event.target?.closest?.(".app"),page=app?.querySelector(".page.active");
     if(!currentUser||!app||!page||page.id==="homePage"||app.classList.contains("farnaz-swipe-active"))return;
     const appRect=app.getBoundingClientRect(),touch=event.touches[0];
-    // Leave the outer edge to iOS system navigation.
-    if(touch.clientX-appRect.left<28||appRect.right-touch.clientX<28)return;
+    // Reserve a wider 44px strip on both sides for Safari back/forward gestures.
+    // Farnaz only recognizes horizontal swipes that begin in the central content area.
+    if(touch.clientX-appRect.left<44||appRect.right-touch.clientX<44)return;
     if(event.target.closest("input,textarea,select,button,a,[contenteditable='true'],.bottom-nav,.conversation-card,.space-card,#conversationList,#spacesList,.dialog,.modal,.message,.space-message,.message-action-menu,.message-selection-toolbar,#sendMessageForm,#spaceComposer,.composer-shell"))return;
     if(!swipeHistoryTarget(-1)&&!swipeHistoryTarget(1))return;
     swipeGesture={app,page,current:null,target:null,targetId:null,action:null,startX:touch.clientX,startY:touch.clientY,lastX:touch.clientX,lastTime:performance.now(),velocity:0,dx:0,width:Math.max(1,appRect.width),direction:0,locked:false};

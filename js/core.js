@@ -1033,6 +1033,14 @@ function setLanguage(language){
   if(currentUser){refreshConversationList();refreshSavedContacts();}
 }
 function toggleLanguage(){setLanguage(english?"fa":"en");}
+function updateProfileRequiredNotice(required,message){
+  const notice=$("profileRequiredNotice");
+  if(!notice)return;
+  notice.hidden=!required;
+  notice.textContent=required?(message||(english
+    ?"To protect your account and let other people recognize you, please complete your profile. Enter your display name and mobile number with country code, then tap Save changes. You cannot use chats until this is done."
+    :"برای تکمیل و شناسایی حساب کاربری‌ات، لطفاً نام نمایشی و شماره موبایل را با کد کشور وارد کن و دکمه «ذخیره تغییرات» را بزن. تا تکمیل این اطلاعات، امکان استفاده از گفتگوها را نداری.")):"";
+}
 function renderUser(user,name){
   currentUser=user;currentProfileName=(name||"").trim();
   document.body.dataset.authState="user";
@@ -1093,6 +1101,7 @@ async function showUser(user){
     // A completed cache write must not let a stale profile request update the UI after logout.
     if(request!==profileRequestNumber||currentUser?.id!==user.id)return;
     profileCompletionRequired=!(currentProfileName&&/^\+[1-9]\d{7,14}$/.test(currentPhone));
+    updateProfileRequiredNotice(profileCompletionRequired);
     setStatus("profileStatus",english?"Profile loaded.":"پروفایل بارگذاری شد.");
     return !profileCompletionRequired;
   }catch(e){
@@ -1102,10 +1111,12 @@ async function showUser(user){
     console.error("Profile read:",e);
     if(cachedProfile){
       profileCompletionRequired=true;
+      updateProfileRequiredNotice(true,english?"We could not verify your profile with the server. Check your connection and try again; chats stay locked until your profile is verified.":"امکان بررسی پروفایل از سرور فراهم نشد. اتصال اینترنت را بررسی کن و دوباره تلاش کن؛ تا زمان تأیید اطلاعات، گفتگوها در دسترس نیستند.");
       setStatus("profileStatus",english?"Showing saved profile; server refresh failed.":"پروفایل ذخیره‌شده نمایش داده می‌شود؛ به‌روزرسانی سرور ناموفق بود.");
       return false;
     }
     profileCompletionRequired=true;
+    updateProfileRequiredNotice(true,english?"Your profile could not be checked. Check your internet connection, then try again. Chats remain unavailable until verification succeeds.":"پروفایل تو قابل بررسی نبود. اتصال اینترنت را بررسی کن و دوباره تلاش کن. تا زمان بررسی موفق، گفتگوها در دسترس نیستند.");
     setStatus("profileStatus",(english?"Could not load profile: ":"بارگذاری پروفایل ناموفق بود: ")+e.message,true);
     return false;
   }
@@ -1115,7 +1126,7 @@ function showGuest(){
   const previousUserId=currentUser?.id;
   if(previousUserId)window.FarnazLocalStore?.clearUser(previousUserId).catch(cacheError=>console.warn("Could not clear local account data:",cacheError));
   stopFarnazPresence().catch(()=>{});farnazPresenceContactCache.clear();
-  profileRequestNumber++;profileCompletionRequired=false;
+  profileRequestNumber++;profileCompletionRequired=false;updateProfileRequiredNotice(false);
   // Invalidate every in-flight list request before clearing the signed-in UI.
   // Also invalidate private-chat work so a late response cannot repopulate the guest screen.
   chatRequestNumber++;contactInfoRequest++;messageSearchRequest++;
@@ -1391,6 +1402,7 @@ async function saveProfile(event){
     if(String(currentUser?.id)!==userId)return;
     const wasRequired=profileCompletionRequired;
     profileCompletionRequired=false;
+    updateProfileRequiredNotice(false);
     setStatus("profileStatus",english?"Profile saved.":"پروفایل ذخیره شد.");
     if(wasRequired)navigate("chatsPage");
   }catch(e){

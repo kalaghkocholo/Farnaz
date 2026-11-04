@@ -357,16 +357,27 @@ function showMessageActions(m,item){
   add("🗑  "+(english?"Delete":"حذف"),()=>deleteMessage(m),"mini-button danger");
   const close=document.createElement("button");close.type="button";close.className="message-tools-dismiss";close.textContent="×";close.setAttribute("aria-label",english?"Close":"بستن");close.onclick=closeMenu;menu.appendChild(close);
   document.body.appendChild(menu);
-  const menuRect=menu.getBoundingClientRect(),vv=window.visualViewport,margin=12;
+  const vv=window.visualViewport,margin=10,gap=8;
   const viewLeft=vv?vv.offsetLeft:0,viewTop=vv?vv.offsetTop:0;
   const viewWidth=vv?vv.width:window.innerWidth,viewHeight=vv?vv.height:window.innerHeight;
+  const header=document.querySelector("#chatPage .chat-header");
+  const headerBottom=header?header.getBoundingClientRect().bottom:viewTop+44;
+  // Reserve the complete chat header/status-bar area; the menu must never sit beneath the iPhone clock.
+  const safeTop=Math.max(viewTop+8,headerBottom+6,48);
+  const viewBottom=viewTop+viewHeight-8;
+  const aboveSpace=Math.max(0,rect.top-safeTop-gap);
+  const belowSpace=Math.max(0,viewBottom-rect.bottom-gap);
+  const naturalHeight=menu.scrollHeight;
+  const useAbove=aboveSpace>=naturalHeight||aboveSpace>=belowSpace;
+  const availableSpace=Math.max(aboveSpace,belowSpace);
+  menu.style.maxHeight=Math.max(110,availableSpace-4)+"px";
+  const menuRect=menu.getBoundingClientRect();
   const minLeft=viewLeft+margin,maxLeft=viewLeft+viewWidth-menuRect.width-margin;
   const left=Math.max(minLeft,Math.min(rect.left+(rect.width-menuRect.width)/2,maxLeft));
-  const minTop=viewTop+margin,maxTop=viewTop+viewHeight-menuRect.height-margin;
-  let top=rect.top-menuRect.height-8;
-  if(top<minTop)top=rect.bottom+8;
-  top=Math.max(minTop,Math.min(top,Math.max(minTop,maxTop)));
+  let top=useAbove?rect.top-menuRect.height-gap:rect.bottom+gap;
+  top=Math.max(safeTop,Math.min(top,viewBottom-menuRect.height));
   menu.style.left=left+"px";menu.style.top=top+"px";
+  menu.dataset.position=useAbove?"above":"below";
 }
 function setReplyTarget(m){
   replyTarget=m;const preview=$("replyPreview");preview.replaceChildren();preview.hidden=false;

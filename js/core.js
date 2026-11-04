@@ -666,10 +666,6 @@ function navigate(pageId,options={}){
   document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id===pageId));
   document.querySelector(".app").classList.toggle("chat-mode",pageId==="chatPage");
   document.body.classList.toggle("chat-mode",pageId==="chatPage");
-  const brandHeader=document.querySelector(".app>header");
-  if(brandHeader)brandHeader.hidden=pageId==="chatPage";
-  const headerFButton=$("headerFButton");
-  if(headerFButton)headerFButton.hidden=pageId==="homePage"||pageId==="chatPage";
   if(pageId!=="chatPage"){document.documentElement.style.removeProperty("--chat-viewport-offset");document.documentElement.style.removeProperty("--chat-viewport-height");}
   document.querySelectorAll(".nav-button").forEach(b=>b.classList.toggle("active",b.dataset.page===(["spacesPage","callsPage"].includes(pageId)?"chatsPage":pageId)));
   $("bottomNav").classList.toggle("visible",pageId!=="homePage"&&pageId!=="chatPage");
@@ -869,7 +865,6 @@ function openAuth(){
     document.querySelectorAll(".page").forEach(page=>page.classList.toggle("active",page===home));
   }
   $("authBox").style.display="block";
-  if($("headerFButton"))$("headerFButton").hidden=true;
   document.querySelector(".app")?.classList.remove("auth-open");
   setAuthMode(authMode);
 }

@@ -214,13 +214,13 @@ if (!coreSource.includes("function installFarnazSwipeNavigation()") ||
 }
 
 const chatSource = sources["js/chat-menu-v5.js"];
-if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v232"') || !sources["service-worker.js"].includes('styles.css?v=20261104-merge-1') || !sources["service-worker.js"].includes('core.js?v=20261104-merge-1') || !sources["service-worker.js"].includes('local-store.js?v=20261026-3') || !sources["service-worker.js"].includes('calls.js?v=20261026-4') || !sources["service-worker.js"].includes('chat-menu-v5.js?v=20261104-merge-1') || !html.includes('chat-menu-v5.js?v=20261104-merge-1')) {
+if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v233"') || !sources["service-worker.js"].includes('styles.css?v=20261104-convo-1') || !sources["service-worker.js"].includes('core.js?v=20261104-convo-1') || !sources["service-worker.js"].includes('local-store.js?v=20261026-3') || !sources["service-worker.js"].includes('calls.js?v=20261026-4') || !sources["service-worker.js"].includes('chat-menu-v5.js?v=20261104-merge-1') || !html.includes('chat-menu-v5.js?v=20261104-merge-1')) {
   errors.push("service-worker.js must use the current shell cache and core asset versions");
 }
 const loaderChecks = [
   [html.includes('script.src="./js/supabase-sdk.js"') && html.includes("watchScript(script,()=>{") && html.includes("loadLocalScripts();"),
     "index.html must wait for the local Supabase SDK before loading the app core"],
-  [html.includes('core.src="./js/core.js?v=20261104-merge-1"') && html.includes("watchScript(core,()=>{") && html.includes("بارگذاری هستهٔ برنامه ناموفق بود یا بیش از حد طول کشید"),
+  [html.includes('core.src="./js/core.js?v=20261104-convo-1"') && html.includes("watchScript(core,()=>{") && html.includes("بارگذاری هستهٔ برنامه ناموفق بود یا بیش از حد طول کشید"),
     "index.html must handle successful, failed, and stalled core-script loading"],
   [html.includes("watchScript(script,loadNextFeature,()=>{") && html.includes("featureScripts[featureIndex++]") && html.includes('if(typeof window.FarnazBoot==="function")window.FarnazBoot();'),
     "index.html must load feature scripts sequentially and boot only after the loader sequence"],

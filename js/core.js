@@ -1685,8 +1685,8 @@ async function openContactInfo(){
   contactInfoBlocked=false;contactInfoDialog.hidden=false;
   addContactInfoAction(contactInfoText("پیام","Message"),"✉",closeContactInfo);
   addContactInfoAction(contactInfoText("ویرایش نام مخاطب","Edit contact name"),"✎",renameCurrentContact);
-  addContactInfoAction(contactInfoText("تماس صوتی","Audio call"),"#chatPage .call-actions button[onclick=\"startCall('audio')\"] svg",()=>{closeContactInfo();startCall("audio");});
-  addContactInfoAction(contactInfoText("تماس تصویری","Video call"),"#chatPage .call-actions button[onclick=\"startCall('video')\"] svg",()=>{closeContactInfo();startCall("video");});
+  addContactInfoAction(contactInfoText("تماس صوتی","Audio call"),"#chatPage .call-actions button[data-farnaz-call-type=\"audio\"] svg",()=>{closeContactInfo();startCall("audio");});
+  addContactInfoAction(contactInfoText("تماس تصویری","Video call"),"#chatPage .call-actions button[data-farnaz-call-type=\"video\"] svg",()=>{closeContactInfo();startCall("video");});
   addContactInfoAction(contactInfoText("جست‌وجو در گفتگو","Search chat"),"⌕",searchCurrentConversation);
   try{
     const client=getClient();

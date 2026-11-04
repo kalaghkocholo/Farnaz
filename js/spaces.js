@@ -690,7 +690,7 @@ async function loadMessages(id){
   if(wasNearBottom)list.scrollTop=list.scrollHeight;
  }catch(e){if(!isCurrent())return;const status=q("spaceMessageStatus");if(status)status.textContent=tr("دریافت پیام ناموفق بود: ","Could not load posts: ")+(e?.message||String(e)||"Unknown error");}
 }
-let sendingMessage=false,spaceRecordedVoiceFile=null,spaceRecordingStream=null,spaceMediaRecorder=null,spaceAudioChunks=[],spaceVoiceUrl=null;
+let sendingMessage=false,pendingSpaceSend=null,spaceRecordedVoiceFile=null,spaceRecordingStream=null,spaceMediaRecorder=null,spaceAudioChunks=[],spaceVoiceUrl=null;
 function clearSpaceVoice(){const player=q("spaceVoicePlayer");if(player){player.pause();player.removeAttribute("src");player.load();}if(spaceVoiceUrl){URL.revokeObjectURL(spaceVoiceUrl);spaceVoiceUrl=null;}spaceRecordedVoiceFile=null;q("spaceVoicePreview").hidden=true;}
 function showSpaceVoice(){const player=q("spaceVoicePlayer");if(spaceVoiceUrl)URL.revokeObjectURL(spaceVoiceUrl);spaceVoiceUrl=URL.createObjectURL(spaceRecordedVoiceFile);player.src=spaceVoiceUrl;q("spaceVoiceSize").textContent=Math.ceil(spaceRecordedVoiceFile.size/1024)+" KB";q("spaceVoicePreview").hidden=false;}
 async function toggleSpaceVoice(){const btn=q("spaceVoiceButton");if(spaceMediaRecorder?.state==="recording"){btn.disabled=true;spaceMediaRecorder.stop();q("spaceMessageStatus").textContent=tr("در حال آماده‌سازی صدای ضبط‌شده…","Finishing recording…");return;}if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==="undefined"){q("spaceMessageStatus").textContent=tr("ضبط صدا در این مرورگر پشتیبانی نمی‌شود.","Audio recording is not supported in this browser.");return;}try{clearSpaceVoice();spaceRecordingStream=await navigator.mediaDevices.getUserMedia({audio:true});const types=["audio/mp4","audio/webm;codecs=opus","audio/webm","audio/ogg;codecs=opus"],mime=types.find(t=>MediaRecorder.isTypeSupported?.(t));spaceMediaRecorder=mime?new MediaRecorder(spaceRecordingStream,{mimeType:mime}):new MediaRecorder(spaceRecordingStream);const recorder=spaceMediaRecorder;spaceAudioChunks=[];recorder.ondataavailable=e=>{if(e.data?.size)spaceAudioChunks.push(e.data);};recorder.onerror=()=>{spaceRecordingStream?.getTracks().forEach(t=>t.stop());spaceRecordingStream=null;spaceMediaRecorder=null;btn.disabled=false;btn.textContent="🎙";btn.classList.remove("recording");q("spaceMessageStatus").textContent=tr("ضبط صدا ناموفق بود؛ دوباره تلاش کن.","Recording failed; try again.");};recorder.onstop=()=>{const type=recorder.mimeType||spaceAudioChunks[0]?.type||"audio/mp4",blob=new Blob(spaceAudioChunks,{type}),ext=type.includes("mp4")?"m4a":type.includes("ogg")?"ogg":"webm";spaceRecordedVoiceFile=blob.size?new File([blob],"voice-message."+ext,{type}):null;spaceRecordingStream?.getTracks().forEach(t=>t.stop());spaceRecordingStream=null;spaceMediaRecorder=null;btn.disabled=false;btn.textContent="🎙";btn.classList.remove("recording");if(spaceRecordedVoiceFile){q("spacePhotoFile").value="";q("spaceCameraFile").value="";q("spaceAttachmentFile").value="";showSpaceVoice();q("spaceMessageStatus").textContent=tr("صدای ضبط‌شده آماده است؛ گوش بده و سپس ارسال کن.","Voice message ready. Review it, then send.");}else q("spaceMessageStatus").textContent=tr("صدایی ضبط نشد؛ دوباره تلاش کن.","No audio captured; try again.");};recorder.start();btn.classList.add("recording");btn.textContent="■";q("spaceMessageStatus").textContent=tr("در حال ضبط… برای پایان، دوباره دکمه را بزن.","Recording… tap again to stop.");}catch(e){spaceRecordingStream?.getTracks().forEach(t=>t.stop());spaceRecordingStream=null;q("spaceMessageStatus").textContent=tr("برای ضبط پیام صوتی باید اجازه دسترسی به میکروفون بدهی.","Microphone permission is required.");}}
@@ -708,6 +708,9 @@ async function send(event){
  if(spaceMediaRecorder?.state==="recording"){q("spaceMessageStatus").textContent=tr("پیش از ارسال، ضبط را متوقف کن.","Stop recording before sending.");return;}
  if(file&&file.size>20*1024*1024){q("spaceMessageStatus").textContent=tr("حجم فایل باید حداکثر ۲۰ مگابایت باشد.","Choose a file up to 20 MB.");return;}
  if(editId&&file){q("spaceMessageStatus").textContent=tr("برای ویرایش پیام، ابتدا پیوست را جداگانه ارسال کن.","Attachments cannot be changed while editing a message.");return;}
+ const sendFingerprint=JSON.stringify([senderId,spaceId,body,file?.name||"",file?.size||0,file?.lastModified||0,file?.type||""]);
+ const pendingSend=editId?null:(pendingSpaceSend?.fingerprint===sendFingerprint?pendingSpaceSend:{fingerprint:sendFingerprint,id:crypto.randomUUID(),attachmentPath:null});
+ if(pendingSend)pendingSpaceSend=pendingSend;
  const sameAccount=()=>String(currentUser?.id||"")===senderId;
  const sameSpace=()=>sameAccount()&&String(active?.id||"")===spaceId;
  sendingMessage=true;const btn=q("spaceSendButton");btn.disabled=true;input.readOnly=true;q("spaceMessageStatus").textContent=tr("در حال ارسال…","Sending…");
@@ -721,8 +724,9 @@ async function send(event){
   if(file){
    const safeName=(file.name||"attachment").replace(/[^a-zA-Z0-9._-]/g,"_").slice(-120)||"attachment";
    const ext=(safeName.split(".").pop()||"bin").toLowerCase().replace(/[^a-z0-9]/g,"")||"bin";
-   path=senderId+"/spaces/"+crypto.randomUUID()+"."+ext;
-   const {error:uploadError}=await client.storage.from("chat-attachments").upload(path,file,{contentType:file.type||"application/octet-stream",upsert:false});
+   pendingSend.attachmentPath=pendingSend.attachmentPath||senderId+"/spaces/"+pendingSend.id+"."+ext;
+   path=pendingSend.attachmentPath;
+   const {error:uploadError}=await client.storage.from("chat-attachments").upload(path,file,{contentType:file.type||"application/octet-stream",upsert:true});
    if(uploadError)throw uploadError;
    if(!sameAccount())throw new Error(tr("حساب هنگام بارگذاری تغییر کرد؛ دوباره وارد شو.","Account changed while uploading. Sign in again."));
    attachment_name=safeName;attachment_mime=file.type||"application/octet-stream";attachment_size=file.size;message_type=file.type.startsWith("image/")?"image":"file";
@@ -735,9 +739,13 @@ async function send(event){
    if(!sameSpace())return;
    editingSpaceMessageId=null;
   }else{
-   const {error}=await client.from("space_messages").insert({space_id:spaceId,sender_id:senderId,body:body||null,message_type,attachment_path:path,attachment_name,attachment_mime,attachment_size});
-   if(error)throw error;
-   path=null;
+   const {error:insertError}=await client.from("space_messages").insert({id:pendingSend.id,space_id:spaceId,sender_id:senderId,body:body||null,message_type,attachment_path:path,attachment_name,attachment_mime,attachment_size});
+   if(insertError){
+    // Reconcile an ambiguous mobile timeout before a manual retry can duplicate a post.
+    const {data:existing,error:lookupError}=await client.from("space_messages").select("id,space_id,sender_id,body,created_at,edited_at,message_type,attachment_path,attachment_name,attachment_mime,attachment_size").eq("id",pendingSend.id).maybeSingle();
+    if(!existing||lookupError)throw insertError;
+   }
+   path=null;pendingSpaceSend=null;
   }
   if(!sameSpace())return;
   input.value="";input.style.height="38px";q("spacePhotoFile").value="";q("spaceCameraFile").value="";q("spaceAttachmentFile").value="";clearSpaceVoice();q("spaceAttachmentMenu").hidden=true;q("spaceAttachmentButton").setAttribute("aria-expanded","false");
@@ -748,8 +756,7 @@ async function send(event){
    if(path)try{await getClient().storage.from("chat-attachments").remove([path]);}catch(cleanupError){console.warn("Could not clean up abandoned space attachment:",cleanupError);}
    return;
   }
-  if(path)try{await getClient().storage.from("chat-attachments").remove([path]);}catch(_){}
-  if(sameSpace())q("spaceMessageStatus").textContent=tr("ارسال پیام ناموفق بود: ","Could not send: ")+(e?.message||String(e));
+  if(sameSpace())q("spaceMessageStatus").textContent=tr("ارسال پیام ناموفق بود؛ متن و پیوست را نگه داشته‌ایم. برای تلاش دوباره، دکمه ارسال را بزن: ","Could not send; your text and attachment are preserved. Tap Send to retry: ")+(e?.message||String(e));
  }finally{
   sendingMessage=false;btn.disabled=false;input.readOnly=false;
   if(restoreComposerFocus&&sameSpace()){try{input.focus({preventScroll:true});}catch(_){input.focus();}}

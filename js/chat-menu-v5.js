@@ -1,3 +1,4 @@
+let pendingPrivateSend=null;
 let readReceiptMessageIds=new Set();
 let messageReactionMap=new Map(),pinnedMessageIds=new Set(),currentPinnedMessage=null;
 const MESSAGE_REACTION_CHOICES=["👍","❤️","😂","😮","😢","🙏"];
@@ -770,6 +771,9 @@ async function sendMessage(event){
   const restoreComposerFocus=document.activeElement===input;
   const file=recordedVoiceFile||selectedFile||photoFile||cameraFile;
   if(!body&&!file&&!editingMessageId)return;
+  const sendFingerprint=JSON.stringify([senderId,receiverId,body,file?.name||"",file?.size||0,file?.lastModified||0,file?.type||"",replyTarget?.id||""]);
+  const pendingSend=editingMessageId?null:(pendingPrivateSend?.fingerprint===sendFingerprint?pendingPrivateSend:{fingerprint:sendFingerprint,id:crypto.randomUUID(),attachmentPath:null});
+  if(pendingSend)pendingPrivateSend=pendingSend;
   if(file&&file.size>20*1024*1024){setStatus("sendMessageStatus",english?"Choose a file up to 20 MB.":"حجم فایل باید حداکثر ۲۰ مگابایت باشد.",true);return;}
   if(editingMessageId&&file){setStatus("sendMessageStatus",english?"Remove the attachment before editing a message.":"برای ویرایش پیام، ابتدا پیوست را بردار.",true);return;}
   button.disabled=true;setStatus("sendMessageStatus",english?"Sending…":"در حال ارسال…");
@@ -801,18 +805,23 @@ async function sendMessage(event){
       if(file){
         const safeName=(file.name||"attachment").replace(/[^a-zA-Z0-9._-]/g,"_").slice(-120)||"attachment";
         const ext=(safeName.split(".").pop()||"bin").toLowerCase().replace(/[^a-z0-9]/g,"")||"bin";
-        attachmentPath=senderId+"/"+crypto.randomUUID()+"."+ext;pendingUploadPath=attachmentPath;
-        const {error:uploadError}=await client.storage.from("chat-attachments").upload(attachmentPath,file,{contentType:file.type||"application/octet-stream",upsert:false});
+        pendingSend.attachmentPath=pendingSend.attachmentPath||senderId+"/"+pendingSend.id+"."+ext;
+        attachmentPath=pendingSend.attachmentPath;pendingUploadPath=attachmentPath;
+        const {error:uploadError}=await client.storage.from("chat-attachments").upload(attachmentPath,file,{contentType:file.type||"application/octet-stream",upsert:true});
         if(uploadError)throw uploadError;
         if(String(currentUser?.id||"")!==senderId)throw new Error("Account changed while uploading; sign in again before sending.");
         attachmentName=safeName;attachmentMime=file.type||"application/octet-stream";attachmentSize=file.size;
       }
       if(String(currentUser?.id||"")!==senderId)throw new Error("Account changed while sending.");
-      const row={sender_id:senderId,receiver_id:receiverId,body:body||null,message_type:file?(isImage?"image":"file"):"text",
+      const row={id:pendingSend.id,sender_id:senderId,receiver_id:receiverId,body:body||null,message_type:file?(isImage?"image":"file"):"text",
         attachment_path:attachmentPath,attachment_name:attachmentName,attachment_mime:attachmentMime,attachment_size:attachmentSize,reply_to_id:replyTarget?.id||null};
-      const {data:sentMessage,error:sendError}=await client.from("messages").insert(row).select("id,sender_id,receiver_id,body,created_at,message_type,attachment_path,attachment_name,attachment_mime,reply_to_id,edited_at").single();
-      if(sendError){if(attachmentPath){await client.storage.from("chat-attachments").remove([attachmentPath]);pendingUploadPath=null;}throw sendError;}
-      pendingUploadPath=null;
+      let {data:sentMessage,error:sendError}=await client.from("messages").insert(row).select("id,sender_id,receiver_id,body,created_at,message_type,attachment_path,attachment_name,attachment_mime,reply_to_id,edited_at").single();
+      if(sendError){
+        // Reconcile an uncertain mobile-network response before a retry can create a duplicate.
+        const {data:existing,error:lookupError}=await client.from("messages").select("id,sender_id,receiver_id,body,created_at,message_type,attachment_path,attachment_name,attachment_mime,reply_to_id,edited_at").eq("id",pendingSend.id).maybeSingle();
+        if(existing&&!lookupError){sentMessage=existing;sendError=null;}else throw sendError;
+      }
+      pendingUploadPath=null;pendingPrivateSend=null;
       if(String(currentUser?.id||"")!==senderId)return;
       // Only touch the composer and visible history if the user is still in the
       // same account and conversation; switching chats must preserve its draft.

@@ -452,6 +452,7 @@ body[data-auth-state="guest"] .app>header{display:none!important}
       stack:String(reason?.stack||"").slice(0,1800)
     });
   });
+  window.FARNAZ_LIVEKIT_CALLS_ENABLED = new URLSearchParams(window.location.search).get("livekitPilot") === "1";
   function loadLocalScripts(){
     const core=document.createElement("script");
     core.src="./js/core.js?v=20261104-81";
@@ -468,6 +469,15 @@ body[data-auth-state="guest"] .app>header{display:none!important}
         "./js/spaces.js?v=20261105-reactions1",
         "./js/calls.js?v=20261104-8"
       ];
+      if(window.FARNAZ_LIVEKIT_CALLS_ENABLED===true){
+        featureScripts.push(
+          "./js/livekit-sdk-loader.js?v=20261105-pilot1",
+          "./js/livekit-calls.js?v=20261105-pilot2",
+          "./js/livekit-call-sessions.js?v=20261105-pilot1",
+          "./js/livekit-call-controller.js?v=20261105-pilot1",
+          "./js/livekit-call-ui.js?v=20261105-pilot1"
+        );
+      }
       let featureIndex=0;
       const loadNextFeature=()=>{
         if(featureIndex>=featureScripts.length){

@@ -412,8 +412,15 @@ async function startCall(type){
     if(String(signedInUserId)!==initiatingUserId||String(currentUser?.id||"")!==initiatingUserId)return;
     if(String(currentChatUser?.user_id||"")!==receiverId||activeCall)return;
     setCallStatus(tr("در حال ثبت تماس…","Creating call…"));
-    const {data,error}=await getClient().from("call_sessions").insert({caller_id:initiatingUserId,receiver_id:receiverId,call_type:type,status:"ringing"}).select("*").single();
+    // The database derives caller identity from auth.uid() and repeats contact/block checks.
+    const {data,error}=await getClient().rpc("start_farnaz_call",{
+      p_receiver_id:receiverId,
+      p_call_type:type
+    });
     if(error)throw error;
+    if(!data?.id||String(data.caller_id)!==initiatingUserId||String(data.receiver_id)!==receiverId){
+      throw new Error(tr("پاسخ سرور تماس معتبر نبود؛ دوباره وارد حساب شو و تلاش کن.","The server returned an invalid call session. Sign in again and retry."));
+    }
     if(String(signedInUserId)!==initiatingUserId||String(currentUser?.id||"")!==initiatingUserId||String(currentChatUser?.user_id||"")!==receiverId){
       try{await getClient().from("call_sessions").update({status:"ended"}).eq("id",data.id);}catch(_){}
       return;

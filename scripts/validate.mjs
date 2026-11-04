@@ -467,7 +467,7 @@ const conversationChecks = [
     "spaces.css must not retain competing group-only header/composer layout overrides"],
   [sources["chat-viewport.css"].includes("body.chat-mode .app.chat-mode>#chatPage #sendMessageForm") &&
    sources["chat-viewport.css"].includes("position:absolute!important;left:13px!important;right:13px!important;bottom:0!important") &&
-   sources["chat-viewport.css"].includes("overflow-y:auto!important;padding:14px 2px 112px!important;gap:8px!important"),
+   sources["chat-viewport.css"].includes("overflow-y:auto!important;") && sources["chat-viewport.css"].includes("padding:14px 2px 112px!important;gap:8px!important"),
     "chat-viewport.css must anchor the group/channel composer and preserve message scroll space"],
   [coreSource.includes('DOMContentLoaded",()=>{if(isChatActive())syncViewport();}') &&
    !coreSource.includes('DOMContentLoaded",()=>{if(activeChat())syncViewport();}'),

@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" href="./farnaz-icon.svg?v=20261024-4">
 <meta name="description" content="فرناز؛ ارتباطی نزدیک‌تر، در هر کجا.">
 <title>فرناز | Farnaz</title>
-<link rel="preload" href="./js/core.js?v=20261104-63" as="script">
+<link rel="preload" href="./js/core.js?v=20261104-64" as="script">
 <link rel="preconnect" href="https://iemykhluluoymsbqpjsn.supabase.co" crossorigin>
 <style>
 :root{--bg:#101828;--panel:#172237;--panel2:#1d2b42;--border:#2b3a50;--mint:#50e3c2;--muted:#aab5c7;--white:#f8fafc}
@@ -150,7 +150,7 @@ body[data-auth-state="guest"] .app>header{display:none!important}
       <select id="profilePhoneCountry" aria-label="Phone country code" style="width:100%;padding:10px;border:1px solid #43516a;border-radius:10px;background:var(--bg);color:var(--white)">
         <option value="98" selected>ایران (+98)</option><option value="49">آلمان (+49)</option><option value="1">آمریکا / کانادا (+1)</option><option value="44">بریتانیا (+44)</option><option value="90">ترکیه (+90)</option>
       </select>
-      <input id="profilePhoneInput" type="tel" dir="ltr" maxlength="25" placeholder="0912..." autocomplete="tel">
+      <input id="profilePhoneInput" type="tel" dir="ltr" maxlength="25" placeholder="0912..." autocomplete="tel" required>
       <label class="profile-phone-visibility" for="showPhoneSetting"><input id="showPhoneSetting" type="checkbox" checked> <span id="showPhoneSettingLabel">نمایش شماره موبایل به مخاطبان (پیش‌فرض روشن)</span></label>
       <p class="muted-note" id="showPhoneSettingHint">اگر خاموشش کنی، شماره‌ات در اطلاعات مخاطب نمایش داده نمی‌شود.</p>
       <label for="avatarFile" id="avatarFileLabel">تصویر پروفایل</label>
@@ -443,7 +443,7 @@ body[data-auth-state="guest"] .app>header{display:none!important}
   });
   function loadLocalScripts(){
     const core=document.createElement("script");
-    core.src="./js/core.js?v=20261104-63";
+    core.src="./js/core.js?v=20261104-64";
     watchScript(core,()=>{
       // A script's load event can still fire after a runtime exception.
       // Verify the core boot contract before loading features or attempting

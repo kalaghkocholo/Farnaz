@@ -1108,7 +1108,7 @@ body.chat-mode .app.chat-mode #chatPage #sendMessageForm {
 
 /* Unified, accessible message action menus across private chats and spaces */
 .message-tools-floating{
- position:fixed!important;inset:auto!important;bottom:auto!important;z-index:223!important;
+ position:fixed!important;inset:auto;bottom:auto!important;z-index:223!important;
  display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:3px!important;
  width:min(220px,calc(100vw - 28px))!important;max-width:calc(100vw - 28px)!important;
  max-height:min(76dvh,640px)!important;overflow-y:auto!important;

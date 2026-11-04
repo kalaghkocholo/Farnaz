@@ -594,7 +594,7 @@ function bindSpaceMessageActions(element,message){
  element.addEventListener("contextmenu",event=>{event.preventDefault();event.stopPropagation();showSpaceMessageActions(message,element);});
  element.addEventListener("touchstart",event=>{if(event.touches.length!==1||interactive(event.target))return;const t=event.touches[0];startX=t.clientX;startY=t.clientY;held=false;cancel();timer=setTimeout(()=>{held=true;showSpaceMessageActions(message,element);},500);},{passive:true});
  element.addEventListener("touchmove",event=>{const t=event.touches[0];if(t&&(Math.abs(t.clientX-startX)>12||Math.abs(t.clientY-startY)>12))cancel();},{passive:true});
- element.addEventListener("touchend",cancel,{passive:true});element.addEventListener("touchcancel",cancel,{passive:true});
+ element.addEventListener("touchend",event=>{cancel();const touch=event.changedTouches?.[0];if(!touch||held||spaceMessageSelectionMode||interactive(event.target))return;const dx=touch.clientX-startX,dy=touch.clientY-startY;if(dx>60&&dx>Math.abs(dy)*1.35)replyToSpaceMessage(message);},{passive:true});element.addEventListener("touchcancel",cancel,{passive:true});
  element.addEventListener("pointerdown",event=>{if(event.pointerType==="touch"||interactive(event.target))return;startX=event.clientX;startY=event.clientY;held=false;cancel();timer=setTimeout(()=>{held=true;showSpaceMessageActions(message,element);},500);});
  element.addEventListener("pointermove",event=>{if(event.pointerType!=="touch"&&(Math.abs(event.clientX-startX)>12||Math.abs(event.clientY-startY)>12))cancel();});
  ["pointerup","pointercancel","pointerleave"].forEach(type=>element.addEventListener(type,cancel));

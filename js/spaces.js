@@ -726,8 +726,8 @@ async function send(event){
    const ext=(safeName.split(".").pop()||"bin").toLowerCase().replace(/[^a-z0-9]/g,"")||"bin";
    pendingSend.attachmentPath=pendingSend.attachmentPath||senderId+"/spaces/"+pendingSend.id+"."+ext;
    path=pendingSend.attachmentPath;
-   const {error:uploadError}=await client.storage.from("chat-attachments").upload(path,file,{contentType:file.type||"application/octet-stream",upsert:true});
-   if(uploadError)throw uploadError;
+   const {error:uploadError}=await client.storage.from("chat-attachments").upload(path,file,{contentType:file.type||"application/octet-stream",upsert:false});
+   if(uploadError){const conflict=String(uploadError.statusCode||uploadError.status||"")==="409"||/already exists|duplicate/i.test(String(uploadError.message||""));if(!conflict)throw uploadError;}
    if(!sameAccount())throw new Error(tr("حساب هنگام بارگذاری تغییر کرد؛ دوباره وارد شو.","Account changed while uploading. Sign in again."));
    attachment_name=safeName;attachment_mime=file.type||"application/octet-stream";attachment_size=file.size;message_type=file.type.startsWith("image/")?"image":"file";
   }
@@ -752,10 +752,8 @@ async function send(event){
   await loadMessages(spaceId);
   if(sameSpace())q("spaceMessageStatus").textContent=tr("پیام ارسال شد.","Message sent.");
  }catch(e){
-  if(!sameAccount()){
-   if(path)try{await getClient().storage.from("chat-attachments").remove([path]);}catch(cleanupError){console.warn("Could not clean up abandoned space attachment:",cleanupError);}
-   return;
-  }
+  // An insert may already be committed despite a lost response; keep its stable attachment path intact.
+  if(!sameAccount())return;
   if(sameSpace())q("spaceMessageStatus").textContent=tr("ارسال پیام ناموفق بود؛ متن و پیوست را نگه داشته‌ایم. برای تلاش دوباره، دکمه ارسال را بزن: ","Could not send; your text and attachment are preserved. Tap Send to retry: ")+(e?.message||String(e));
  }finally{
   sendingMessage=false;btn.disabled=false;input.readOnly=false;

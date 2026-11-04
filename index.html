@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" href="./farnaz-icon.svg?v=20261024-4">
 <meta name="description" content="فرناز؛ ارتباطی نزدیک‌تر، در هر کجا.">
 <title>فرناز | Farnaz</title>
-<link rel="preload" href="./js/core.js?v=20261104-81" as="script">
+<link rel="preload" href="./js/core.js?v=20261105-shared-page1" as="script">
 <link rel="preconnect" href="https://iemykhluluoymsbqpjsn.supabase.co" crossorigin>
 <style>
 :root{--bg:#101828;--panel:#172237;--panel2:#1d2b42;--border:#2b3a50;--mint:#50e3c2;--muted:#aab5c7;--white:#f8fafc}
@@ -24,72 +24,39 @@ button{font:inherit;cursor:pointer}
 .app{width:100%;max-width:560px;height:100dvh;min-height:0;margin:auto;overflow-y:auto;padding:calc(10px + env(safe-area-inset-top, 0px)) 13px calc(94px + env(safe-area-inset-bottom))}
 header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17px}
 .page{display:none}.page.active{display:block}
+#authBox{display:none}
 .bottom-nav{display:none}
 #homePage{position:relative}
-body[data-auth-state="guest"] .app>header{display:none!important}
+#homePage>.welcome-language-switch{position:fixed;top:calc(env(safe-area-inset-top,0px) + 14px);right:max(16px,calc((100vw - 560px)/2 + 16px));z-index:9999;width:42px;height:34px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--muted);font-weight:700}
+.welcome-shell{position:relative;min-height:min(68dvh,620px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28px 20px 22px;border:0;border-radius:0;background:transparent}
+.welcome-mark{width:82px;height:82px;display:grid;place-items:center;margin-bottom:16px;border:0;border-radius:0;background:transparent;box-shadow:none}
+.welcome-mark img{width:84px;height:84px;object-fit:contain}
+.welcome-kicker{font-size:10px;letter-spacing:3px;font-weight:800;color:#7896c5;direction:ltr}
+.welcome-shell h2{max-width:290px;font-size:25px;line-height:1.7;margin:13px 0 4px}
+.welcome-shell>p{max-width:280px;margin:0 0 20px;color:var(--muted);font-size:13px}
+.welcome-shell .primary{max-width:300px;min-height:48px;border-radius:10px;background:#7896c5;color:#fff}
+.welcome-secondary{width:100%;max-width:300px;margin-top:9px;padding:12px;border:1px solid var(--border);border-radius:14px;background:transparent;color:var(--white);font-size:13px}
+@media(max-width:360px){.welcome-shell{min-height:62dvh;padding:24px 15px 20px}.welcome-shell h2{font-size:22px}.welcome-mark{width:74px;height:74px}.welcome-mark img{width:68px;height:68px}}
 </style>
-<link rel="stylesheet" href="./styles.css?v=20261104-11" media="print" onload="this.onload=null;this.media='all'">
-<noscript><link rel="stylesheet" href="./styles.css?v=20261104-11"></noscript>
-<link rel="stylesheet" href="./spaces.css?v=20261029-34" media="print" onload="this.onload=null;this.media='all'">
-<link rel="stylesheet" href="./chat-viewport.css?v=20261029-3">
+<link rel="stylesheet" href="./styles.css?v=20261105-shared-page1" media="print" onload="this.onload=null;this.media='all'">
+<noscript><link rel="stylesheet" href="./styles.css?v=20261105-shared-page1"></noscript>
+<link rel="stylesheet" href="./spaces.css?v=20261105-shared-page1" media="print" onload="this.onload=null;this.media='all'">
+<link rel="stylesheet" href="./chat-viewport.css?v=20261105-shared-page1">
 </head>
 <body data-auth-state="guest">
 <main class="app">
-
+<header>
+  <div class="brand-stack"><button id="headerFButton" class="logo logo-button" type="button" hidden onclick="navigate('chatsPage')" aria-label="گفتگوها" title="گفتگوها">F</button></div>
+</header>
 <div id="connectionBanner" class="connection-banner" role="status" aria-live="polite" hidden></div>
-<nav id="communicationsTabs" class="communications-tabs" aria-label="بخش‌های ارتباطی" hidden>
-  <button type="button" data-communication-tab="calls" aria-pressed="false">تماس</button>
-  <button type="button" data-communication-tab="personal" aria-pressed="true">شخصی</button>
-  <button type="button" data-communication-tab="group" aria-pressed="false">گروه</button>
-  <button type="button" data-communication-tab="channel" aria-pressed="false">کانال</button>
-</nav>
-
-<!-- صفحه ورود و ثبت‌نام -->
-<section class="page active" id="homePage">
-  <button class="auth-language-switch auth-language-en" id="authLanguageEnButton" type="button" onclick="setLanguage('en')" aria-label="English" aria-pressed="false">EN</button>
-  <button class="auth-language-switch auth-language-fa" id="authLanguageFaButton" type="button" onclick="setLanguage('fa')" aria-label="فارسی" aria-pressed="true">فا</button>
-  <section id="authBox" aria-label="ورود و ثبت‌نام">
-    <div class="auth-card">
-      <div class="auth-mode-tabs" role="group" aria-label="ورود یا ثبت‌نام">
-        <button type="button" id="authSignupTab" class="auth-mode-tab is-active" aria-pressed="true" onclick="setAuthMode('signup')">ثبت‌نام</button>
-        <button type="button" id="authLoginTab" class="auth-mode-tab" aria-pressed="false" onclick="setAuthMode('login')">ورود</button>
-      </div>
-      <div class="social-auth">
-        <button type="button" id="googleAuth" class="social-auth-button" onclick="signInSocial('google')"><span class="google-mark" aria-hidden="true">G</span><span id="googleAuthLabel">ادامه با Google</span></button>
-      </div>
-      <div class="auth-divider"><span id="authOrLabel">یا با ایمیل</span></div>
-      <form id="authForm">
-        <div id="nameField">
-          <label for="authName" id="authNameLabel">نام نمایشی</label>
-          <input id="authName" type="text" autocomplete="name" required maxlength="60" placeholder="نام شما">
-        </div>
-        <label for="authEmail" id="authEmailLabel">ایمیل</label>
-        <input id="authEmail" type="email" autocomplete="email" required placeholder="you@example.com">
-        <label for="authPassword" id="authPasswordLabel">رمز عبور (حداقل ۸ کاراکتر)</label>
-        <input id="authPassword" type="password" autocomplete="new-password" minlength="8" required placeholder="رمز عبور">
-        <button id="authSubmit" class="auth-submit" type="submit">ثبت‌نام</button>
-      </form>
-      <p id="authStatus" class="status" role="status"></p>
-    </div>
-  </section>
-</section>
 
 <!-- صفحه گفتگوها -->
 <section class="page" id="chatsPage">
-  <div id="privateChatsPanel">
   <div class="chats-topline"><div class="page-heading"><h2 id="chatsHeading">گفتگوها</h2><p id="chatsIntro">گفتگوهای اخیرت را اینجا می‌بینی.</p></div><button class="chats-new-button" type="button" onclick="startNewChat()" aria-label="گفتگوی جدید" title="گفتگوی جدید"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></div>
   <label class="conversation-search" for="conversationSearch"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg><input id="conversationSearch" type="search" autocomplete="off" placeholder="جستجوی گفتگوها" aria-label="جستجوی گفتگوها"></label>
   <div class="conversation-tools"><button class="mini-button" id="showActiveChats" type="button" onclick="setConversationView('active')">گفتگوها</button><button class="mini-button" id="showArchivedChats" type="button" onclick="setConversationView('archived')">آرشیو</button></div>
   <div class="list" id="conversationList"></div>
   <div id="inboxStatus" class="status muted-note" role="status"></div>
-  </div>
-</section>
-
-<!-- سابقه تماس‌ها -->
-<section class="page" id="callsPage">
-  <div class="chats-topline"><div class="page-heading"><h2 id="callsHeading">تماس‌ها</h2></div><button class="chats-new-button" id="refreshCallHistory" type="button" aria-label="به‌روزرسانی تماس‌ها" title="به‌روزرسانی" onclick="refreshFarnazCallHistory()">↻</button></div>
-  <div id="callHistoryList" class="list" aria-live="polite"></div>
-  <p id="callHistoryStatus" class="status muted-note" role="status"></p>
 </section>
 
 <!-- صفحه مخاطبان -->
@@ -146,7 +113,6 @@ body[data-auth-state="guest"] .app>header{display:none!important}
 <!-- صفحه پروفایل -->
 <section class="page" id="profilePage">
   <div class="page-heading"><h2 id="profileHeading">پروفایل من</h2><p id="profileIntro">اطلاعات حساب خود را مدیریت کن.</p></div>
-  <div id="profileRequiredNotice" class="profile-required-notice" role="status" hidden></div>
   <div class="panel">
     <div class="profile-top">
       <div class="avatar large" id="userAvatar">F</div>
@@ -156,7 +122,7 @@ body[data-auth-state="guest"] .app>header{display:none!important}
         <div class="profile-phone" id="userPhone"></div>
       </div>
     </div>
-    <form id="profileForm">
+    <form id="profileForm" onsubmit="saveProfile(event)">
       <label for="profileNameInput" id="profileNameLabel">نام نمایشی</label>
       <input id="profileNameInput" maxlength="60" required autocomplete="nickname">
       <label for="profilePhoneInput" id="profilePhoneLabel">شماره موبایل با کد کشور</label>
@@ -164,7 +130,7 @@ body[data-auth-state="guest"] .app>header{display:none!important}
       <select id="profilePhoneCountry" aria-label="Phone country code" style="width:100%;padding:10px;border:1px solid #43516a;border-radius:10px;background:var(--bg);color:var(--white)">
         <option value="98" selected>ایران (+98)</option><option value="49">آلمان (+49)</option><option value="1">آمریکا / کانادا (+1)</option><option value="44">بریتانیا (+44)</option><option value="90">ترکیه (+90)</option>
       </select>
-      <input id="profilePhoneInput" type="tel" dir="ltr" maxlength="25" placeholder="0912..." autocomplete="tel" required>
+      <input id="profilePhoneInput" type="tel" dir="ltr" maxlength="25" placeholder="0912..." autocomplete="tel">
       <label class="profile-phone-visibility" for="showPhoneSetting"><input id="showPhoneSetting" type="checkbox" checked> <span id="showPhoneSettingLabel">نمایش شماره موبایل به مخاطبان (پیش‌فرض روشن)</span></label>
       <p class="muted-note" id="showPhoneSettingHint">اگر خاموشش کنی، شماره‌ات در اطلاعات مخاطب نمایش داده نمی‌شود.</p>
       <label for="avatarFile" id="avatarFileLabel">تصویر پروفایل</label>
@@ -284,8 +250,8 @@ body[data-auth-state="guest"] .app>header{display:none!important}
 
 <!-- صفحه اختصاصی گفتگو -->
 <section class="page" id="chatPage">
-  <div class="chat-header space-detail-head">
-    <button class="space-secondary" id="backToChats" type="button" onclick="backFromChat()" aria-label="بازگشت به فهرست گفتگوها" title="بازگشت"><span>← بازگشت</span></button>
+  <div class="chat-header space-detail-head conversation-header">
+    <button class="space-secondary conversation-back-button" id="backToChats" type="button" onclick="backFromChat()" aria-label="بازگشت به فهرست گفتگوها" title="بازگشت"><span>← بازگشت</span></button>
     <div class="space-title-wrap chat-heading">
       <div class="space-avatar avatar medium" id="chatAvatar" title="اطلاعات مخاطب">F</div>
       <div class="space-title-copy chat-person">
@@ -294,16 +260,16 @@ body[data-auth-state="guest"] .app>header{display:none!important}
       </div>
     </div>
     <div class="space-call-actions call-actions">
-      <button class="space-call-button call-button" type="button" data-farnaz-call-type="audio" aria-label="تماس صوتی" title="تماس صوتی"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.7a14 14 0 0 0 4.8 4.8L15 13l2-2 5 2v4c0 1.1-.9 2-2 2C9.2 21 3 14.8 3 6c0-1.1.9-2 2-2Z"></path></svg></button>
-      <button class="space-call-button call-button" type="button" data-farnaz-call-type="video" aria-label="تماس تصویری" title="تماس تصویری"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="12" height="12" rx="2"></rect><path d="m15 10 6-3v10l-6-3z"></path></svg></button>
+      <button class="space-call-button call-button" type="button" onclick="startCall('audio')" aria-label="تماس صوتی" title="تماس صوتی"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.7a14 14 0 0 0 4.8 4.8L15 13l2-2 5 2v4c0 1.1-.9 2-2 2C9.2 21 3 14.8 3 6c0-1.1.9-2 2-2Z"></path></svg></button>
+      <button class="space-call-button call-button" type="button" onclick="startCall('video')" aria-label="تماس تصویری" title="تماس تصویری"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="12" height="12" rx="2"></rect><path d="m15 10 6-3v10l-6-3z"></path></svg></button>
     </div>
   </div>
   <div class="conversation-tools" id="selectionToolbar"><span class="muted-note" id="selectedCount">۰ پیام انتخاب شده</span><button class="mini-button" type="button" onclick="replyToSelected()">پاسخ</button><button class="mini-button" type="button" onclick="forwardSelectedMessages()">فوروارد</button><button class="mini-button danger" type="button" onclick="deleteSelectedMessages()">حذف</button><button class="mini-button" type="button" onclick="exitMessageSelection()">لغو</button></div>
   <button class="mini-button" id="loadOlderButton" type="button" onclick="loadOlderMessages()" hidden>پیام‌های قدیمی‌تر</button>
-  <div id="messageList" role="log" aria-live="polite" aria-label="پیام‌های گفتگو"></div>
+  <div id="messageList" class="conversation-message-list" role="log" aria-live="polite" aria-label="پیام‌های گفتگو"></div>
   <div id="replyPreview" class="message-quote" hidden></div>
-  <form id="sendMessageForm">
-    <div class="composer-shell">
+  <form id="sendMessageForm" class="conversation-composer">
+    <div class="composer-shell conversation-composer-shell">
       <div class="voice-preview" id="voicePreview" hidden>
         <div class="voice-preview-heading"><span id="voicePreviewLabel">پیام صوتی آماده ارسال</span><button class="voice-preview-remove" id="removeVoicePreview" type="button" onclick="discardRecordedVoice()" aria-label="حذف صدای ضبط‌شده">×</button></div>
         <audio id="voicePreviewPlayer" controls preload="metadata"></audio>
@@ -315,12 +281,12 @@ body[data-auth-state="guest"] .app>header{display:none!important}
       <div class="composer-actions">
         <div class="composer-left">
           <button class="composer-icon" id="attachmentMenuButton" type="button" onclick="toggleAttachmentMenu()" aria-label="افزودن پیوست" title="افزودن پیوست" aria-haspopup="menu" aria-expanded="false">＋</button>
-        </div>
         <div class="attachment-menu" id="attachmentMenu" role="menu" aria-label="گزینه‌های پیوست" hidden>
           <button class="attachment-option" id="attachmentPhotoOption" type="button" role="menuitem" onclick="chooseAttachment('photo')"><span class="attachment-option-icon">🖼</span><span>انتخاب عکس</span></button>
           <button class="attachment-option" id="attachmentCameraOption" type="button" role="menuitem" onclick="chooseAttachment('camera')"><span class="attachment-option-icon">📷</span><span>گرفتن عکس با دوربین</span></button>
           <button class="attachment-option" id="attachmentFileOption" type="button" role="menuitem" onclick="chooseAttachment('file')"><span class="attachment-option-icon">📎</span><span>انتخاب فایل</span></button>
-        </div>
+        </div></div>
+        
         <div class="composer-right">
           <button class="mini-button" id="cancelEditButton" type="button" onclick="cancelMessageEdit()" hidden>لغو ویرایش</button><span class="muted-note" id="attachmentHint">فایل تا ۲۰ مگابایت</span>
           <button class="composer-icon" id="recordAudioButton" type="button" onclick="toggleAudioRecording()" aria-label="ضبط پیام صوتی" title="پیام صوتی">🎙</button>
@@ -344,7 +310,10 @@ body[data-auth-state="guest"] .app>header{display:none!important}
     <button class="nav-button active" data-page="chatsPage" type="button" onclick="navigate('chatsPage')">
       <span class="nav-icon">▤</span><span id="navChats">گفتگوها</span>
     </button>
-        <button class="nav-button" data-page="contactsPage" type="button" onclick="navigate('contactsPage')">
+    <button class="nav-button" id="navSpacesBtn" data-page="spacesPage" type="button" onclick="navigate('spacesPage')">
+      <span class="nav-icon">◎</span><span id="navSpaces">گروه‌ها</span>
+    </button>
+    <button class="nav-button" data-page="contactsPage" type="button" onclick="navigate('contactsPage')">
       <span class="nav-icon">♙</span><span id="navContacts">مخاطبان</span>
     </button>
     <button class="nav-button" data-page="settingsPage" type="button" onclick="navigate('settingsPage')" aria-label="تنظیمات" title="تنظیمات">
@@ -353,11 +322,39 @@ body[data-auth-state="guest"] .app>header{display:none!important}
   </div>
 </nav>
 
-
+<div id="authBox" role="dialog" aria-modal="true" aria-label="ورود و ثبت‌نام">
+  <button id="authLanguageButton" class="auth-language-switch" type="button" onclick="toggleLanguage()" aria-label="Change language">EN</button>
+  <div class="auth-card">
+    <h2 id="authTitle" hidden>ثبت‌نام در فرناز</h2>
+    <p id="authMessage" hidden>برای ارتباط نزدیک‌تر، حساب خودت را بساز.</p>
+    <div class="auth-mode-tabs" role="group" aria-label="ورود یا ثبت‌نام">
+      <button type="button" id="authSignupTab" class="auth-mode-tab is-active" aria-pressed="true" onclick="setAuthMode('signup')">ثبت‌نام</button>
+      <button type="button" id="authLoginTab" class="auth-mode-tab" aria-pressed="false" onclick="setAuthMode('login')">ورود</button>
+    </div>
+    <div class="social-auth">
+      <button type="button" id="googleAuth" class="social-auth-button" onclick="signInSocial('google')"><span class="google-mark" aria-hidden="true">G</span><span id="googleAuthLabel">ادامه با Google</span></button>
+    </div>
+    <div class="auth-divider"><span id="authOrLabel">یا با ایمیل</span></div>
+    <form id="authForm">
+      <div id="nameField">
+        <label for="authName" id="authNameLabel">نام نمایشی</label>
+        <input id="authName" type="text" autocomplete="name" required maxlength="60" placeholder="نام شما">
+      </div>
+      <label for="authEmail" id="authEmailLabel">ایمیل</label>
+      <input id="authEmail" type="email" autocomplete="email" required placeholder="you@example.com">
+      <label for="authPassword" id="authPasswordLabel">رمز عبور (حداقل ۸ کاراکتر)</label>
+      <input id="authPassword" type="password" autocomplete="new-password" minlength="8" required placeholder="رمز عبور">
+      <button id="authSubmit" class="auth-submit" type="submit">ثبت‌نام</button>
+    </form>
+    <p id="authStatus" class="status" role="status"></p>
+    <p id="authSwitch" class="auth-switch-hint">حساب کاربری داری؟ از بخش ورود استفاده کن.</p>
+  </div>
+</div>
 
 <script src="./js/local-store.js?v=20261026-3"></script>
 <script>
 (function(){
+  window.FARNAZ_LIVEKIT_CALLS_ENABLED = new URLSearchParams(window.location.search).get("livekitPilot") === "1";
   const SCRIPT_TIMEOUT_MS=20000;
   function watchScript(script,onload,onerror,timeoutMs=SCRIPT_TIMEOUT_MS){
     let settled=false;
@@ -452,10 +449,9 @@ body[data-auth-state="guest"] .app>header{display:none!important}
       stack:String(reason?.stack||"").slice(0,1800)
     });
   });
-  window.FARNAZ_LIVEKIT_CALLS_ENABLED = new URLSearchParams(window.location.search).get("livekitPilot") === "1";
   function loadLocalScripts(){
     const core=document.createElement("script");
-    core.src="./js/core.js?v=20261104-81";
+    core.src="./js/core.js?v=20261105-shared-page1";
     watchScript(core,()=>{
       // A script's load event can still fire after a runtime exception.
       // Verify the core boot contract before loading features or attempting
@@ -465,9 +461,9 @@ body[data-auth-state="guest"] .app>header{display:none!important}
         return;
       }
       const featureScripts=[
-        "./js/chat-menu-v5.js?v=20261104-6",
-        "./js/spaces.js?v=20261105-reactions1",
-        "./js/calls.js?v=20261104-8"
+        "./js/chat-menu-v5.js?v=20261105-retry1",
+        "./js/spaces.js?v=20261105-shared-page1",
+        "./js/calls.js?v=20261105-matin2"
       ];
       if(window.FARNAZ_LIVEKIT_CALLS_ENABLED===true){
         featureScripts.push(

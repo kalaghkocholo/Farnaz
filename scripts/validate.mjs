@@ -202,9 +202,8 @@ const coreSource = sources["js/core.js"];
 if (!coreSource.includes("function installFarnazSwipeNavigation()") ||
     !coreSource.includes('const SWIPE_PAGE_ORDER=["profilePage","chatsPage","spacesPage","contactsPage","settingsPage"]') ||
     !coreSource.includes("const targetId=SWIPE_PAGE_ORDER[index+direction]") ||
-    !coreSource.includes('return "__privateChatBack__"') ||
-    !coreSource.includes('return "__spaceChatBack__"') ||
-    !coreSource.includes('document.getElementById("backSpaces")?.click()') ||
+    !coreSource.includes('window.FarnazConversationMode==="space"?"__spaceChatBack__":"__privateChatBack__"') ||
+    !coreSource.includes('window.FarnazConversationBack?.()') ||
     !coreSource.includes('navigate("chatsPage")') ||
     !coreSource.includes('document.body.classList.contains("keyboard-open")') ||
     !coreSource.includes('event.clientX-appRect.left<28||appRect.right-event.clientX<28') ||
@@ -217,7 +216,8 @@ const viewportCss = sources["chat-viewport.css"];
 if (sources["styles.css"].includes("/* Conversation layout —") ||
     sources["styles.css"].includes("/* FINAL OVERRIDE: flex message stacks") ||
     !viewportCss.includes("padding:14px 2px 112px!important;gap:8px!important;") ||
-    !viewportCss.includes("body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceComposer")) {
+    !viewportCss.includes("body.chat-mode .app.chat-mode>#chatPage #sendMessageForm") ||
+    !viewportCss.includes("body.chat-mode .app.chat-mode>#chatPage #messageList")) {
   errors.push("private, group, and channel viewport sizing must have one shared chat-viewport.css authority");
 }
 
@@ -228,7 +228,7 @@ if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v238"
 const loaderChecks = [
   [html.includes('script.src="./js/supabase-sdk.js"') && html.includes("watchScript(script,()=>{") && html.includes("loadLocalScripts();"),
     "index.html must wait for the local Supabase SDK before loading the app core"],
-  [html.includes('core.src="./js/core.js?v=20261104-convo-1"') && html.includes("watchScript(core,()=>{") && html.includes("بارگذاری هستهٔ برنامه ناموفق بود یا بیش از حد طول کشید"),
+  [html.includes('core.src="./js/core.js?v=20261105-shared-page1"') && html.includes("watchScript(core,()=>{") && html.includes("بارگذاری هستهٔ برنامه ناموفق بود یا بیش از حد طول کشید"),
     "index.html must handle successful, failed, and stalled core-script loading"],
   [html.includes("watchScript(script,loadNextFeature,()=>{") && html.includes("featureScripts[featureIndex++]") && html.includes('if(typeof window.FarnazBoot==="function")window.FarnazBoot();'),
     "index.html must load feature scripts sequentially and boot only after the loader sequence"],

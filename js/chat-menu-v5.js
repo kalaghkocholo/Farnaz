@@ -1,3 +1,4 @@
+let pendingPrivateSend=null;
 let readReceiptMessageIds=new Set();
 let messageReactionMap=new Map(),pinnedMessageIds=new Set(),currentPinnedMessage=null;
 const MESSAGE_REACTION_CHOICES=["👍","❤️","😂","😮","😢","🙏"];
@@ -348,6 +349,11 @@ function showMessageActions(m,item){
   const menu=document.createElement("div");menu.className="message-tools message-tools-floating";
   const closeMenu=()=>{menu.remove();restoreItem();clearMessageActionOverlay();};
   const add=(label,fn,cls="mini-button")=>{const b=document.createElement("button");b.type="button";b.className=cls;b.textContent=label;b.onclick=()=>{closeMenu();fn();};menu.appendChild(b);};
+  const quickReactions=document.createElement("div");quickReactions.className="message-quick-reactions";
+  quickReactions.setAttribute("role","group");quickReactions.setAttribute("aria-label",english?"React to message":"واکنش به پیام");
+  Object.assign(quickReactions.style,{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"5px",padding:"5px 2px 9px",borderBottom:"1px solid var(--border-color,rgba(128,128,128,.2))",marginBottom:"5px"});
+  for(const emoji of MESSAGE_REACTION_CHOICES){const reaction=document.createElement("button");reaction.type="button";reaction.className="message-quick-reaction";reaction.textContent=emoji;reaction.setAttribute("aria-label",(english?"React with ":"واکنش ")+emoji);Object.assign(reaction.style,{width:"36px",height:"36px",minWidth:"36px",padding:"0",border:"0",borderRadius:"10px",background:"var(--surface-secondary,rgba(128,128,128,.12))",fontSize:"20px",cursor:"pointer"});reaction.onclick=()=>{closeMenu();toggleMessageReaction(m.id,emoji);};quickReactions.appendChild(reaction);}
+  menu.appendChild(quickReactions);
   add("📌  "+(pinnedMessageIds.has(String(m.id))?(english?"Unpin message":"برداشتن سنجاق"):(english?"Pin message":"سنجاق پیام")),()=>toggleMessagePin(m.id),"mini-button message-pin-action");
   add("↩  "+(english?"Reply":"پاسخ"),()=>setReplyTarget(m));
   add("➦  "+(english?"Forward":"فوروارد"),()=>{selectedMessageIds.clear();selectedMessageIds.add(m.id);messageSelectionMode=true;updateSelectionToolbar();forwardSelectedMessages();});
@@ -765,6 +771,9 @@ async function sendMessage(event){
   const restoreComposerFocus=document.activeElement===input;
   const file=recordedVoiceFile||selectedFile||photoFile||cameraFile;
   if(!body&&!file&&!editingMessageId)return;
+  const sendFingerprint=JSON.stringify([senderId,receiverId,body,file?.name||"",file?.size||0,file?.lastModified||0,file?.type||"",replyTarget?.id||""]);
+  const pendingSend=editingMessageId?null:(pendingPrivateSend?.fingerprint===sendFingerprint?pendingPrivateSend:{fingerprint:sendFingerprint,id:crypto.randomUUID(),attachmentPath:null});
+  if(pendingSend)pendingPrivateSend=pendingSend;
   if(file&&file.size>20*1024*1024){setStatus("sendMessageStatus",english?"Choose a file up to 20 MB.":"حجم فایل باید حداکثر ۲۰ مگابایت باشد.",true);return;}
   if(editingMessageId&&file){setStatus("sendMessageStatus",english?"Remove the attachment before editing a message.":"برای ویرایش پیام، ابتدا پیوست را بردار.",true);return;}
   button.disabled=true;setStatus("sendMessageStatus",english?"Sending…":"در حال ارسال…");
@@ -796,18 +805,24 @@ async function sendMessage(event){
       if(file){
         const safeName=(file.name||"attachment").replace(/[^a-zA-Z0-9._-]/g,"_").slice(-120)||"attachment";
         const ext=(safeName.split(".").pop()||"bin").toLowerCase().replace(/[^a-z0-9]/g,"")||"bin";
-        attachmentPath=senderId+"/"+crypto.randomUUID()+"."+ext;pendingUploadPath=attachmentPath;
-        const {error:uploadError}=await client.storage.from("chat-attachments").upload(attachmentPath,file,{contentType:file.type||"application/octet-stream",upsert:false});
+        pendingSend.attachmentPath=pendingSend.attachmentPath||senderId+"/"+pendingSend.id+"."+ext;
+        attachmentPath=pendingSend.attachmentPath;pendingUploadPath=attachmentPath;
+        const {error:uploadError}=await client.storage.from("chat-attachments").upload(attachmentPath,file,{contentType:file.type||"application/octet-stream",upsert:true});
         if(uploadError)throw uploadError;
         if(String(currentUser?.id||"")!==senderId)throw new Error("Account changed while uploading; sign in again before sending.");
         attachmentName=safeName;attachmentMime=file.type||"application/octet-stream";attachmentSize=file.size;
       }
       if(String(currentUser?.id||"")!==senderId)throw new Error("Account changed while sending.");
-      const row={sender_id:senderId,receiver_id:receiverId,body:body||null,message_type:file?(isImage?"image":"file"):"text",
+      const row={id:pendingSend.id,sender_id:senderId,receiver_id:receiverId,body:body||null,message_type:file?(isImage?"image":"file"):"text",
         attachment_path:attachmentPath,attachment_name:attachmentName,attachment_mime:attachmentMime,attachment_size:attachmentSize,reply_to_id:replyTarget?.id||null};
-      const {data:sentMessage,error:sendError}=await client.from("messages").insert(row).select("id,sender_id,receiver_id,body,created_at,message_type,attachment_path,attachment_name,attachment_mime,reply_to_id,edited_at").single();
-      if(sendError){if(attachmentPath){await client.storage.from("chat-attachments").remove([attachmentPath]);pendingUploadPath=null;}throw sendError;}
-      pendingUploadPath=null;
+      let {data:sentMessage,error:sendError}=await client.from("messages").insert(row).select("id,sender_id,receiver_id,body,created_at,message_type,attachment_path,attachment_name,attachment_mime,reply_to_id,edited_at").single();
+      if(sendError){
+        // A mobile connection can drop after PostgreSQL has committed the row.
+        // Reconcile by the client-generated UUID before allowing a retry.
+        const {data:existing,error:lookupError}=await client.from("messages").select("id,sender_id,receiver_id,body,created_at,message_type,attachment_path,attachment_name,attachment_mime,reply_to_id,edited_at").eq("id",pendingSend.id).maybeSingle();
+        if(existing&&!lookupError){sentMessage=existing;sendError=null;}else throw sendError;
+      }
+      pendingUploadPath=null;pendingPrivateSend=null;
       if(String(currentUser?.id||"")!==senderId)return;
       // Only touch the composer and visible history if the user is still in the
       // same account and conversation; switching chats must preserve its draft.

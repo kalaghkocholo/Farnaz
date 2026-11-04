@@ -187,6 +187,7 @@ async function open(id){
    cachedSpace=true;
   }
   if(!isCurrent())return;
+  if(String(active?.id||"")!==String(s.id))cancelSpaceReply();
   active=s;spaces=spaces.map(x=>x.id===s.id?s:x);
  document.querySelector(".app")?.classList.add("spaces-chat-mode");document.body.classList.add("spaces-chat-mode");q("bottomNav")?.classList.remove("visible");q("spaceList").hidden=true;document.querySelector(".spaces-head").hidden=true;document.querySelector(".spaces-tabs").hidden=true;document.querySelector(".spaces-actions").hidden=true;q("spacesStatus").hidden=true;q("spaceDetail").hidden=false;q("spaceDetail").querySelector(".space-call-actions").hidden=true;
  q("spaceName").textContent=s.name;if(["group","channel"].includes(s.type)){q("spaceName").setAttribute("role","button");q("spaceName").tabIndex=0;q("spaceName").setAttribute("aria-label",s.type==="channel"?tr("باز کردن اطلاعات کانال","Open channel information"):tr("باز کردن اطلاعات گروه","Open group information"));q("spaceName").style.cursor="pointer";}else{q("spaceName").removeAttribute("role");q("spaceName").removeAttribute("tabindex");q("spaceName").removeAttribute("aria-label");q("spaceName").style.cursor="default";}renderSpaceAvatar(q("spaceIcon"),s.avatar_url,s.type==="group"?"👥":"📣",true);q("spaceIcon").style.cursor=["group","channel"].includes(s.type)?"pointer":"default";q("spaceDescription").textContent=s.description||"";q("spaceDescription").hidden=!q("spaceDescription").textContent.trim();

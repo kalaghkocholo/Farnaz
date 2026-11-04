@@ -264,6 +264,9 @@ footer{text-align:center;color:#718096;font-size:10px;padding:17px 0 7px}
   z-index:9999;align-items:center;justify-content:center;
   padding:calc(18px + env(safe-area-inset-top,0px)) 18px calc(18px + env(safe-area-inset-bottom,0px));overflow-y:auto
 }
+.auth-language-switch{position:fixed;top:calc(env(safe-area-inset-top,0px) + 14px);z-index:10001;min-width:42px;height:34px;padding:0 9px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--muted);font-size:12px;font-weight:700}
+html[dir="rtl"] .auth-language-switch{left:max(16px,calc((100vw - 560px)/2 + 16px));right:auto}
+html[dir="ltr"] .auth-language-switch{right:max(16px,calc((100vw - 560px)/2 + 16px));left:auto}
 .auth-card{
   background:var(--bg);padding:18px 8px;border:0;
   border-radius:0;width:100%;max-width:390px;margin:auto

@@ -709,7 +709,7 @@ async function send(event){
  if(file&&file.size>20*1024*1024){q("spaceMessageStatus").textContent=tr("حجم فایل باید حداکثر ۲۰ مگابایت باشد.","Choose a file up to 20 MB.");return;}
  if(editId&&file){q("spaceMessageStatus").textContent=tr("برای ویرایش پیام، ابتدا پیوست را جداگانه ارسال کن.","Attachments cannot be changed while editing a message.");return;}
  const sendFingerprint=JSON.stringify([senderId,spaceId,body,file?.name||"",file?.size||0,file?.lastModified||0,file?.type||""]);
- const pendingSend=editId?null:(pendingSpaceSend?.fingerprint===sendFingerprint?pendingSpaceSend:{fingerprint:sendFingerprint,id:crypto.randomUUID(),attachmentPath:null});
+ const pendingSend=editId?null:(pendingSpaceSend?.fingerprint===sendFingerprint&&pendingSpaceSend.fileRef===(file||null)?pendingSpaceSend:{fingerprint:sendFingerprint,fileRef:file||null,id:crypto.randomUUID(),attachmentPath:null});
  if(pendingSend)pendingSpaceSend=pendingSend;
  const sameAccount=()=>String(currentUser?.id||"")===senderId;
  const sameSpace=()=>sameAccount()&&String(active?.id||"")===spaceId;

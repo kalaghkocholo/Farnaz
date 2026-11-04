@@ -222,7 +222,7 @@ if (sources["styles.css"].includes("/* Conversation layout —") ||
 }
 
 const chatSource = sources["js/chat-menu-v5.js"];
-if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v238"') || !sources["service-worker.js"].includes('styles.css?v=20261105-shared-page1') || !sources["service-worker.js"].includes('core.js?v=20261105-shared-page1') || !sources["service-worker.js"].includes('spaces.js?v=20261105-shared-page1') || !sources["service-worker.js"].includes('local-store.js?v=20261026-3') || !sources["service-worker.js"].includes('calls.js?v=20261105-pilot1') || !sources["service-worker.js"].includes('chat-menu-v5.js?v=20261104-merge-1') || !html.includes('chat-menu-v5.js?v=20261104-merge-1')) {
+if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v239"') || !sources["service-worker.js"].includes('styles.css?v=20261105-shared-page1') || !sources["service-worker.js"].includes('core.js?v=20261105-shared-page1') || !sources["service-worker.js"].includes('spaces.js?v=20261105-shared-page1') || !sources["service-worker.js"].includes('local-store.js?v=20261026-3') || !sources["service-worker.js"].includes('calls.js?v=20261105-pilot2') || !sources["service-worker.js"].includes('chat-menu-v5.js?v=20261104-merge-1') || !html.includes('chat-menu-v5.js?v=20261104-merge-1')) {
   errors.push("service-worker.js must use the current shell cache and core asset versions");
 }
 const loaderChecks = [

@@ -78,7 +78,10 @@ requireCheck(adapter.includes('integrationStatus: "isolated-adapter-not-enabled"
   "The new adapter must remain disabled until the local SDK and UI are tested.");
 requireCheck(calls.includes("window.FARNAZ_LIVEKIT_CALLS_ENABLED===true") &&
   calls.includes("window.FarnazLiveKitCallUI.start(type)") &&
-  calls.includes("window.FarnazLiveKitCallUI.setUser(next)"),
+  calls.includes("window.FarnazLiveKitCallUI.setUser(next)") &&
+  calls.includes('rpc("start_farnaz_call"') &&
+  calls.includes("p_receiver_id:receiverId") &&
+  !calls.includes('.from("call_sessions").insert('),
   "Legacy call entry points must delegate to LiveKit only when the explicit pilot flag is enabled.");
 requireCheck(callUi.includes("root.FarnazLiveKitCallUI") &&
   callUi.includes("controller.start({ peerId: peerId, callType: callType })") &&

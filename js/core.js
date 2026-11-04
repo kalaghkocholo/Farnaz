@@ -5,11 +5,10 @@ window.FARNAZ_CONFIG = {
   supabasePublishableKey: "sb_publishable_LhUmVjXJlazgYRtEvXna6g_GGKxi_kC"
 };
 
-let english=false,authMode="signup",farnazClient=null,currentUser=null;
+let english=false,authMode="signup",farnazClient=null,currentUser=null,profileCompletionRequired=false;
 let currentProfileName="",currentAvatarUrl="",currentPhone="",currentChatPresenceLabel="گفتگوی خصوصی";
 let currentChatUser=null,messageSubscription=null,reconnectTimer=null,reconnectAttempts=0;
 let profileRequestNumber=0,chatRequestNumber=0,previousPage="chatsPage";
-let profileCompletionRequired=false;
 let swipePageHistory=[],swipePageHistoryIndex=-1,swipeGesture=null,swipeTransitionTimer=null;
 let conversationView="active",conversationPrefs=new Map(),messageLoadedCount=50,messageHasMore=false;
 let contactsCategory="all";
@@ -646,51 +645,38 @@ document.addEventListener("click",event=>{
 function navigate(pageId,options={}){
   if(!currentUser){openAuth();return;}
   if(profileCompletionRequired&&pageId!=="profilePage")pageId="profilePage";
-  const previousCommunicationsTab=window.farnazCommunicationsTab||"personal";
-  if(pageId==="chatsPage")window.farnazCommunicationsTab="personal";
-  else if(pageId==="callsPage")window.farnazCommunicationsTab="calls";
-  else if(pageId==="spacesPage"&&!["group","channel"].includes(window.farnazCommunicationsTab))window.farnazCommunicationsTab="group";
   if(!$(pageId))return;
-  if(pageId==="chatPage"&&!currentChatUser)return;
+  if(pageId==="chatPage"&&!currentChatUser&&window.FarnazConversationMode!=="space")return;
   const activePageId=document.querySelector(".page.active")?.id||null;
-  // Swipe destinations are based on the app's stable screen order, never on
-  // the order in which screens happened to be opened during this session.
-  // Calls and group/channel spaces are sections of the communications area.
-  swipePageHistory=[];
-  swipePageHistoryIndex=-1;
+  if(activePageId!==pageId){
+    // Welcome/login is an auth boundary, not a navigable page in signed-in history.
+    if(pageId==="homePage"){swipePageHistory=[];swipePageHistoryIndex=-1;}
+    else if(swipePageHistoryIndex<0){
+      const safePreviousPage=activePageId&&activePageId!=="homePage"&&currentUser?activePageId:null;
+      swipePageHistory=safePreviousPage?[safePreviousPage,pageId]:[pageId];
+      swipePageHistoryIndex=swipePageHistory.length-1;
+    }else if(swipePageHistory[swipePageHistoryIndex-1]===pageId)swipePageHistoryIndex--;
+    else if(swipePageHistory[swipePageHistoryIndex+1]===pageId)swipePageHistoryIndex++;
+    else{swipePageHistory=swipePageHistory.slice(0,swipePageHistoryIndex+1);swipePageHistory.push(pageId);swipePageHistoryIndex=swipePageHistory.length-1;}
+  }
   document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id===pageId));
   document.querySelector(".app").classList.toggle("chat-mode",pageId==="chatPage");
   document.body.classList.toggle("chat-mode",pageId==="chatPage");
+  const brandHeader=document.querySelector(".app>header");
+  if(brandHeader)brandHeader.hidden=pageId==="chatPage";
+  const headerFButton=$("headerFButton");
+  if(headerFButton)headerFButton.hidden=pageId==="homePage"||pageId==="chatPage";
   if(pageId!=="chatPage"){document.documentElement.style.removeProperty("--chat-viewport-offset");document.documentElement.style.removeProperty("--chat-viewport-height");}
-  document.querySelectorAll(".nav-button").forEach(b=>b.classList.toggle("active",b.dataset.page===(["spacesPage","callsPage"].includes(pageId)?"chatsPage":pageId)));
+  document.querySelectorAll(".nav-button").forEach(b=>b.classList.toggle("active",b.dataset.page===pageId));
   $("bottomNav").classList.toggle("visible",pageId!=="homePage"&&pageId!=="chatPage");
-  const communicationTabs=$("communicationsTabs");
-  if(communicationTabs){
-    communicationTabs.hidden=!("chatsPage spacesPage callsPage".split(" ").includes(pageId));
-    communicationTabs.querySelectorAll("[data-communication-tab]").forEach(button=>{
-      const selected=button.dataset.communicationTab===window.farnazCommunicationsTab;
-      button.classList.toggle("is-active",selected);
-      button.setAttribute("aria-pressed",String(selected));
-    });
-  }
   if(pageId==="chatsPage")applyConversationSearch();
-  if(pageId==="callsPage")window.refreshFarnazCallHistory?.();
   if(options.refreshData!==false){
     if(pageId==="chatsPage")refreshConversationList();
     if(pageId==="contactsPage")refreshSavedContacts();
   }
   window.scrollTo({top:0,behavior:"instant"});
 }
-window.farnazCommunicationsTab="personal";
-document.addEventListener("click",event=>{
-  const button=event.target?.closest?.("[data-communication-tab]");
-  if(!button)return;
-  const tab=button.dataset.communicationTab;
-  if(!["calls","personal","group","channel"].includes(tab))return;
-  window.farnazCommunicationsTab=tab;
-  navigate(tab==="personal"?"chatsPage":tab==="calls"?"callsPage":"spacesPage");
-});
-function backFromChat(){dismissMessageMenus();exitMessageSelection();cancelReply();cancelMessageEdit();navigate(["contactsPage","callsPage"].includes(previousPage)?previousPage:"chatsPage");}
+function backFromChat(){if(window.FarnazConversationMode==="space"&&typeof window.FarnazConversationBack==="function"){window.FarnazConversationBack();return;}dismissMessageMenus();exitMessageSelection();cancelReply();cancelMessageEdit();navigate(previousPage==="contactsPage"?"contactsPage":"chatsPage");}
 function openAdjacentConversation(direction){
   const cards=[...$("conversationList").querySelectorAll(".conversation-card")];
   if(!cards.length)return;
@@ -700,12 +686,8 @@ function openAdjacentConversation(direction){
   if(nextIndex<0||nextIndex>=cards.length)return;
   cards[nextIndex].querySelector(".list-item")?.click();
 }
-/* One history-backed gesture engine for pages and nested conversations. */
-function swipePageHistoryKey(pageId,tab){
-  return pageId+"|"+(pageId==="spacesPage"?(["group","channel"].includes(tab)?tab:"group"):"");
-}
-function swipePageHistoryId(entry){return String(entry||"").split("|")[0];}
-// Fixed physical screen order from left to right; independent of Persian/English text direction.
+/* Bidirectional page swipes use the same history as ordinary navigation. */
+const SWIPE_PAGE_ORDER=["profilePage","chatsPage","spacesPage","contactsPage","settingsPage"];
 const FARNAZ_SWIPE_PAGE_ORDER=["settingsPage","contactsPage","chatsPage","profilePage"];
 function swipeNavigationBasePage(pageId){
   if(pageId==="callsPage"||pageId==="spacesPage")return "chatsPage";
@@ -877,21 +859,20 @@ function showConversationActions(card,contactId){
   for(const [label,action] of items){const b=document.createElement("button");b.type="button";b.className="mini-button"+(action==="delete"?" danger":"");b.textContent=label;b.onclick=()=>conversationAction(contactId,action);menu.appendChild(b);}
   card.appendChild(menu);
 }
-function openSignup(){setAuthMode("signup");}
-function openLogin(){setAuthMode("login");}
+function openSignup(){authMode="signup";openAuth();}
+function openLogin(){authMode="login";openAuth();}
 function openAuth(){
-  const home=$("homePage");
-  if(home&&!home.classList.contains("active")){
-    document.querySelectorAll(".page").forEach(page=>page.classList.toggle("active",page===home));
-  }
-  $("authBox").style.display="block";
-  document.querySelector(".app")?.classList.remove("auth-open");
-  setAuthMode(authMode);
+  const signup=authMode==="signup";
+  $("nameField").style.display=signup?"block":"none";
+  $("authName").required=signup;
+  $("authPassword").autocomplete=signup?"new-password":"current-password";
+  document.querySelector(".app")?.classList.add("auth-open");
+  if($("headerFButton"))$("headerFButton").hidden=true;
+  $("authBox").style.display="flex";setStatus("authStatus","");
+  $("authName").value="";$("authEmail").value="";$("authPassword").value="";
+  updateAuthTexts();
 }
-function closeAuth(){
-  $("authBox").style.display="none";
-  document.querySelector(".app")?.classList.remove("auth-open");
-}
+function closeAuth(){$("authBox").style.display="none";document.querySelector(".app")?.classList.remove("auth-open");}
 async function signInSocial(provider="google"){
   const button=$("googleAuth");
   const label=button?.querySelector("span:last-child");
@@ -901,7 +882,7 @@ async function signInSocial(provider="google"){
     const client=getClient();
     const {error}=await client.auth.signInWithOAuth({
       provider,
-      options:{redirectTo:window.location.origin+window.location.pathname}
+      options:{redirectTo:"https://kalaghkocholo.github.io/Farnaz/"}
     });
     if(error)throw error;
   }catch(e){
@@ -914,75 +895,55 @@ async function signInSocial(provider="google"){
     if(button)button.disabled=false;
   }
 }
-function openSignup(){setAuthMode("signup");}
-function openLogin(){setAuthMode("login");}
-function openAuth(){
-  const home=$("homePage");
-  if(home&&!home.classList.contains("active")){
-    document.querySelectorAll(".page").forEach(page=>page.classList.toggle("active",page===home));
-  }
-  $("authBox").style.display="block";
-  if($("headerFButton"))$("headerFButton").hidden=true;
-  document.querySelector(".app")?.classList.remove("auth-open");
-  setAuthMode(authMode);
-}
-function closeAuth(){
-  $("authBox").style.display="none";
-  document.querySelector(".app")?.classList.remove("auth-open");
-}
 function setAuthMode(mode){
-  authMode=mode==="login"?"login":"signup";
+  if(mode!=="login"&&mode!=="signup")return;
+  authMode=mode;
   const signup=authMode==="signup";
   $("nameField").style.display=signup?"block":"none";
   $("authName").required=signup;
   $("authPassword").autocomplete=signup?"new-password":"current-password";
-  const signupTab=$("authSignupTab"),loginTab=$("authLoginTab");
-  if(signupTab){signupTab.classList.toggle("is-active",signup);signupTab.setAttribute("aria-pressed",String(signup));}
-  if(loginTab){loginTab.classList.toggle("is-active",!signup);loginTab.setAttribute("aria-pressed",String(!signup));}
-  setStatus("authStatus","");
-  updateAuthTexts();
+  setStatus("authStatus","");updateAuthTexts();
 }
 function switchAuthMode(){setAuthMode(authMode==="signup"?"login":"signup");}
 function updateAuthTexts(){
-  const v=english,signup=authMode==="signup";
-  $("authSubmit").textContent=signup?(v?"Sign up":"ثبت‌نام"):(v?"Sign in":"ورود");
-  $("authSignupTab").textContent=v?"Sign up":"ثبت‌نام";
+  const v=english;
+  $("authTitle").textContent=authMode==="signup"?(v?"Create your Farnaz account":"ثبت‌نام در فرناز"):(v?"Sign in to Farnaz":"ورود به فرناز");
+  $("authMessage").textContent=authMode==="signup"?(v?"Create an account to stay connected.":"برای ارتباط نزدیک‌تر، حساب خودت را بساز."):(v?"Sign in with your email and password.":"با ایمیل و رمز عبورت وارد شو.");
+  $("authSubmit").textContent=authMode==="signup"?(v?"Sign up":"ثبت‌نام"):(v?"Sign in":"ورود");
+  $("authSwitch").textContent=authMode==="signup"?(v?"You can add your mobile number after email confirmation.":"شماره موبایل را پس از تأیید ایمیل تکمیل می‌کنی."):(v?"Use your email and password to continue.":"با ایمیل و رمز عبورت وارد فرناز شو.");
+  $("authNameLabel").textContent=v?"Display name":"نام نمایشی";
   $("authLoginTab").textContent=v?"Sign in":"ورود";
+  $("authSignupTab").textContent=v?"Create account":"ثبت‌نام";
+  $("authLoginTab").classList.toggle("is-active",authMode==="login");
+  $("authSignupTab").classList.toggle("is-active",authMode==="signup");
+  $("authLoginTab").setAttribute("aria-pressed",String(authMode==="login"));
+  $("authSignupTab").setAttribute("aria-pressed",String(authMode==="signup"));
+  $("googleAuth").hidden=false;
+  document.querySelector(".social-auth").hidden=false;
+  document.querySelector(".auth-divider").hidden=false;
   $("googleAuthLabel").textContent=v?"Continue with Google":"ادامه با Google";
   $("authOrLabel").textContent=v?"or continue with email":"یا با ایمیل";
+  const languageButton=$("authLanguageButton");
+  if(languageButton)languageButton.textContent=v?"فا":"EN";
 }
-/* Keep both explicit language choices on the single authentication screen. */
-function normalizeAuthLanguageButtons(){
+/* Keep one welcome language toggle globally; preserve the separate Settings language control. */
+function normalizeWelcomeLanguageButton(){
   const home=document.getElementById("homePage");
   if(!home)return;
-  ["authLanguageEnButton","authLanguageFaButton"].forEach(id=>{
-    const button=document.getElementById(id);
-    if(button&&button.parentElement!==home)home.append(button);
-  });
-  updateAuthLanguageButtons();
+  const buttons=Array.from(document.querySelectorAll(".welcome-language-switch, #welcomeLanguageButton"));
+  let keep=home.querySelector(":scope > #welcomeLanguageButton")||home.querySelector(".welcome-language-switch");
+  if(!keep)return;
+  buttons.forEach(button=>{if(button!==keep)button.remove();});
+  keep.id="welcomeLanguageButton";
+  keep.classList.add("welcome-language-switch");
+  if(keep.parentElement!==home)home.prepend(keep);
 }
-document.addEventListener("DOMContentLoaded",normalizeAuthLanguageButtons);
-window.addEventListener("pageshow",normalizeAuthLanguageButtons);
-setTimeout(normalizeAuthLanguageButtons,0);
+document.addEventListener("DOMContentLoaded",normalizeWelcomeLanguageButton);
+window.addEventListener("pageshow",normalizeWelcomeLanguageButton);
+setTimeout(normalizeWelcomeLanguageButton,0);
 
-function updateAuthLanguageButtons(){
-  const en=$("authLanguageEnButton"),fa=$("authLanguageFaButton");
-  if(en){
-    en.classList.toggle("is-current-language",english);
-    en.removeAttribute("aria-pressed");
-    en.setAttribute("aria-label","Switch to English");
-    en.title="English";
-  }
-  if(fa){
-    fa.classList.toggle("is-current-language",!english);
-    fa.removeAttribute("aria-pressed");
-    fa.setAttribute("aria-label","تغییر زبان به فارسی");
-    fa.title="فارسی";
-  }
-}
-function setLanguage(language){
-  english=language==="en";
-
+function toggleLanguage(){
+  english=!english;
   document.documentElement.lang=english?"en":"fa";
   document.documentElement.dir=english?"ltr":"rtl";
   const labels={
@@ -990,7 +951,7 @@ function setLanguage(language){
     welcome:["خوش آمدی به فرناز","WELCOME TO FARNAZ"],
     headline:["آدم‌های مهم زندگی‌ات، همیشه نزدیک تو","The people who matter, closer to you"],
     description:["یک فضای ساده برای گفتگو و ارتباط با کسانی که برایت مهم‌اند.","A simple space to stay connected."],
-    start:["شروع کنیم ←","Let's begin →"],f1:["گفتگوی خصوصی","Private chat"],
+    start:["ورود / ثبت‌نام","Sign in / Sign up"],f1:["گفتگوی خصوصی","Private chat"],
     f1d:["پیام‌هایت را مرتب دنبال کن.","Keep conversations organized."],
     f2:["عکس و فایل","Photos & files"],f2d:["لحظه‌ها و فایل‌ها را به اشتراک بگذار.","Share moments and files."],
     f3:["مخاطبان","Contacts"],f3d:["مخاطبان مهمت را ذخیره و سریع پیدا کن.","Save and find important contacts quickly."],
@@ -1026,17 +987,16 @@ function setLanguage(language){
   };
   Object.entries(labels).forEach(([id,pair])=>{if($(id))$(id).textContent=pair[english?1:0];});
   if($("language"))$("language").textContent=english?"فا":"EN";
-  updateAuthLanguageButtons();
+  if($("welcomeLanguageButton")){$("welcomeLanguageButton").textContent=english?"فا":"EN";$("welcomeLanguageButton").setAttribute("aria-label",english?"Switch to Persian":"Switch to English");}
   if($("contactsImportToggle"))$("contactsImportToggle").textContent=$("phoneContactsImport")&&!$("phoneContactsImport").hidden?"×":"＋";
-  
+  if($("start"))$("start").textContent=english?"Sign in to Farnaz →":"ورود به فرناز ←";
   ["profilePhoneCountry"].forEach(id=>{
     const select=$(id);if(!select)return;
     const names=english?["Iran","Germany","United States / Canada","United Kingdom","Turkey"]:["ایران","آلمان","آمریکا / کانادا","بریتانیا","ترکیه"];
     Array.from(select.options).forEach((option,i)=>{option.textContent=names[i]+" (+"+option.value+")";});
   });
-  // The old welcome-screen footer was removed from the single-page auth layout.
-  const messageInput=$("messageText");
-  if(messageInput)messageInput.placeholder=english?"Write a message...":"پیامت را بنویس...";
+  $("footerText").textContent="Farnaz · Closer, wherever you are.";
+  $("messageText").placeholder=english?"Write a message...":"پیامت را بنویس...";
   $("showActiveChats").textContent=english?"Chats":"گفتگوها";$("showArchivedChats").textContent=english?"Archive":"آرشیو";
   $("attachmentMenuButton").title=english?"Add attachment":"افزودن پیوست";
   $("attachmentPhotoOption").lastElementChild.textContent=english?"Choose photo":"انتخاب عکس";
@@ -1068,15 +1028,6 @@ function setLanguage(language){
   updateAuthTexts();
   applySettingsLanguage();
   if(currentUser){refreshConversationList();refreshSavedContacts();}
-}
-function toggleLanguage(){setLanguage(english?"fa":"en");}
-function updateProfileRequiredNotice(required,message){
-  const notice=$("profileRequiredNotice");
-  if(!notice)return;
-  notice.hidden=!required;
-  notice.textContent=required?(message||(english
-    ?"To protect your account and let other people recognize you, please complete your profile. Enter your display name and mobile number with country code, then tap Save changes. You cannot use chats until this is done."
-    :"برای تکمیل و شناسایی حساب کاربری‌ات، لطفاً نام نمایشی و شماره موبایل را با کد کشور وارد کن و دکمه «ذخیره تغییرات» را بزن. تا تکمیل این اطلاعات، امکان استفاده از گفتگوها را نداری.")):"";
 }
 function renderUser(user,name){
   currentUser=user;currentProfileName=(name||"").trim();
@@ -1137,33 +1088,40 @@ async function showUser(user){
     try{await window.FarnazLocalStore?.saveSnapshot(user.id,"profile",profile);}catch(cacheError){console.warn("Cached profile save:",cacheError);}
     // A completed cache write must not let a stale profile request update the UI after logout.
     if(request!==profileRequestNumber||currentUser?.id!==user.id)return;
-    profileCompletionRequired=!(currentProfileName&&/^\+[1-9]\d{7,14}$/.test(currentPhone));
-    updateProfileRequiredNotice(profileCompletionRequired);
-    setStatus("profileStatus",english?"Profile loaded.":"پروفایل بارگذاری شد.");
-    return !profileCompletionRequired;
+    profileCompletionRequired=!(String(profile?.display_name||"").trim()&&String(profile?.phone||"").trim());
+    if(profileCompletionRequired){
+      $("profileIntro").textContent=english
+        ?"Complete your profile to continue. Your mobile number helps friends find you on Farnaz; it is not SMS-verified."
+        :"برای ادامه، تکمیل پروفایل الزامی است. شماره موبایل برای پیدا کردن مخاطبان در فرناز استفاده می‌شود و تأیید پیامکی نمی‌شود.";
+      $("profileHeading").textContent=english?"Complete your profile":"تکمیل پروفایل";
+      navigate("profilePage",{refreshData:false});
+      setStatus("profileStatus",english?"Add your name and mobile number, then save to continue.":"نام و شماره موبایل را وارد کن و ذخیره را بزن تا وارد فرناز شوی.");
+    }else{
+      $("profileHeading").textContent=english?"My profile":"پروفایل من";
+      $("profileIntro").textContent=english?"Manage your account information.":"اطلاعات حساب خود را مدیریت کن.";
+      if(document.querySelector(".page.active")?.id==="profilePage")navigate("chatsPage",{refreshData:false});
+      setStatus("profileStatus",english?"Profile loaded.":"پروفایل بارگذاری شد.");
+    }
   }catch(e){
     // Ignore a late profile failure after logout or a newer account/profile request.
     // Otherwise it can overwrite the cleared guest UI with a stale loading/error status.
     if(request!==profileRequestNumber||currentUser?.id!==user.id)return;
     console.error("Profile read:",e);
     if(cachedProfile){
-      profileCompletionRequired=true;
-      updateProfileRequiredNotice(true,english?"We could not verify your profile with the server. Check your connection and try again; chats stay locked until your profile is verified.":"امکان بررسی پروفایل از سرور فراهم نشد. اتصال اینترنت را بررسی کن و دوباره تلاش کن؛ تا زمان تأیید اطلاعات، گفتگوها در دسترس نیستند.");
       setStatus("profileStatus",english?"Showing saved profile; server refresh failed.":"پروفایل ذخیره‌شده نمایش داده می‌شود؛ به‌روزرسانی سرور ناموفق بود.");
-      return false;
+      return;
     }
-    profileCompletionRequired=true;
-    updateProfileRequiredNotice(true,english?"Your profile could not be checked. Check your internet connection, then try again. Chats remain unavailable until verification succeeds.":"پروفایل تو قابل بررسی نبود. اتصال اینترنت را بررسی کن و دوباره تلاش کن. تا زمان بررسی موفق، گفتگوها در دسترس نیستند.");
+    navigate("profilePage",{refreshData:false});
     setStatus("profileStatus",(english?"Could not load profile: ":"بارگذاری پروفایل ناموفق بود: ")+e.message,true);
-    return false;
   }
 }
 function showGuest(){
   swipePageHistory=[];swipePageHistoryIndex=-1;clearSwipeTransition();
+  profileCompletionRequired=false;
   const previousUserId=currentUser?.id;
   if(previousUserId)window.FarnazLocalStore?.clearUser(previousUserId).catch(cacheError=>console.warn("Could not clear local account data:",cacheError));
   stopFarnazPresence().catch(()=>{});farnazPresenceContactCache.clear();
-  profileRequestNumber++;profileCompletionRequired=false;updateProfileRequiredNotice(false);
+  profileRequestNumber++;
   // Invalidate every in-flight list request before clearing the signed-in UI.
   // Also invalidate private-chat work so a late response cannot repopulate the guest screen.
   chatRequestNumber++;contactInfoRequest++;messageSearchRequest++;
@@ -1185,7 +1143,6 @@ function showGuest(){
   setStatus("authStatus","");
   setConnectionBanner("",false);
   $("bottomNav").classList.remove("visible");
-  if($("communicationsTabs"))$("communicationsTabs").hidden=true;
   $("userName").textContent=english?"Farnaz user":"کاربر فرناز";
   $("userEmail").textContent="";$("userPhone").textContent="";
   $("profileForm").reset();
@@ -1196,8 +1153,6 @@ function showGuest(){
   $("unmatchedPhoneContactsList").replaceChildren();setStatus("unmatchedPhoneContactsStatus","");
   $("messageList").replaceChildren();
   document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id==="homePage"));
-  $("authBox").style.display="block";
-  setAuthMode("signup");
 }
 
 
@@ -1392,10 +1347,10 @@ async function saveProfile(event){
   if(!name||name.length>60){
     setStatus("profileStatus",english?"Enter a name up to 60 characters.":"نامی بین ۱ تا ۶۰ نویسه وارد کن.",true);return;
   }
-  if(!phone){
-    setStatus("profileStatus",english?"A mobile number is required to continue.":"برای ادامه، وارد کردن شماره موبایل الزامی است.",true);return;
+  if(profileCompletionRequired&&!phone){
+    setStatus("profileStatus",english?"A mobile number is required to continue.":"برای ادامه، واردکردن شماره موبایل الزامی است.",true);return;
   }
-  if(!/^\+[1-9]\d{7,14}$/.test(phone)){
+  if(phone&&!/^\+[1-9]\d{7,14}$/.test(phone)){
     setStatus("profileStatus",english?"Use international phone format, e.g. +98912...":"شماره را با کد کشور وارد کن؛ مثل +98912...",true);return;
   }
   if(file&&!["image/jpeg","image/png","image/webp"].includes(file.type)){
@@ -1438,11 +1393,13 @@ async function saveProfile(event){
     renderUser(currentUser,currentProfileName);$("avatarFile").value="";
     try{await window.FarnazLocalStore?.saveSnapshot(userId,"profile",{...data,...profilePrivacy});}catch(cacheError){console.warn("Cached profile update:",cacheError);}
     if(String(currentUser?.id)!==userId)return;
-    const wasRequired=profileCompletionRequired;
-    profileCompletionRequired=false;
-    updateProfileRequiredNotice(false);
-    setStatus("profileStatus",english?"Profile saved.":"پروفایل ذخیره شد.");
-    if(wasRequired)navigate("chatsPage");
+    if(profileCompletionRequired){
+      profileCompletionRequired=false;
+      $("profileHeading").textContent=english?"My profile":"پروفایل من";
+      $("profileIntro").textContent=english?"Manage your account information.":"اطلاعات حساب خود را مدیریت کن.";
+      setStatus("profileStatus",english?"Profile complete. Welcome to Farnaz!":"پروفایل تکمیل شد؛ به فرناز خوش آمدی!");
+      navigate("chatsPage",{refreshData:true});
+    }else setStatus("profileStatus",english?"Profile saved.":"پروفایل ذخیره شد.");
   }catch(e){
     if(String(currentUser?.id)!==userId)return;
     console.error("Profile save:",e);
@@ -1749,8 +1706,8 @@ async function openContactInfo(){
   contactInfoBlocked=false;contactInfoDialog.hidden=false;
   addContactInfoAction(contactInfoText("پیام","Message"),"✉",closeContactInfo);
   addContactInfoAction(contactInfoText("ویرایش نام مخاطب","Edit contact name"),"✎",renameCurrentContact);
-  addContactInfoAction(contactInfoText("تماس صوتی","Audio call"),"#chatPage .call-actions button[data-farnaz-call-type=\"audio\"] svg",()=>{closeContactInfo();startCall("audio");});
-  addContactInfoAction(contactInfoText("تماس تصویری","Video call"),"#chatPage .call-actions button[data-farnaz-call-type=\"video\"] svg",()=>{closeContactInfo();startCall("video");});
+  addContactInfoAction(contactInfoText("تماس صوتی","Audio call"),"#chatPage .call-actions button[onclick=\"startCall('audio')\"] svg",()=>{closeContactInfo();startCall("audio");});
+  addContactInfoAction(contactInfoText("تماس تصویری","Video call"),"#chatPage .call-actions button[onclick=\"startCall('video')\"] svg",()=>{closeContactInfo();startCall("video");});
   addContactInfoAction(contactInfoText("جست‌وجو در گفتگو","Search chat"),"⌕",searchCurrentConversation);
   try{
     const client=getClient();
@@ -2547,87 +2504,93 @@ async function refreshConversationList(){
   }
 }
 
-/* Keep chat screens fixed to iOS's visual viewport while the keyboard is open. */
+/* One viewport controller shared by private and group conversations. */
 (function installChatKeyboardLayout(){
-  const vv=window.visualViewport;
-  let blurTimer=null;
-  function activeChat(){
-    return document.body.classList.contains("chat-mode") ||
-      document.body.classList.contains("spaces-chat-mode");
-  }
-  function syncViewport(){
-    if(!activeChat())return;
-    const height=Math.max(1,vv?vv.height:window.innerHeight);
-    const offset=Math.max(0,vv?vv.offsetTop:0);
-    const keyboardOpen=!!vv&&(window.innerHeight-height>120);
-    const root=document.documentElement;
-    root.style.setProperty("--chat-viewport-height",height+"px");
-    root.style.setProperty("--chat-viewport-offset",offset+"px");
-    document.body.classList.toggle("keyboard-open",keyboardOpen);
-    // The chat shell is positioned in layout-viewport coordinates, while
-    // visualViewport.offsetTop identifies the visible top after iOS pans.
-    // Do not scroll the page or force the message list to jump on resize.
-    if(keyboardOpen){
-      document.body.style.overflow="hidden";
-      root.style.overflow="hidden";
-      if(window.scrollY!==0)window.scrollTo(0,0);
+  const viewport=window.visualViewport;
+  let keyboardWasOpen=false;
+  let layoutObserver=null;
+  function syncChatAnchors(){
+    const privatePage=document.getElementById("chatPage");
+    const spaceDetail=document.getElementById("spaceDetail");
+    const header=document.querySelector("body.chat-mode #chatPage>.chat-header");
+    const composer=document.querySelector("body.chat-mode #chatPage>#sendMessageForm");
+    const page=privatePage;
+    if(!page||!header||!composer)return;
+    page.style.setProperty("--chat-header-height",Math.ceil(header.getBoundingClientRect().height||56)+"px");
+    page.style.setProperty("--chat-composer-height",Math.ceil(composer.getBoundingClientRect().height||76)+"px");
+    if(layoutObserver){layoutObserver.disconnect();layoutObserver=null;}
+    if(typeof ResizeObserver==="function"){
+      layoutObserver=new ResizeObserver(()=>{
+        if(!page.isConnected)return;
+        page.style.setProperty("--chat-header-height",Math.ceil(header.getBoundingClientRect().height||56)+"px");
+        page.style.setProperty("--chat-composer-height",Math.ceil(composer.getBoundingClientRect().height||76)+"px");
+      });
+      layoutObserver.observe(header);layoutObserver.observe(composer);
     }
   }
-  function clearViewport(){
-    if(activeChat())return;
-    document.documentElement.style.removeProperty("--chat-viewport-height");
-    document.documentElement.style.removeProperty("--chat-viewport-offset");
-    document.body.classList.remove("keyboard-open");
-    document.documentElement.style.removeProperty("overflow");
-    document.body.style.removeProperty("overflow");
+  const isChatActive=()=>document.body.classList.contains("chat-mode")||
+    document.body.classList.contains("spaces-chat-mode");
+  const messageList=()=>document.getElementById("messageList");
+  function syncViewport(){
+    if(!isChatActive()){
+      document.documentElement.style.removeProperty("--chat-viewport-height");
+      document.documentElement.style.removeProperty("--chat-viewport-offset");
+      document.body.classList.remove("keyboard-open");
+      keyboardWasOpen=false;
+      if(layoutObserver){layoutObserver.disconnect();layoutObserver=null;}
+      return;
+    }
+    const height=Math.max(1,viewport?.height||window.innerHeight);
+    // In iOS home-screen standalone mode, visualViewport.offsetTop can change
+    // during keyboard focus/animation and drag the entire chat shell under the status bar.
+    // Keep the shell anchored to the physical top; only its height follows the visual viewport.
+    const offset=0;
+    const keyboardOpen=!!viewport&&(window.innerHeight-height>120);
+    document.documentElement.style.setProperty("--chat-viewport-height",height+"px");
+    document.documentElement.style.setProperty("--chat-viewport-offset",offset+"px");
+    syncChatAnchors();
+    document.body.classList.toggle("keyboard-open",keyboardOpen);
+    if(keyboardOpen&&!keyboardWasOpen){
+      requestAnimationFrame(()=>{
+        const list=messageList();
+        if(list)list.scrollTop=list.scrollHeight;
+      });
+    }
+    keyboardWasOpen=keyboardOpen;
+  }
+  function resyncAfterViewportTransition(){
+    requestAnimationFrame(syncViewport);
+    // iOS Safari and installed PWAs can publish the final visualViewport size
+    // in stages during keyboard animation; remeasure without forcing a scroll.
+    [80,180,320,500].forEach(delay=>setTimeout(syncViewport,delay));
   }
   document.addEventListener("focusin",event=>{
-    if(event.target?.matches("#messageText,#spaceText")){
-      clearTimeout(blurTimer);
-      // iOS Home Screen viewport metrics settle in stages during keyboard animation.
-      requestAnimationFrame(syncViewport);
-      [60,120,200,320,480,700].forEach(delay=>setTimeout(syncViewport,delay));
-    }
+    if(event.target?.matches("#messageText,#spaceText"))resyncAfterViewportTransition();
   });
   document.addEventListener("focusout",event=>{
-    if(event.target?.matches("#messageText,#spaceText")){
-      clearTimeout(blurTimer);
-      const resync=()=>{
-        if(!document.activeElement?.matches("#messageText,#spaceText")){
-          syncViewport();
-          requestAnimationFrame(syncViewport);
-        }
-      };
-      blurTimer=setTimeout(resync,180);
-      [300,480,700].forEach(delay=>setTimeout(resync,delay));
-    }
+    if(!event.target?.matches("#messageText,#spaceText"))return;
+    [160,320,500].forEach(delay=>setTimeout(()=>{
+      if(!document.activeElement?.matches("#messageText,#spaceText"))syncViewport();
+    },delay));
   });
-  vv?.addEventListener("resize",syncViewport);
-  vv?.addEventListener("scroll",syncViewport);
+  viewport?.addEventListener("resize",syncViewport);
+  viewport?.addEventListener("scroll",syncViewport);
   window.addEventListener("resize",syncViewport);
-  // Prevent touch-driven document scrolling; keep native scrolling inside message history.
-  document.addEventListener("touchmove",event=>{
-    if(!activeChat())return;
-    if(event.target?.closest("#messageList,#spaceMessages,#sendMessageForm,#spaceComposer"))return;
-    event.preventDefault();
-  },{passive:false});
   document.addEventListener("click",event=>{
-    if(event.target.closest("#backToChats,#backSpaces")||event.target.closest(".nav-button")){
-      setTimeout(clearViewport,0);
-    }
+    if(event.target.closest("#backToChats,#backSpaces,.nav-button"))requestAnimationFrame(syncViewport);
   });
   const originalNavigate=window.navigate;
   if(typeof originalNavigate==="function"&&!originalNavigate.__keyboardViewportWrapped){
     const wrapped=function(id){
       originalNavigate(id);
       if(id==="chatPage"||id==="spacesPage")requestAnimationFrame(syncViewport);
-      else clearViewport();
+      else syncViewport();
     };
     wrapped.__keyboardViewportWrapped=true;
     window.navigate=wrapped;
   }
+  requestAnimationFrame(syncViewport);
   
-
   // Keep email sign-up/sign-in wired to the active core script loaded by index.html.
   const authForm=$("authForm");
   if(authForm){
@@ -2635,6 +2598,7 @@ async function refreshConversationList(){
       event.preventDefault();
       const button=$("authSubmit"),email=$("authEmail").value.trim();
       const password=$("authPassword").value,name=$("authName").value.trim();
+      const phone="";
       if(!button)return;
       button.disabled=true;
       const authStartedAt=performance.now();
@@ -2651,7 +2615,7 @@ async function refreshConversationList(){
           result=await client.auth.signUp({
             email,password,
             options:{
-              emailRedirectTo:window.location.origin+window.location.pathname,
+              emailRedirectTo:"https://kalaghkocholo.github.io/Farnaz/",
               data:{display_name:name}
             }
           });
@@ -2675,14 +2639,16 @@ async function refreshConversationList(){
         // opens the auth form when currentUser is empty; navigating first used to
         // reopen the form and erase the email/password immediately after login.
         currentUser=authenticatedUser;
+        profileCompletionRequired=true;
         closeAuth();
-        // Verify required profile fields before allowing access to conversations.
-        const profileComplete=await showUser(authenticatedUser);
-        navigate(profileComplete?"chatsPage":"profilePage",{refreshData:false});
-        // Authentication has succeeded. Keep inbox/realtime initialization
-        // outside the authentication error path so it cannot undo a valid login.
+        navigate("chatsPage",{refreshData:false});
+        // Authentication has succeeded. Keep profile and inbox initialization
+        // outside the authentication error path so they cannot undo a valid login.
         setStatus("authStatus","");
         setConnectionBanner(english?"Signed in. Loading your conversations…":"ورود موفق بود؛ در حال بارگذاری گفتگوها…");
+        // Profile data is independent from authentication. Do not let a slow
+        // profile query block realtime or other screens after successful sign-in.
+        void showUser(authenticatedUser);
         try{
           await subscribeToMessages();
           // Reconcile inbox and contacts after auth and realtime setup. The
@@ -2756,16 +2722,19 @@ async function refreshConversationList(){
         // No valid session is a normal guest state, not a connection failure.
         setConnectionBanner("",false);
         setStatus("profileStatus","");
+        // Guests land directly on the login/register screen; there is no welcome page.
+        openSignup();
         return;
       }
       sessionRestoreNeedsRetry=false;
       currentUser=session.user;
+      profileCompletionRequired=true;
       document.body.dataset.authState="authenticated";
       closeAuth();
+      navigate("chatsPage",{refreshData:false});
       setConnectionBanner(english?"Restoring your session…":"در حال بازیابی نشست ورود…");
-      // A restored session must pass the same profile-completion gate as a new login.
-      const profileComplete=await showUser(session.user);
-      navigate(profileComplete?"chatsPage":"profilePage",{refreshData:false});
+      // Profile loading is independent; it must not hold session restoration.
+      void showUser(session.user);
       try{
         await subscribeToMessages();
         // Reconcile inbox and contacts after restoring the saved session.
@@ -2809,6 +2778,8 @@ async function refreshConversationList(){
       setConnectionBanner(english
         ?"Farnaz could not restore your saved session. Check your connection and try signing in again."
         :"بازیابی نشست ورود کامل نشد. اتصال را بررسی کن و دوباره برای ورود تلاش کن.");
+      // Keep the authentication screen available even when session restoration fails.
+      openSignup();
       if(/refresh token.*(invalid|not found|expired)|invalid refresh token|session not found/i.test(String(error?.message||""))){
         try{if(client)await client.auth.signOut({scope:"local"});}catch(_){}
       }
@@ -2832,5 +2803,5 @@ async function refreshConversationList(){
   };
   document.addEventListener("visibilitychange",retryDeferredSessionRestore);
   window.addEventListener("online",retryDeferredSessionRestore);
-  document.addEventListener("DOMContentLoaded",()=>{if(activeChat())syncViewport();});
+  document.addEventListener("DOMContentLoaded",()=>{if(isChatActive())syncViewport();});
 })();

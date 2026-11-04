@@ -350,6 +350,17 @@ async function startCall(type){
     if(activeCall)return;
     if(blockError)throw blockError;
     if(blocked){alert(tr("این مخاطب را مسدود کرده‌ای؛ برای تماس ابتدا مسدودسازی را بردار.","This contact is blocked. Unblock them before calling."));return;}
+    // Close abandoned call records for this user only. A call should not remain
+    // ringing/active for a full day; preserve all recent/live sessions.
+    const staleBefore=new Date(Date.now()-24*60*60*1000).toISOString();
+    const {error:staleCleanupError}=await getClient().from("call_sessions")
+      .update({status:"ended",updated_at:new Date().toISOString()})
+      .in("status",["ringing","active"])
+      .lt("created_at",staleBefore)
+      .or("caller_id.eq."+initiatingUserId+",receiver_id.eq."+initiatingUserId);
+    if(staleCleanupError)throw staleCleanupError;
+    if(String(signedInUserId)!==initiatingUserId||String(currentUser?.id||"")!==initiatingUserId)return;
+    if(String(currentChatUser?.user_id||"")!==receiverId||activeCall)return;
     showDialog(type==="video"?tr("تماس تصویری","Video call"):tr("تماس صوتی","Audio call"),tr("در حال شروع تماس…","Starting call…"));
     const {data,error}=await getClient().from("call_sessions").insert({caller_id:initiatingUserId,receiver_id:receiverId,call_type:type,status:"ringing"}).select("*").single();
     if(error)throw error;
@@ -382,6 +393,9 @@ async function startCall(type){
       return;
     }
     console.error("Start call:",e);
+    if(e?.code==="23505"){
+      setCallStatus(tr("یک تماس قبلی هنوز در حال اجراست. اگر تماس دیگری باز است آن را پایان بده؛ سپس دوباره تلاش کن.","A previous call is still marked active. End any other open call, then try again."));
+    }
     if(startedCall&&activeCall===startedCall){
       try{await getClient().from("call_sessions").update({status:"ended"}).eq("id",startedCall.session.id);}catch(_){}
       if(activeCall===startedCall)await cleanupCall(false);

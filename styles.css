@@ -1580,9 +1580,12 @@ body.chat-mode.keyboard-open .app.chat-mode>#chatPage>.chat-header{
 }
 
 
-/* One shared, history-aware horizontal transition for all app pages. */
-.app.farnaz-swipe-active{position:relative!important;overflow:hidden!important;touch-action:pan-y!important}
-.app.farnaz-swipe-active>.page.farnaz-swipe-current{position:relative!important;z-index:2!important;will-change:transform;backface-visibility:hidden}
+/* One interactive iOS-style transition layer for page and nested-chat swipes. */
+.app.farnaz-swipe-active{position:relative!important;overflow:hidden!important;touch-action:pan-y!important;isolation:isolate}
+.app.farnaz-swipe-active>.page.farnaz-swipe-current{display:block!important;position:relative!important;z-index:2!important;will-change:transform;backface-visibility:hidden;transform:translate3d(0,0,0)}
 .app.farnaz-swipe-active>.page.farnaz-swipe-underlay{display:block!important;position:absolute!important;inset:0!important;z-index:1!important;width:100%!important;height:100%!important;min-height:0!important;overflow-x:hidden!important;overflow-y:auto!important;background:var(--bg)!important;will-change:transform;backface-visibility:hidden;overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important}
 .app.farnaz-swipe-active>.page.farnaz-swipe-current,.app.farnaz-swipe-active>.page.farnaz-swipe-underlay{box-sizing:border-box}
-@media(prefers-reduced-motion:reduce){.app.farnaz-swipe-active>.page.farnaz-swipe-current,.app.farnaz-swipe-active>.page.farnaz-swipe-underlay{transition-duration:1ms!important}}
+.app.farnaz-swipe-active #spacesPage{position:relative!important;isolation:isolate}
+.app.farnaz-swipe-active #spacesPage #spaceDetail.farnaz-swipe-current{position:relative!important;z-index:2!important;will-change:transform;backface-visibility:hidden}
+.app.farnaz-swipe-active #spacesPage #spaceList.farnaz-swipe-underlay{display:block!important;position:absolute!important;inset:0!important;z-index:1!important;width:100%!important;height:100%!important;min-height:0!important;overflow-x:hidden!important;overflow-y:auto!important;background:var(--bg)!important;will-change:transform;backface-visibility:hidden;overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important}
+@media(prefers-reduced-motion:reduce){.app.farnaz-swipe-active .farnaz-swipe-current,.app.farnaz-swipe-active .farnaz-swipe-underlay{transition-duration:1ms!important}}

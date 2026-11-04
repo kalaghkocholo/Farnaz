@@ -646,7 +646,7 @@ function navigate(pageId,options={}){
   if(!currentUser){openAuth();return;}
   if(profileCompletionRequired&&pageId!=="profilePage")pageId="profilePage";
   if(!$(pageId))return;
-  if(pageId==="chatPage"&&!currentChatUser)return;
+  if(pageId==="chatPage"&&!currentChatUser&&window.FarnazConversationMode!=="space")return;
   const activePageId=document.querySelector(".page.active")?.id||null;
   if(activePageId!==pageId){
     // Welcome/login is an auth boundary, not a navigable page in signed-in history.
@@ -676,7 +676,7 @@ function navigate(pageId,options={}){
   }
   window.scrollTo({top:0,behavior:"instant"});
 }
-function backFromChat(){dismissMessageMenus();exitMessageSelection();cancelReply();cancelMessageEdit();navigate(previousPage==="contactsPage"?"contactsPage":"chatsPage");}
+function backFromChat(){if(window.FarnazConversationMode==="space"&&typeof window.FarnazConversationBack==="function"){window.FarnazConversationBack();return;}dismissMessageMenus();exitMessageSelection();cancelReply();cancelMessageEdit();navigate(previousPage==="contactsPage"?"contactsPage":"chatsPage");}
 function openAdjacentConversation(direction){
   const cards=[...$("conversationList").querySelectorAll(".conversation-card")];
   if(!cards.length)return;
@@ -693,7 +693,7 @@ function swipeHistoryTarget(direction){
   const activePage=document.querySelector(".page.active");
   if(!activePage)return null;
   // An open conversation is a nested view: a right swipe returns to its own list.
-  if(direction>0&&activePage.id==="chatPage")return "__privateChatBack__";
+  if(direction>0&&activePage.id==="chatPage")return window.FarnazConversationMode==="space"?"__spaceChatBack__":"__privateChatBack__";
   if(direction>0&&activePage.id==="spacesPage"){
     const detail=document.getElementById("spaceDetail");
     if(detail&&!detail.hidden)return "__spaceChatBack__";
@@ -723,7 +723,7 @@ function finishSwipeNavigation(commit){
         dismissMessageMenus();exitMessageSelection();cancelReply();cancelMessageEdit();
         navigate("chatsPage");
       }else if(g.action==="__spaceChatBack__"){
-        document.getElementById("backSpaces")?.click();
+        window.FarnazConversationBack?.();
       }
     }
     clearSwipeTransition();
@@ -2491,9 +2491,9 @@ async function refreshConversationList(){
   function syncChatAnchors(){
     const privatePage=document.getElementById("chatPage");
     const spaceDetail=document.getElementById("spaceDetail");
-    const header=document.querySelector("body.chat-mode #chatPage>.chat-header")||document.querySelector("body.spaces-chat-mode #spaceDetail:not([hidden])>.space-detail-head");
-    const composer=document.querySelector("body.chat-mode #chatPage>#sendMessageForm")||document.querySelector("body.spaces-chat-mode #spaceComposer");
-    const page=document.body.classList.contains("spaces-chat-mode")?spaceDetail:privatePage;
+    const header=document.querySelector("body.chat-mode #chatPage>.chat-header");
+    const composer=document.querySelector("body.chat-mode #chatPage>#sendMessageForm");
+    const page=privatePage;
     if(!page||!header||!composer)return;
     page.style.setProperty("--chat-header-height",Math.ceil(header.getBoundingClientRect().height||56)+"px");
     page.style.setProperty("--chat-composer-height",Math.ceil(composer.getBoundingClientRect().height||76)+"px");
@@ -2509,8 +2509,7 @@ async function refreshConversationList(){
   }
   const isChatActive=()=>document.body.classList.contains("chat-mode")||
     document.body.classList.contains("spaces-chat-mode");
-  const messageList=()=>document.body.classList.contains("spaces-chat-mode")
-    ?document.getElementById("spaceMessages"):document.getElementById("messageList");
+  const messageList=()=>document.getElementById("messageList");
   function syncViewport(){
     if(!isChatActive()){
       document.documentElement.style.removeProperty("--chat-viewport-height");

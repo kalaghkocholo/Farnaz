@@ -1116,6 +1116,7 @@ async function toggleAudioRecording(){
   }
 }
 async function sendMessage(event){
+  if(window.FarnazConversationMode==="space")return;
   event.preventDefault();
   if(!currentUser||!currentChatUser){setStatus("sendMessageStatus",english?"Choose a contact first.":"ابتدا مخاطب را انتخاب کن.",true);return;}
   if(mediaRecorder&&mediaRecorder.state==="recording"){setStatus("sendMessageStatus",english?"Stop recording before sending.":"پیش از ارسال، ضبط صدا را متوقف کن.",true);return;}
@@ -1252,6 +1253,7 @@ $("messageText").addEventListener("input",()=>{
   const el=$("messageText");el.style.height="auto";el.style.height=Math.min(el.scrollHeight,112)+"px";
 });
 $("messageText").addEventListener("keydown",e=>{
+  if(window.FarnazConversationMode==="space")return;
   if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("sendMessageForm").requestSubmit();}
 });
 

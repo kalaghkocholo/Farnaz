@@ -42,3 +42,6 @@ body.chat-mode.keyboard-open .app.chat-mode>#chatPage>.chat-header{
  display:flex!important;visibility:visible!important;opacity:1!important;position:relative!important;inset:auto!important;
  z-index:100!important;flex:0 0 auto!important;min-height:56px!important;transform:none!important
 }
+
+body.spaces-chat-mode .app.spaces-chat-mode #chatPage #sendMessageStatus:not(:empty){display:block!important;position:absolute!important;left:13px!important;right:13px!important;bottom:calc(var(--chat-composer-height,76px) + 4px)!important;z-index:9!important;max-height:30px!important;min-height:0!important;margin:0!important;padding:3px 8px!important;overflow:hidden!important;text-align:center!important;background:var(--panel)!important;color:var(--white)!important;border-radius:9px!important;pointer-events:none!important}
+body.spaces-chat-mode .app.spaces-chat-mode #chatPage #sendMessageStatus:empty{display:none!important}

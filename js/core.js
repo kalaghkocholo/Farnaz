@@ -698,17 +698,13 @@ function swipeHistoryTarget(direction){
   const activePage=document.querySelector(".page.active");
   if(!activePage)return null;
 
-  // A private conversation always returns to the list from which it was opened.
+  // Shared chatPage hosts both private and group/channel conversations.
   if(direction>0&&activePage.id==="chatPage"){
+    if(window.FarnazConversationMode==="space")return {kind:"spaceBack",targetId:"spacesPage"};
     const targetId=$(previousPage)&&previousPage!=="chatPage"?previousPage:"chatsPage";
     return {kind:"privateBack",targetId};
   }
-  // A group/channel detail view first returns to its own list.
-  if(direction>0&&activePage.id==="spacesPage"){
-    const detail=document.getElementById("spaceDetail");
-    if(detail&&!detail.hidden)return {kind:"spaceBack",targetId:"__spaceList__"};
-  }
-  if(activePage.id==="chatPage"||activePage.id==="spacesPage"&&document.getElementById("spaceDetail")&&!document.getElementById("spaceDetail").hidden)return null;
+  if(activePage.id==="chatPage")return null;
 
   const basePage=swipeNavigationBasePage(activePage.id);
   if(!basePage)return null;
@@ -743,7 +739,7 @@ function finishSwipeNavigation(commit){
             dismissMessageMenus();exitMessageSelection();cancelReply();cancelMessageEdit();
             navigate(g.targetId);
           }else if(g.action==="spaceBack"){
-            document.getElementById("backSpaces")?.click();
+            window.FarnazConversationBack?.();
           }else navigate(g.targetId);
         }
       }catch(error){
@@ -760,7 +756,6 @@ function finishSwipeNavigation(commit){
     swipeGesture=null;
     swipeTransitionTimer=setTimeout(()=>{
       swipeTransitionTimer=null;
-      if(g.action==="spaceBack")g.target.hidden=true;
       clearSwipeTransition();
     },190);
   }
@@ -793,13 +788,10 @@ function installFarnazSwipeNavigation(){
       const direction=dx>0?1:-1,destination=swipeHistoryTarget(direction);
       if(!destination){swipeGesture=null;return;}
       g.direction=direction;g.targetId=destination.targetId;g.action=destination.kind;g.locked=true;
-      if(destination.kind==="spaceBack"){
-        g.target=document.getElementById("spaceList");
-        if(g.target)g.target.hidden=false;
-      }else g.target=document.getElementById(destination.targetId);
+      g.target=document.getElementById(destination.targetId);
       if(!g.target){swipeGesture=null;return;}
       g.app.classList.add("farnaz-swipe-active");
-      g.current=g.action==="spaceBack"?document.getElementById("spaceDetail"):g.page;
+      g.current=g.page;
       if(!g.current){swipeGesture=null;return;}
       g.current.classList.add("farnaz-swipe-current");g.target.classList.add("farnaz-swipe-underlay");
       g.target.style.transition="none";g.current.style.transition="none";

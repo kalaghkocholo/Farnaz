@@ -9,6 +9,7 @@ let english=false,authMode="signup",farnazClient=null,currentUser=null;
 let currentProfileName="",currentAvatarUrl="",currentPhone="",currentChatPresenceLabel="گفتگوی خصوصی";
 let currentChatUser=null,messageSubscription=null,reconnectTimer=null,reconnectAttempts=0;
 let profileRequestNumber=0,chatRequestNumber=0,previousPage="chatsPage";
+let profileCompletionRequired=false;
 let swipePageHistory=[],swipePageHistoryIndex=-1,swipeGesture=null,swipeTransitionTimer=null;
 let conversationView="active",conversationPrefs=new Map(),messageLoadedCount=50,messageHasMore=false;
 let contactsCategory="all";
@@ -644,6 +645,7 @@ document.addEventListener("click",event=>{
 });
 function navigate(pageId,options={}){
   if(!currentUser){openAuth();return;}
+  if(profileCompletionRequired&&pageId!=="profilePage")pageId="profilePage";
   if(!$(pageId))return;
   if(pageId==="chatPage"&&!currentChatUser)return;
   const activePageId=document.querySelector(".page.active")?.id||null;
@@ -1040,6 +1042,7 @@ function renderUser(user,name){
   renderAvatar($("userAvatar"),currentAvatarUrl,$("userName").textContent);
 }
 async function showUser(user){
+  profileCompletionRequired=true;
   const request=++profileRequestNumber;
   currentUser=user;renderUser(user,user.user_metadata?.display_name||"");
   if(!window.__farnazPersistenceRequested){window.__farnazPersistenceRequested=true;void window.FarnazLocalStore?.requestPersistentStorage().catch(error=>console.warn("Persistent storage request:",error));}
@@ -1089,7 +1092,9 @@ async function showUser(user){
     try{await window.FarnazLocalStore?.saveSnapshot(user.id,"profile",profile);}catch(cacheError){console.warn("Cached profile save:",cacheError);}
     // A completed cache write must not let a stale profile request update the UI after logout.
     if(request!==profileRequestNumber||currentUser?.id!==user.id)return;
+    profileCompletionRequired=!(currentProfileName&&/^\+[1-9]\d{7,14}$/.test(currentPhone));
     setStatus("profileStatus",english?"Profile loaded.":"پروفایل بارگذاری شد.");
+    return !profileCompletionRequired;
   }catch(e){
     // Ignore a late profile failure after logout or a newer account/profile request.
     // Otherwise it can overwrite the cleared guest UI with a stale loading/error status.
@@ -1099,7 +1104,9 @@ async function showUser(user){
       setStatus("profileStatus",english?"Showing saved profile; server refresh failed.":"پروفایل ذخیره‌شده نمایش داده می‌شود؛ به‌روزرسانی سرور ناموفق بود.");
       return;
     }
+    profileCompletionRequired=true;
     setStatus("profileStatus",(english?"Could not load profile: ":"بارگذاری پروفایل ناموفق بود: ")+e.message,true);
+    return false;
   }
 }
 function showGuest(){
@@ -1107,7 +1114,7 @@ function showGuest(){
   const previousUserId=currentUser?.id;
   if(previousUserId)window.FarnazLocalStore?.clearUser(previousUserId).catch(cacheError=>console.warn("Could not clear local account data:",cacheError));
   stopFarnazPresence().catch(()=>{});farnazPresenceContactCache.clear();
-  profileRequestNumber++;
+  profileRequestNumber++;profileCompletionRequired=false;
   // Invalidate every in-flight list request before clearing the signed-in UI.
   // Also invalidate private-chat work so a late response cannot repopulate the guest screen.
   chatRequestNumber++;contactInfoRequest++;messageSearchRequest++;
@@ -1335,7 +1342,10 @@ async function saveProfile(event){
   if(!name||name.length>60){
     setStatus("profileStatus",english?"Enter a name up to 60 characters.":"نامی بین ۱ تا ۶۰ نویسه وارد کن.",true);return;
   }
-  if(phone&&!/^\+[1-9]\d{7,14}$/.test(phone)){
+  if(!phone){
+    setStatus("profileStatus",english?"A mobile number is required to continue.":"برای ادامه، وارد کردن شماره موبایل الزامی است.",true);return;
+  }
+  if(!/^\+[1-9]\d{7,14}$/.test(phone)){
     setStatus("profileStatus",english?"Use international phone format, e.g. +98912...":"شماره را با کد کشور وارد کن؛ مثل +98912...",true);return;
   }
   if(file&&!["image/jpeg","image/png","image/webp"].includes(file.type)){
@@ -1378,7 +1388,10 @@ async function saveProfile(event){
     renderUser(currentUser,currentProfileName);$("avatarFile").value="";
     try{await window.FarnazLocalStore?.saveSnapshot(userId,"profile",{...data,...profilePrivacy});}catch(cacheError){console.warn("Cached profile update:",cacheError);}
     if(String(currentUser?.id)!==userId)return;
+    const wasRequired=profileCompletionRequired;
+    profileCompletionRequired=false;
     setStatus("profileStatus",english?"Profile saved.":"پروفایل ذخیره شد.");
+    if(wasRequired)navigate("chatsPage");
   }catch(e){
     if(String(currentUser?.id)!==userId)return;
     console.error("Profile save:",e);
@@ -2612,14 +2625,13 @@ async function refreshConversationList(){
         // reopen the form and erase the email/password immediately after login.
         currentUser=authenticatedUser;
         closeAuth();
-        navigate("chatsPage",{refreshData:false});
-        // Authentication has succeeded. Keep profile and inbox initialization
-        // outside the authentication error path so they cannot undo a valid login.
+        // Verify required profile fields before allowing access to conversations.
+        const profileComplete=await showUser(authenticatedUser);
+        navigate(profileComplete?"chatsPage":"profilePage",{refreshData:false});
+        // Authentication has succeeded. Keep inbox/realtime initialization
+        // outside the authentication error path so it cannot undo a valid login.
         setStatus("authStatus","");
         setConnectionBanner(english?"Signed in. Loading your conversations…":"ورود موفق بود؛ در حال بارگذاری گفتگوها…");
-        // Profile data is independent from authentication. Do not let a slow
-        // profile query block realtime or other screens after successful sign-in.
-        void showUser(authenticatedUser);
         try{
           await subscribeToMessages();
           // Reconcile inbox and contacts after auth and realtime setup. The
@@ -2699,10 +2711,10 @@ async function refreshConversationList(){
       currentUser=session.user;
       document.body.dataset.authState="authenticated";
       closeAuth();
-      navigate("chatsPage",{refreshData:false});
       setConnectionBanner(english?"Restoring your session…":"در حال بازیابی نشست ورود…");
-      // Profile loading is independent; it must not hold session restoration.
-      void showUser(session.user);
+      // A restored session must pass the same profile-completion gate as a new login.
+      const profileComplete=await showUser(session.user);
+      navigate(profileComplete?"chatsPage":"profilePage",{refreshData:false});
       try{
         await subscribeToMessages();
         // Reconcile inbox and contacts after restoring the saved session.

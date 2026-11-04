@@ -213,8 +213,16 @@ if (!coreSource.includes("function installFarnazSwipeNavigation()") ||
   errors.push("Farnaz must provide deterministic ordered swipe navigation, auth/keyboard guards, and single-page transition commits");
 }
 
+const viewportCss = sources["chat-viewport.css"];
+if (sources["styles.css"].includes("/* Conversation layout —") ||
+    sources["styles.css"].includes("/* FINAL OVERRIDE: flex message stacks") ||
+    !viewportCss.includes("padding:14px 2px 112px!important;gap:8px!important;") ||
+    !viewportCss.includes("body.spaces-chat-mode .app.spaces-chat-mode #spaceComposer")) {
+  errors.push("private, group, and channel viewport sizing must have one shared chat-viewport.css authority");
+}
+
 const chatSource = sources["js/chat-menu-v5.js"];
-if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v233"') || !sources["service-worker.js"].includes('styles.css?v=20261104-convo-1') || !sources["service-worker.js"].includes('core.js?v=20261104-convo-1') || !sources["service-worker.js"].includes('local-store.js?v=20261026-3') || !sources["service-worker.js"].includes('calls.js?v=20261026-4') || !sources["service-worker.js"].includes('chat-menu-v5.js?v=20261104-merge-1') || !html.includes('chat-menu-v5.js?v=20261104-merge-1')) {
+if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v234"') || !sources["service-worker.js"].includes('styles.css?v=20261104-unified-2') || !sources["service-worker.js"].includes('core.js?v=20261104-convo-1') || !sources["service-worker.js"].includes('local-store.js?v=20261026-3') || !sources["service-worker.js"].includes('calls.js?v=20261026-4') || !sources["service-worker.js"].includes('chat-menu-v5.js?v=20261104-merge-1') || !html.includes('chat-menu-v5.js?v=20261104-merge-1')) {
   errors.push("service-worker.js must use the current shell cache and core asset versions");
 }
 const loaderChecks = [

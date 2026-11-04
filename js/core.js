@@ -1101,8 +1101,9 @@ async function showUser(user){
     if(request!==profileRequestNumber||currentUser?.id!==user.id)return;
     console.error("Profile read:",e);
     if(cachedProfile){
+      profileCompletionRequired=true;
       setStatus("profileStatus",english?"Showing saved profile; server refresh failed.":"پروفایل ذخیره‌شده نمایش داده می‌شود؛ به‌روزرسانی سرور ناموفق بود.");
-      return;
+      return false;
     }
     profileCompletionRequired=true;
     setStatus("profileStatus",(english?"Could not load profile: ":"بارگذاری پروفایل ناموفق بود: ")+e.message,true);

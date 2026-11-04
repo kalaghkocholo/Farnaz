@@ -248,7 +248,7 @@ async function makeMessageElement(m,myId,fromCache=false){
     }
     item.appendChild(reactionBar);
   }
-  let pointerHold=null,touchHold=null,holdTriggered=false,holdX=0,holdY=0;
+  let pointerHold=null,touchHold=null,holdTriggered=false,holdX=0,holdY=0,swipeStartX=0,swipeStartY=0;
   const interactiveTarget=target=>!!target.closest("a,button,audio,video,input,textarea,select");
   const cancelPointerHold=()=>{clearTimeout(pointerHold);pointerHold=null;};
   const cancelTouchHold=()=>{clearTimeout(touchHold);touchHold=null;};
@@ -278,7 +278,7 @@ async function makeMessageElement(m,myId,fromCache=false){
   // Native iOS touch path: don't share a timer with Pointer Events.
   item.addEventListener("touchstart",event=>{
     if(event.touches.length!==1||interactiveTarget(event.target))return;
-    const touch=event.touches[0];holdX=touch.clientX;holdY=touch.clientY;holdTriggered=false;cancelTouchHold();
+    const touch=event.touches[0];holdX=touch.clientX;holdY=touch.clientY;swipeStartX=touch.clientX;swipeStartY=touch.clientY;holdTriggered=false;cancelTouchHold();
     touchHold=setTimeout(()=>{holdTriggered=true;showMessageActions(m,item);},500);
   },{passive:true});
   item.addEventListener("touchmove",event=>{
@@ -286,7 +286,12 @@ async function makeMessageElement(m,myId,fromCache=false){
     const touch=event.touches[0];
     if(Math.abs(touch.clientX-holdX)>12||Math.abs(touch.clientY-holdY)>12)cancelTouchHold();
   },{passive:true});
-  item.addEventListener("touchend",cancelTouchHold);
+  item.addEventListener("touchend",event=>{
+    cancelTouchHold();const touch=event.changedTouches?.[0];if(!touch||holdTriggered||messageSelectionMode||interactiveTarget(event.target))return;
+    const dx=touch.clientX-swipeStartX,dy=touch.clientY-swipeStartY;
+    // A physical right-swipe on a message replies; vertical scrolling and the global page gesture stay untouched.
+    if(dx>60&&dx>Math.abs(dy)*1.35)setReplyTarget(m);
+  });
   item.addEventListener("touchcancel",cancelTouchHold);
   return item;
 }

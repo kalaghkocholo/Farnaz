@@ -432,7 +432,34 @@ const authChecks = [
    sources["js/spaces.js"].includes('spaceOpenToken++;spaceRefreshToken++;messageLoadToken++;'),
     "js/spaces.js must stop stale group/channel loads and subscriptions after account changes"],
 ];
-for (const [passed, message] of authChecks) {
+const conversationChecks = [
+  [sources["js/spaces.js"].includes('space-detail-head chat-header conversation-header') &&
+   sources["js/spaces.js"].includes('composer-shell conversation-composer-shell') &&
+   sources["js/spaces.js"].includes('voice-preview space-voice-preview') &&
+   sources["js/spaces.js"].includes('attachment-menu space-attachment-menu'),
+    "js/spaces.js must use the shared conversation header and composer structure for groups/channels"],
+  [html.includes('class="chat-header space-detail-head conversation-header"') &&
+   html.includes('class="space-secondary conversation-back-button"') &&
+   html.includes('class="conversation-message-list"') &&
+   html.includes('class="conversation-composer"'),
+    "index.html must use the shared conversation structure for private chats"],
+  [sources["styles.css"].includes("One shared header layout for private chats, groups and channels") &&
+   sources["styles.css"].includes("One composer layout shared by private chats, groups and channels") &&
+   sources["styles.css"].includes(".app.spaces-chat-mode #spaceDetail .composer-shell"),
+    "styles.css must provide one shared header and composer design for all conversation types"],
+  [!sources["spaces.css"].includes("/* Group header: one horizontal row") &&
+   !sources["spaces.css"].includes("#spacesPage #spaceComposer .space-composer-shell") &&
+   !sources["spaces.css"].includes("Final single-line group composer layout"),
+    "spaces.css must not retain competing group-only header/composer layout overrides"],
+  [sources["chat-viewport.css"].includes("body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceComposer") &&
+   sources["chat-viewport.css"].includes("position:absolute!important;left:13px!important;right:13px!important;bottom:0!important") &&
+   sources["chat-viewport.css"].includes("overflow-y:auto!important;padding-bottom:112px!important"),
+    "chat-viewport.css must anchor the group/channel composer and preserve message scroll space"],
+  [coreSource.includes('DOMContentLoaded",()=>{if(isChatActive())syncViewport();}') &&
+   !coreSource.includes('DOMContentLoaded",()=>{if(activeChat())syncViewport();}'),
+    "js/core.js must initialize the shared conversation viewport using its local active-state function"],
+];
+for (const [passed, message] of [...authChecks, ...conversationChecks]) {
   if (!passed) errors.push(message);
 }
 

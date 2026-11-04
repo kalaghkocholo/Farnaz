@@ -510,11 +510,31 @@ async function forwardSelectedSpaceMessages(){
   q("spaceMessageStatus").textContent=tr("پیام‌ها فوروارد شدند.","Messages forwarded.");
  }catch(error){q("spaceMessageStatus").textContent=tr("فوروارد ناموفق بود: ","Forward failed: ")+(error?.message||String(error));}
 }
-function replyToSpaceMessage(message){
- const input=q("spaceText");if(!input)return;
- const quoted=String(message.body||message.attachment_name||tr("پیوست","Attachment")).split("\n").map(line=>"> "+line).join("\n");
- input.value=(quoted+"\n"+input.value).trimStart();input.focus();input.dispatchEvent(new Event("input",{bubbles:true}));
- q("spaceMessageStatus").textContent=tr("متن نقل‌قول‌شده آماده پاسخ است.","Quoted text is ready to reply.");
+function setSpaceReplyTarget(message){
+ const input=q("spaceText");if(!input||!message)return;
+ spaceReplyTarget=message;
+ let preview=q("spaceReplyPreview");
+ if(!preview){preview=document.createElement("div");preview.id="spaceReplyPreview";preview.className="message-quote";preview.style.cssText="display:flex;align-items:center;gap:8px;padding:7px 10px;margin:0 10px 6px;border-inline-start:3px solid var(--accent,#22b8a5);border-radius:7px;background:rgba(120,130,145,.12)";input.parentElement?.before(preview);}
+ preview.replaceChildren();
+ const copy=document.createElement("div");copy.style.cssText="min-width:0;flex:1";
+ const author=document.createElement("strong");author.style.cssText="display:block;font-size:11px;color:var(--accent,#159b8c)";author.textContent=(english?"Replying to ":"پاسخ به ")+(String(message.sender_id)===String(currentUser?.id)?(english?"you":"خودت"):(senderNames.get(String(message.sender_id))|| (english?"member":"عضو")));
+ const body=document.createElement("span");body.style.cssText="display:block;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis";body.textContent=message.body||message.attachment_name||tr("پیوست","Attachment");
+ copy.append(author,body);
+ const close=document.createElement("button");close.type="button";close.textContent="×";close.setAttribute("aria-label",english?"Cancel reply":"لغو پاسخ");close.style.cssText="border:0;background:transparent;font-size:22px;padding:3px 7px;color:inherit";close.onclick=cancelSpaceReply;
+ preview.append(copy,close);input.focus();
+}
+function cancelSpaceReply(){spaceReplyTarget=null;q("spaceReplyPreview")?.remove();}
+async function toggleSpaceMessageReaction(message,emoji){
+ if(!currentUser||!active?.id)return;
+ const messageId=String(message.id),spaceId=String(active.id),userId=String(currentUser.id);
+ const existing=(spaceMessageReactionMap.get(messageId)||[]).find(group=>group.emoji===emoji&&group.users.includes(userId));
+ try{
+  const result=existing
+   ?await getClient().from("space_message_reactions").delete().eq("message_id",messageId).eq("user_id",userId)
+   :await getClient().from("space_message_reactions").upsert({message_id:messageId,space_id:spaceId,user_id:userId,emoji},{onConflict:"message_id,user_id"});
+  if(result.error)throw result.error;
+  await loadMessages(spaceId);
+ }catch(error){const status=q("spaceMessageStatus");if(status)status.textContent=tr("ذخیره واکنش ناموفق بود: ","Could not save reaction: ")+(error?.message||String(error));}
 }
 function closeSpaceMessageMenu(){
  document.querySelectorAll(".space-message-actions,.space-message-action-backdrop,.space-message-action-clone,.message-tools,.message-action-backdrop,.message-action-clone").forEach(n=>n.remove());
@@ -554,8 +574,11 @@ function showSpaceMessageActions(m,item){
  const closeMenu=()=>{menu.remove();restoreItem();closeSpaceMessageMenu();};
  const add=(label,fn,cls="mini-button")=>{const b=document.createElement("button");b.type="button";b.className=cls;b.textContent=label;b.onclick=()=>{closeMenu();fn();};menu.appendChild(b);};
  const own=String(m.sender_id)===String(currentUser?.id);
+ const quickReactions=document.createElement("div");quickReactions.className="message-quick-reactions";quickReactions.style.cssText="display:flex;align-items:center;justify-content:space-around;gap:7px;padding:7px 5px;margin:0 0 5px;border-radius:14px;background:var(--surface-2,rgba(128,128,128,.12))";
+ for(const emoji of SPACE_MESSAGE_REACTION_CHOICES){const reaction=document.createElement("button");reaction.type="button";reaction.className="message-quick-reaction";reaction.textContent=emoji;reaction.setAttribute("aria-label",(english?"React ":"واکنش ")+emoji);reaction.style.cssText="border:0;background:transparent;padding:5px;font-size:22px;line-height:1;cursor:pointer";reaction.onclick=()=>{closeMenu();toggleSpaceMessageReaction(m,emoji);};quickReactions.appendChild(reaction);}
+ menu.appendChild(quickReactions);
  add((spacePinnedMessageIds.has(String(m.id))?"📌  "+(english?"Unpin message":"برداشتن سنجاق"):"📌  "+(english?"Pin message":"سنجاق پیام")),()=>toggleSpaceMessagePin(m));
- if(active?.type!=="channel"||active?.allow_channel_replies===true)add("↩  "+(english?"Reply":"پاسخ"),()=>replyToSpaceMessage(m));
+ if(active?.type!=="channel"||active?.allow_channel_replies===true)add("↩  "+(english?"Reply":"پاسخ"),()=>setSpaceReplyTarget(m));
  add("➦  "+(english?"Forward":"فوروارد"),()=>{selectedSpaceMessageIds.clear();selectedSpaceMessageIds.add(String(m.id));spaceMessageSelectionMode=true;updateSpaceMessageSelection();forwardSelectedSpaceMessages();});
  if(m.attachment_path)add("⬇  "+(english?"Download attachment":"دانلود فایل"),()=>downloadSpaceMessage(m),"mini-button download-message-action");
  add("☑  "+(english?"Select":"انتخاب"),()=>{spaceMessageSelectionMode=true;selectedSpaceMessageIds.add(String(m.id));updateSpaceMessageSelection();});
@@ -584,13 +607,17 @@ function editSpaceMessage(message){
  editingSpaceMessageId=String(message.id);const input=q("spaceText");input.value=message.body;input.focus();input.dispatchEvent(new Event("input",{bubbles:true}));q("spaceMessageStatus").textContent=tr("در حال ویرایش پیام؛ برای لغو متن را پاک کن و دکمه ارسال را بزن.","Editing message. Clear the text and submit to cancel.");
 }
 function bindSpaceMessageActions(element,message){
- let timer=null,startX=0,startY=0,held=false;
+ let timer=null,startX=0,startY=0,held=false,lastTap=0,swipeX=0,swipeY=0;
  const cancel=()=>{if(timer){clearTimeout(timer);timer=null;}};
  const interactive=target=>!!target.closest("a,button,audio,video,input,textarea,select");
  element.addEventListener("click",event=>{
   if(held){event.preventDefault();event.stopPropagation();held=false;return;}
-  if(spaceMessageSelectionMode){event.preventDefault();const id=String(message.id);selectedSpaceMessageIds.has(id)?selectedSpaceMessageIds.delete(id):selectedSpaceMessageIds.add(id);updateSpaceMessageSelection();}
+  if(spaceMessageSelectionMode){event.preventDefault();const id=String(message.id);selectedSpaceMessageIds.has(id)?selectedSpaceMessageIds.delete(id):selectedSpaceMessageIds.add(id);updateSpaceMessageSelection();return;}
+  if(interactive(event.target))return;
+  const now=Date.now();if(now-lastTap<330){lastTap=0;toggleSpaceMessageReaction(message,"👍");}else lastTap=now;
  });
+ element.addEventListener("touchstart",event=>{if(event.touches.length===1&&!interactive(event.target)){swipeX=event.touches[0].clientX;swipeY=event.touches[0].clientY;}},{passive:true});
+ element.addEventListener("touchend",event=>{if(!event.changedTouches.length||interactive(event.target))return;const dx=event.changedTouches[0].clientX-swipeX,dy=event.changedTouches[0].clientY-swipeY;if(dx>58&&Math.abs(dy)<48){event.preventDefault();setSpaceReplyTarget(message);}},{passive:false});
  element.addEventListener("contextmenu",event=>{event.preventDefault();event.stopPropagation();showSpaceMessageActions(message,element);});
  element.addEventListener("touchstart",event=>{if(event.touches.length!==1||interactive(event.target))return;const t=event.touches[0];startX=t.clientX;startY=t.clientY;held=false;cancel();timer=setTimeout(()=>{held=true;showSpaceMessageActions(message,element);},500);},{passive:true});
  element.addEventListener("touchmove",event=>{const t=event.touches[0];if(t&&(Math.abs(t.clientX-startX)>12||Math.abs(t.clientY-startY)>12))cancel();},{passive:true});
@@ -607,7 +634,7 @@ async function loadMessages(id){
  try{
   let data=[],fromLocalCache=false;
   try{
-   const result=await withTimeout(getClient().from("space_messages").select("id,space_id,sender_id,body,created_at,edited_at,message_type,attachment_path,attachment_name,attachment_mime,attachment_size").eq("space_id",id).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(200),9000,"پیام‌های گروه یا کانال");
+   const result=await withTimeout(getClient().from("space_messages").select("id,space_id,sender_id,body,created_at,edited_at,message_type,attachment_path,attachment_name,attachment_mime,attachment_size,reply_to_id").eq("space_id",id).order("created_at",{ascending:false}).order("id",{ascending:false}).limit(200),9000,"پیام‌های گروه یا کانال");
    if(result.error)throw result.error;
    data=(result.data||[]).reverse();
   }catch(fetchError){
@@ -625,6 +652,20 @@ async function loadMessages(id){
    catch(e){console.warn("Pinned space messages could not load:",e);}
   }
   const rows=(data||[]).filter(m=>!hiddenIds.has(String(m.id)));
+  spaceMessageReactionMap=new Map();
+  if(!fromLocalCache&&rows.length){
+   try{
+    const ids=rows.map(m=>String(m.id));
+    const {data:reactionRows,error:reactionError}=await getClient().from("space_message_reactions").select("message_id,user_id,emoji").eq("space_id",id).in("message_id",ids);
+    if(reactionError)throw reactionError;
+    const grouped=new Map();
+    for(const reaction of reactionRows||[]){const key=String(reaction.message_id);if(!grouped.has(key))grouped.set(key,new Map());const byEmoji=grouped.get(key);if(!byEmoji.has(reaction.emoji))byEmoji.set(reaction.emoji,[]);byEmoji.get(reaction.emoji).push(String(reaction.user_id));}
+    for(const [messageId,byEmoji] of grouped)spaceMessageReactionMap.set(messageId,[...byEmoji.entries()].map(([emoji,users])=>({emoji,users})));
+   }catch(reactionError){console.warn("Space message reactions could not load:",reactionError);}
+  }
+  const replyIds=[...new Set(rows.map(m=>m.reply_to_id).filter(Boolean).map(String))];
+  let repliedMessages=new Map();
+  if(replyIds.length){try{const {data:replyRows,error:replyError}=await getClient().from("space_messages").select("id,sender_id,body,attachment_name").in("id",replyIds);if(replyError)throw replyError;repliedMessages=new Map((replyRows||[]).map(m=>[String(m.id),m]));}catch(replyError){console.warn("Space reply previews could not load:",replyError);}}
   const ownMessageIds=rows.filter(m=>!String(m.body||"").startsWith("[FARNAZ_SYSTEM]")&&String(m.sender_id)===String(currentUser?.id)).map(m=>String(m.id));
   const incomingMessageIds=rows.filter(m=>!String(m.body||"").startsWith("[FARNAZ_SYSTEM]")&&String(m.sender_id)!==String(currentUser?.id)).map(m=>String(m.id));
   let receiptResult={data:[],error:null};
@@ -667,6 +708,13 @@ async function loadMessages(id){
    el.style.setProperty("margin-left","0","important");
    el.style.setProperty("margin-right","0","important");
    if(spacePinnedMessageIds.has(String(m.id))){const pin=document.createElement("small");pin.className="space-message-pin-indicator";pin.textContent="📌 "+tr("پیام سنجاق‌شده","Pinned message");pin.style.cssText="display:block;font-size:10px;font-weight:700;color:var(--mint,#50e3c2);margin:0 0 4px";el.appendChild(pin);}
+   if(m.reply_to_id){
+    const original=repliedMessages.get(String(m.reply_to_id));
+    const quote=document.createElement("button");quote.type="button";quote.className="space-message-quote";quote.style.cssText="display:block;width:100%;text-align:start;border:0;border-inline-start:3px solid var(--accent,#22b8a5);border-radius:7px;padding:6px 9px;margin:0 0 6px;background:rgba(120,130,145,.12);color:inherit;font:inherit;cursor:pointer";
+    const author=document.createElement("strong");author.style.cssText="display:block;font-size:11px;color:var(--accent,#159b8c)";author.textContent=original?(String(original.sender_id)===String(currentUser?.id)?tr("شما","You"):(senderNames.get(String(original.sender_id))||tr("عضو","Member"))):tr("پیام اصلی","Original message");
+    const preview=document.createElement("span");preview.style.cssText="display:block;font-size:12px;opacity:.82;overflow:hidden;text-overflow:ellipsis;white-space:nowrap";preview.textContent=original?(original.body||original.attachment_name||tr("پیوست","Attachment")):tr("پیام در دسترس نیست","Message unavailable");
+    quote.append(author,preview);quote.addEventListener("click",event=>{event.stopPropagation();const target=list.querySelector('[data-message-id="'+String(m.reply_to_id)+'"]');if(target){target.scrollIntoView({behavior:"smooth",block:"center"});target.classList.add("contact-info-search-match");setTimeout(()=>target.classList.remove("contact-info-search-match"),1800);}});el.appendChild(quote);
+   }
    const senderName=isSystemNotice?"":senderNames.get(String(m.sender_id))||"";
    if(senderName){const author=document.createElement("small");author.className="space-message-author";author.textContent=String(m.sender_id)===String(currentUser?.id)?tr("شما","You"):senderName;author.style.cssText="display:block;font-weight:700;font-size:11px;opacity:.85;margin:0 0 4px";el.appendChild(author);}
    if(m.body){const body=document.createElement("div");body.textContent=isSystemNotice?String(m.body).replace(/^\[FARNAZ_SYSTEM\]\s*/,""):String(m.body);el.appendChild(body);}
@@ -683,6 +731,8 @@ async function loadMessages(id){
     meta.appendChild(receipt);
    }
    meta.appendChild(time);el.appendChild(meta);
+   const reactionGroups=spaceMessageReactionMap.get(String(m.id))||[];
+   if(reactionGroups.length){const bar=document.createElement("div");bar.className="message-reactions";bar.style.cssText="display:flex;flex-wrap:wrap;gap:4px;margin-top:5px";for(const group of reactionGroups){const chip=document.createElement("button");chip.type="button";chip.className="message-reaction-chip"+(group.users.includes(String(currentUser?.id))?" mine":"");chip.textContent=group.emoji+" "+group.users.length;chip.setAttribute("aria-label",group.emoji+" "+group.users.length);chip.addEventListener("click",event=>{event.stopPropagation();toggleSpaceMessageReaction(m,group.emoji);});bar.appendChild(chip);}el.appendChild(bar);}
    bindSpaceMessageActions(el,m);fragment.appendChild(el);
   }
   if(token!==messageLoadToken||active?.id!==id)return;
@@ -690,7 +740,8 @@ async function loadMessages(id){
   if(wasNearBottom)list.scrollTop=list.scrollHeight;
  }catch(e){if(!isCurrent())return;const status=q("spaceMessageStatus");if(status)status.textContent=tr("دریافت پیام ناموفق بود: ","Could not load posts: ")+(e?.message||String(e)||"Unknown error");}
 }
-let sendingMessage=false,spaceRecordedVoiceFile=null,spaceRecordingStream=null,spaceMediaRecorder=null,spaceAudioChunks=[],spaceVoiceUrl=null;
+let sendingMessage=false,spaceRecordedVoiceFile=null,spaceRecordingStream=null,spaceMediaRecorder=null,spaceAudioChunks=[],spaceVoiceUrl=null,spaceReplyTarget=null,spaceMessageReactionMap=new Map();
+const SPACE_MESSAGE_REACTION_CHOICES=["👍","❤️","😂","😮","😢","🙏"];
 function clearSpaceVoice(){const player=q("spaceVoicePlayer");if(player){player.pause();player.removeAttribute("src");player.load();}if(spaceVoiceUrl){URL.revokeObjectURL(spaceVoiceUrl);spaceVoiceUrl=null;}spaceRecordedVoiceFile=null;q("spaceVoicePreview").hidden=true;}
 function showSpaceVoice(){const player=q("spaceVoicePlayer");if(spaceVoiceUrl)URL.revokeObjectURL(spaceVoiceUrl);spaceVoiceUrl=URL.createObjectURL(spaceRecordedVoiceFile);player.src=spaceVoiceUrl;q("spaceVoiceSize").textContent=Math.ceil(spaceRecordedVoiceFile.size/1024)+" KB";q("spaceVoicePreview").hidden=false;}
 async function toggleSpaceVoice(){const btn=q("spaceVoiceButton");if(spaceMediaRecorder?.state==="recording"){btn.disabled=true;spaceMediaRecorder.stop();q("spaceMessageStatus").textContent=tr("در حال آماده‌سازی صدای ضبط‌شده…","Finishing recording…");return;}if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==="undefined"){q("spaceMessageStatus").textContent=tr("ضبط صدا در این مرورگر پشتیبانی نمی‌شود.","Audio recording is not supported in this browser.");return;}try{clearSpaceVoice();spaceRecordingStream=await navigator.mediaDevices.getUserMedia({audio:true});const types=["audio/mp4","audio/webm;codecs=opus","audio/webm","audio/ogg;codecs=opus"],mime=types.find(t=>MediaRecorder.isTypeSupported?.(t));spaceMediaRecorder=mime?new MediaRecorder(spaceRecordingStream,{mimeType:mime}):new MediaRecorder(spaceRecordingStream);const recorder=spaceMediaRecorder;spaceAudioChunks=[];recorder.ondataavailable=e=>{if(e.data?.size)spaceAudioChunks.push(e.data);};recorder.onerror=()=>{spaceRecordingStream?.getTracks().forEach(t=>t.stop());spaceRecordingStream=null;spaceMediaRecorder=null;btn.disabled=false;btn.textContent="🎙";btn.classList.remove("recording");q("spaceMessageStatus").textContent=tr("ضبط صدا ناموفق بود؛ دوباره تلاش کن.","Recording failed; try again.");};recorder.onstop=()=>{const type=recorder.mimeType||spaceAudioChunks[0]?.type||"audio/mp4",blob=new Blob(spaceAudioChunks,{type}),ext=type.includes("mp4")?"m4a":type.includes("ogg")?"ogg":"webm";spaceRecordedVoiceFile=blob.size?new File([blob],"voice-message."+ext,{type}):null;spaceRecordingStream?.getTracks().forEach(t=>t.stop());spaceRecordingStream=null;spaceMediaRecorder=null;btn.disabled=false;btn.textContent="🎙";btn.classList.remove("recording");if(spaceRecordedVoiceFile){q("spacePhotoFile").value="";q("spaceCameraFile").value="";q("spaceAttachmentFile").value="";showSpaceVoice();q("spaceMessageStatus").textContent=tr("صدای ضبط‌شده آماده است؛ گوش بده و سپس ارسال کن.","Voice message ready. Review it, then send.");}else q("spaceMessageStatus").textContent=tr("صدایی ضبط نشد؛ دوباره تلاش کن.","No audio captured; try again.");};recorder.start();btn.classList.add("recording");btn.textContent="■";q("spaceMessageStatus").textContent=tr("در حال ضبط… برای پایان، دوباره دکمه را بزن.","Recording… tap again to stop.");}catch(e){spaceRecordingStream?.getTracks().forEach(t=>t.stop());spaceRecordingStream=null;q("spaceMessageStatus").textContent=tr("برای ضبط پیام صوتی باید اجازه دسترسی به میکروفون بدهی.","Microphone permission is required.");}}
@@ -735,12 +786,12 @@ async function send(event){
    if(!sameSpace())return;
    editingSpaceMessageId=null;
   }else{
-   const {error}=await client.from("space_messages").insert({space_id:spaceId,sender_id:senderId,body:body||null,message_type,attachment_path:path,attachment_name,attachment_mime,attachment_size});
+   const {error}=await client.from("space_messages").insert({space_id:spaceId,sender_id:senderId,body:body||null,message_type,attachment_path:path,attachment_name,attachment_mime,attachment_size,reply_to_id:spaceReplyTarget?.id||null});
    if(error)throw error;
    path=null;
   }
   if(!sameSpace())return;
-  input.value="";input.style.height="38px";q("spacePhotoFile").value="";q("spaceCameraFile").value="";q("spaceAttachmentFile").value="";clearSpaceVoice();q("spaceAttachmentMenu").hidden=true;q("spaceAttachmentButton").setAttribute("aria-expanded","false");
+  input.value="";cancelSpaceReply();input.style.height="38px";q("spacePhotoFile").value="";q("spaceCameraFile").value="";q("spaceAttachmentFile").value="";clearSpaceVoice();q("spaceAttachmentMenu").hidden=true;q("spaceAttachmentButton").setAttribute("aria-expanded","false");
   await loadMessages(spaceId);
   if(sameSpace())q("spaceMessageStatus").textContent=tr("پیام ارسال شد.","Message sent.");
  }catch(e){

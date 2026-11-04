@@ -445,11 +445,13 @@ const conversationChecks = [
     "index.html must use the shared conversation structure for private chats"],
   [sources["styles.css"].includes("One shared header layout for private chats, groups and channels") &&
    sources["styles.css"].includes("One composer layout shared by private chats, groups and channels") &&
-   sources["styles.css"].includes(".app.spaces-chat-mode #spaceDetail .composer-shell"),
+   sources["styles.css"].includes(".app.spaces-chat-mode #spaceDetail .composer-shell") &&
+   sources["styles.css"].includes("Attachment popovers are positioned and styled identically in every conversation"),
     "styles.css must provide one shared header and composer design for all conversation types"],
   [!sources["spaces.css"].includes("/* Group header: one horizontal row") &&
    !sources["spaces.css"].includes("#spacesPage #spaceComposer .space-composer-shell") &&
-   !sources["spaces.css"].includes("Final single-line group composer layout"),
+   !sources["spaces.css"].includes("Final single-line group composer layout") &&
+   !sources["spaces.css"].includes("#spacesPage #spaceComposer .space-attachment-menu {"),
     "spaces.css must not retain competing group-only header/composer layout overrides"],
   [sources["chat-viewport.css"].includes("body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceComposer") &&
    sources["chat-viewport.css"].includes("position:absolute!important;left:13px!important;right:13px!important;bottom:0!important") &&

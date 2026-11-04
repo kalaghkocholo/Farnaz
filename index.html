@@ -323,12 +323,13 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
 </nav>
 
 <div id="authBox" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+  <button id="authLanguageButton" class="auth-language-switch" type="button" onclick="toggleLanguage()" aria-label="Change language">EN</button>
   <div class="auth-card">
-    <h2 id="authTitle">ورود به فرناز</h2>
-    <p id="authMessage">با ایمیل و رمز عبورت وارد شو.</p>
+    <h2 id="authTitle">ثبت‌نام در فرناز</h2>
+    <p id="authMessage">برای ارتباط نزدیک‌تر، حساب خودت را بساز.</p>
     <div class="auth-mode-tabs" role="group" aria-label="ورود یا ثبت‌نام">
-      <button type="button" id="authLoginTab" class="auth-mode-tab is-active" aria-pressed="true" onclick="setAuthMode('login')">ورود</button>
-      <button type="button" id="authSignupTab" class="auth-mode-tab" aria-pressed="false" onclick="setAuthMode('signup')">ثبت‌نام</button>
+      <button type="button" id="authLoginTab" class="auth-mode-tab" aria-pressed="false" onclick="setAuthMode('login')">ورود</button>
+      <button type="button" id="authSignupTab" class="auth-mode-tab is-active" aria-pressed="true" onclick="setAuthMode('signup')">ثبت‌نام</button>
     </div>
     <div class="social-auth">
       <button type="button" id="googleAuth" class="social-auth-button" onclick="signInSocial('google')"><span class="google-mark" aria-hidden="true">G</span><span id="googleAuthLabel">ادامه با Google</span></button>

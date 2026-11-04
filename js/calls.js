@@ -299,6 +299,7 @@ async function handleSignal(signal){
   }
 }
 async function acceptIncoming(){
+  stopRingtone();
   const call=activeCall;
   if(!call||call.role!=="receiver")return;
   byId("farnazCallAccept").disabled=true;

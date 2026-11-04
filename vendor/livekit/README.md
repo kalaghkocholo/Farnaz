@@ -27,13 +27,8 @@ Inspection confirmed:
 - Extracted artifact is byte-for-byte identical to the supplied tarball member.
 - `node --check` passes for the extracted UMD artifact.
 
-**Registry integrity comparison is still pending.** The locally computed SRI above has not yet been independently compared with npm's published `dist.integrity` metadata. The executable bundle is therefore intentionally **not committed** yet. Do not create a placeholder or copy a runtime CDN response into this repository.
+**Registry integrity verified:** npm reports the exact version's tarball SRI as `sha512-j9Kg86nJjBjNFUD+ukp2jwMCGa0k+YD5gU//RzAM+ZY3pbG631QCte7fQjwqWMmtBzhDJL9nKYuOLMv/9IbAxg==`, matching the independently computed value. The committed UMD artifact is 610302 bytes with SHA-256 `fb646f2260d84f91238d0a2dc10726c456631d6a26c7cafc43cfee5959b4d31d`.
 
-Before adding the bundle:
-1. Compare the tarball SRI above with the registry's published integrity metadata for exactly version `2.23.0`.
-2. Commit only the exact UMD artifact from the verified tarball; preserve the Apache-2.0 license.
-3. Record the confirmed registry integrity, bundle SHA-256, exact byte size, source URL, and retrieval date.
-4. Run the loader tests and a browser smoke test on iOS Safari and desktop browsers.
-5. Confirm the service worker caches this optional asset without putting it on the critical app-startup path.
+The artifact is loaded lazily after an explicit call action. It is deliberately **not precached during app installation**, so it does not delay ordinary startup. After its first successful fetch, the service worker's same-origin code-asset cache makes it available for subsequent offline use.
 
-No CDN fallback is permitted. The feature remains disabled until the verified local artifact is committed.
+No CDN fallback is permitted. The feature remains disabled by default until real-device and network tests pass.

@@ -347,9 +347,13 @@ async function startCall(type){
   const initiatingUserId=String(signedInUserId),receiverId=String(currentChatUser.user_id);
   if(receiverId===initiatingUserId)return;
   callStartInProgress=true;
-  let startedCall=null;
+  let startedCall=null,keepDialog=false;
+  showDialog(type==="video"?tr("تماس تصویری","Video call"):tr("تماس صوتی","Audio call"),tr("در حال بررسی وضعیت تماس…","Checking call status…"));
   try{
-    const {data:blocked,error:blockError}=await getClient().from("blocked_contacts").select("blocked_user_id").eq("blocker_id",initiatingUserId).eq("blocked_user_id",receiverId).maybeSingle();
+    const {data:blocked,error:blockError}=await Promise.race([
+      getClient().from("blocked_contacts").select("blocked_user_id").eq("blocker_id",initiatingUserId).eq("blocked_user_id",receiverId).maybeSingle(),
+      new Promise((_,reject)=>setTimeout(()=>reject(new Error("Call setup timed out while checking contact permissions.")),12000))
+    ]);
     if(String(signedInUserId)!==initiatingUserId||String(currentUser?.id||"")!==initiatingUserId)return;
     if(String(currentChatUser?.user_id||"")!==receiverId)return;
     if(activeCall)return;
@@ -358,15 +362,17 @@ async function startCall(type){
     // Close abandoned call records for this user only. A call should not remain
     // ringing/active for a full day; preserve all recent/live sessions.
     const staleBefore=new Date(Date.now()-24*60*60*1000).toISOString();
-    const {error:staleCleanupError}=await getClient().from("call_sessions")
-      .update({status:"ended",updated_at:new Date().toISOString()})
-      .in("status",["ringing","active"])
-      .lt("created_at",staleBefore)
-      .or("caller_id.eq."+initiatingUserId+",receiver_id.eq."+initiatingUserId);
+    setCallStatus(tr("در حال آماده‌سازی تماس…","Preparing call…"));
+    const {error:staleCleanupError}=await Promise.race([
+      getClient().from("call_sessions").update({status:"ended",updated_at:new Date().toISOString()})
+        .in("status",["ringing","active"]).lt("created_at",staleBefore)
+        .or("caller_id.eq."+initiatingUserId+",receiver_id.eq."+initiatingUserId),
+      new Promise((_,reject)=>setTimeout(()=>reject(new Error("Call setup timed out while preparing the session.")),12000))
+    ]);
     if(staleCleanupError)throw staleCleanupError;
     if(String(signedInUserId)!==initiatingUserId||String(currentUser?.id||"")!==initiatingUserId)return;
     if(String(currentChatUser?.user_id||"")!==receiverId||activeCall)return;
-    showDialog(type==="video"?tr("تماس تصویری","Video call"):tr("تماس صوتی","Audio call"),tr("در حال شروع تماس…","Starting call…"));
+    setCallStatus(tr("در حال ثبت تماس…","Creating call…"));
     const {data,error}=await getClient().from("call_sessions").insert({caller_id:initiatingUserId,receiver_id:receiverId,call_type:type,status:"ringing"}).select("*").single();
     if(error)throw error;
     if(String(signedInUserId)!==initiatingUserId||String(currentUser?.id||"")!==initiatingUserId||String(currentChatUser?.user_id||"")!==receiverId){
@@ -376,6 +382,7 @@ async function startCall(type){
     if(activeCall){try{await getClient().from("call_sessions").update({status:"ended"}).eq("id",data.id);}catch(_){}return;}
     activeCall={session:data,role:"caller",otherId:receiverId,signalChannel:null,pc:null,localStream:null,pendingCandidates:[],timeout:null};
     startedCall=activeCall;
+    keepDialog=true;
     byId("farnazCallHangup").hidden=false;
     await preparePeer(data,"caller");
     if(activeCall!==startedCall)return;
@@ -405,8 +412,11 @@ async function startCall(type){
       try{await getClient().from("call_sessions").update({status:"ended"}).eq("id",startedCall.session.id);}catch(_){}
       if(activeCall===startedCall)await cleanupCall(false);
     }
-    if(!activeCall){setCallStatus(tr("تماس شروع نشد: ","Call could not start: ")+e.message);const hangup=byId("farnazCallHangup");if(hangup)hangup.hidden=true;}
-  }finally{callStartInProgress=false;}
+    if(!activeCall){setCallStatus(tr("تماس شروع نشد: ","Call could not start: ")+e.message);const hangup=byId("farnazCallHangup");if(hangup)hangup.hidden=true;keepDialog=true;}
+  }finally{
+    callStartInProgress=false;
+    if(!keepDialog&&!activeCall){const dialog=byId("farnazCallDialog");if(dialog)dialog.hidden=true;}
+  }
 }
 async function setUser(userId){
   const request=++userSwitchSequence,next=userId?String(userId):null;

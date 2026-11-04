@@ -357,11 +357,16 @@ function showMessageActions(m,item){
   add("🗑  "+(english?"Delete":"حذف"),()=>deleteMessage(m),"mini-button danger");
   const close=document.createElement("button");close.type="button";close.className="message-tools-dismiss";close.textContent="×";close.setAttribute("aria-label",english?"Close":"بستن");close.onclick=closeMenu;menu.appendChild(close);
   document.body.appendChild(menu);
-  const menuRect=menu.getBoundingClientRect(),margin=12;
-  let left=Math.max(margin,Math.min(rect.left+(rect.width-menuRect.width)/2,window.innerWidth-menuRect.width-margin));
+  const menuRect=menu.getBoundingClientRect(),vv=window.visualViewport,margin=12;
+  const viewLeft=vv?vv.offsetLeft:0,viewTop=vv?vv.offsetTop:0;
+  const viewWidth=vv?vv.width:window.innerWidth,viewHeight=vv?vv.height:window.innerHeight;
+  const minLeft=viewLeft+margin,maxLeft=viewLeft+viewWidth-menuRect.width-margin;
+  const left=Math.max(minLeft,Math.min(rect.left+(rect.width-menuRect.width)/2,maxLeft));
+  const minTop=viewTop+margin,maxTop=viewTop+viewHeight-menuRect.height-margin;
   let top=rect.top-menuRect.height-8;
-  if(top<margin)top=Math.min(window.innerHeight-menuRect.height-margin,rect.bottom+8);
-  menu.style.left=left+"px";menu.style.top=Math.max(margin,top)+"px";
+  if(top<minTop)top=rect.bottom+8;
+  top=Math.max(minTop,Math.min(top,Math.max(minTop,maxTop)));
+  menu.style.left=left+"px";menu.style.top=top+"px";
 }
 function setReplyTarget(m){
   replyTarget=m;const preview=$("replyPreview");preview.replaceChildren();preview.hidden=false;

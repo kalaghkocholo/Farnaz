@@ -466,6 +466,20 @@ async function handleIncomingSession(session,client){
   }finally{pendingIncomingSessions.delete(sessionId);}
 }
 window.startCall=startCall;
+// Use delegated click handling rather than relying only on inline HTML handlers.
+// This remains reliable if the chat header is rebuilt during navigation.
+document.addEventListener("click",event=>{
+  const button=event.target?.closest?.("[data-farnaz-call-type]");
+  if(!button)return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  const type=button.getAttribute("data-farnaz-call-type")==="video"?"video":"audio";
+  button.disabled=true;
+  Promise.resolve(startCall(type)).catch(error=>{
+    console.error("Call button action failed:",error);
+    alert(tr("اجرای تماس با خطا روبه‌رو شد: ","Call action failed: ")+String(error?.message||error));
+  }).finally(()=>{button.disabled=false;});
+},true);
 window.enableFarnazNotifications=async function(){
   const status=byId("notificationsStatus");
   if(!("Notification" in window)||!navigator.serviceWorker){if(status)status.textContent=tr("اعلان‌ها در این مرورگر پشتیبانی نمی‌شوند.","Notifications are not supported in this browser.");return;}

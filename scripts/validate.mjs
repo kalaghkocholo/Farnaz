@@ -378,7 +378,7 @@ const authChecks = [
    coreSource.includes("retrying those requests can duplicate messages or side effects."),
     "js/core.js must not automatically replay potentially non-idempotent Supabase POST writes after transport failures"],
   [chatSource.includes('const senderId=String(currentUser.id),receiverId=String(currentChatUser.user_id);') &&
-   chatSource.includes('const row={sender_id:senderId,receiver_id:receiverId') &&
+   chatSource.includes('sender_id:senderId,receiver_id:receiverId') &&
    chatSource.includes('if(String(currentChatUser?.user_id||"")===receiverId){') &&
    chatSource.includes('input.value="";input.style.height="auto";'),
     "js/chat-menu-v5.js must bind private message writes and composer cleanup to the initiating account/chat"],
@@ -386,7 +386,7 @@ const authChecks = [
    chatSource.includes("if(request!==chatRequestNumber||currentUser?.id!==myId||String(currentChatUser?.user_id)!==String(contactId))return;"),
     "js/chat-menu-v5.js must discard stale private-message results after the hidden-message read and before caching"],
   [sources["js/spaces.js"].includes('const senderId=String(currentUser.id),spaceId=String(active.id),editId=editingSpaceMessageId;') &&
-   sources["js/spaces.js"].includes('.insert({space_id:spaceId,sender_id:senderId') &&
+   sources["js/spaces.js"].includes('.insert({id:pendingSend.id,space_id:spaceId,sender_id:senderId') &&
    sources["js/spaces.js"].includes('const sameSpace=()=>sameAccount()&&String(active?.id||"")===spaceId;'),
     "js/spaces.js must bind group/channel message writes and UI updates to the initiating account/space"],
   [coreSource.includes('function startNewChat()') &&

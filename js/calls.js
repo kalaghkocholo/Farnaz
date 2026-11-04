@@ -53,7 +53,7 @@ function ensureDialog(){
     dialog.setAttribute("role","dialog");dialog.setAttribute("aria-modal","true");
     dialog.setAttribute("aria-labelledby","farnazCallTitle");
   }
-  dialog.innerHTML='<div class="farnaz-call-card"><div class="farnaz-call-top"><strong id="farnazCallTitle">تماس فرناز</strong><button type="button" id="farnazCallClose" aria-label="بستن پنجره تماس">×</button></div><p id="farnazCallStatus" role="status" aria-live="polite"></p><div class="farnaz-call-media"><video id="farnazLocalVideo" autoplay muted playsinline hidden></video><video id="farnazRemoteVideo" autoplay playsinline hidden></video><audio id="farnazRemoteAudio" autoplay playsinline></audio></div><div class="farnaz-call-controls" id="farnazCallControls" hidden><button type="button" id="farnazCallSpeaker" aria-pressed="false" title="بلندگو"><span class="farnaz-call-control-icon">🔊</span><span id="farnazCallSpeakerLabel">بلندگو</span></button><button type="button" id="farnazCallMic" aria-pressed="true" title="میکروفون"><span class="farnaz-call-control-icon">🎙</span><span id="farnazCallMicLabel">میکروفون روشن</span></button><button type="button" id="farnazCallCamera" aria-pressed="true" title="دوربین" hidden><span class="farnaz-call-control-icon">📷</span><span id="farnazCallCameraLabel">دوربین روشن</span></button><button type="button" id="farnazCallSwitchCamera" title="تعویض دوربین" hidden><span class="farnaz-call-control-icon">🔄</span><span>تعویض دوربین</span></button></div><div class="farnaz-call-actions"><button type="button" id="farnazCallAccept" class="farnaz-call-accept" hidden>پاسخ</button><button type="button" id="farnazCallReject" class="farnaz-call-reject" hidden>رد تماس</button><button type="button" id="farnazCallHangup" class="farnaz-call-reject" hidden>پایان تماس</button></div></div>';
+  dialog.innerHTML='<div class="farnaz-call-card"><div class="farnaz-call-top"><strong id="farnazCallTitle">تماس فرناز</strong><button type="button" id="farnazCallClose" aria-label="بستن پنجره تماس">×</button></div><p id="farnazCallStatus" role="status" aria-live="polite"></p><div class="farnaz-call-media"><video id="farnazLocalVideo" autoplay muted playsinline hidden></video><video id="farnazRemoteVideo" autoplay playsinline hidden></video><audio id="farnazRemoteAudio" autoplay playsinline></audio></div><div class="farnaz-call-toolbar"><div class="farnaz-call-controls" id="farnazCallControls" hidden><button type="button" id="farnazCallSpeaker" aria-label="بلندگو" aria-pressed="false" title="بلندگو"><span class="farnaz-call-control-icon">🔊</span></button><button type="button" id="farnazCallMic" aria-label="میکروفون" aria-pressed="true" title="میکروفون"><span class="farnaz-call-control-icon">🎙️</span></button><button type="button" id="farnazCallCamera" aria-label="دوربین" aria-pressed="true" title="دوربین" hidden><span class="farnaz-call-control-icon">📷</span></button><button type="button" id="farnazCallSwitchCamera" aria-label="تعویض دوربین" title="تعویض دوربین" hidden><span class="farnaz-call-control-icon">🔄</span></button></div><div class="farnaz-call-actions"><button type="button" id="farnazCallAccept" class="farnaz-call-accept" aria-label="پاسخ" title="پاسخ" hidden>✓</button><button type="button" id="farnazCallReject" class="farnaz-call-reject" aria-label="رد تماس" title="رد تماس" hidden>✕</button><button type="button" id="farnazCallHangup" class="farnaz-call-reject" aria-label="پایان تماس" title="پایان تماس" hidden>✕</button></div></div></div>';
   document.body.appendChild(dialog);
   byId("farnazCallClose").onclick=()=>{if(activeCall)endCall(true);else dialog.hidden=true;};
   byId("farnazCallAccept").onclick=acceptIncoming;
@@ -78,44 +78,44 @@ function refreshCallControls(){
   const micEnabled=(call.localStream.getAudioTracks()[0]?.enabled)!==false;
   const cameraEnabled=(call.localStream.getVideoTracks()[0]?.enabled)!==false;
   byId("farnazCallMic").setAttribute("aria-pressed",String(micEnabled));
-  byId("farnazCallMicLabel").textContent=tr(micEnabled?"میکروفون روشن":"میکروفون خاموش",micEnabled?"Microphone on":"Microphone off");
+  byId("farnazCallMic").setAttribute("aria-label",tr(micEnabled?"خاموش‌کردن میکروفون":"روشن‌کردن میکروفون",micEnabled?"Mute microphone":"Unmute microphone"));
   byId("farnazCallCamera").setAttribute("aria-pressed",String(cameraEnabled));
-  byId("farnazCallCameraLabel").textContent=tr(cameraEnabled?"دوربین روشن":"دوربین خاموش",cameraEnabled?"Camera on":"Camera off");
-  byId("farnazCallSpeaker").setAttribute("aria-pressed",String(!!call.speakerDeviceId));
-  byId("farnazCallSpeakerLabel").textContent=call.speakerDeviceId?tr("بلندگو فعال","Speaker on"):tr("بلندگو / خروجی صدا","Speaker / audio output");
+  byId("farnazCallCamera").setAttribute("aria-label",tr(cameraEnabled?"خاموش‌کردن دوربین":"روشن‌کردن دوربین",cameraEnabled?"Turn camera off":"Turn camera on"));
+  byId("farnazCallSpeaker").setAttribute("aria-pressed",String(!!call.speakerEnabled));
+  byId("farnazCallSpeaker").setAttribute("aria-label",tr(call.speakerEnabled?"خاموش‌کردن بلندگو":"روشن‌کردن بلندگو",call.speakerEnabled?"Turn speaker off":"Turn speaker on"));
 }
 async function toggleSpeaker(){
   const call=activeCall,audio=byId("farnazRemoteAudio");
   if(!call||!audio)return;
   if(typeof audio.setSinkId!=="function"){
-    setCallStatus(tr("این مرورگر تغییر مستقیم خروجی صدا را پشتیبانی نمی‌کند؛ مسیر صدا را از تنظیمات دستگاه انتخاب کن.","This browser cannot switch audio output directly. Choose the audio route in your device settings."));
+    setCallStatus(tr("در Safari آیفون، وب‌اپ اجازه تغییر مستقیم بلندگو و گوشی را نمی‌دهد. از کنترل صوتی خود آیفون استفاده کن.","Safari on iPhone does not let web apps switch between earpiece and speaker. Use the iPhone audio controls."));
     return;
   }
   try{
+    if(call.speakerEnabled){
+      await audio.setSinkId(call.defaultSinkId||"default");
+      if(activeCall!==call)return;
+      call.speakerEnabled=false;
+      call.speakerDeviceId=null;
+  call.speakerEnabled=false;
+  call.defaultSinkId=byId("farnazRemoteAudio")?.sinkId||"default";
+      refreshCallControls();
+      setCallStatus(tr("بلندگو خاموش شد.","Speaker off."));
+      return;
+    }
     const devices=await navigator.mediaDevices.enumerateDevices();
     if(activeCall!==call)return;
     const outputs=devices.filter(d=>d.kind==="audiooutput");
-    const current=call.speakerDeviceId||audio.sinkId||"";
-    const preferred=outputs.find(d=>/speaker|loudspeaker|haut-parleur|lautsprecher|بلندگو/i.test(d.label||""));
-    const alternate=outputs.find(d=>d.deviceId!==current&&d.deviceId!=="default");
-    let target=null;
-    if(call.speakerDeviceId){
-      target=outputs.find(d=>/receiver|earpiece|hörer|écouteur|گوشی/i.test(d.label||""))||outputs.find(d=>d.deviceId==="default");
-    }else{
-      target=preferred&&preferred.deviceId!==current?preferred:alternate;
-    }
-    if(!target){
-      setCallStatus(tr("دستگاه خروجی جداگانه‌ای در این مرورگر شناسایی نشد. اگر هندزفری متصل است، آن را از تنظیمات صوتی دستگاه انتخاب کن.","No separate audio output was exposed by this browser. If a headset is connected, select it in your device audio settings."));
-      return;
-    }
+    const speaker=outputs.find(d=>/speaker|loudspeaker|haut-parleur|lautsprecher|بلندگو/i.test(d.label||""));
+    const target=speaker||outputs.find(d=>d.deviceId!=="default"&&d.deviceId!=="communications"&&d.deviceId!==(call.defaultSinkId||""));
+    if(!target){setCallStatus(tr("مرورگر خروجی بلندگوی جداگانه‌ای معرفی نکرد.","The browser did not expose a separate speaker output."));return;}
     await audio.setSinkId(target.deviceId);
     if(activeCall!==call)return;
-    call.speakerDeviceId=target.deviceId;
-    refreshCallControls();
-    setCallStatus(tr("مسیر خروجی صدا تغییر کرد.","Audio output changed."));
+    call.speakerEnabled=true;call.speakerDeviceId=target.deviceId;
+    refreshCallControls();setCallStatus(tr("بلندگو روشن شد.","Speaker on."));
   }catch(error){
     console.warn("Speaker output switch:",error);
-    setCallStatus(tr("تغییر خروجی صدا انجام نشد؛ از مسیر صوتی دستگاه استفاده کن.","Could not change audio output. Use your device audio controls."));
+    setCallStatus(tr("تغییر خروجی صدا انجام نشد. از کنترل صوتی دستگاه استفاده کن.","Could not switch audio output. Use device audio controls."));
   }
 }
 function toggleMicrophone(){

@@ -646,22 +646,28 @@ document.addEventListener("click",event=>{
 function navigate(pageId,options={}){
   if(!currentUser){openAuth();return;}
   if(profileCompletionRequired&&pageId!=="profilePage")pageId="profilePage";
+  const previousCommunicationsTab=window.farnazCommunicationsTab||"personal";
   if(pageId==="chatsPage")window.farnazCommunicationsTab="personal";
   else if(pageId==="callsPage")window.farnazCommunicationsTab="calls";
   else if(pageId==="spacesPage"&&!["group","channel"].includes(window.farnazCommunicationsTab))window.farnazCommunicationsTab="group";
   if(!$(pageId))return;
   if(pageId==="chatPage"&&!currentChatUser)return;
   const activePageId=document.querySelector(".page.active")?.id||null;
-  if(activePageId!==pageId){
-    // Welcome/login is an auth boundary, not a navigable page in signed-in history.
+  const nextHistoryEntry=swipePageHistoryKey(pageId,window.farnazCommunicationsTab);
+  const currentHistoryEntry=swipePageHistory[swipePageHistoryIndex]||
+    (activePageId?swipePageHistoryKey(activePageId,previousCommunicationsTab):null);
+  if(activePageId!==pageId||currentHistoryEntry!==nextHistoryEntry){
+    // Login is an authentication boundary; never include it in signed-in swipe history.
     if(pageId==="homePage"){swipePageHistory=[];swipePageHistoryIndex=-1;}
     else if(swipePageHistoryIndex<0){
       const safePreviousPage=activePageId&&activePageId!=="homePage"&&currentUser?activePageId:null;
-      swipePageHistory=safePreviousPage?[safePreviousPage,pageId]:[pageId];
+      swipePageHistory=safePreviousPage
+        ?[swipePageHistoryKey(safePreviousPage,previousCommunicationsTab),nextHistoryEntry]
+        :[nextHistoryEntry];
       swipePageHistoryIndex=swipePageHistory.length-1;
-    }else if(swipePageHistory[swipePageHistoryIndex-1]===pageId)swipePageHistoryIndex--;
-    else if(swipePageHistory[swipePageHistoryIndex+1]===pageId)swipePageHistoryIndex++;
-    else{swipePageHistory=swipePageHistory.slice(0,swipePageHistoryIndex+1);swipePageHistory.push(pageId);swipePageHistoryIndex=swipePageHistory.length-1;}
+    }else if(swipePageHistory[swipePageHistoryIndex-1]===nextHistoryEntry)swipePageHistoryIndex--;
+    else if(swipePageHistory[swipePageHistoryIndex+1]===nextHistoryEntry)swipePageHistoryIndex++;
+    else{swipePageHistory=swipePageHistory.slice(0,swipePageHistoryIndex+1);swipePageHistory.push(nextHistoryEntry);swipePageHistoryIndex=swipePageHistory.length-1;}
   }
   document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id===pageId));
   document.querySelector(".app").classList.toggle("chat-mode",pageId==="chatPage");
@@ -705,29 +711,36 @@ function openAdjacentConversation(direction){
   if(nextIndex<0||nextIndex>=cards.length)return;
   cards[nextIndex].querySelector(".list-item")?.click();
 }
-/* Bidirectional page swipes use the same history as ordinary navigation. */
-const SWIPE_PAGE_ORDER=["profilePage","chatsPage","callsPage","contactsPage","settingsPage"];
+/* One history-backed gesture engine for pages and nested conversations. */
+function swipePageHistoryKey(pageId,tab){
+  return pageId+"|"+(pageId==="spacesPage"?(["group","channel"].includes(tab)?tab:"group"):"");
+}
+function swipePageHistoryId(entry){return String(entry||"").split("|")[0];}
 function swipeHistoryTarget(direction){
   if(!currentUser)return null;
   const activePage=document.querySelector(".page.active");
   if(!activePage)return null;
-  // An open conversation is a nested view: a right swipe returns to its own list.
-  if(direction>0&&activePage.id==="chatPage")return "__privateChatBack__";
+  if(direction>0&&activePage.id==="chatPage"){
+    const targetId=$(previousPage)&&previousPage!=="chatPage"?previousPage:"chatsPage";
+    return {kind:"privateBack",targetId};
+  }
   if(direction>0&&activePage.id==="spacesPage"){
     const detail=document.getElementById("spaceDetail");
-    if(detail&&!detail.hidden)return "__spaceChatBack__";
+    if(detail&&!detail.hidden)return {kind:"spaceBack",targetId:"__spaceList__"};
   }
-  if((activePage.id==="chatPage"||activePage.id==="spacesPage"&&document.getElementById("spaceDetail")&&!document.getElementById("spaceDetail").hidden)&&direction<0)return null;
-  const currentId=["chatPage","spacesPage"].includes(activePage.id)?"chatsPage":activePage.id;
-  const index=SWIPE_PAGE_ORDER.indexOf(currentId);
-  if(index<0)return null;
-  const targetId=SWIPE_PAGE_ORDER[index+direction];
-  return targetId&&document.getElementById(targetId)?targetId:null;
+  if(activePage.id==="chatPage"||activePage.id==="spacesPage"&&document.getElementById("spaceDetail")&&!document.getElementById("spaceDetail").hidden)return null;
+  const currentIndex=swipePageHistoryIndex;
+  const targetIndex=currentIndex+(direction>0?-1:1);
+  const targetEntry=swipePageHistory[targetIndex];
+  if(!targetEntry)return null;
+  const targetId=swipePageHistoryId(targetEntry);
+  if(!targetId||targetId===activePage.id||!$(targetId))return null;
+  return {kind:"page",targetId,targetEntry};
 }
 function clearSwipeTransition(){
   if(swipeTransitionTimer){clearTimeout(swipeTransitionTimer);swipeTransitionTimer=null;}
   document.querySelector(".app")?.classList.remove("farnaz-swipe-active");
-  document.querySelectorAll(".page.farnaz-swipe-current,.page.farnaz-swipe-underlay").forEach(page=>{
+  document.querySelectorAll(".page.farnaz-swipe-current,.page.farnaz-swipe-underlay,#spaceDetail.farnaz-swipe-current,#spaceList.farnaz-swipe-underlay").forEach(page=>{
     page.classList.remove("farnaz-swipe-current","farnaz-swipe-underlay");
     page.style.removeProperty("transform");page.style.removeProperty("transition");
   });
@@ -735,38 +748,35 @@ function clearSwipeTransition(){
 }
 function finishSwipeNavigation(commit){
   const g=swipeGesture;if(!g)return;
-  if(g.action){
-    swipeGesture=null;
-    if(commit&&currentUser&&document.querySelector(".page.active")===g.current){
-      if(g.action==="__privateChatBack__"){
-        dismissMessageMenus();exitMessageSelection();cancelReply();cancelMessageEdit();
-        navigate("chatsPage");
-      }else if(g.action==="__spaceChatBack__"){
-        document.getElementById("backSpaces")?.click();
-      }
-    }
-    clearSwipeTransition();
-    return;
-  }
   if(commit&&g.targetId){
-    g.current.style.transition="transform 220ms cubic-bezier(.22,.75,.25,1)";
-    g.target.style.transition=g.current.style.transition;
+    const transition="transform 220ms cubic-bezier(.22,.75,.25,1)";
+    g.current.style.transition=transition;g.target.style.transition=transition;
     g.current.style.transform="translate3d("+(g.direction*g.width)+"px,0,0)";
     g.target.style.transform="translate3d(0,0,0)";
     swipeGesture=null;
     swipeTransitionTimer=setTimeout(()=>{
       swipeTransitionTimer=null;
-      // Commit only if the user is still on the page where this gesture began.
-      if(currentUser&&document.querySelector(".page.active")===g.current)navigate(g.targetId);
+      if(currentUser&&document.querySelector(".page.active")===g.page){
+        if(g.action==="privateBack"){
+          dismissMessageMenus();exitMessageSelection();cancelReply();cancelMessageEdit();
+          navigate(g.targetId);
+        }else if(g.action==="spaceBack"){
+          document.getElementById("backSpaces")?.click();
+        }else navigate(g.targetId);
+      }
       clearSwipeTransition();
     },230);
   }else{
-    g.current.style.transition="transform 180ms cubic-bezier(.22,.75,.25,1)";
-    g.target.style.transition=g.current.style.transition;
+    const transition="transform 180ms cubic-bezier(.22,.75,.25,1)";
+    g.current.style.transition=transition;g.target.style.transition=transition;
     g.current.style.transform="translate3d(0,0,0)";
     g.target.style.transform="translate3d("+(g.direction>0?-g.width:g.width)+"px,0,0)";
     swipeGesture=null;
-    swipeTransitionTimer=setTimeout(()=>{swipeTransitionTimer=null;clearSwipeTransition();},190);
+    swipeTransitionTimer=setTimeout(()=>{
+      swipeTransitionTimer=null;
+      if(g.action==="spaceBack")g.target.hidden=true;
+      clearSwipeTransition();
+    },190);
   }
 }
 function installFarnazSwipeNavigation(){
@@ -775,14 +785,14 @@ function installFarnazSwipeNavigation(){
   document.addEventListener("pointerdown",event=>{
     if(event.pointerType!=="touch"||!event.isPrimary||swipeGesture||swipeTransitionTimer)return;
     if(document.body.classList.contains("keyboard-open")||document.body.classList.contains("chat-mode")&&document.activeElement?.matches?.("input,textarea,[contenteditable='true']")||messageSelectionMode)return;
-    const app=event.target?.closest?.(".app"),current=app?.querySelector(".page.active");
-    if(!currentUser||!app||!current||current.id==="homePage"||app.classList.contains("farnaz-swipe-active"))return;
-    // Leave the outer 28px to iOS edge navigation; app swipes start in the content area.
+    const app=event.target?.closest?.(".app"),page=app?.querySelector(".page.active");
+    if(!currentUser||!app||!page||page.id==="homePage"||app.classList.contains("farnaz-swipe-active"))return;
+    // Preserve the native iOS edge gesture and avoid stealing taps from controls or message bubbles.
     const appRect=app.getBoundingClientRect();
     if(event.clientX-appRect.left<28||appRect.right-event.clientX<28)return;
-    if(event.target.closest("input,textarea,select,button,a,[contenteditable='true'],.bottom-nav,.conversation-card,.space-card,#conversationList,#spacesList,.dialog,.modal,.message-action-menu,.message-selection-toolbar,#sendMessageForm,#spaceComposer,.composer-shell"))return;
+    if(event.target.closest("input,textarea,select,button,a,[contenteditable='true'],.bottom-nav,.conversation-card,.space-card,#conversationList,#spacesList,.dialog,.modal,.message,.space-message,.message-action-menu,.message-selection-toolbar,#sendMessageForm,#spaceComposer,.composer-shell"))return;
     if(!swipeHistoryTarget(-1)&&!swipeHistoryTarget(1))return;
-    swipeGesture={app,current,target:null,targetId:null,startX:event.clientX,startY:event.clientY,lastX:event.clientX,lastTime:performance.now(),velocity:0,dx:0,width:Math.max(1,app.getBoundingClientRect().width),direction:0,locked:false};
+    swipeGesture={app,page,current:page,target:null,targetId:null,action:null,startX:event.clientX,startY:event.clientY,lastX:event.clientX,lastTime:performance.now(),velocity:0,dx:0,width:Math.max(1,app.getBoundingClientRect().width),direction:0,locked:false};
   },{capture:true,passive:true});
   document.addEventListener("pointermove",event=>{
     const g=swipeGesture;if(!g||event.pointerType!=="touch")return;
@@ -791,22 +801,23 @@ function installFarnazSwipeNavigation(){
     if(!g.locked){
       if(Math.abs(dx)<12&&Math.abs(dy)<12)return;
       if(Math.abs(dx)<Math.abs(dy)*1.2){swipeGesture=null;return;}
-      const direction=dx>0?1:-1,targetId=swipeHistoryTarget(direction);
-      if(!targetId){swipeGesture=null;return;}
-      g.direction=direction;g.targetId=targetId;g.locked=true;
-      if(targetId==="__privateChatBack__"||targetId==="__spaceChatBack__"){
-        g.action=targetId;
-        return;
-      }
-      const target=document.getElementById(targetId);if(!target){swipeGesture=null;return;}
-      g.target=target;
-      g.app.classList.add("farnaz-swipe-active");g.current.classList.add("farnaz-swipe-current");target.classList.add("farnaz-swipe-underlay");
-      target.style.transition="none";g.current.style.transition="none";
-      target.style.transform="translate3d("+(direction>0?-g.width:g.width)+"px,0,0)";
+      const direction=dx>0?1:-1,destination=swipeHistoryTarget(direction);
+      if(!destination){swipeGesture=null;return;}
+      g.direction=direction;g.targetId=destination.targetId;g.action=destination.kind;g.locked=true;
+      if(destination.kind==="spaceBack"){
+        g.target=document.getElementById("spaceList");
+        if(g.target)g.target.hidden=false;
+      }else g.target=document.getElementById(destination.targetId);
+      if(!g.target){swipeGesture=null;return;}
+      g.app.classList.add("farnaz-swipe-active");
+      g.current=g.action==="spaceBack"?document.getElementById("spaceDetail"):g.page;
+      if(!g.current){swipeGesture=null;return;}
+      g.current.classList.add("farnaz-swipe-current");g.target.classList.add("farnaz-swipe-underlay");
+      g.target.style.transition="none";g.current.style.transition="none";
+      g.target.style.transform="translate3d("+(direction>0?-g.width:g.width)+"px,0,0)";
     }
     if(g.locked){
       if(event.cancelable)event.preventDefault();
-      if(g.action)return;
       const x=Math.max(-g.width,Math.min(g.width,dx));
       g.current.style.transform="translate3d("+x+"px,0,0)";
       g.target.style.transform="translate3d("+((g.direction>0?-g.width:g.width)+x)+"px,0,0)";

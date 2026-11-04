@@ -260,23 +260,35 @@ footer{text-align:center;color:#718096;font-size:10px;padding:17px 0 7px}
 .connection-banner{margin:0 0 12px;padding:10px 12px;border:1px solid #8b6b32;border-radius:12px;background:#332b1b;color:#ffe2a8;font-size:12px;line-height:1.6}
 .connection-banner[hidden]{display:none!important}
 #authBox{
-  display:none;position:fixed;inset:0;background:#101828ee;
+  display:none;position:fixed;inset:0;background:var(--bg);
   z-index:9999;align-items:center;justify-content:center;
-  padding:12px;overflow-y:auto
+  padding:calc(18px + env(safe-area-inset-top,0px)) 18px calc(18px + env(safe-area-inset-bottom,0px));overflow-y:auto
 }
+.auth-language-switch{position:fixed;top:calc(env(safe-area-inset-top,0px) + 14px);z-index:10001;min-width:42px;height:34px;padding:0 9px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--muted);font-size:12px;font-weight:700}
+html[dir="rtl"] .auth-language-switch{left:max(16px,calc((100vw - 560px)/2 + 16px));right:auto}
+html[dir="ltr"] .auth-language-switch{right:max(16px,calc((100vw - 560px)/2 + 16px));left:auto}
 .auth-card{
-  background:#182437;padding:18px;border:1px solid #35445a;
-  border-radius:16px;width:100%;max-width:370px;margin:auto
+  background:var(--bg);padding:18px 8px;border:0;
+  border-radius:0;width:100%;max-width:390px;margin:auto
 }
-.auth-card h2{font-size:18px}
-.close-button{float:left;background:none;color:white;border:0;font-size:24px}
-.auth-submit{width:100%;margin-top:14px}
-.auth-link{background:none;color:var(--mint);border:0;padding:12px 0;font-size:12px}
-.social-auth{display:grid;gap:9px;margin:14px 0 12px}
-.social-auth-button{width:100%;min-height:44px;border:1px solid #8490a0;border-radius:999px;background:#fff;color:#222;display:flex;align-items:center;justify-content:center;gap:10px;font-size:14px;font-weight:600;padding:10px 14px}
+.auth-card h2{font-size:23px;font-weight:750;margin:0 0 7px;text-align:center}
+.auth-card>p:not(.status){text-align:center;color:var(--muted);margin:0 0 22px;font-size:13px}
+.auth-submit{width:100%;margin-top:18px;min-height:48px;border-radius:12px}
+.auth-switch-hint{color:var(--muted);font-size:11px;text-align:center;margin:10px 0 0}
+.auth-mode-tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;margin:0 0 20px;background:var(--panel2);border-radius:12px}
+.auth-mode-tab{min-height:42px;border:0;border-radius:9px;background:transparent;color:var(--muted);font-weight:650}
+.auth-mode-tab.is-active{background:var(--panel);color:var(--white);box-shadow:0 1px 3px #0001}
+#authForm{display:flex;flex-direction:column;gap:9px}
+#authForm label{font-size:12px;font-weight:650;margin-top:5px}
+#authForm input{width:100%;min-height:46px;padding:11px 13px;border:1px solid var(--border);border-radius:11px;background:var(--panel);color:var(--white);outline:none}
+#authForm input:focus{border-color:var(--accent)}
+.auth-field-hint{display:block;color:var(--muted);font-size:10px;line-height:1.6;margin-top:5px}
+#authPhoneField[hidden]{display:none!important}
+.social-auth{display:grid;gap:9px;margin:0 0 12px}
+.social-auth-button{width:100%;min-height:42px;border:1px solid var(--border);border-radius:11px;background:var(--panel);color:var(--white);display:flex;align-items:center;justify-content:center;gap:10px;font-size:13px;font-weight:600;padding:9px 14px}
 .social-auth-button:disabled{opacity:.65}
 .google-mark{font-family:Arial,sans-serif;font-weight:800;font-size:20px;color:#4285f4}
-.auth-divider{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px;margin:8px 0 12px}
+.auth-divider{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:11px;margin:8px 0 12px}
 .auth-divider:before,.auth-divider:after{content:"";height:1px;background:var(--border);flex:1}
 [hidden]{display:none!important}
 @media(max-width:360px){
@@ -1157,8 +1169,9 @@ input,textarea,select,#messageSearchQuery,#messageSearchKind,#messageSearchFrom,
 .message-reaction-chip.mine{border-color:var(--accent)!important;background:color-mix(in srgb,var(--accent) 18%,var(--panel2))!important}
 .message-pinned-banner{border-color:var(--border)!important}
 .secondary-button{border-color:var(--border)!important;color:var(--white)!important}
-.auth-card{background:var(--panel)!important;color:var(--white)!important;border-color:var(--border)!important}
-#authBox{background:color-mix(in srgb,var(--bg) 88%,transparent)!important}
+.auth-card{background:var(--bg)!important;color:var(--white)!important;border:0!important;box-shadow:none!important}
+#authBox{background:var(--bg)!important}
+.social-auth[hidden],.auth-divider[hidden]{display:none!important}
 body[data-theme="light"] .hero,body[data-theme="light"] .panel,body[data-theme="light"] .feature,
 body[data-theme="light"] .settings-card,body[data-theme="light"] .list-item,
 body[data-theme="light"] body[data-theme="light"] .contact-search-popover,
@@ -1228,9 +1241,9 @@ body[data-auth-state="guest"] #openSettingsButton{display:none!important;visibil
 
 
 /* Farnaz conversation-first home refresh */
-.welcome-shell{position:relative;isolation:isolate;overflow:hidden;min-height:min(68dvh,620px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px 22px 25px;border:1px solid var(--border);border-radius:28px;background:radial-gradient(ellipse at 50% 5%,color-mix(in srgb,var(--accent,#7896c5) 19%,transparent),transparent 55%),linear-gradient(155deg,var(--panel),var(--bg))}
+.welcome-shell{position:relative;min-height:min(68dvh,620px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28px 20px 22px;border:0;border-radius:0;background:transparent}
 .welcome-shell:before{content:"";position:absolute;z-index:-1;width:230px;height:230px;border:1px solid color-mix(in srgb,var(--accent,#7896c5) 18%,transparent);border-radius:50%;top:-115px;inset-inline-start:-90px}
-.welcome-mark{width:100px;height:100px;display:grid;place-items:center;margin-bottom:22px;border:1px solid color-mix(in srgb,var(--accent,#7896c5) 38%,var(--border));border-radius:30px;background:var(--panel2);box-shadow:0 15px 45px #0002}
+.welcome-mark{width:82px;height:82px;display:grid;place-items:center;margin-bottom:16px;border:0;border-radius:0;background:transparent;box-shadow:none}
 .welcome-mark img{width:84px;height:84px;object-fit:contain}
 .welcome-kicker{font-size:10px;letter-spacing:3px;font-weight:800;color:var(--accent,#7896c5);direction:ltr}
 .welcome-shell h2{max-width:290px;font-size:25px;line-height:1.7;margin:13px 0 4px}

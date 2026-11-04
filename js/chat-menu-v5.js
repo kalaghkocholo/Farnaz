@@ -777,7 +777,7 @@ async function sendMessage(event){
   const file=recordedVoiceFile||selectedFile||photoFile||cameraFile;
   if(!body&&!file&&!editingMessageId)return;
   const sendFingerprint=JSON.stringify([senderId,receiverId,body,file?.name||"",file?.size||0,file?.lastModified||0,file?.type||"",replyTarget?.id||""]);
-  const pendingSend=editingMessageId?null:(pendingPrivateSend?.fingerprint===sendFingerprint?pendingPrivateSend:{fingerprint:sendFingerprint,id:crypto.randomUUID(),attachmentPath:null});
+  const pendingSend=editingMessageId?null:(pendingPrivateSend?.fingerprint===sendFingerprint&&pendingPrivateSend.fileRef===(file||null)?pendingPrivateSend:{fingerprint:sendFingerprint,fileRef:file||null,id:crypto.randomUUID(),attachmentPath:null});
   if(pendingSend)pendingPrivateSend=pendingSend;
   if(file&&file.size>20*1024*1024){setStatus("sendMessageStatus",english?"Choose a file up to 20 MB.":"حجم فایل باید حداکثر ۲۰ مگابایت باشد.",true);return;}
   if(editingMessageId&&file){setStatus("sendMessageStatus",english?"Remove the attachment before editing a message.":"برای ویرایش پیام، ابتدا پیوست را بردار.",true);return;}

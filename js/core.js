@@ -646,6 +646,9 @@ document.addEventListener("click",event=>{
 function navigate(pageId,options={}){
   if(!currentUser){openAuth();return;}
   if(profileCompletionRequired&&pageId!=="profilePage")pageId="profilePage";
+  if(pageId==="chatsPage")window.farnazCommunicationsTab="personal";
+  else if(pageId==="callsPage")window.farnazCommunicationsTab="calls";
+  else if(pageId==="spacesPage"&&!["group","channel"].includes(window.farnazCommunicationsTab))window.farnazCommunicationsTab="group";
   if(!$(pageId))return;
   if(pageId==="chatPage"&&!currentChatUser)return;
   const activePageId=document.querySelector(".page.active")?.id||null;
@@ -668,16 +671,35 @@ function navigate(pageId,options={}){
   const headerFButton=$("headerFButton");
   if(headerFButton)headerFButton.hidden=pageId==="homePage"||pageId==="chatPage";
   if(pageId!=="chatPage"){document.documentElement.style.removeProperty("--chat-viewport-offset");document.documentElement.style.removeProperty("--chat-viewport-height");}
-  document.querySelectorAll(".nav-button").forEach(b=>b.classList.toggle("active",b.dataset.page===pageId));
+  document.querySelectorAll(".nav-button").forEach(b=>b.classList.toggle("active",b.dataset.page===(["spacesPage","callsPage"].includes(pageId)?"chatsPage":pageId)));
   $("bottomNav").classList.toggle("visible",pageId!=="homePage"&&pageId!=="chatPage");
+  const communicationTabs=$("communicationsTabs");
+  if(communicationTabs){
+    communicationTabs.hidden=!("chatsPage spacesPage callsPage".split(" ").includes(pageId));
+    communicationTabs.querySelectorAll("[data-communication-tab]").forEach(button=>{
+      const selected=button.dataset.communicationTab===window.farnazCommunicationsTab;
+      button.classList.toggle("is-active",selected);
+      button.setAttribute("aria-pressed",String(selected));
+    });
+  }
   if(pageId==="chatsPage")applyConversationSearch();
+  if(pageId==="callsPage")window.refreshFarnazCallHistory?.();
   if(options.refreshData!==false){
     if(pageId==="chatsPage")refreshConversationList();
     if(pageId==="contactsPage")refreshSavedContacts();
   }
   window.scrollTo({top:0,behavior:"instant"});
 }
-function backFromChat(){dismissMessageMenus();exitMessageSelection();cancelReply();cancelMessageEdit();navigate(previousPage==="contactsPage"?"contactsPage":"chatsPage");}
+window.farnazCommunicationsTab="personal";
+document.addEventListener("click",event=>{
+  const button=event.target?.closest?.("[data-communication-tab]");
+  if(!button)return;
+  const tab=button.dataset.communicationTab;
+  if(!["calls","personal","group","channel"].includes(tab))return;
+  window.farnazCommunicationsTab=tab;
+  navigate(tab==="personal"?"chatsPage":tab==="calls"?"callsPage":"spacesPage");
+});
+function backFromChat(){dismissMessageMenus();exitMessageSelection();cancelReply();cancelMessageEdit();navigate(["contactsPage","callsPage"].includes(previousPage)?previousPage:"chatsPage");}
 function openAdjacentConversation(direction){
   const cards=[...$("conversationList").querySelectorAll(".conversation-card")];
   if(!cards.length)return;
@@ -688,7 +710,7 @@ function openAdjacentConversation(direction){
   cards[nextIndex].querySelector(".list-item")?.click();
 }
 /* Bidirectional page swipes use the same history as ordinary navigation. */
-const SWIPE_PAGE_ORDER=["profilePage","chatsPage","spacesPage","contactsPage","settingsPage"];
+const SWIPE_PAGE_ORDER=["profilePage","chatsPage","callsPage","contactsPage","settingsPage"];
 function swipeHistoryTarget(direction){
   if(!currentUser)return null;
   const activePage=document.querySelector(".page.active");
@@ -700,7 +722,7 @@ function swipeHistoryTarget(direction){
     if(detail&&!detail.hidden)return "__spaceChatBack__";
   }
   if((activePage.id==="chatPage"||activePage.id==="spacesPage"&&document.getElementById("spaceDetail")&&!document.getElementById("spaceDetail").hidden)&&direction<0)return null;
-  const currentId=activePage.id==="chatPage"?"chatsPage":activePage.id;
+  const currentId=["chatPage","spacesPage"].includes(activePage.id)?"chatsPage":activePage.id;
   const index=SWIPE_PAGE_ORDER.indexOf(currentId);
   if(index<0)return null;
   const targetId=SWIPE_PAGE_ORDER[index+direction];
@@ -1148,6 +1170,7 @@ function showGuest(){
   setStatus("authStatus","");
   setConnectionBanner("",false);
   $("bottomNav").classList.remove("visible");
+  if($("communicationsTabs"))$("communicationsTabs").hidden=true;
   $("userName").textContent=english?"Farnaz user":"کاربر فرناز";
   $("userEmail").textContent="";$("userPhone").textContent="";
   $("profileForm").reset();

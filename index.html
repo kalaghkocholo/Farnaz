@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" href="./farnaz-icon.svg?v=20261024-4">
 <meta name="description" content="فرناز؛ ارتباطی نزدیک‌تر، در هر کجا.">
 <title>فرناز | Farnaz</title>
-<link rel="preload" href="./js/core.js?v=20261104-75" as="script">
+<link rel="preload" href="./js/core.js?v=20261104-76" as="script">
 <link rel="preconnect" href="https://iemykhluluoymsbqpjsn.supabase.co" crossorigin>
 <style>
 :root{--bg:#101828;--panel:#172237;--panel2:#1d2b42;--border:#2b3a50;--mint:#50e3c2;--muted:#aab5c7;--white:#f8fafc}
@@ -28,8 +28,8 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
 #homePage{position:relative}
 body[data-auth-state="guest"] .app>header{display:none!important}
 </style>
-<link rel="stylesheet" href="./styles.css?v=20261104-7" media="print" onload="this.onload=null;this.media='all'">
-<noscript><link rel="stylesheet" href="./styles.css?v=20261104-7"></noscript>
+<link rel="stylesheet" href="./styles.css?v=20261104-8" media="print" onload="this.onload=null;this.media='all'">
+<noscript><link rel="stylesheet" href="./styles.css?v=20261104-8"></noscript>
 <link rel="stylesheet" href="./spaces.css?v=20261029-34" media="print" onload="this.onload=null;this.media='all'">
 <link rel="stylesheet" href="./chat-viewport.css?v=20261029-3">
 </head>
@@ -39,6 +39,12 @@ body[data-auth-state="guest"] .app>header{display:none!important}
   <div class="brand-stack"><button id="headerFButton" class="logo logo-button" type="button" hidden onclick="navigate('chatsPage')" aria-label="گفتگوها" title="گفتگوها">F</button></div>
 </header>
 <div id="connectionBanner" class="connection-banner" role="status" aria-live="polite" hidden></div>
+<nav id="communicationsTabs" class="communications-tabs" aria-label="بخش‌های ارتباطی" hidden>
+  <button type="button" data-communication-tab="calls" aria-pressed="false">تماس</button>
+  <button type="button" data-communication-tab="personal" aria-pressed="true">شخصی</button>
+  <button type="button" data-communication-tab="group" aria-pressed="false">گروه</button>
+  <button type="button" data-communication-tab="channel" aria-pressed="false">کانال</button>
+</nav>
 
 <!-- صفحه ورود و ثبت‌نام -->
 <section class="page active" id="homePage">
@@ -72,11 +78,20 @@ body[data-auth-state="guest"] .app>header{display:none!important}
 
 <!-- صفحه گفتگوها -->
 <section class="page" id="chatsPage">
+  <div id="privateChatsPanel">
   <div class="chats-topline"><div class="page-heading"><h2 id="chatsHeading">گفتگوها</h2><p id="chatsIntro">گفتگوهای اخیرت را اینجا می‌بینی.</p></div><button class="chats-new-button" type="button" onclick="startNewChat()" aria-label="گفتگوی جدید" title="گفتگوی جدید"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></div>
   <label class="conversation-search" for="conversationSearch"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg><input id="conversationSearch" type="search" autocomplete="off" placeholder="جستجوی گفتگوها" aria-label="جستجوی گفتگوها"></label>
   <div class="conversation-tools"><button class="mini-button" id="showActiveChats" type="button" onclick="setConversationView('active')">گفتگوها</button><button class="mini-button" id="showArchivedChats" type="button" onclick="setConversationView('archived')">آرشیو</button></div>
   <div class="list" id="conversationList"></div>
   <div id="inboxStatus" class="status muted-note" role="status"></div>
+  </div>
+</section>
+
+<!-- سابقه تماس‌ها -->
+<section class="page" id="callsPage">
+  <div class="chats-topline"><div class="page-heading"><h2 id="callsHeading">تماس‌ها</h2></div><button class="chats-new-button" id="refreshCallHistory" type="button" aria-label="به‌روزرسانی تماس‌ها" title="به‌روزرسانی" onclick="refreshFarnazCallHistory()">↻</button></div>
+  <div id="callHistoryList" class="list" aria-live="polite"></div>
+  <p id="callHistoryStatus" class="status muted-note" role="status"></p>
 </section>
 
 <!-- صفحه مخاطبان -->
@@ -331,10 +346,7 @@ body[data-auth-state="guest"] .app>header{display:none!important}
     <button class="nav-button active" data-page="chatsPage" type="button" onclick="navigate('chatsPage')">
       <span class="nav-icon">▤</span><span id="navChats">گفتگوها</span>
     </button>
-    <button class="nav-button" id="navSpacesBtn" data-page="spacesPage" type="button" onclick="navigate('spacesPage')">
-      <span class="nav-icon">◎</span><span id="navSpaces">گروه‌ها</span>
-    </button>
-    <button class="nav-button" data-page="contactsPage" type="button" onclick="navigate('contactsPage')">
+        <button class="nav-button" data-page="contactsPage" type="button" onclick="navigate('contactsPage')">
       <span class="nav-icon">♙</span><span id="navContacts">مخاطبان</span>
     </button>
     <button class="nav-button" data-page="settingsPage" type="button" onclick="navigate('settingsPage')" aria-label="تنظیمات" title="تنظیمات">
@@ -444,7 +456,7 @@ body[data-auth-state="guest"] .app>header{display:none!important}
   });
   function loadLocalScripts(){
     const core=document.createElement("script");
-    core.src="./js/core.js?v=20261104-75";
+    core.src="./js/core.js?v=20261104-76";
     watchScript(core,()=>{
       // A script's load event can still fire after a runtime exception.
       // Verify the core boot contract before loading features or attempting
@@ -455,8 +467,8 @@ body[data-auth-state="guest"] .app>header{display:none!important}
       }
       const featureScripts=[
         "./js/chat-menu-v5.js?v=20261104-2",
-        "./js/spaces.js?v=20261104-1",
-        "./js/calls.js?v=20261104-7"
+        "./js/spaces.js?v=20261104-2",
+        "./js/calls.js?v=20261104-8"
       ];
       let featureIndex=0;
       const loadNextFeature=()=>{

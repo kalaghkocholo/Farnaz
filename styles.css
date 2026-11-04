@@ -102,6 +102,22 @@ p{color:#b6c1d1;line-height:1.7;font-size:12px}
 body[data-theme="light"] .profile-required-notice{color:#172033;border-color:var(--accent);background:#eef4fb}
 .profile-required-notice[hidden]{display:none}
 #settingsPage>.page-heading{margin-bottom:16px}
+
+/* Shared communication switcher and call history. */
+.communications-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;width:100%;margin:0 0 14px;padding:4px;border:1px solid var(--border);border-radius:13px;background:var(--panel)}
+.communications-tabs[hidden]{display:none!important}
+.communications-tabs button{min-width:0;min-height:39px;padding:8px 3px;border:0;border-radius:9px;background:transparent;color:var(--muted);font:inherit;font-size:13px;font-weight:650;white-space:nowrap;transition:background .16s ease,color .16s ease}
+.communications-tabs button.is-active{background:var(--panel2);color:var(--white);box-shadow:inset 0 0 0 1px var(--border)}
+#spacesPage .spaces-tabs [data-filter="all"],#spacesPage .spaces-tabs [data-filter="group"],#spacesPage .spaces-tabs [data-filter="channel"]{display:none!important}
+.call-history-item{display:flex;align-items:center;gap:11px;width:100%;min-height:70px;padding:10px 7px;border:0;border-bottom:1px solid var(--border);border-radius:0;background:transparent;color:var(--white);text-align:start;font:inherit}
+.call-history-item:active{background:var(--panel)}
+.call-history-item>.avatar{width:46px;height:46px;flex:0 0 46px;border:1px solid var(--border);background:var(--panel2);color:var(--accent)}
+.call-history-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:4px}
+.call-history-copy strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
+.call-history-copy small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:11px}
+.call-history-time{flex:0 0 auto;color:var(--muted);font-size:10px;direction:ltr}
+@media(prefers-reduced-motion:reduce){.communications-tabs button{transition:none}}
+
 .chats-topline .page-heading,.spaces-head .page-heading{border:0;padding:0;margin:0}
 .panel{padding:14px 12px;margin-bottom:12px}
 .features{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}

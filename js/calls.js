@@ -458,6 +458,52 @@ async function startCall(type){
     if(!keepDialog&&!activeCall){const dialog=byId("farnazCallDialog");if(dialog)dialog.hidden=true;}
   }
 }
+async function refreshFarnazCallHistory(){
+  const list=byId("callHistoryList"),status=byId("callHistoryStatus");
+  if(!list||!status||!currentUser)return;
+  const myId=String(currentUser.id);
+  list.replaceChildren();
+  status.textContent=tr("در حال بارگذاری تماس‌ها…","Loading calls…");
+  try{
+    const {data,error}=await getClient().from("call_sessions")
+      .select("id,caller_id,receiver_id,call_type,status,created_at")
+      .or("caller_id.eq."+myId+",receiver_id.eq."+myId)
+      .order("created_at",{ascending:false}).limit(50);
+    if(String(currentUser?.id||"")!==myId)return;
+    if(error)throw error;
+    const rows=data||[];
+    if(!rows.length){status.textContent=tr("هنوز سابقه تماسی نداری.","No call history yet.");return;}
+    let profiles=new Map();
+    try{profiles=await getContactProfiles(rows.map(row=>String(row.caller_id)===myId?row.receiver_id:row.caller_id));}
+    catch(profileError){console.warn("Call history profile lookup:",profileError);}
+    if(String(currentUser?.id||"")!==myId)return;
+    for(const row of rows){
+      const outgoing=String(row.caller_id)===myId;
+      const otherId=String(outgoing?row.receiver_id:row.caller_id);
+      const profile=profiles.get(otherId)||{user_id:otherId,display_name:tr("مخاطب فرناز","Farnaz contact")};
+      const name=profile.display_name||tr("مخاطب فرناز","Farnaz contact");
+      const item=document.createElement("button");item.type="button";item.className="call-history-item";
+      const avatar=document.createElement("span");avatar.className="avatar";renderAvatar(avatar,profile.avatar_url||"",name);
+      const copy=document.createElement("span");copy.className="call-history-copy";
+      const title=document.createElement("strong");title.textContent=name;
+      const detail=document.createElement("small");
+      const type=row.call_type==="video"?tr("تصویری","Video"):tr("صوتی","Audio");
+      const state=row.status==="missed"?tr("بی‌پاسخ","Missed"):row.status==="rejected"?tr("ردشده","Declined"):row.status==="active"?tr("فعال","Active"):row.status==="ringing"?tr("در حال زنگ‌خوردن","Ringing"):tr("پایان‌یافته","Ended");
+      detail.textContent=(outgoing?tr("تماس خروجی","Outgoing call"):tr("تماس ورودی","Incoming call"))+" · "+type+" · "+state;
+      copy.append(title,detail);
+      const time=document.createElement("time");time.className="call-history-time";
+      const date=new Date(row.created_at);time.dateTime=date.toISOString();time.textContent=date.toLocaleString(english?"en":"fa-IR",{dateStyle:"short",timeStyle:"short"});
+      item.append(avatar,copy,time);
+      item.addEventListener("click",()=>{if(typeof openChat==="function")openChat({...profile,user_id:otherId},"callsPage");});
+      list.appendChild(item);
+    }
+    status.textContent="";
+  }catch(error){
+    if(String(currentUser?.id||"")!==myId)return;
+    status.textContent=tr("بارگذاری سابقه تماس‌ها ناموفق بود: ","Could not load call history: ")+String(error?.message||error);
+  }
+}
+window.refreshFarnazCallHistory=refreshFarnazCallHistory;
 async function setUser(userId){
   const request=++userSwitchSequence,next=userId?String(userId):null;
   if(next===signedInUserId&&inboxChannel)return;

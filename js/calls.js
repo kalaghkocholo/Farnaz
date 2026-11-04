@@ -4,6 +4,42 @@ let signedInUserId=null,inboxChannel=null,activeCall=null,userSwitchSequence=0,c
 const processedSignals=new Set(),pendingIncomingSessions=new Set();
 const byId=id=>document.getElementById(id);
 const tr=(fa,en)=>typeof english!=="undefined"&&english?en:fa;
+let ringtoneContext=null,ringtoneTimer=null,ringtoneUnlocked=false;
+function unlockRingtoneAudio(){
+  try{
+    const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+    if(!AudioContextClass)return;
+    if(!ringtoneContext)ringtoneContext=new AudioContextClass();
+    if(ringtoneContext.state==="suspended")ringtoneContext.resume().then(()=>{ringtoneUnlocked=ringtoneContext.state==="running";}).catch(()=>{});
+    else ringtoneUnlocked=true;
+  }catch(error){console.warn("Ringtone audio unavailable:",error);}
+}
+function playRingBurst(){
+  if(!ringtoneContext||ringtoneContext.state!=="running")return;
+  const ctx=ringtoneContext,now=ctx.currentTime;
+  [440,480].forEach((frequency,index)=>{
+    const oscillator=ctx.createOscillator(),gain=ctx.createGain();
+    oscillator.type="sine";oscillator.frequency.value=frequency;
+    gain.gain.setValueAtTime(0,now);
+    gain.gain.linearRampToValueAtTime(0.075,now+0.045);
+    gain.gain.setValueAtTime(0.075,now+0.72);
+    gain.gain.linearRampToValueAtTime(0,now+0.82);
+    oscillator.connect(gain);gain.connect(ctx.destination);
+    oscillator.start(now);oscillator.stop(now+0.84);
+  });
+}
+function startRingtone(){
+  stopRingtone();
+  unlockRingtoneAudio();
+  if(ringtoneContext?.state==="running")playRingBurst();
+  ringtoneTimer=setInterval(()=>playRingBurst(),2600);
+}
+function stopRingtone(){
+  if(ringtoneTimer){clearInterval(ringtoneTimer);ringtoneTimer=null;}
+}
+document.addEventListener("pointerdown",unlockRingtoneAudio,{capture:true,passive:true});
+document.addEventListener("touchend",unlockRingtoneAudio,{capture:true,passive:true});
+
 
 function ensureDialog(){
   let dialog=byId("farnazCallDialog");
@@ -186,7 +222,7 @@ async function preparePeer(session,role){
   };
   pc.onconnectionstatechange=()=>{
     if(activeCall!==call)return;
-    if(pc.connectionState==="connected")setCallStatus(tr("تماس برقرار است","Call connected"));
+    if(pc.connectionState==="connected"){stopRingtone();setCallStatus(tr("تماس برقرار است","Call connected"));}
     else if(pc.connectionState==="connecting")setCallStatus(tr("در حال برقراری ارتباط…","Connecting…"));
     else if(pc.connectionState==="failed")setCallStatus(tr("اتصال مستقیم برقرار نشد؛ احتمالاً شبکه به TURN نیاز دارد.","Direct connection failed; this network may require a TURN server."));
     else if(pc.connectionState==="disconnected")setCallStatus(tr("ارتباط ناپایدار است…","Connection is unstable…"));
@@ -240,6 +276,7 @@ async function handleSignal(signal){
     if(error)throw error;
     setCallStatus(tr("پاسخ ارسال شد؛ در حال اتصال…","Answer sent; connecting…"));
   }else if(signal.signal_type==="answer"&&call.role==="caller"){
+    stopRingtone();
     call.answered=true;
     if(call.timeout){clearTimeout(call.timeout);call.timeout=null;}
     if(pc&&!pc.currentRemoteDescription){
@@ -289,6 +326,7 @@ async function rejectIncoming(){
   const d=byId("farnazCallDialog");if(d)d.hidden=true;
 }
 async function cleanupCall(updateStatus){
+  stopRingtone();
   const call=activeCall;activeCall=null;
   // Release local media and close the peer connection before waiting on any
   // network cleanup. A suspended mobile Realtime socket must not keep the
@@ -383,6 +421,7 @@ async function startCall(type){
     activeCall={session:data,role:"caller",otherId:receiverId,signalChannel:null,pc:null,localStream:null,pendingCandidates:[],timeout:null};
     startedCall=activeCall;
     keepDialog=true;
+    startRingtone();
     byId("farnazCallHangup").hidden=false;
     await preparePeer(data,"caller");
     if(activeCall!==startedCall)return;
@@ -471,6 +510,7 @@ async function handleIncomingSession(session,client){
     const name=profile?.display_name||tr("مخاطب فرناز","Farnaz contact");
     activeCall={session,role:"receiver",otherId:String(session.caller_id),signalChannel:null,pc:null,localStream:null,pendingCandidates:[],timeout:null};
     showDialog(session.call_type==="video"?tr("تماس تصویری ورودی","Incoming video call"):tr("تماس صوتی ورودی","Incoming audio call"),tr("تماس از طرف ","Incoming call from ")+name);
+    startRingtone();
     byId("farnazCallAccept").hidden=false;byId("farnazCallReject").hidden=false;
     await notifyBackground(tr("تماس ورودی در فرناز","Incoming Farnaz call"),name,"call-"+session.id);
   }finally{pendingIncomingSessions.delete(sessionId);}

@@ -786,22 +786,24 @@ function finishSwipeNavigation(commit){
 function installFarnazSwipeNavigation(){
   if(document.documentElement.dataset.farnazSwipeNavigation==="ready")return;
   document.documentElement.dataset.farnazSwipeNavigation="ready";
-  document.addEventListener("pointerdown",event=>{
-    if(event.pointerType!=="touch"||!event.isPrimary||swipeGesture||swipeTransitionTimer)return;
+  // Use native Touch Events on iOS Safari. Pointer Events may be canceled by
+  // WebKit's gesture recognizer before a horizontal drag can be completed.
+  document.addEventListener("touchstart",event=>{
+    if(event.touches.length!==1||swipeGesture||swipeTransitionTimer)return;
     if(document.body.classList.contains("keyboard-open")||document.body.classList.contains("chat-mode")&&document.activeElement?.matches?.("input,textarea,[contenteditable='true']")||messageSelectionMode)return;
     const app=event.target?.closest?.(".app"),page=app?.querySelector(".page.active");
     if(!currentUser||!app||!page||page.id==="homePage"||app.classList.contains("farnaz-swipe-active"))return;
-    // Preserve the native iOS edge gesture and avoid stealing taps from controls or message bubbles.
-    const appRect=app.getBoundingClientRect();
-    if(event.clientX-appRect.left<28||appRect.right-event.clientX<28)return;
+    const appRect=app.getBoundingClientRect(),touch=event.touches[0];
+    // Leave the outer edge to iOS system navigation.
+    if(touch.clientX-appRect.left<28||appRect.right-touch.clientX<28)return;
     if(event.target.closest("input,textarea,select,button,a,[contenteditable='true'],.bottom-nav,.conversation-card,.space-card,#conversationList,#spacesList,.dialog,.modal,.message,.space-message,.message-action-menu,.message-selection-toolbar,#sendMessageForm,#spaceComposer,.composer-shell"))return;
     if(!swipeHistoryTarget(-1)&&!swipeHistoryTarget(1))return;
-    swipeGesture={app,page,current:page,target:null,targetId:null,action:null,startX:event.clientX,startY:event.clientY,lastX:event.clientX,lastTime:performance.now(),velocity:0,dx:0,width:Math.max(1,app.getBoundingClientRect().width),direction:0,locked:false};
+    swipeGesture={app,page,current:null,target:null,targetId:null,action:null,startX:touch.clientX,startY:touch.clientY,lastX:touch.clientX,lastTime:performance.now(),velocity:0,dx:0,width:Math.max(1,appRect.width),direction:0,locked:false};
   },{capture:true,passive:true});
-  document.addEventListener("pointermove",event=>{
-    const g=swipeGesture;if(!g||event.pointerType!=="touch")return;
-    const dx=event.clientX-g.startX,dy=event.clientY-g.startY,now=performance.now();
-    g.velocity=(event.clientX-g.lastX)/Math.max(1,now-g.lastTime);g.lastX=event.clientX;g.lastTime=now;g.dx=dx;
+  document.addEventListener("touchmove",event=>{
+    const g=swipeGesture;if(!g||event.touches.length!==1)return;
+    const touch=event.touches[0],dx=touch.clientX-g.startX,dy=touch.clientY-g.startY,now=performance.now();
+    g.velocity=(touch.clientX-g.lastX)/Math.max(1,now-g.lastTime);g.lastX=touch.clientX;g.lastTime=now;g.dx=dx;
     if(!g.locked){
       if(Math.abs(dx)<12&&Math.abs(dy)<12)return;
       if(Math.abs(dx)<Math.abs(dy)*1.2){swipeGesture=null;return;}
@@ -827,12 +829,14 @@ function installFarnazSwipeNavigation(){
       g.target.style.transform="translate3d("+((g.direction>0?-g.width:g.width)+x)+"px,0,0)";
     }
   },{capture:true,passive:false});
-  document.addEventListener("pointerup",event=>{
-    const g=swipeGesture;if(!g||event.pointerType!=="touch")return;
+  document.addEventListener("touchend",event=>{
+    const g=swipeGesture;if(!g)return;
     if(!g.locked){swipeGesture=null;return;}
     finishSwipeNavigation(Math.abs(g.dx)>=Math.max(72,g.width*.22)||(Math.abs(g.velocity)>.55&&Math.abs(g.dx)>44));
   },{capture:true,passive:true});
-  document.addEventListener("pointercancel",()=>{if(swipeGesture?.locked)finishSwipeNavigation(false);else swipeGesture=null;},{capture:true,passive:true});
+  document.addEventListener("touchcancel",()=>{
+    if(swipeGesture?.locked)finishSwipeNavigation(false);else swipeGesture=null;
+  },{capture:true,passive:true});
 }
 installFarnazSwipeNavigation();
 

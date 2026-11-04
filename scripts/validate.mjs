@@ -222,7 +222,7 @@ if (sources["styles.css"].includes("/* Conversation layout —") ||
 }
 
 const chatSource = sources["js/chat-menu-v5.js"];
-if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v234"') || !sources["service-worker.js"].includes('styles.css?v=20261104-unified-2') || !sources["service-worker.js"].includes('core.js?v=20261104-convo-1') || !sources["service-worker.js"].includes('local-store.js?v=20261026-3') || !sources["service-worker.js"].includes('calls.js?v=20261026-4') || !sources["service-worker.js"].includes('chat-menu-v5.js?v=20261104-merge-1') || !html.includes('chat-menu-v5.js?v=20261104-merge-1')) {
+if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v235"') || !sources["service-worker.js"].includes('styles.css?v=20261104-unified-2') || !sources["service-worker.js"].includes('core.js?v=20261104-convo-1') || !sources["service-worker.js"].includes('local-store.js?v=20261026-3') || !sources["service-worker.js"].includes('calls.js?v=20261026-4') || !sources["service-worker.js"].includes('chat-menu-v5.js?v=20261104-merge-1') || !html.includes('chat-menu-v5.js?v=20261104-merge-1')) {
   errors.push("service-worker.js must use the current shell cache and core asset versions");
 }
 const loaderChecks = [
@@ -440,6 +440,13 @@ const authChecks = [
    sources["js/spaces.js"].includes('spaceOpenToken++;spaceRefreshToken++;messageLoadToken++;'),
     "js/spaces.js must stop stale group/channel loads and subscriptions after account changes"],
 ];
+const authLayoutChecks = [
+  [html.includes('<div id="authBox" role="dialog" aria-modal="true" aria-label="ورود و ثبت‌نام">') &&
+   html.includes('<h2 id="authTitle" hidden>') &&
+   html.includes('<p id="authMessage" hidden>') &&
+   html.indexOf('id="authSignupTab"') < html.indexOf('id="authLoginTab"'),
+    "auth screen must keep signup first/default and hide redundant title and intro"],
+];
 const conversationChecks = [
   [sources["js/spaces.js"].includes('space-detail-head chat-header conversation-header') &&
    sources["js/spaces.js"].includes('composer-shell conversation-composer-shell') &&
@@ -469,7 +476,7 @@ const conversationChecks = [
    !coreSource.includes('DOMContentLoaded",()=>{if(activeChat())syncViewport();}'),
     "js/core.js must initialize the shared conversation viewport using its local active-state function"],
 ];
-for (const [passed, message] of [...authChecks, ...conversationChecks]) {
+for (const [passed, message] of [...authChecks, ...authLayoutChecks, ...conversationChecks]) {
   if (!passed) errors.push(message);
 }
 

@@ -278,6 +278,21 @@ html[dir="ltr"] .auth-language-switch{right:max(16px,calc((100vw - 560px)/2 + 16
 .app.chat-mode>#chatPage #attachmentHint{display:none}
 .app.chat-mode>#chatPage .composer-icon,.app.spaces-chat-mode #spaceDetail .composer-icon{width:36px;height:36px;flex:0 0 36px;border-radius:50%}
 .app.chat-mode>#chatPage #attachmentMenu,.app.spaces-chat-mode #spaceDetail #spaceAttachmentMenu{inset-inline-start:4px;bottom:calc(100% + 8px)}
+/* Attachment popovers are positioned and styled identically in every conversation. */
+:is(.app.chat-mode #chatPage,.app.spaces-chat-mode #spaceDetail) .attachment-menu{
+ position:absolute!important;z-index:10060!important;bottom:calc(100% + 8px)!important;left:6px!important;
+ width:min(245px,calc(100vw - 40px))!important;padding:6px!important;border:1px solid var(--border)!important;
+ border-radius:15px!important;background:var(--panel)!important;box-shadow:0 10px 30px #0004!important;direction:rtl!important
+}
+:is(.app.chat-mode #chatPage,.app.spaces-chat-mode #spaceDetail) .attachment-menu[hidden]{display:none!important}
+:is(.app.chat-mode #chatPage,.app.spaces-chat-mode #spaceDetail) .attachment-menu .attachment-option{
+ display:flex!important;align-items:center!important;gap:10px!important;width:100%!important;padding:11px!important;
+ border:0!important;border-radius:10px!important;background:transparent!important;color:var(--white)!important;
+ text-align:right!important;font:inherit!important
+}
+:is(.app.chat-mode #chatPage,.app.spaces-chat-mode #spaceDetail) .attachment-menu .attachment-option-icon{
+ width:28px!important;text-align:center!important;font-size:20px!important
+}
 
 
 .app>header[hidden]{display:none!important}

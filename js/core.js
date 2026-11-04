@@ -653,22 +653,11 @@ function navigate(pageId,options={}){
   if(!$(pageId))return;
   if(pageId==="chatPage"&&!currentChatUser)return;
   const activePageId=document.querySelector(".page.active")?.id||null;
-  const nextHistoryEntry=swipePageHistoryKey(pageId,window.farnazCommunicationsTab);
-  const currentHistoryEntry=swipePageHistory[swipePageHistoryIndex]||
-    (activePageId?swipePageHistoryKey(activePageId,previousCommunicationsTab):null);
-  if(activePageId!==pageId||currentHistoryEntry!==nextHistoryEntry){
-    // Login is an authentication boundary; never include it in signed-in swipe history.
-    if(pageId==="homePage"){swipePageHistory=[];swipePageHistoryIndex=-1;}
-    else if(swipePageHistoryIndex<0){
-      const safePreviousPage=activePageId&&activePageId!=="homePage"&&currentUser?activePageId:null;
-      swipePageHistory=safePreviousPage
-        ?[swipePageHistoryKey(safePreviousPage,previousCommunicationsTab),nextHistoryEntry]
-        :[nextHistoryEntry];
-      swipePageHistoryIndex=swipePageHistory.length-1;
-    }else if(swipePageHistory[swipePageHistoryIndex-1]===nextHistoryEntry)swipePageHistoryIndex--;
-    else if(swipePageHistory[swipePageHistoryIndex+1]===nextHistoryEntry)swipePageHistoryIndex++;
-    else{swipePageHistory=swipePageHistory.slice(0,swipePageHistoryIndex+1);swipePageHistory.push(nextHistoryEntry);swipePageHistoryIndex=swipePageHistory.length-1;}
-  }
+  // Swipe destinations are based on the app's stable screen order, never on
+  // the order in which screens happened to be opened during this session.
+  // Calls and group/channel spaces are sections of the communications area.
+  swipePageHistory=[];
+  swipePageHistoryIndex=-1;
   document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id===pageId));
   document.querySelector(".app").classList.toggle("chat-mode",pageId==="chatPage");
   document.body.classList.toggle("chat-mode",pageId==="chatPage");
@@ -716,30 +705,35 @@ function swipePageHistoryKey(pageId,tab){
   return pageId+"|"+(pageId==="spacesPage"?(["group","channel"].includes(tab)?tab:"group"):"");
 }
 function swipePageHistoryId(entry){return String(entry||"").split("|")[0];}
+const FARNAZ_SWIPE_PAGE_ORDER=["chatsPage","contactsPage","settingsPage"];
+function swipeNavigationBasePage(pageId){
+  if(pageId==="callsPage"||pageId==="spacesPage")return "chatsPage";
+  return FARNAZ_SWIPE_PAGE_ORDER.includes(pageId)?pageId:null;
+}
 function swipeHistoryTarget(direction){
   if(!currentUser)return null;
   const activePage=document.querySelector(".page.active");
   if(!activePage)return null;
+
+  // A private conversation always returns to the list from which it was opened.
   if(direction>0&&activePage.id==="chatPage"){
     const targetId=$(previousPage)&&previousPage!=="chatPage"?previousPage:"chatsPage";
     return {kind:"privateBack",targetId};
   }
+  // A group/channel detail view first returns to its own list.
   if(direction>0&&activePage.id==="spacesPage"){
     const detail=document.getElementById("spaceDetail");
     if(detail&&!detail.hidden)return {kind:"spaceBack",targetId:"__spaceList__"};
   }
   if(activePage.id==="chatPage"||activePage.id==="spacesPage"&&document.getElementById("spaceDetail")&&!document.getElementById("spaceDetail").hidden)return null;
-  const currentIndex=swipePageHistoryIndex,step=direction>0?-1:1;
-  let targetIndex=currentIndex+step,targetEntry=swipePageHistory[targetIndex];
-  // A group/channel tab change is not a page transition; skip same-page history
-  // entries so a swipe always lands on a different, real screen.
-  while(targetEntry&&swipePageHistoryId(targetEntry)===activePage.id){
-    targetIndex+=step;targetEntry=swipePageHistory[targetIndex];
-  }
-  if(!targetEntry)return null;
-  const targetId=swipePageHistoryId(targetEntry);
+
+  const basePage=swipeNavigationBasePage(activePage.id);
+  if(!basePage)return null;
+  const currentIndex=FARNAZ_SWIPE_PAGE_ORDER.indexOf(basePage);
+  const targetIndex=currentIndex+(direction>0?-1:1);
+  const targetId=FARNAZ_SWIPE_PAGE_ORDER[targetIndex];
   if(!targetId||!$(targetId))return null;
-  return {kind:"page",targetId,targetEntry};
+  return {kind:"page",targetId};
 }
 function clearSwipeTransition(){
   if(swipeTransitionTimer){clearTimeout(swipeTransitionTimer);swipeTransitionTimer=null;}
@@ -760,15 +754,20 @@ function finishSwipeNavigation(commit){
     swipeGesture=null;
     swipeTransitionTimer=setTimeout(()=>{
       swipeTransitionTimer=null;
-      if(currentUser&&document.querySelector(".page.active")===g.page){
-        if(g.action==="privateBack"){
-          dismissMessageMenus();exitMessageSelection();cancelReply();cancelMessageEdit();
-          navigate(g.targetId);
-        }else if(g.action==="spaceBack"){
-          document.getElementById("backSpaces")?.click();
-        }else navigate(g.targetId);
+      try{
+        if(currentUser&&document.querySelector(".page.active")===g.page){
+          if(g.action==="privateBack"){
+            dismissMessageMenus();exitMessageSelection();cancelReply();cancelMessageEdit();
+            navigate(g.targetId);
+          }else if(g.action==="spaceBack"){
+            document.getElementById("backSpaces")?.click();
+          }else navigate(g.targetId);
+        }
+      }catch(error){
+        console.warn("Farnaz swipe navigation:",error);
+      }finally{
+        clearSwipeTransition();
       }
-      clearSwipeTransition();
     },230);
   }else{
     const transition="transform 180ms cubic-bezier(.22,.75,.25,1)";

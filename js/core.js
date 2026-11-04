@@ -2783,5 +2783,5 @@ async function refreshConversationList(){
   };
   document.addEventListener("visibilitychange",retryDeferredSessionRestore);
   window.addEventListener("online",retryDeferredSessionRestore);
-  document.addEventListener("DOMContentLoaded",()=>{if(activeChat())syncViewport();});
+  document.addEventListener("DOMContentLoaded",()=>{if(isChatActive())syncViewport();});
 })();

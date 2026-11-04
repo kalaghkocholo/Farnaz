@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" href="./farnaz-icon.svg?v=20261024-4">
 <meta name="description" content="فرناز؛ ارتباطی نزدیک‌تر، در هر کجا.">
 <title>فرناز | Farnaz</title>
-<link rel="preload" href="./js/core.js?v=20261104-merge-1" as="script">
+<link rel="preload" href="./js/core.js?v=20261104-convo-1" as="script">
 <link rel="preconnect" href="https://iemykhluluoymsbqpjsn.supabase.co" crossorigin>
 <style>
 :root{--bg:#101828;--panel:#172237;--panel2:#1d2b42;--border:#2b3a50;--mint:#50e3c2;--muted:#aab5c7;--white:#f8fafc}
@@ -38,10 +38,10 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
 .welcome-secondary{width:100%;max-width:300px;margin-top:9px;padding:12px;border:1px solid var(--border);border-radius:14px;background:transparent;color:var(--white);font-size:13px}
 @media(max-width:360px){.welcome-shell{min-height:62dvh;padding:24px 15px 20px}.welcome-shell h2{font-size:22px}.welcome-mark{width:74px;height:74px}.welcome-mark img{width:68px;height:68px}}
 </style>
-<link rel="stylesheet" href="./styles.css?v=20261104-merge-1" media="print" onload="this.onload=null;this.media='all'">
-<noscript><link rel="stylesheet" href="./styles.css?v=20261104-merge-1"></noscript>
-<link rel="stylesheet" href="./spaces.css?v=20261029-34" media="print" onload="this.onload=null;this.media='all'">
-<link rel="stylesheet" href="./chat-viewport.css?v=20261029-3">
+<link rel="stylesheet" href="./styles.css?v=20261104-convo-1" media="print" onload="this.onload=null;this.media='all'">
+<noscript><link rel="stylesheet" href="./styles.css?v=20261104-convo-1"></noscript>
+<link rel="stylesheet" href="./spaces.css?v=20261104-convo-1" media="print" onload="this.onload=null;this.media='all'">
+<link rel="stylesheet" href="./chat-viewport.css?v=20261104-convo-1">
 </head>
 <body data-auth-state="guest">
 <main class="app">
@@ -250,8 +250,8 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
 
 <!-- صفحه اختصاصی گفتگو -->
 <section class="page" id="chatPage">
-  <div class="chat-header space-detail-head">
-    <button class="space-secondary" id="backToChats" type="button" onclick="backFromChat()" aria-label="بازگشت به فهرست گفتگوها" title="بازگشت"><span>← بازگشت</span></button>
+  <div class="chat-header space-detail-head conversation-header">
+    <button class="space-secondary conversation-back-button" id="backToChats" type="button" onclick="backFromChat()" aria-label="بازگشت به فهرست گفتگوها" title="بازگشت"><span>← بازگشت</span></button>
     <div class="space-title-wrap chat-heading">
       <div class="space-avatar avatar medium" id="chatAvatar" title="اطلاعات مخاطب">F</div>
       <div class="space-title-copy chat-person">
@@ -266,10 +266,10 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
   </div>
   <div class="conversation-tools" id="selectionToolbar"><span class="muted-note" id="selectedCount">۰ پیام انتخاب شده</span><button class="mini-button" type="button" onclick="replyToSelected()">پاسخ</button><button class="mini-button" type="button" onclick="forwardSelectedMessages()">فوروارد</button><button class="mini-button danger" type="button" onclick="deleteSelectedMessages()">حذف</button><button class="mini-button" type="button" onclick="exitMessageSelection()">لغو</button></div>
   <button class="mini-button" id="loadOlderButton" type="button" onclick="loadOlderMessages()" hidden>پیام‌های قدیمی‌تر</button>
-  <div id="messageList" role="log" aria-live="polite" aria-label="پیام‌های گفتگو"></div>
+  <div id="messageList" class="conversation-message-list" role="log" aria-live="polite" aria-label="پیام‌های گفتگو"></div>
   <div id="replyPreview" class="message-quote" hidden></div>
-  <form id="sendMessageForm">
-    <div class="composer-shell">
+  <form id="sendMessageForm" class="conversation-composer">
+    <div class="composer-shell conversation-composer-shell">
       <div class="voice-preview" id="voicePreview" hidden>
         <div class="voice-preview-heading"><span id="voicePreviewLabel">پیام صوتی آماده ارسال</span><button class="voice-preview-remove" id="removeVoicePreview" type="button" onclick="discardRecordedVoice()" aria-label="حذف صدای ضبط‌شده">×</button></div>
         <audio id="voicePreviewPlayer" controls preload="metadata"></audio>
@@ -281,12 +281,12 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
       <div class="composer-actions">
         <div class="composer-left">
           <button class="composer-icon" id="attachmentMenuButton" type="button" onclick="toggleAttachmentMenu()" aria-label="افزودن پیوست" title="افزودن پیوست" aria-haspopup="menu" aria-expanded="false">＋</button>
-        </div>
         <div class="attachment-menu" id="attachmentMenu" role="menu" aria-label="گزینه‌های پیوست" hidden>
           <button class="attachment-option" id="attachmentPhotoOption" type="button" role="menuitem" onclick="chooseAttachment('photo')"><span class="attachment-option-icon">🖼</span><span>انتخاب عکس</span></button>
           <button class="attachment-option" id="attachmentCameraOption" type="button" role="menuitem" onclick="chooseAttachment('camera')"><span class="attachment-option-icon">📷</span><span>گرفتن عکس با دوربین</span></button>
           <button class="attachment-option" id="attachmentFileOption" type="button" role="menuitem" onclick="chooseAttachment('file')"><span class="attachment-option-icon">📎</span><span>انتخاب فایل</span></button>
-        </div>
+        </div></div>
+        
         <div class="composer-right">
           <button class="mini-button" id="cancelEditButton" type="button" onclick="cancelMessageEdit()" hidden>لغو ویرایش</button><span class="muted-note" id="attachmentHint">فایل تا ۲۰ مگابایت</span>
           <button class="composer-icon" id="recordAudioButton" type="button" onclick="toggleAudioRecording()" aria-label="ضبط پیام صوتی" title="پیام صوتی">🎙</button>
@@ -450,7 +450,7 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
   });
   function loadLocalScripts(){
     const core=document.createElement("script");
-    core.src="./js/core.js?v=20261104-merge-1";
+    core.src="./js/core.js?v=20261104-convo-1";
     watchScript(core,()=>{
       // A script's load event can still fire after a runtime exception.
       // Verify the core boot contract before loading features or attempting
@@ -461,7 +461,7 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
       }
       const featureScripts=[
         "./js/chat-menu-v5.js?v=20261104-merge-1",
-        "./js/spaces.js?v=20261104-merge-1",
+        "./js/spaces.js?v=20261104-convo-1",
         "./js/calls.js?v=20261026-4"
       ];
       let featureIndex=0;

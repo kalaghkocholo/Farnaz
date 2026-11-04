@@ -214,13 +214,13 @@ if (!coreSource.includes("function installFarnazSwipeNavigation()") ||
 }
 
 const chatSource = sources["js/chat-menu-v5.js"];
-if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v232"') || !sources["service-worker.js"].includes('styles.css?v=20261104-merge-1') || !sources["service-worker.js"].includes('core.js?v=20261104-merge-1') || !sources["service-worker.js"].includes('local-store.js?v=20261026-3') || !sources["service-worker.js"].includes('calls.js?v=20261026-4') || !sources["service-worker.js"].includes('chat-menu-v5.js?v=20261104-merge-1') || !html.includes('chat-menu-v5.js?v=20261104-merge-1')) {
+if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v233"') || !sources["service-worker.js"].includes('styles.css?v=20261104-convo-1') || !sources["service-worker.js"].includes('core.js?v=20261104-convo-1') || !sources["service-worker.js"].includes('local-store.js?v=20261026-3') || !sources["service-worker.js"].includes('calls.js?v=20261026-4') || !sources["service-worker.js"].includes('chat-menu-v5.js?v=20261104-merge-1') || !html.includes('chat-menu-v5.js?v=20261104-merge-1')) {
   errors.push("service-worker.js must use the current shell cache and core asset versions");
 }
 const loaderChecks = [
   [html.includes('script.src="./js/supabase-sdk.js"') && html.includes("watchScript(script,()=>{") && html.includes("loadLocalScripts();"),
     "index.html must wait for the local Supabase SDK before loading the app core"],
-  [html.includes('core.src="./js/core.js?v=20261104-merge-1"') && html.includes("watchScript(core,()=>{") && html.includes("بارگذاری هستهٔ برنامه ناموفق بود یا بیش از حد طول کشید"),
+  [html.includes('core.src="./js/core.js?v=20261104-convo-1"') && html.includes("watchScript(core,()=>{") && html.includes("بارگذاری هستهٔ برنامه ناموفق بود یا بیش از حد طول کشید"),
     "index.html must handle successful, failed, and stalled core-script loading"],
   [html.includes("watchScript(script,loadNextFeature,()=>{") && html.includes("featureScripts[featureIndex++]") && html.includes('if(typeof window.FarnazBoot==="function")window.FarnazBoot();'),
     "index.html must load feature scripts sequentially and boot only after the loader sequence"],
@@ -236,7 +236,7 @@ const uiChecks = [
     "presence and privacy settings must translate their labels, hints, and select options"],
   [html.includes('class="page-heading"><h2 id="chatsHeading"') && html.includes('class="page-heading"><h2 id="contactsHeading"') && sources["styles.css"].includes("env(safe-area-inset-top, 0px)") && sources["styles.css"].includes("inset-inline-start:10px"),
     "page headers must be separated, safe-area aware, and use logical-direction controls"],
-  [!html.includes('id="contactSearchButton"') && sources["styles.css"].includes(".contact-info-actions{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}") && sources["styles.css"].includes(".app.chat-mode>#chatPage .send-row textarea{display:block;direction:rtl;text-align:right;width:100%;min-width:0;min-height:38px;max-height:112px;padding:9px 5px;line-height:1.4;border:0;border-radius:0;background:var(--panel)!important;color:var(--white)}"),
+  [!html.includes('id="contactSearchButton"') && sources["styles.css"].includes(".contact-info-actions{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}") && sources["styles.css"].includes(".app.chat-mode>#chatPage .send-row textarea,.app.spaces-chat-mode #spaceDetail .send-row textarea{display:block;direction:rtl;text-align:right;width:100%;min-width:0;min-height:38px;max-height:112px;padding:9px 5px;line-height:1.4;border:0;border-radius:0;background:var(--panel)!important;color:var(--white)}"),
     "new-chat screen must use the saved-contact list/search only, contact actions must stay on one row, and composer surfaces must share one color"],
   [!html.includes('id="contactSearchPopover"') && !html.includes('id="findRecipientBtn"') && !html.includes('id="recipientForm"') && html.includes('id="savedFarnazContactFilter"') && html.includes('id="savedContactsList"'),
     "new-chat flow must keep the saved contacts and their search only, without the extra recipient-search form or button"],
@@ -432,7 +432,36 @@ const authChecks = [
    sources["js/spaces.js"].includes('spaceOpenToken++;spaceRefreshToken++;messageLoadToken++;'),
     "js/spaces.js must stop stale group/channel loads and subscriptions after account changes"],
 ];
-for (const [passed, message] of authChecks) {
+const conversationChecks = [
+  [sources["js/spaces.js"].includes('space-detail-head chat-header conversation-header') &&
+   sources["js/spaces.js"].includes('composer-shell conversation-composer-shell') &&
+   sources["js/spaces.js"].includes('voice-preview space-voice-preview') &&
+   sources["js/spaces.js"].includes('attachment-menu space-attachment-menu'),
+    "js/spaces.js must use the shared conversation header and composer structure for groups/channels"],
+  [html.includes('class="chat-header space-detail-head conversation-header"') &&
+   html.includes('class="space-secondary conversation-back-button"') &&
+   html.includes('class="conversation-message-list"') &&
+   html.includes('class="conversation-composer"'),
+    "index.html must use the shared conversation structure for private chats"],
+  [sources["styles.css"].includes("One shared header layout for private chats, groups and channels") &&
+   sources["styles.css"].includes("One composer layout shared by private chats, groups and channels") &&
+   sources["styles.css"].includes(".app.spaces-chat-mode #spaceDetail .composer-shell") &&
+   sources["styles.css"].includes("Attachment popovers are positioned and styled identically in every conversation"),
+    "styles.css must provide one shared header and composer design for all conversation types"],
+  [!sources["spaces.css"].includes("/* Group header: one horizontal row") &&
+   !sources["spaces.css"].includes("#spacesPage #spaceComposer .space-composer-shell") &&
+   !sources["spaces.css"].includes("Final single-line group composer layout") &&
+   !sources["spaces.css"].includes("#spacesPage #spaceComposer .space-attachment-menu {"),
+    "spaces.css must not retain competing group-only header/composer layout overrides"],
+  [sources["chat-viewport.css"].includes("body.spaces-chat-mode .app.spaces-chat-mode #spacesPage #spaceComposer") &&
+   sources["chat-viewport.css"].includes("position:absolute!important;left:13px!important;right:13px!important;bottom:0!important") &&
+   sources["chat-viewport.css"].includes("overflow-y:auto!important;padding-bottom:112px!important"),
+    "chat-viewport.css must anchor the group/channel composer and preserve message scroll space"],
+  [coreSource.includes('DOMContentLoaded",()=>{if(isChatActive())syncViewport();}') &&
+   !coreSource.includes('DOMContentLoaded",()=>{if(activeChat())syncViewport();}'),
+    "js/core.js must initialize the shared conversation viewport using its local active-state function"],
+];
+for (const [passed, message] of [...authChecks, ...conversationChecks]) {
   if (!passed) errors.push(message);
 }
 

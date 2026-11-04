@@ -729,12 +729,16 @@ function swipeHistoryTarget(direction){
     if(detail&&!detail.hidden)return {kind:"spaceBack",targetId:"__spaceList__"};
   }
   if(activePage.id==="chatPage"||activePage.id==="spacesPage"&&document.getElementById("spaceDetail")&&!document.getElementById("spaceDetail").hidden)return null;
-  const currentIndex=swipePageHistoryIndex;
-  const targetIndex=currentIndex+(direction>0?-1:1);
-  const targetEntry=swipePageHistory[targetIndex];
+  const currentIndex=swipePageHistoryIndex,step=direction>0?-1:1;
+  let targetIndex=currentIndex+step,targetEntry=swipePageHistory[targetIndex];
+  // A group/channel tab change is not a page transition; skip same-page history
+  // entries so a swipe always lands on a different, real screen.
+  while(targetEntry&&swipePageHistoryId(targetEntry)===activePage.id){
+    targetIndex+=step;targetEntry=swipePageHistory[targetIndex];
+  }
   if(!targetEntry)return null;
   const targetId=swipePageHistoryId(targetEntry);
-  if(!targetId||targetId===activePage.id||!$(targetId))return null;
+  if(!targetId||!$(targetId))return null;
   return {kind:"page",targetId,targetEntry};
 }
 function clearSwipeTransition(){

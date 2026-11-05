@@ -688,27 +688,36 @@ function openAdjacentConversation(direction){
 }
 /* Bidirectional page swipes use the same history as ordinary navigation. */
 const SWIPE_PAGE_ORDER=["profilePage","chatsPage","spacesPage","contactsPage","settingsPage"];
+const FARNAZ_SWIPE_PAGE_ORDER=["settingsPage","contactsPage","chatsPage","profilePage"];
+function swipeNavigationBasePage(pageId){
+  if(pageId==="callsPage"||pageId==="spacesPage")return "chatsPage";
+  return FARNAZ_SWIPE_PAGE_ORDER.includes(pageId)?pageId:null;
+}
 function swipeHistoryTarget(direction){
   if(!currentUser)return null;
   const activePage=document.querySelector(".page.active");
   if(!activePage)return null;
-  // An open conversation is a nested view: a right swipe returns to its own list.
-  if(direction>0&&activePage.id==="chatPage")return window.FarnazConversationMode==="space"?"__spaceChatBack__":"__privateChatBack__";
-  if(direction>0&&activePage.id==="spacesPage"){
-    const detail=document.getElementById("spaceDetail");
-    if(detail&&!detail.hidden)return "__spaceChatBack__";
+
+  // Shared chatPage hosts both private and group/channel conversations.
+  if(direction>0&&activePage.id==="chatPage"){
+    if(window.FarnazConversationMode==="space")return {kind:"spaceBack",targetId:"spacesPage"};
+    const targetId=$(previousPage)&&previousPage!=="chatPage"?previousPage:"chatsPage";
+    return {kind:"privateBack",targetId};
   }
-  if((activePage.id==="chatPage"||activePage.id==="spacesPage"&&document.getElementById("spaceDetail")&&!document.getElementById("spaceDetail").hidden)&&direction<0)return null;
-  const currentId=activePage.id==="chatPage"?"chatsPage":activePage.id;
-  const index=SWIPE_PAGE_ORDER.indexOf(currentId);
-  if(index<0)return null;
-  const targetId=SWIPE_PAGE_ORDER[index+direction];
-  return targetId&&document.getElementById(targetId)?targetId:null;
+  if(activePage.id==="chatPage")return null;
+
+  const basePage=swipeNavigationBasePage(activePage.id);
+  if(!basePage)return null;
+  const currentIndex=FARNAZ_SWIPE_PAGE_ORDER.indexOf(basePage);
+  const targetIndex=currentIndex+(direction>0?-1:1);
+  const targetId=FARNAZ_SWIPE_PAGE_ORDER[targetIndex];
+  if(!targetId||!$(targetId))return null;
+  return {kind:"page",targetId};
 }
 function clearSwipeTransition(){
   if(swipeTransitionTimer){clearTimeout(swipeTransitionTimer);swipeTransitionTimer=null;}
   document.querySelector(".app")?.classList.remove("farnaz-swipe-active");
-  document.querySelectorAll(".page.farnaz-swipe-current,.page.farnaz-swipe-underlay").forEach(page=>{
+  document.querySelectorAll(".page.farnaz-swipe-current,.page.farnaz-swipe-underlay,#spaceDetail.farnaz-swipe-current,#spaceList.farnaz-swipe-underlay").forEach(page=>{
     page.classList.remove("farnaz-swipe-current","farnaz-swipe-underlay");
     page.style.removeProperty("transform");page.style.removeProperty("transition");
   });
@@ -716,89 +725,93 @@ function clearSwipeTransition(){
 }
 function finishSwipeNavigation(commit){
   const g=swipeGesture;if(!g)return;
-  if(g.action){
-    swipeGesture=null;
-    if(commit&&currentUser&&document.querySelector(".page.active")===g.current){
-      if(g.action==="__privateChatBack__"){
-        dismissMessageMenus();exitMessageSelection();cancelReply();cancelMessageEdit();
-        navigate("chatsPage");
-      }else if(g.action==="__spaceChatBack__"){
-        window.FarnazConversationBack?.();
-      }
-    }
-    clearSwipeTransition();
-    return;
-  }
   if(commit&&g.targetId){
-    g.current.style.transition="transform 220ms cubic-bezier(.22,.75,.25,1)";
-    g.target.style.transition=g.current.style.transition;
+    const transition="transform 220ms cubic-bezier(.22,.75,.25,1)";
+    g.current.style.transition=transition;g.target.style.transition=transition;
     g.current.style.transform="translate3d("+(g.direction*g.width)+"px,0,0)";
     g.target.style.transform="translate3d(0,0,0)";
     swipeGesture=null;
     swipeTransitionTimer=setTimeout(()=>{
       swipeTransitionTimer=null;
-      // Commit only if the user is still on the page where this gesture began.
-      if(currentUser&&document.querySelector(".page.active")===g.current)navigate(g.targetId);
-      clearSwipeTransition();
+      try{
+        if(currentUser&&document.querySelector(".page.active")===g.page){
+          if(g.action==="privateBack"){
+            dismissMessageMenus();exitMessageSelection();cancelReply();cancelMessageEdit();
+            navigate(g.targetId);
+          }else if(g.action==="spaceBack"){
+            window.FarnazConversationBack?.();
+          }else navigate(g.targetId);
+        }
+      }catch(error){
+        console.warn("Farnaz swipe navigation:",error);
+      }finally{
+        clearSwipeTransition();
+      }
     },230);
   }else{
-    g.current.style.transition="transform 180ms cubic-bezier(.22,.75,.25,1)";
-    g.target.style.transition=g.current.style.transition;
+    const transition="transform 180ms cubic-bezier(.22,.75,.25,1)";
+    g.current.style.transition=transition;g.target.style.transition=transition;
     g.current.style.transform="translate3d(0,0,0)";
     g.target.style.transform="translate3d("+(g.direction>0?-g.width:g.width)+"px,0,0)";
     swipeGesture=null;
-    swipeTransitionTimer=setTimeout(()=>{swipeTransitionTimer=null;clearSwipeTransition();},190);
+    swipeTransitionTimer=setTimeout(()=>{
+      swipeTransitionTimer=null;
+      clearSwipeTransition();
+    },190);
   }
 }
 function installFarnazSwipeNavigation(){
   if(document.documentElement.dataset.farnazSwipeNavigation==="ready")return;
   document.documentElement.dataset.farnazSwipeNavigation="ready";
-  document.addEventListener("pointerdown",event=>{
-    if(event.pointerType!=="touch"||!event.isPrimary||swipeGesture||swipeTransitionTimer)return;
+  // Use native Touch Events on iOS Safari. Pointer Events may be canceled by
+  // WebKit's gesture recognizer before a horizontal drag can be completed.
+  document.addEventListener("touchstart",event=>{
+    if(event.touches.length!==1||swipeGesture||swipeTransitionTimer)return;
     if(document.body.classList.contains("keyboard-open")||document.body.classList.contains("chat-mode")&&document.activeElement?.matches?.("input,textarea,[contenteditable='true']")||messageSelectionMode)return;
-    const app=event.target?.closest?.(".app"),current=app?.querySelector(".page.active");
-    if(!currentUser||!app||!current||current.id==="homePage"||app.classList.contains("farnaz-swipe-active"))return;
-    // Leave the outer 28px to iOS edge navigation; app swipes start in the content area.
-    const appRect=app.getBoundingClientRect();
-    if(event.clientX-appRect.left<28||appRect.right-event.clientX<28)return;
-    if(event.target.closest("input,textarea,select,button,a,[contenteditable='true'],.bottom-nav,.conversation-card,.space-card,#conversationList,#spacesList,.dialog,.modal,.message-action-menu,.message-selection-toolbar,#sendMessageForm,#spaceComposer,.composer-shell"))return;
+    const app=event.target?.closest?.(".app"),page=app?.querySelector(".page.active");
+    if(!currentUser||!app||!page||page.id==="homePage"||app.classList.contains("farnaz-swipe-active"))return;
+    const appRect=app.getBoundingClientRect(),touch=event.touches[0];
+    // Reserve a wider 44px strip on both sides for Safari back/forward gestures.
+    // Farnaz only recognizes horizontal swipes that begin in the central content area.
+    if(touch.clientX-appRect.left<44||appRect.right-touch.clientX<44)return;
+    if(event.target.closest("input,textarea,select,button,a,[contenteditable='true'],.bottom-nav,.conversation-card,.space-card,#conversationList,#spacesList,.dialog,.modal,.message,.space-message,.message-action-menu,.message-selection-toolbar,#sendMessageForm,#spaceComposer,.composer-shell"))return;
     if(!swipeHistoryTarget(-1)&&!swipeHistoryTarget(1))return;
-    swipeGesture={app,current,target:null,targetId:null,startX:event.clientX,startY:event.clientY,lastX:event.clientX,lastTime:performance.now(),velocity:0,dx:0,width:Math.max(1,app.getBoundingClientRect().width),direction:0,locked:false};
+    swipeGesture={app,page,current:null,target:null,targetId:null,action:null,startX:touch.clientX,startY:touch.clientY,lastX:touch.clientX,lastTime:performance.now(),velocity:0,dx:0,width:Math.max(1,appRect.width),direction:0,locked:false};
   },{capture:true,passive:true});
-  document.addEventListener("pointermove",event=>{
-    const g=swipeGesture;if(!g||event.pointerType!=="touch")return;
-    const dx=event.clientX-g.startX,dy=event.clientY-g.startY,now=performance.now();
-    g.velocity=(event.clientX-g.lastX)/Math.max(1,now-g.lastTime);g.lastX=event.clientX;g.lastTime=now;g.dx=dx;
+  document.addEventListener("touchmove",event=>{
+    const g=swipeGesture;if(!g||event.touches.length!==1)return;
+    const touch=event.touches[0],dx=touch.clientX-g.startX,dy=touch.clientY-g.startY,now=performance.now();
+    g.velocity=(touch.clientX-g.lastX)/Math.max(1,now-g.lastTime);g.lastX=touch.clientX;g.lastTime=now;g.dx=dx;
     if(!g.locked){
       if(Math.abs(dx)<12&&Math.abs(dy)<12)return;
       if(Math.abs(dx)<Math.abs(dy)*1.2){swipeGesture=null;return;}
-      const direction=dx>0?1:-1,targetId=swipeHistoryTarget(direction);
-      if(!targetId){swipeGesture=null;return;}
-      g.direction=direction;g.targetId=targetId;g.locked=true;
-      if(targetId==="__privateChatBack__"||targetId==="__spaceChatBack__"){
-        g.action=targetId;
-        return;
-      }
-      const target=document.getElementById(targetId);if(!target){swipeGesture=null;return;}
-      g.target=target;
-      g.app.classList.add("farnaz-swipe-active");g.current.classList.add("farnaz-swipe-current");target.classList.add("farnaz-swipe-underlay");
-      target.style.transition="none";g.current.style.transition="none";
-      target.style.transform="translate3d("+(direction>0?-g.width:g.width)+"px,0,0)";
+      const direction=dx>0?1:-1,destination=swipeHistoryTarget(direction);
+      if(!destination){swipeGesture=null;return;}
+      g.direction=direction;g.targetId=destination.targetId;g.action=destination.kind;g.locked=true;
+      g.target=document.getElementById(destination.targetId);
+      if(!g.target){swipeGesture=null;return;}
+      g.app.classList.add("farnaz-swipe-active");
+      g.current=g.page;
+      if(!g.current){swipeGesture=null;return;}
+      g.current.classList.add("farnaz-swipe-current");g.target.classList.add("farnaz-swipe-underlay");
+      g.target.style.transition="none";g.current.style.transition="none";
+      g.target.style.transform="translate3d("+(direction>0?-g.width:g.width)+"px,0,0)";
     }
     if(g.locked){
       if(event.cancelable)event.preventDefault();
-      if(g.action)return;
       const x=Math.max(-g.width,Math.min(g.width,dx));
       g.current.style.transform="translate3d("+x+"px,0,0)";
       g.target.style.transform="translate3d("+((g.direction>0?-g.width:g.width)+x)+"px,0,0)";
     }
   },{capture:true,passive:false});
-  document.addEventListener("pointerup",event=>{
-    const g=swipeGesture;if(!g||event.pointerType!=="touch")return;
+  document.addEventListener("touchend",event=>{
+    const g=swipeGesture;if(!g)return;
     if(!g.locked){swipeGesture=null;return;}
     finishSwipeNavigation(Math.abs(g.dx)>=Math.max(72,g.width*.22)||(Math.abs(g.velocity)>.55&&Math.abs(g.dx)>44));
   },{capture:true,passive:true});
-  document.addEventListener("pointercancel",()=>{if(swipeGesture?.locked)finishSwipeNavigation(false);else swipeGesture=null;},{capture:true,passive:true});
+  document.addEventListener("touchcancel",()=>{
+    if(swipeGesture?.locked)finishSwipeNavigation(false);else swipeGesture=null;
+  },{capture:true,passive:true});
 }
 installFarnazSwipeNavigation();
 
@@ -844,24 +857,84 @@ function openAuth(){
   const signup=authMode==="signup";
   $("nameField").style.display=signup?"block":"none";
   $("authName").required=signup;
-  $("authPassword").autocomplete=signup?"new-password":"current-password";
+  $("authEmail").autocomplete="username";
+  $("authPassword").autocomplete=signup||authMode==="recovery"?"new-password":"current-password";
+  $("authPassword").type="password";
+  const passwordToggle=$("toggleAuthPassword");
+  if(passwordToggle){passwordToggle.textContent=english?"Show":"نمایش";passwordToggle.setAttribute("aria-pressed","false");}
   document.querySelector(".app")?.classList.add("auth-open");
   if($("headerFButton"))$("headerFButton").hidden=true;
   $("authBox").style.display="flex";setStatus("authStatus","");
   $("authName").value="";$("authEmail").value="";$("authPassword").value="";
-  updateAuthTexts();
+  setAuthMode(authMode);
 }
 function closeAuth(){$("authBox").style.display="none";document.querySelector(".app")?.classList.remove("auth-open");}
+function getAuthRedirectUrl(){
+  // Return to the exact app origin currently in use; allow-list each origin in Supabase Auth.
+  return new URL("./",window.location.href).href;
+}
+function getAuthRecoveryRedirectUrl(){
+  const url=new URL(getAuthRedirectUrl());
+  url.searchParams.set("auth","recovery");
+  return url.href;
+}
+function isAuthRecoveryCallback(){
+  return new URLSearchParams(window.location.search).get("auth")==="recovery";
+}
+async function requestPasswordRecovery(){
+  const email=$("authEmail")?.value.trim()||"";
+  const button=$("authForgotPassword");
+  if(!email){
+    setStatus("authStatus",english?"Enter your email address first.":"ابتدا آدرس ایمیلت را وارد کن.",true);
+    $("authEmail")?.focus();
+    return;
+  }
+  if(navigator.onLine===false){
+    setStatus("authStatus",english?"You are offline. Reconnect and try again.":"اتصال اینترنت قطع است؛ پس از اتصال دوباره تلاش کن.",true);
+    return;
+  }
+  if(button?.disabled)return;
+  if(button)button.disabled=true;
+  setStatus("authStatus",english?"Sending recovery instructions…":"در حال ارسال راهنمای بازیابی…");
+  try{
+    const {error}=await getClient().auth.resetPasswordForEmail(email,{redirectTo:getAuthRecoveryRedirectUrl()});
+    if(error)throw error;
+    // Keep the response generic so the screen does not reveal whether an email has an account.
+    setStatus("authStatus",english
+      ?"If an account can be recovered with this address, recovery instructions will be sent. Check your inbox and spam folder."
+      :"اگر برای این ایمیل حسابی وجود داشته باشد، راهنمای بازیابی ارسال می‌شود. صندوق ورودی و هرزنامه را بررسی کن.");
+  }catch(error){
+    console.warn("Password recovery request failed:",error);
+    const status=Number(error?.status||error?.statusCode||0);
+    const network=error?.name==="TypeError"||error?.name==="TimeoutError"||/network|fetch failed|load failed|timeout|connection|did not respond/i.test(String(error?.message||""));
+    setStatus("authStatus",status===429
+      ?(english?"Too many recovery requests. Wait a little and try again.":"درخواست‌های بازیابی زیاد بوده؛ کمی صبر کن و دوباره تلاش کن.")
+      :network
+        ?(english?"The recovery request could not reach the server. Check your connection and retry.":"درخواست بازیابی به سرور نرسید؛ اتصال را بررسی کن و دوباره تلاش کن.")
+        :(english?"Recovery could not be started. Please try again later.":"شروع بازیابی ممکن نشد؛ کمی بعد دوباره تلاش کن."),true);
+  }finally{
+    if(button)button.disabled=false;
+  }
+}
+function toggleAuthPassword(){
+  const field=$("authPassword"),button=$("toggleAuthPassword");
+  if(!field||!button)return;
+  const reveal=field.type==="password";
+  field.type=reveal?"text":"password";
+  button.textContent=english?(reveal?"Hide":"Show"):(reveal?"مخفی":"نمایش");
+  button.setAttribute("aria-pressed",String(reveal));
+  button.setAttribute("aria-label",english?(reveal?"Hide password":"Show password"):(reveal?"مخفی‌کردن رمز عبور":"نمایش رمز عبور"));
+}
 async function signInSocial(provider="google"){
   const button=$("googleAuth");
-  const label=button?.querySelector("span:last-child");
+  if(button?.disabled)return;
   if(button)button.disabled=true;
   setStatus("authStatus",english?"Connecting to Google…":"در حال اتصال به گوگل…");
   try{
     const client=getClient();
     const {error}=await client.auth.signInWithOAuth({
       provider,
-      options:{redirectTo:"https://kalaghkocholo.github.io/Farnaz/"}
+      options:{redirectTo:getAuthRedirectUrl()}
     });
     if(error)throw error;
   }catch(e){
@@ -875,35 +948,69 @@ async function signInSocial(provider="google"){
   }
 }
 function setAuthMode(mode){
-  if(mode!=="login"&&mode!=="signup")return;
+  if(!["login","signup","recovery"].includes(mode))return;
   authMode=mode;
-  const signup=authMode==="signup";
+  const signup=authMode==="signup",recovery=authMode==="recovery";
   $("nameField").style.display=signup?"block":"none";
   $("authName").required=signup;
-  $("authPassword").autocomplete=signup?"new-password":"current-password";
+  $("authEmailLabel").hidden=recovery;
+  $("authEmail").hidden=recovery;
+  $("authEmail").required=!recovery;
+  $("authEmail").autocomplete="username";
+  $("authPassword").required=true;
+  $("authPassword").minLength=8;
+  $("authPassword").autocomplete=signup||recovery?"new-password":"current-password";
+  $("authPassword").type="password";
+  const passwordToggle=$("toggleAuthPassword");
+  if(passwordToggle){passwordToggle.textContent=english?"Show":"نمایش";passwordToggle.setAttribute("aria-pressed","false");}
+  $("authModeTabs").hidden=recovery;
+  $("authForgotPassword").hidden=authMode!=="login";
+  $("authRecoveryBack").hidden=!recovery;
+  $("authSwitch").hidden=recovery;
   setStatus("authStatus","");updateAuthTexts();
 }
 function switchAuthMode(){setAuthMode(authMode==="signup"?"login":"signup");}
 function updateAuthTexts(){
-  const v=english;
-  $("authTitle").textContent=authMode==="signup"?(v?"Create your Farnaz account":"ثبت‌نام در فرناز"):(v?"Sign in to Farnaz":"ورود به فرناز");
-  $("authMessage").textContent=authMode==="signup"?(v?"Create an account to stay connected.":"برای ارتباط نزدیک‌تر، حساب خودت را بساز."):(v?"Sign in with your email and password.":"با ایمیل و رمز عبورت وارد شو.");
-  $("authSubmit").textContent=authMode==="signup"?(v?"Sign up":"ثبت‌نام"):(v?"Sign in":"ورود");
-  $("authSwitch").textContent=authMode==="signup"?(v?"You can add your mobile number after email confirmation.":"شماره موبایل را پس از تأیید ایمیل تکمیل می‌کنی."):(v?"Use your email and password to continue.":"با ایمیل و رمز عبورت وارد فرناز شو.");
+  const v=english,recovery=authMode==="recovery",signup=authMode==="signup";
+  $("authTitle").textContent=recovery
+    ?(v?"Choose a new password":"انتخاب رمز عبور جدید")
+    :signup?(v?"Create your Farnaz account":"ثبت‌نام در فرناز"):(v?"Sign in to Farnaz":"ورود به فرناز");
+  $("authMessage").textContent=recovery
+    ?(v?"Enter a new password for your Farnaz account.":"رمز عبور جدید حساب فرنازت را وارد کن.")
+    :signup?(v?"Create an account to stay connected.":"برای ارتباط نزدیک‌تر، حساب خودت را بساز."):(v?"Sign in with your email and password.":"با ایمیل و رمز عبورت وارد شو.");
+  $("authSubmit").textContent=recovery?(v?"Save new password":"ذخیره رمز جدید"):signup?(v?"Sign up":"ثبت‌نام"):(v?"Sign in":"ورود");
+  $("authSwitch").textContent=signup
+    ?(v?"You can add your mobile number after email confirmation.":"شماره موبایل را پس از تأیید ایمیل تکمیل می‌کنی.")
+    :(v?"Use your email and password to continue.":"با ایمیل و رمز عبورت وارد فرناز شو.");
   $("authNameLabel").textContent=v?"Display name":"نام نمایشی";
+  $("authEmailLabel").textContent=v?"Email":"ایمیل";
+  $("authPasswordLabel").textContent=recovery?(v?"New password (at least 8 characters)":"رمز عبور جدید (حداقل ۸ کاراکتر)"):(v?"Password (at least 8 characters)":"رمز عبور (حداقل ۸ کاراکتر)");
+  $("authPassword").placeholder=recovery?(v?"New password":"رمز عبور جدید"):(v?"Password":"رمز عبور");
   $("authLoginTab").textContent=v?"Sign in":"ورود";
   $("authSignupTab").textContent=v?"Create account":"ثبت‌نام";
   $("authLoginTab").classList.toggle("is-active",authMode==="login");
   $("authSignupTab").classList.toggle("is-active",authMode==="signup");
   $("authLoginTab").setAttribute("aria-pressed",String(authMode==="login"));
   $("authSignupTab").setAttribute("aria-pressed",String(authMode==="signup"));
-  $("googleAuth").hidden=false;
-  document.querySelector(".social-auth").hidden=false;
-  document.querySelector(".auth-divider").hidden=false;
+  $("authModeTabs").hidden=recovery;
+  $("googleAuth").hidden=recovery;
+  document.querySelector(".social-auth").hidden=recovery;
+  document.querySelector(".auth-divider").hidden=recovery;
+  $("authForgotPassword").hidden=authMode!=="login";
+  $("authRecoveryBack").hidden=!recovery;
+  $("authSwitch").hidden=recovery;
   $("googleAuthLabel").textContent=v?"Continue with Google":"ادامه با Google";
   $("authOrLabel").textContent=v?"or continue with email":"یا با ایمیل";
+  $("authForgotPassword").textContent=v?"Forgot password?":"رمز عبور را فراموش کرده‌اید؟";
+  $("authRecoveryBack").textContent=v?"Back to sign in":"بازگشت به ورود";
   const languageButton=$("authLanguageButton");
   if(languageButton)languageButton.textContent=v?"فا":"EN";
+  const passwordToggle=$("toggleAuthPassword");
+  if(passwordToggle){
+    const visible=$("authPassword").type==="text";
+    passwordToggle.textContent=v?(visible?"Hide":"Show"):(visible?"مخفی":"نمایش");
+    passwordToggle.setAttribute("aria-label",v?(visible?"Hide password":"Show password"):(visible?"مخفی‌کردن رمز عبور":"نمایش رمز عبور"));
+  }
 }
 /* Keep one welcome language toggle globally; preserve the separate Settings language control. */
 function normalizeWelcomeLanguageButton(){
@@ -2578,7 +2685,7 @@ async function refreshConversationList(){
       const button=$("authSubmit"),email=$("authEmail").value.trim();
       const password=$("authPassword").value,name=$("authName").value.trim();
       const phone="";
-      if(!button)return;
+      if(!button||button.disabled)return;
       button.disabled=true;
       const authStartedAt=performance.now();
       setStatus("authStatus",english?"Connecting to server…":"در حال اتصال به سرور…");
@@ -2590,11 +2697,16 @@ async function refreshConversationList(){
       try{
         const client=getClient();
         let result;
-        if(authMode==="signup"){
+        if(authMode==="recovery"){
+          result=await client.auth.updateUser({password});
+          if(result.error)throw result.error;
+          // Remove the one-time recovery marker only after Supabase accepts the new password.
+          try{history.replaceState({},document.title,getAuthRedirectUrl());}catch(_){}
+        }else if(authMode==="signup"){
           result=await client.auth.signUp({
             email,password,
             options:{
-              emailRedirectTo:"https://kalaghkocholo.github.io/Farnaz/",
+              emailRedirectTo:getAuthRedirectUrl(),
               data:{display_name:name}
             }
           });
@@ -2649,16 +2761,22 @@ async function refreshConversationList(){
         const code=String(error?.code||"").toLowerCase();
         const status=Number(error?.status||error?.statusCode||0);
         const isCredentialsError=code==="invalid_credentials"||/invalid login credentials|invalid email or password/i.test(message);
+        const isWeakPassword=code==="weak_password"||/password.*(weak|short)|weak password/i.test(message);
         const isNetwork=error?.name==="TypeError"||error?.name==="TimeoutError"||
           /failed to fetch|fetch failed|network|load failed|timeout|connection|did not respond|request could not reach|aborted/i.test(message);
         const safeMessage=isCredentialsError
           ?(english?"Email or password is incorrect. Check both and try again.":"ایمیل یا رمز عبور درست نیست؛ هر دو را بررسی کن و دوباره تلاش کن.")
-          :isNetwork
-            ?(english?"Could not complete the request to Supabase. Check your connection and retry.":"درخواست به سوپابیس کامل نشد؛ اتصال را بررسی کن و دوباره تلاش کن.")
-            :(status===429
-              ?(english?"Too many attempts. Wait a little and try again.":"تعداد تلاش‌ها زیاد بوده؛ کمی صبر کن و دوباره تلاش کن.")
-              :message);
-        setStatus("authStatus",(english?"Sign-up/sign-in failed: ":"ثبت‌نام یا ورود ناموفق بود: ")+safeMessage,true);
+          :isWeakPassword
+            ?(english?"Choose a stronger password with at least 8 characters.":"رمز عبور قوی‌تری با حداقل ۸ کاراکتر انتخاب کن.")
+            :isNetwork
+              ?(english?"Could not complete the request to Supabase. Check your connection and retry.":"درخواست به سوپابیس کامل نشد؛ اتصال را بررسی کن و دوباره تلاش کن.")
+              :(status===429
+                ?(english?"Too many attempts. Wait a little and try again.":"تعداد تلاش‌ها زیاد بوده؛ کمی صبر کن و دوباره تلاش کن.")
+                :(english?"The request could not be completed. Please check your details and try again.":"درخواست انجام نشد؛ اطلاعات را بررسی کن و دوباره تلاش کن."));
+        const failureLabel=authMode==="recovery"
+          ?(english?"Password update failed: ":"به‌روزرسانی رمز ناموفق بود: ")
+          :(english?"Sign-up/sign-in failed: ":"ثبت‌نام یا ورود ناموفق بود: ");
+        setStatus("authStatus",failureLabel+safeMessage,true);
       }finally{
         clearTimeout(slowAuthTimer);
         button.disabled=false;
@@ -2697,15 +2815,32 @@ async function refreshConversationList(){
       if(!session?.user){
         sessionRestoreNeedsRetry=false;
         document.body.dataset.authState="guest";
-        // Clear the startup banner if an earlier transient restore attempt timed out.
-        // No valid session is a normal guest state, not a connection failure.
         setConnectionBanner("",false);
         setStatus("profileStatus","");
-        // Guests land directly on the login/register screen; there is no welcome page.
-        openSignup();
+        if(isAuthRecoveryCallback()){
+          openLogin();
+          setStatus("authStatus",english
+            ?"This recovery link is invalid or expired. Request a new one."
+            :"پیوند بازیابی نامعتبر یا منقضی شده است؛ دوباره درخواست بازیابی بده.",true);
+        }else{
+          // Guests land directly on the login/register screen; there is no welcome page.
+          openSignup();
+        }
         return;
       }
       sessionRestoreNeedsRetry=false;
+      if(isAuthRecoveryCallback()){
+        currentUser=session.user;
+        profileCompletionRequired=true;
+        document.body.dataset.authState="authenticated";
+        authMode="recovery";
+        openAuth();
+        setAuthMode("recovery");
+        setStatus("authStatus",english
+          ?"Choose a new password to finish recovering your account."
+          :"برای تکمیل بازیابی حساب، رمز عبور جدیدی انتخاب کن.");
+        return;
+      }
       currentUser=session.user;
       profileCompletionRequired=true;
       document.body.dataset.authState="authenticated";
@@ -2782,5 +2917,10 @@ async function refreshConversationList(){
   };
   document.addEventListener("visibilitychange",retryDeferredSessionRestore);
   window.addEventListener("online",retryDeferredSessionRestore);
+  window.addEventListener("offline",()=>{
+    const message=english?"You are offline. Reconnect to continue.":"اتصال اینترنت قطع شده؛ برای ادامه دوباره متصل شو.";
+    if(currentUser)setConnectionBanner(message);
+    else setStatus("authStatus",message,true);
+  });
   document.addEventListener("DOMContentLoaded",()=>{if(isChatActive())syncViewport();});
 })();

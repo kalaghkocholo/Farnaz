@@ -238,6 +238,9 @@ html[dir="ltr"] .auth-language-switch{right:max(16px,calc((100vw - 560px)/2 + 16
 .auth-card>p:not(.status){text-align:center;color:var(--muted);margin:0 0 22px;font-size:13px}
 .auth-submit{width:100%;margin-top:18px;min-height:48px;border-radius:12px}
 .auth-switch-hint{color:var(--muted);font-size:11px;text-align:center;margin:10px 0 0}
+.auth-inline-action{align-self:flex-end;min-height:34px;padding:5px 2px;border:0;background:transparent;color:var(--accent);font-size:11px;font-weight:650;text-align:right;cursor:pointer}
+.auth-inline-action:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:5px}
+.auth-inline-action:disabled{opacity:.55;cursor:wait}
 .auth-mode-tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;margin:0 0 20px;background:var(--panel2);border-radius:12px}
 .auth-mode-tab{min-height:42px;border:0;border-radius:9px;background:transparent;color:var(--muted);font-weight:650}
 .auth-mode-tab.is-active{background:var(--panel);color:var(--white);box-shadow:0 1px 3px #0001}
@@ -250,7 +253,11 @@ html[dir="ltr"] .auth-language-switch{right:max(16px,calc((100vw - 560px)/2 + 16
 .social-auth{display:grid;gap:9px;margin:0 0 12px}
 .social-auth-button{width:100%;min-height:42px;border:1px solid var(--border);border-radius:11px;background:var(--panel);color:var(--white);display:flex;align-items:center;justify-content:center;gap:10px;font-size:13px;font-weight:600;padding:9px 14px}
 .social-auth-button:disabled{opacity:.65}
-.google-mark{font-family:Arial,sans-serif;font-weight:800;font-size:20px;color:#4285f4}
+.google-mark{display:block;width:20px;height:20px;flex:0 0 20px}
+.auth-password-control{display:flex;align-items:center;gap:6px;min-width:0}
+#authForm .auth-password-control input{flex:1;min-width:0;width:100%}
+.auth-password-toggle{flex:0 0 auto;min-width:58px;min-height:42px;padding:7px 9px;border:1px solid var(--border);border-radius:10px;background:var(--panel);color:var(--muted);font-size:11px;font-weight:650}
+.auth-password-toggle:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .auth-divider{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:11px;margin:8px 0 12px}
 .auth-divider:before,.auth-divider:after{content:"";height:1px;background:var(--border);flex:1}
 [hidden]{display:none!important}

@@ -208,17 +208,35 @@ async function makeMessageElement(m,myId,fromCache=false){
     pin.textContent=english?"📌 Pinned":"📌 سنجاق‌شده";item.appendChild(pin);
   }
   if(m.reply_to_id){
-    try{
-      const {data}=await getClient().from("messages").select("id,sender_id,body,attachment_name,message_type").eq("id",m.reply_to_id).maybeSingle();
-      const quote=document.createElement("button");quote.type="button";quote.className="message-quote";quote.dataset.replyTarget=String(m.reply_to_id);
-      quote.style.cssText="display:block;width:100%;text-align:start;border:0;border-inline-start:3px solid var(--accent,#22b8a5);border-radius:7px;padding:6px 9px;margin:0 0 6px;background:rgba(120,130,145,.12);color:inherit;font:inherit;cursor:pointer";
-      const author=document.createElement("strong");author.style.cssText="display:block;font-size:11px;color:var(--accent,#159b8c)";
-      author.textContent=data?(String(data.sender_id)===String(myId)?(english?"You":"شما"):(english?"Contact":"مخاطب")):(english?"Original message":"پیام اصلی");
-      const preview=document.createElement("span");preview.style.cssText="display:block;font-size:12px;opacity:.82;overflow:hidden;text-overflow:ellipsis;white-space:nowrap";
-      preview.textContent=data?(data.body||data.attachment_name||(english?"Attachment":"پیوست")):(english?"Message unavailable":"پیام در دسترس نیست");
-      quote.append(author,preview);quote.addEventListener("click",event=>{event.stopPropagation();const target=$("messageList")?.querySelector('[data-message-id="'+String(m.reply_to_id)+'"]');if(target){target.scrollIntoView({behavior:"smooth",block:"center"});target.classList.add("contact-info-search-match");setTimeout(()=>target.classList.remove("contact-info-search-match"),1800);}else if(typeof openMessageFromSearch==="function")openMessageFromSearch(m.reply_to_id,m.created_at,currentChatUser?.user_id);});
-      item.appendChild(quote);
-    }catch(e){console.warn("Could not load replied-to message:",e);}
+    let repliedTo=null;
+    if(!fromCache){
+      try{
+        const {data,error}=await getClient().from("messages").select("id,sender_id,body,attachment_name,message_type").eq("id",m.reply_to_id).maybeSingle();
+        if(!error)repliedTo=data||null;
+      }catch(error){console.warn("Could not load replied-to message:",error);}
+    }
+    const quote=document.createElement("button");
+    quote.type="button";quote.className="message-quote";quote.dataset.replyTarget=String(m.reply_to_id);
+    Object.assign(quote.style,{display:"block",width:"100%",textAlign:"start",border:"0",borderInlineStart:"3px solid var(--accent,#22b8a5)",borderRadius:"7px",padding:"6px 9px",margin:"0 0 6px",background:"rgba(120,130,145,.12)",color:"inherit",font:"inherit",cursor:"pointer"});
+    const author=document.createElement("strong");
+    Object.assign(author.style,{display:"block",fontSize:"11px",color:"var(--accent,#159b8c)"});
+    author.textContent=repliedTo?(String(repliedTo.sender_id)===String(myId)?(english?"You":"شما"):(english?"Contact":"مخاطب")):(english?"Original message":"پیام اصلی");
+    const preview=document.createElement("span");
+    Object.assign(preview.style,{display:"block",fontSize:"12px",opacity:".82",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"});
+    preview.textContent=repliedTo?(repliedTo.body||repliedTo.attachment_name||(english?"Attachment":"پیوست")):(english?"Open original message":"نمایش پیام اصلی");
+    quote.append(author,preview);
+    quote.addEventListener("click",event=>{
+      event.stopPropagation();
+      const target=$("messageList")?.querySelector('[data-message-id="'+String(m.reply_to_id)+'"]');
+      if(target){
+        target.scrollIntoView({behavior:"smooth",block:"center"});
+        target.classList.add("contact-info-search-match");
+        setTimeout(()=>target.classList.remove("contact-info-search-match"),1800);
+      }else if(typeof openMessageFromSearch==="function"){
+        openMessageFromSearch(m.reply_to_id,m.created_at,currentChatUser?.user_id);
+      }
+    });
+    item.appendChild(quote);
   }
   if(m.body){const body=document.createElement("p");body.textContent=m.body;item.appendChild(body);}
   if(m.attachment_path&&fromCache){
@@ -269,12 +287,6 @@ async function makeMessageElement(m,myId,fromCache=false){
     if(now-lastMessageTap<330){lastMessageTap=0;toggleMessageReaction(m.id,"👍");}
     else lastMessageTap=now;
   });
-  item.addEventListener("touchstart",event=>{if(event.touches.length===1&&!interactiveTarget(event.target)){swipeStartX=event.touches[0].clientX;swipeStartY=event.touches[0].clientY;}},{passive:true});
-  item.addEventListener("touchend",event=>{
-    if(!event.changedTouches.length||interactiveTarget(event.target))return;
-    const dx=event.changedTouches[0].clientX-swipeStartX,dy=event.changedTouches[0].clientY-swipeStartY;
-    if(dx>58&&Math.abs(dy)<48){event.preventDefault();event.stopPropagation();setReplyTarget(m);}
-  });
   item.addEventListener("contextmenu",e=>{
     e.preventDefault();e.stopPropagation();
     if(!document.querySelector(".message-tools-floating"))showMessageActions(m,item);
@@ -296,7 +308,7 @@ async function makeMessageElement(m,myId,fromCache=false){
   // Native iOS touch path: don't share a timer with Pointer Events.
   item.addEventListener("touchstart",event=>{
     if(event.touches.length!==1||interactiveTarget(event.target))return;
-    const touch=event.touches[0];holdX=touch.clientX;holdY=touch.clientY;holdTriggered=false;cancelTouchHold();
+    const touch=event.touches[0];holdX=touch.clientX;holdY=touch.clientY;swipeStartX=touch.clientX;swipeStartY=touch.clientY;holdTriggered=false;cancelTouchHold();
     touchHold=setTimeout(()=>{holdTriggered=true;showMessageActions(m,item);},500);
   },{passive:true});
   item.addEventListener("touchmove",event=>{
@@ -304,7 +316,12 @@ async function makeMessageElement(m,myId,fromCache=false){
     const touch=event.touches[0];
     if(Math.abs(touch.clientX-holdX)>12||Math.abs(touch.clientY-holdY)>12)cancelTouchHold();
   },{passive:true});
-  item.addEventListener("touchend",cancelTouchHold);
+  item.addEventListener("touchend",event=>{
+    cancelTouchHold();const touch=event.changedTouches?.[0];if(!touch||holdTriggered||messageSelectionMode||interactiveTarget(event.target))return;
+    const dx=touch.clientX-swipeStartX,dy=touch.clientY-swipeStartY;
+    // A physical right-swipe on a message replies; vertical scrolling and the global page gesture stay untouched.
+    if(dx>60&&dx>Math.abs(dy)*1.35)setReplyTarget(m);
+  });
   item.addEventListener("touchcancel",cancelTouchHold);
   return item;
 }
@@ -367,8 +384,10 @@ function showMessageActions(m,item){
   const menu=document.createElement("div");menu.className="message-tools message-tools-floating";
   const closeMenu=()=>{menu.remove();restoreItem();clearMessageActionOverlay();};
   const add=(label,fn,cls="mini-button")=>{const b=document.createElement("button");b.type="button";b.className=cls;b.textContent=label;b.onclick=()=>{closeMenu();fn();};menu.appendChild(b);};
-  const quickReactions=document.createElement("div");quickReactions.className="message-quick-reactions";quickReactions.style.cssText="display:flex;align-items:center;justify-content:space-around;gap:7px;padding:7px 5px;margin:0 0 5px;border-radius:14px;background:var(--surface-2,rgba(128,128,128,.12))";
-  for(const emoji of MESSAGE_REACTION_CHOICES){const reaction=document.createElement("button");reaction.type="button";reaction.className="message-quick-reaction";reaction.textContent=emoji;reaction.setAttribute("aria-label",(english?"React ":"واکنش ")+emoji);reaction.style.cssText="border:0;background:transparent;padding:5px;font-size:22px;line-height:1;cursor:pointer";reaction.onclick=()=>{closeMenu();toggleMessageReaction(m.id,emoji);};quickReactions.appendChild(reaction);}
+  const quickReactions=document.createElement("div");quickReactions.className="message-quick-reactions";
+  quickReactions.setAttribute("role","group");quickReactions.setAttribute("aria-label",english?"React to message":"واکنش به پیام");
+  Object.assign(quickReactions.style,{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"5px",padding:"5px 2px 9px",borderBottom:"1px solid var(--border-color,rgba(128,128,128,.2))",marginBottom:"5px"});
+  for(const emoji of MESSAGE_REACTION_CHOICES){const reaction=document.createElement("button");reaction.type="button";reaction.className="message-quick-reaction";reaction.textContent=emoji;reaction.setAttribute("aria-label",(english?"React with ":"واکنش ")+emoji);Object.assign(reaction.style,{width:"36px",height:"36px",minWidth:"36px",padding:"0",border:"0",borderRadius:"10px",background:"var(--surface-secondary,rgba(128,128,128,.12))",fontSize:"20px",cursor:"pointer"});reaction.onclick=()=>{closeMenu();toggleMessageReaction(m.id,emoji);};quickReactions.appendChild(reaction);}
   menu.appendChild(quickReactions);
   add("📌  "+(pinnedMessageIds.has(String(m.id))?(english?"Unpin message":"برداشتن سنجاق"):(english?"Pin message":"سنجاق پیام")),()=>toggleMessagePin(m.id),"mini-button message-pin-action");
   add("↩  "+(english?"Reply":"پاسخ"),()=>setReplyTarget(m));
@@ -379,11 +398,27 @@ function showMessageActions(m,item){
   add("🗑  "+(english?"Delete":"حذف"),()=>deleteMessage(m),"mini-button danger");
   const close=document.createElement("button");close.type="button";close.className="message-tools-dismiss";close.textContent="×";close.setAttribute("aria-label",english?"Close":"بستن");close.onclick=closeMenu;menu.appendChild(close);
   document.body.appendChild(menu);
-  const menuRect=menu.getBoundingClientRect(),margin=12;
-  let left=Math.max(margin,Math.min(rect.left+(rect.width-menuRect.width)/2,window.innerWidth-menuRect.width-margin));
-  let top=rect.top-menuRect.height-8;
-  if(top<margin)top=Math.min(window.innerHeight-menuRect.height-margin,rect.bottom+8);
-  menu.style.left=left+"px";menu.style.top=Math.max(margin,top)+"px";
+  const vv=window.visualViewport,margin=10,gap=8;
+  const viewLeft=vv?vv.offsetLeft:0,viewTop=vv?vv.offsetTop:0;
+  const viewWidth=vv?vv.width:window.innerWidth,viewHeight=vv?vv.height:window.innerHeight;
+  const header=document.querySelector("#chatPage .chat-header");
+  const headerBottom=header?header.getBoundingClientRect().bottom:viewTop+44;
+  // Reserve the complete chat header/status-bar area; the menu must never sit beneath the iPhone clock.
+  const safeTop=Math.max(viewTop+8,headerBottom+6,48);
+  const viewBottom=viewTop+viewHeight-8;
+  const aboveSpace=Math.max(0,rect.top-safeTop-gap);
+  const belowSpace=Math.max(0,viewBottom-rect.bottom-gap);
+  const naturalHeight=menu.scrollHeight;
+  const useAbove=aboveSpace>=naturalHeight||aboveSpace>=belowSpace;
+  const availableSpace=Math.max(aboveSpace,belowSpace);
+  menu.style.maxHeight=Math.max(110,availableSpace-4)+"px";
+  const menuRect=menu.getBoundingClientRect();
+  const minLeft=viewLeft+margin,maxLeft=viewLeft+viewWidth-menuRect.width-margin;
+  const left=Math.max(minLeft,Math.min(rect.left+(rect.width-menuRect.width)/2,maxLeft));
+  let top=useAbove?rect.top-menuRect.height-gap:rect.bottom+gap;
+  top=Math.max(safeTop,Math.min(top,viewBottom-menuRect.height));
+  menu.style.left=left+"px";menu.style.top=top+"px";
+  menu.dataset.position=useAbove?"above":"below";
 }
 function setReplyTarget(m){
   replyTarget=m;const preview=$("replyPreview");preview.replaceChildren();preview.hidden=false;
@@ -772,7 +807,7 @@ async function sendMessage(event){
   const file=recordedVoiceFile||selectedFile||photoFile||cameraFile;
   if(!body&&!file&&!editingMessageId)return;
   const sendFingerprint=JSON.stringify([senderId,receiverId,body,file?.name||"",file?.size||0,file?.lastModified||0,file?.type||"",replyTarget?.id||""]);
-  const pendingSend=editingMessageId?null:(pendingPrivateSend?.fingerprint===sendFingerprint?pendingPrivateSend:{fingerprint:sendFingerprint,id:crypto.randomUUID(),attachmentPath:null});
+  const pendingSend=editingMessageId?null:(pendingPrivateSend?.fingerprint===sendFingerprint&&pendingPrivateSend.fileRef===(file||null)?pendingPrivateSend:{fingerprint:sendFingerprint,fileRef:file||null,id:crypto.randomUUID(),attachmentPath:null});
   if(pendingSend)pendingPrivateSend=pendingSend;
   if(file&&file.size>20*1024*1024){setStatus("sendMessageStatus",english?"Choose a file up to 20 MB.":"حجم فایل باید حداکثر ۲۰ مگابایت باشد.",true);return;}
   if(editingMessageId&&file){setStatus("sendMessageStatus",english?"Remove the attachment before editing a message.":"برای ویرایش پیام، ابتدا پیوست را بردار.",true);return;}
@@ -807,8 +842,8 @@ async function sendMessage(event){
         const ext=(safeName.split(".").pop()||"bin").toLowerCase().replace(/[^a-z0-9]/g,"")||"bin";
         pendingSend.attachmentPath=pendingSend.attachmentPath||senderId+"/"+pendingSend.id+"."+ext;
         attachmentPath=pendingSend.attachmentPath;pendingUploadPath=attachmentPath;
-        const {error:uploadError}=await client.storage.from("chat-attachments").upload(attachmentPath,file,{contentType:file.type||"application/octet-stream",upsert:true});
-        if(uploadError)throw uploadError;
+        const {error:uploadError}=await client.storage.from("chat-attachments").upload(attachmentPath,file,{contentType:file.type||"application/octet-stream",upsert:false});
+        if(uploadError){const conflict=String(uploadError.statusCode||uploadError.status||"")==="409"||/already exists|duplicate/i.test(String(uploadError.message||""));if(!conflict)throw uploadError;}
         if(String(currentUser?.id||"")!==senderId)throw new Error("Account changed while uploading; sign in again before sending.");
         attachmentName=safeName;attachmentMime=file.type||"application/octet-stream";attachmentSize=file.size;
       }
@@ -817,7 +852,8 @@ async function sendMessage(event){
         attachment_path:attachmentPath,attachment_name:attachmentName,attachment_mime:attachmentMime,attachment_size:attachmentSize,reply_to_id:replyTarget?.id||null};
       let {data:sentMessage,error:sendError}=await client.from("messages").insert(row).select("id,sender_id,receiver_id,body,created_at,message_type,attachment_path,attachment_name,attachment_mime,reply_to_id,edited_at").single();
       if(sendError){
-        // Reconcile an uncertain mobile-network response before a retry can create a duplicate.
+        // A mobile connection can drop after PostgreSQL has committed the row.
+        // Reconcile by the client-generated UUID before allowing a retry.
         const {data:existing,error:lookupError}=await client.from("messages").select("id,sender_id,receiver_id,body,created_at,message_type,attachment_path,attachment_name,attachment_mime,reply_to_id,edited_at").eq("id",pendingSend.id).maybeSingle();
         if(existing&&!lookupError){sentMessage=existing;sendError=null;}else throw sendError;
       }
@@ -848,10 +884,11 @@ async function sendMessage(event){
     }
     await refreshConversationList();
   }catch(e){
-    if(String(currentUser?.id||"")!==senderId){if(pendingUploadPath)try{await getClient().storage.from("chat-attachments").remove([pendingUploadPath]);}catch(cleanupError){console.warn("Could not clean up abandoned attachment:",cleanupError);}return;}
+    // The insert may have committed even if its response was lost. Never delete a stable retry path here.
+    if(String(currentUser?.id||"")!==senderId)return;
     console.error("Send message:",e);
-    if(String(currentChatUser?.user_id||"")===receiverId)setStatus("sendMessageStatus",(english?"Could not send: ":"ارسال پیام ناموفق بود: ")+e.message,true);
-  }finally{button.disabled=false;if(sameChat()){try{input.focus({preventScroll:true});}catch(_){input.focus();}}}
+    if(String(currentChatUser?.user_id||"")===receiverId)setStatus("sendMessageStatus",(english?"Could not send; your text and attachment are preserved. Tap Send to retry: ":"ارسال ناموفق بود؛ متن و پیوستت حفظ شده است. برای تلاش دوباره دکمه ارسال را بزن: ")+e.message,true);
+  }finally{button.disabled=false;if(restoreComposerFocus&&sameChat()&&document.activeElement!==input){try{input.focus({preventScroll:true});}catch(_){input.focus();}}}
 }
 $("profileForm")?.addEventListener("submit",saveProfile);
 // Legacy recipient lookup form is not present in the current HTML.

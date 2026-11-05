@@ -200,14 +200,15 @@ for (const path of ["js/local-store.js", "js/core.js", "js/chat-menu-v5.js", "js
 // Keep shell cache and versioned local-store assets synchronized after cache behavior changes.
 const coreSource = sources["js/core.js"];
 if (!coreSource.includes("function installFarnazSwipeNavigation()") ||
-    !coreSource.includes('const SWIPE_PAGE_ORDER=["profilePage","chatsPage","spacesPage","contactsPage","settingsPage"]') ||
-    !coreSource.includes("const targetId=SWIPE_PAGE_ORDER[index+direction]") ||
-    !coreSource.includes('window.FarnazConversationMode==="space"?"__spaceChatBack__":"__privateChatBack__"') ||
+    !coreSource.includes('const FARNAZ_SWIPE_PAGE_ORDER=["settingsPage","contactsPage","chatsPage","profilePage"]') ||
+    !coreSource.includes("function swipeNavigationBasePage(pageId)") ||
+    !coreSource.includes("const targetIndex=currentIndex+(direction>0?-1:1)") ||
+    !coreSource.includes('document.addEventListener("touchstart"') ||
+    !coreSource.includes('document.addEventListener("touchmove"') ||
     !coreSource.includes('window.FarnazConversationBack?.()') ||
-    !coreSource.includes('navigate("chatsPage")') ||
     !coreSource.includes('document.body.classList.contains("keyboard-open")') ||
-    !coreSource.includes('event.clientX-appRect.left<28||appRect.right-event.clientX<28') ||
-    !coreSource.includes("document.querySelector(\".page.active\")===g.current") ||
+    !coreSource.includes('touch.clientX-appRect.left<44||appRect.right-touch.clientX<44') ||
+    !coreSource.includes("document.querySelector(\".page.active\")===g.page") ||
     !sources["styles.css"].includes(".app.farnaz-swipe-active>.page.farnaz-swipe-underlay")) {
   errors.push("Farnaz must provide deterministic ordered swipe navigation, auth/keyboard guards, and single-page transition commits");
 }
@@ -222,13 +223,18 @@ if (sources["styles.css"].includes("/* Conversation layout —") ||
 }
 
 const chatSource = sources["js/chat-menu-v5.js"];
-if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v239"') || !sources["service-worker.js"].includes('styles.css?v=20261105-shared-page1') || !sources["service-worker.js"].includes('core.js?v=20261105-shared-page1') || !sources["service-worker.js"].includes('spaces.js?v=20261105-shared-page1') || !sources["service-worker.js"].includes('local-store.js?v=20261026-3') || !sources["service-worker.js"].includes('calls.js?v=20261105-pilot2') || !sources["service-worker.js"].includes('chat-menu-v5.js?v=20261104-merge-1') || !html.includes('chat-menu-v5.js?v=20261104-merge-1')) {
+if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v255"') || !sources["service-worker.js"].includes('styles.css?v=20261105-matin-shared2') || !sources["service-worker.js"].includes('core.js?v=20261105-matin-shared2') || !sources["service-worker.js"].includes('spaces.js?v=20261105-matin-shared2') || !sources["service-worker.js"].includes('local-store.js?v=20261026-3') || !sources["service-worker.js"].includes('calls.js?v=20261105-matin-shared2') || !sources["service-worker.js"].includes('chat-menu-v5.js?v=20261105-matin-shared2') || !html.includes('calls.js?v=20261105-matin-shared2') || !html.includes('chat-menu-v5.js?v=20261105-matin-shared2')) {
   errors.push("service-worker.js must use the current shell cache and core asset versions");
+}
+if (!chatSource.includes('quote.dataset.replyTarget=String(m.reply_to_id)') ||
+    !chatSource.includes('openMessageFromSearch(m.reply_to_id,m.created_at,currentChatUser?.user_id)') ||
+    !chatSource.includes('lastMessageTap=0;toggleMessageReaction(m.id,"👍")')) {
+  errors.push("private-message replies must link back to the original message and support quick double-tap reactions");
 }
 const loaderChecks = [
   [html.includes('script.src="./js/supabase-sdk.js"') && html.includes("watchScript(script,()=>{") && html.includes("loadLocalScripts();"),
     "index.html must wait for the local Supabase SDK before loading the app core"],
-  [html.includes('core.src="./js/core.js?v=20261105-shared-page1"') && html.includes("watchScript(core,()=>{") && html.includes("بارگذاری هستهٔ برنامه ناموفق بود یا بیش از حد طول کشید"),
+  [html.includes('core.src="./js/core.js?v=20261105-matin-shared2"') && html.includes("watchScript(core,()=>{") && html.includes("بارگذاری هستهٔ برنامه ناموفق بود یا بیش از حد طول کشید"),
     "index.html must handle successful, failed, and stalled core-script loading"],
   [html.includes("watchScript(script,loadNextFeature,()=>{") && html.includes("featureScripts[featureIndex++]") && html.includes('if(typeof window.FarnazBoot==="function")window.FarnazBoot();'),
     "index.html must load feature scripts sequentially and boot only after the loader sequence"],
@@ -377,7 +383,7 @@ const authChecks = [
    coreSource.includes("retrying those requests can duplicate messages or side effects."),
     "js/core.js must not automatically replay potentially non-idempotent Supabase POST writes after transport failures"],
   [chatSource.includes('const senderId=String(currentUser.id),receiverId=String(currentChatUser.user_id);') &&
-   chatSource.includes('const row={sender_id:senderId,receiver_id:receiverId') &&
+   chatSource.includes('sender_id:senderId,receiver_id:receiverId') &&
    chatSource.includes('if(String(currentChatUser?.user_id||"")===receiverId){') &&
    chatSource.includes('input.value="";input.style.height="auto";'),
     "js/chat-menu-v5.js must bind private message writes and composer cleanup to the initiating account/chat"],
@@ -385,7 +391,7 @@ const authChecks = [
    chatSource.includes("if(request!==chatRequestNumber||currentUser?.id!==myId||String(currentChatUser?.user_id)!==String(contactId))return;"),
     "js/chat-menu-v5.js must discard stale private-message results after the hidden-message read and before caching"],
   [sources["js/spaces.js"].includes('const senderId=String(currentUser.id),spaceId=String(active.id),editId=editingSpaceMessageId;') &&
-   sources["js/spaces.js"].includes('.insert({space_id:spaceId,sender_id:senderId') &&
+   sources["js/spaces.js"].includes('.insert({id:pendingSend.id,space_id:spaceId,sender_id:senderId') &&
    sources["js/spaces.js"].includes('const sameSpace=()=>sameAccount()&&String(active?.id||"")===spaceId;'),
     "js/spaces.js must bind group/channel message writes and UI updates to the initiating account/space"],
   [coreSource.includes('function startNewChat()') &&
@@ -446,6 +452,17 @@ const authLayoutChecks = [
    html.includes('<p id="authMessage" hidden>') &&
    html.indexOf('id="authSignupTab"') < html.indexOf('id="authLoginTab"'),
     "auth screen must keep signup first/default and hide redundant title and intro"],
+  [html.includes('autocomplete="username"') && html.includes('id="toggleAuthPassword"') &&
+   html.includes('viewBox="0 0 24 24"') && coreSource.includes('function getAuthRedirectUrl()') &&
+   coreSource.includes('redirectTo:getAuthRedirectUrl()') && coreSource.includes('emailRedirectTo:getAuthRedirectUrl()'),
+    "auth screen must support password-manager autofill, password visibility, Google mark, and current-origin redirects"],
+  [html.includes('id="authForgotPassword"') && html.includes('id="authRecoveryBack"') &&
+   coreSource.includes('resetPasswordForEmail(email,{redirectTo:getAuthRecoveryRedirectUrl()})') &&
+   coreSource.includes('client.auth.updateUser({password})') && coreSource.includes('isAuthRecoveryCallback()'),
+    "auth screen must complete the email password-recovery flow and allow setting a new password"],
+  [coreSource.includes('if(!button||button.disabled)return;') &&
+   coreSource.includes('Too many attempts') && coreSource.includes('window.addEventListener("offline"'),
+    "auth requests must guard duplicate submissions, explain rate limits, and show offline state"],
 ];
 const conversationChecks = [
   [sources["js/spaces.js"].includes('spaceMessages:"messageList"') && sources["js/spaces.js"].includes('spaceComposer:"sendMessageForm"') && sources["js/spaces.js"].includes('spaceName:"conversationTitle"') && sources["js/spaces.js"].includes('detail.replaceChildren(...[description,actions].filter(Boolean))') && sources["js/spaces.js"].includes('chatPage.insertBefore(detail,anchor||chatPage.firstChild)'),

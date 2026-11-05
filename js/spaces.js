@@ -4,6 +4,7 @@ const SPACE_SHARED_IDS=Object.freeze({backSpaces:"backToChats",spaceIcon:"chatAv
 const q=id=>document.getElementById(SPACE_SHARED_IDS[id]||id);
 let active=null,sub=null,spaces=[];let privateComposerDraft="",draftOwnerId=null;const spaceComposerDrafts=new Map();let spaceTypingTimer=null,spaceRemoteTypingTimer=null,spaceOpenToken=0,spaceRefreshToken=0;
 const spacePinnedMessageIds=new Set();
+let pendingSpaceSend=null;
 const tr=(fa,en)=>typeof english!=="undefined"&&english?en:fa;
 function build(){
  const app=document.querySelector(".app"),foot=q("footerText"),p=document.createElement("section");p.className="page";p.id="spacesPage";
@@ -756,7 +757,6 @@ function sendSpaceTyping(typing){
  sub.send({type:"broadcast",event:"typing",payload:{from:currentUser.id,typing:!!typing}});
 }
 async function send(event){
- if(!active)return;
  event.preventDefault();
  if(!active||sendingMessage||!currentUser)return;
  const senderId=String(currentUser.id),spaceId=String(active.id),editId=editingSpaceMessageId;
@@ -766,9 +766,12 @@ async function send(event){
  if(spaceMediaRecorder?.state==="recording"){q("spaceMessageStatus").textContent=tr("پیش از ارسال، ضبط را متوقف کن.","Stop recording before sending.");return;}
  if(file&&file.size>20*1024*1024){q("spaceMessageStatus").textContent=tr("حجم فایل باید حداکثر ۲۰ مگابایت باشد.","Choose a file up to 20 MB.");return;}
  if(editId&&file){q("spaceMessageStatus").textContent=tr("برای ویرایش پیام، ابتدا پیوست را جداگانه ارسال کن.","Attachments cannot be changed while editing a message.");return;}
+ const sendFingerprint=JSON.stringify([senderId,spaceId,body,spaceReplyTarget?.id||null,file?.name||"",file?.size||0,file?.lastModified||0,file?.type||""]);
+ const pendingSend=editId?null:(pendingSpaceSend?.fingerprint===sendFingerprint&&pendingSpaceSend.fileRef===(file||null)?pendingSpaceSend:{fingerprint:sendFingerprint,fileRef:file||null,id:crypto.randomUUID(),attachmentPath:null});
+ if(pendingSend)pendingSpaceSend=pendingSend;
  const sameAccount=()=>String(currentUser?.id||"")===senderId;
  const sameSpace=()=>sameAccount()&&String(active?.id||"")===spaceId;
- sendingMessage=true;const btn=q("spaceSendButton");btn.disabled=true;q("spaceMessageStatus").textContent=tr("در حال ارسال…","Sending…");
+ sendingMessage=true;const btn=q("spaceSendButton");btn.disabled=true;input.readOnly=true;q("spaceMessageStatus").textContent=tr("در حال ارسال…","Sending…");
  let path=null;
  try{
   const client=getClient();
@@ -779,9 +782,10 @@ async function send(event){
   if(file){
    const safeName=(file.name||"attachment").replace(/[^a-zA-Z0-9._-]/g,"_").slice(-120)||"attachment";
    const ext=(safeName.split(".").pop()||"bin").toLowerCase().replace(/[^a-z0-9]/g,"")||"bin";
-   path=senderId+"/spaces/"+crypto.randomUUID()+"."+ext;
+   pendingSend.attachmentPath=pendingSend.attachmentPath||senderId+"/spaces/"+pendingSend.id+"."+ext;
+   path=pendingSend.attachmentPath;
    const {error:uploadError}=await client.storage.from("chat-attachments").upload(path,file,{contentType:file.type||"application/octet-stream",upsert:false});
-   if(uploadError)throw uploadError;
+   if(uploadError){const conflict=String(uploadError.statusCode||uploadError.status||"")==="409"||/already exists|duplicate/i.test(String(uploadError.message||""));if(!conflict)throw uploadError;}
    if(!sameAccount())throw new Error(tr("حساب هنگام بارگذاری تغییر کرد؛ دوباره وارد شو.","Account changed while uploading. Sign in again."));
    attachment_name=safeName;attachment_mime=file.type||"application/octet-stream";attachment_size=file.size;message_type=file.type.startsWith("image/")?"image":"file";
   }
@@ -793,24 +797,25 @@ async function send(event){
    if(!sameSpace())return;
    editingSpaceMessageId=null;
   }else{
-   const {error}=await client.from("space_messages").insert({space_id:spaceId,sender_id:senderId,body:body||null,message_type,attachment_path:path,attachment_name,attachment_mime,attachment_size,reply_to_id:spaceReplyTarget?.id||null});
-   if(error)throw error;
-   path=null;
+   const {error:insertError}=await client.from("space_messages").insert({id:pendingSend.id,space_id:spaceId,sender_id:senderId,body:body||null,message_type,attachment_path:path,attachment_name,attachment_mime,attachment_size,reply_to_id:spaceReplyTarget?.id||null});
+   if(insertError){
+    // Reconcile an ambiguous mobile timeout before a manual retry can duplicate a post.
+    const {data:existing,error:lookupError}=await client.from("space_messages").select("id,space_id,sender_id,body,created_at,edited_at,message_type,attachment_path,attachment_name,attachment_mime,attachment_size").eq("id",pendingSend.id).maybeSingle();
+    if(!existing||lookupError)throw insertError;
+   }
+   path=null;pendingSpaceSend=null;
   }
   if(!sameSpace())return;
-  input.value="";spaceComposerDrafts.set(spaceId,"");cancelSpaceReply();input.style.height="38px";q("spacePhotoFile").value="";q("spaceCameraFile").value="";q("spaceAttachmentFile").value="";clearSpaceVoice();q("spaceAttachmentMenu").hidden=true;q("spaceAttachmentButton").setAttribute("aria-expanded","false");
+  input.value="";cancelSpaceReply();input.style.height="38px";q("spacePhotoFile").value="";q("spaceCameraFile").value="";q("spaceAttachmentFile").value="";clearSpaceVoice();q("spaceAttachmentMenu").hidden=true;q("spaceAttachmentButton").setAttribute("aria-expanded","false");
   await loadMessages(spaceId);
   if(sameSpace())q("spaceMessageStatus").textContent=tr("پیام ارسال شد.","Message sent.");
  }catch(e){
-  if(!sameAccount()){
-   if(path)try{await getClient().storage.from("chat-attachments").remove([path]);}catch(cleanupError){console.warn("Could not clean up abandoned space attachment:",cleanupError);}
-   return;
-  }
-  if(path)try{await getClient().storage.from("chat-attachments").remove([path]);}catch(_){}
-  if(sameSpace())q("spaceMessageStatus").textContent=tr("ارسال پیام ناموفق بود: ","Could not send: ")+(e?.message||String(e));
+  // An insert may already be committed despite a lost response; keep its stable attachment path intact.
+  if(!sameAccount())return;
+  if(sameSpace())q("spaceMessageStatus").textContent=tr("ارسال پیام ناموفق بود؛ متن و پیوست را نگه داشته‌ایم. برای تلاش دوباره، دکمه ارسال را بزن: ","Could not send; your text and attachment are preserved. Tap Send to retry: ")+(e?.message||String(e));
  }finally{
-  sendingMessage=false;btn.disabled=false;
-  if(sameSpace()){try{input.focus({preventScroll:true});}catch(_){input.focus();}}
+  sendingMessage=false;btn.disabled=false;input.readOnly=false;
+  if(restoreComposerFocus&&sameSpace()){try{input.focus({preventScroll:true});}catch(_){input.focus();}}
  }
 }
 async function join(){const code=q("spaceInvite").value.trim().toUpperCase();if(!code)return;q("spacesStatus").textContent=tr("در حال عضویت…","Joining…");try{const {data,error}=await getClient().rpc("join_space_by_invite",{p_invite_code:code});if(error)throw error;q("spaceInvite").value="";const url=new URL(window.location.href);if(url.searchParams.has("join")){url.searchParams.delete("join");history.replaceState(history.state,"",url.pathname+url.search+url.hash);}await refresh();await open(data);}catch(e){q("spacesStatus").textContent=tr("عضویت ناموفق بود: ","Could not join: ")+e.message;}}

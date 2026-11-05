@@ -1130,7 +1130,9 @@ function toggleLanguage(){
     contactsIntro:["مخاطبان ذخیره‌شده را انتخاب کن یا از جست‌وجوی پایین حساب جدیدی پیدا کن.","Choose a saved contact or find a new account using the search control below."],
     savedContactsStatus:["",""],
     profilePhoneCountryLabel:["کد کشور شماره تلفن","Phone country code"],
-    showPhoneSettingLabel:["نمایش شماره موبایل به مخاطبان (پیش‌فرض روشن)","Show my phone number to contacts (on by default)"],
+    profileUsernameLabel:["شناسه کاربری","Username"],profileUsernameHint:["شناسه یکتا: ۳ تا ۲۴ نویسه، فقط حروف انگلیسی کوچک، عدد و زیرخط؛ ابتدا و انتها حرف یا عدد باشد.","Unique handle: 3–24 characters, lowercase English letters, numbers and underscores; start and end with a letter or number."],
+    profileAboutLabel:["درباره من","About me"],profileAboutHint:["حداکثر ۱۶۰ نویسه؛ این متن برای مخاطبان مجاز نمایش داده می‌شود.","Up to 160 characters; shown to permitted contacts."],
+    showPhoneSettingLabel:["نمایش شماره موبایل به مخاطبان","Show my phone number to contacts"],
     showPhoneSettingHint:["اگر خاموشش کنی، شماره‌ات در اطلاعات مخاطب نمایش داده نمی‌شود.","Turn this off to hide your number from contact info."],
     profileHeading:["پروفایل من","My profile"],profileIntro:["اطلاعات حساب خود را مدیریت کن.","Manage your account information."],profileIdentityHeading:["اطلاعات حساب","Account information"],profilePrivacyHeading:["حریم خصوصی","Privacy"],
     profileNameLabel:["نام نمایشی","Display name"],profilePhoneLabel:["شماره موبایل با کد کشور","Phone number with country code"],
@@ -1183,6 +1185,13 @@ function toggleLanguage(){
   applySettingsLanguage();
   if(currentUser){refreshConversationList();refreshSavedContacts();}
 }
+function renderProfileExtras(username,about){
+  const handle=$("userUsername"),bio=$("userAbout");
+  const normalizedHandle=String(username||"").trim();
+  const normalizedBio=String(about||"").trim();
+  if(handle){handle.textContent=normalizedHandle?"@"+normalizedHandle:"";handle.hidden=!normalizedHandle;}
+  if(bio){bio.textContent=normalizedBio;bio.hidden=!normalizedBio;}
+}
 function renderUser(user,name){
   currentUser=user;currentProfileName=(name||"").trim();
   document.body.dataset.authState="user";
@@ -1206,8 +1215,10 @@ async function showUser(user){
     applyPrivacySettings();
     currentProfileName=cachedProfile.display_name||user.user_metadata?.display_name||"";
     currentAvatarUrl=cachedProfile.avatar_url||"";currentPhone=cachedProfile.phone||"";
-    renderUser(user,currentProfileName);
+    renderUser(user,currentProfileName);renderProfileExtras(cachedProfile.username,cachedProfile.about);
     if($("profileNameInput"))$("profileNameInput").value=currentProfileName;
+    if($("profileUsernameInput"))$("profileUsernameInput").value=cachedProfile.username||"";
+    if($("profileAboutInput"))$("profileAboutInput").value=cachedProfile.about||"";
     setPhoneCountry("profilePhoneCountry",currentPhone);
     if($("profilePhoneInput"))$("profilePhoneInput").value=formatContactPhone(currentPhone);
     if($("showPhoneSetting"))$("showPhoneSetting").checked=cachedProfile.show_phone===true;
@@ -1215,15 +1226,15 @@ async function showUser(user){
   }
   try{
     const {data,error}=await retryRead("current user profile",()=>getClient().from("profiles")
-      .select("id,display_name,avatar_url,phone,show_phone,presence_visibility,last_seen_visibility,show_typing,show_read_receipts,show_space_online_count").eq("id",user.id).maybeSingle(),2,18000);
+      .select("id,display_name,avatar_url,phone,username,about,show_phone,presence_visibility,last_seen_visibility,show_typing,show_read_receipts,show_space_online_count").eq("id",user.id).maybeSingle(),2,18000);
     if(request!==profileRequestNumber||currentUser?.id!==user.id)return;
     if(error)throw error;
     let profile=data;
     if(!profile){
       const fallbackName=(user.user_metadata?.display_name||user.email?.split("@")[0]||"Farnaz user").trim();
       const created=await retryRead("create current user profile",()=>getClient().from("profiles")
-        .upsert({id:user.id,display_name:fallbackName,phone:user.phone||null,show_phone:false},{onConflict:"id"})
-        .select("id,display_name,avatar_url,phone,show_phone,presence_visibility,last_seen_visibility,show_typing,show_read_receipts,show_space_online_count").single(),2,18000);
+        .upsert({id:user.id,display_name:fallbackName,phone:user.phone||null,username:null,about:null,show_phone:false},{onConflict:"id"})
+        .select("id,display_name,avatar_url,phone,username,about,show_phone,presence_visibility,last_seen_visibility,show_typing,show_read_receipts,show_space_online_count").single(),2,18000);
       if(created.error)throw created.error;
       // Logout/account switching may happen while profile creation is pending.
       if(request!==profileRequestNumber||currentUser?.id!==user.id)return;
@@ -1234,8 +1245,10 @@ async function showUser(user){
     startFarnazPresence().catch(e=>console.warn("Farnaz presence:",e));
     currentProfileName=profile?.display_name||user.user_metadata?.display_name||"";
     currentAvatarUrl=profile?.avatar_url||"";currentPhone=profile?.phone||"";
-    renderUser(user,currentProfileName);
+    renderUser(user,currentProfileName);renderProfileExtras(profile?.username,profile?.about);
     $("profileNameInput").value=currentProfileName;
+    $("profileUsernameInput").value=profile?.username||"";
+    $("profileAboutInput").value=profile?.about||"";
     setPhoneCountry("profilePhoneCountry",currentPhone);
     $("profilePhoneInput").value=formatContactPhone(currentPhone);
     $("showPhoneSetting").checked=profile?.show_phone===true;
@@ -1283,6 +1296,7 @@ function showGuest(){
   if(contactInfoDialog)contactInfoDialog.hidden=true;
   if(messageSearchDialog)messageSearchDialog.hidden=true;
   currentUser=null;currentProfileName="";currentAvatarUrl="";currentPhone="";
+  renderProfileExtras("","");
   currentChatUser=null;
   // Logout can happen from a private chat or the spaces chat view. Reset their
   // layout state as well as the active page so the guest/auth screen is clean.
@@ -1496,6 +1510,9 @@ async function saveProfile(event){
   const name=$("profileNameInput").value.trim();
   const phone=normalizePhone($("profilePhoneInput").value,$("profilePhoneCountry").value);
   const showPhone=$("showPhoneSetting").checked;
+  const rawUsername=$("profileUsernameInput").value.trim();
+  const username=rawUsername?rawUsername.toLowerCase():null;
+  const about=$("profileAboutInput").value.trim()||null;
   const file=$("avatarFile").files[0];
   const button=$("saveProfileButton");
   if(!name||name.length>60){
@@ -1503,6 +1520,12 @@ async function saveProfile(event){
   }
   if(profileCompletionRequired&&!phone){
     setStatus("profileStatus",english?"A mobile number is required to continue.":"برای ادامه، واردکردن شماره موبایل الزامی است.",true);return;
+  }
+  if(username&&!/^[a-z0-9](?:[a-z0-9_]{1,22}[a-z0-9])$/.test(username)){
+    setStatus("profileStatus",english?"Username must be 3–24 characters, using lowercase English letters, numbers and underscores; no leading or trailing underscore.":"شناسه باید ۳ تا ۲۴ نویسه و شامل حروف انگلیسی کوچک، عدد یا زیرخط باشد؛ ابتدا و انتهای آن زیرخط نباشد.",true);return;
+  }
+  if(about&&about.length>160){
+    setStatus("profileStatus",english?"About me must be 160 characters or fewer.":"متن درباره من حداکثر ۱۶۰ نویسه باشد.",true);return;
   }
   if(phone&&!/^\+[1-9]\d{7,14}$/.test(phone)){
     setStatus("profileStatus",english?"Use international phone format, e.g. +98912...":"شماره را با کد کشور وارد کن؛ مثل +98912...",true);return;
@@ -1527,8 +1550,8 @@ async function saveProfile(event){
     if(String(currentUser?.id)!==userId)throw new Error("Account changed while saving; please retry on the current account.");
     setStatus("profileStatus",english?"Saving profile details...":"در حال ذخیره مشخصات پروفایل...");
     const {data,error}=await client.from("profiles")
-      .upsert({id:userId,display_name:name,phone:phone||null,avatar_url:avatarUrl||null,show_phone:showPhone,presence_visibility:profilePrivacy.presence_visibility,last_seen_visibility:profilePrivacy.last_seen_visibility,show_typing:profilePrivacy.show_typing,show_read_receipts:profilePrivacy.show_read_receipts,show_space_online_count:profilePrivacy.show_space_online_count},{onConflict:"id"})
-      .select("id,display_name,phone,avatar_url,show_phone").single();
+      .upsert({id:userId,display_name:name,phone:phone||null,username,about,avatar_url:avatarUrl||null,show_phone:showPhone,presence_visibility:profilePrivacy.presence_visibility,last_seen_visibility:profilePrivacy.last_seen_visibility,show_typing:profilePrivacy.show_typing,show_read_receipts:profilePrivacy.show_read_receipts,show_space_online_count:profilePrivacy.show_space_online_count},{onConflict:"id"})
+      .select("id,display_name,phone,avatar_url,username,about,show_phone").single();
     if(error)throw error;
     if(String(currentUser?.id)!==userId)return;
     currentProfileName=data.display_name||name;currentPhone=data.phone||"";
@@ -1544,7 +1567,8 @@ async function saveProfile(event){
       console.warn("Auth metadata update:",metadataError);
     }
     if(String(currentUser?.id)!==userId)return;
-    renderUser(currentUser,currentProfileName);$("avatarFile").value="";
+    renderUser(currentUser,currentProfileName);renderProfileExtras(data.username,data.about);$("avatarFile").value="";
+    $("profileUsernameInput").value=data.username||"";$("profileAboutInput").value=data.about||"";
     try{await window.FarnazLocalStore?.saveSnapshot(userId,"profile",{...data,...profilePrivacy});}catch(cacheError){console.warn("Cached profile update:",cacheError);}
     if(String(currentUser?.id)!==userId)return;
     if(profileCompletionRequired){
@@ -1558,9 +1582,12 @@ async function saveProfile(event){
     if(String(currentUser?.id)!==userId)return;
     console.error("Profile save:",e);
     const duplicatePhone=e?.code==="23505"&&/profiles_phone_unique|phone/i.test(String(e?.message||""));
-    const reason=duplicatePhone
-      ?(english?"This phone number is already used by another Farnaz profile. Use a different number or leave the phone field empty.":"این شماره موبایل قبلاً در پروفایل حساب دیگری ثبت شده است. شمارهٔ دیگری وارد کن یا این فیلد را خالی بگذار.")
-      :e?.name==="AbortError"||e?.name==="TimeoutError"
+    const duplicateUsername=e?.code==="23505"&&/profiles_username_lower_unique|username/i.test(String(e?.message||""));
+    const reason=duplicateUsername
+      ?(english?"This username is already taken. Choose another one.":"این شناسه کاربری قبلاً انتخاب شده است؛ شناسه دیگری وارد کن.")
+      :duplicatePhone
+        ?(english?"This phone number is already used by another Farnaz profile. Use a different number or leave the phone field empty.":"این شماره موبایل قبلاً در پروفایل حساب دیگری ثبت شده است. شمارهٔ دیگری وارد کن یا این فیلد را خالی بگذار.")
+        :e?.name==="AbortError"||e?.name==="TimeoutError"
         ?(english?"Photo upload timed out. Check your connection and try again.":"بارگذاری عکس به پایان مهلت رسید. اتصال را بررسی کن و دوباره تلاش کن.")
         :(e?.message||String(e));
     setStatus("profileStatus",(english?"Could not save profile: ":"ذخیره پروفایل ناموفق بود: ")+reason,true);
@@ -1632,7 +1659,7 @@ async function stopMessageSubscription(){
   }catch(e){console.warn("Could not close previous realtime channel:",e);}
 }
 async function getContactProfile(id){
-  const {data,error}=await getClient().rpc("get_farnaz_user_profile",{search_user_id:id});
+  const {data,error}=await getClient().rpc("get_farnaz_user_profile_v2",{search_user_id:id});
   if(error)throw error;
   return Array.isArray(data)?(data[0]||null):(data||null);
 }
@@ -1642,7 +1669,7 @@ async function getContactProfile(id){
 async function getContactProfiles(ids){
   const unique=[...new Set((ids||[]).map(id=>String(id||"")).filter(Boolean))];
   if(!unique.length)return new Map();
-  const {data,error}=await getClient().rpc("get_farnaz_user_profiles",{search_user_ids:unique});
+  const {data,error}=await getClient().rpc("get_farnaz_user_profiles_v2",{search_user_ids:unique});
   if(error)throw error;
   return new Map((data||[]).filter(p=>p?.user_id).map(p=>[String(p.user_id),p]));
 }
@@ -1875,6 +1902,9 @@ async function openContactInfo(){
       $("contactInfoAbout").textContent=contactInfoText("عضو فرناز","Farnaz member");
       if(profileResult.avatar_url)renderAvatar($("contactInfoAvatar"),profileResult.avatar_url,profileResult.display_name);
     }
+    const handle=$("contactInfoUsername"),bio=$("contactInfoBio");
+    if(handle){handle.textContent=profileResult?.username?"@"+profileResult.username:"";handle.hidden=!profileResult?.username;}
+    if(bio){bio.textContent=profileResult?.about||"";bio.hidden=!profileResult?.about;}
     /* The profile RPC is the authority for phone visibility; never fall back to raw profile reads. */
     if(profileResult?.phone){
       $("contactInfoPhone").textContent=(english?"Phone: ":"شماره تلفن: ")+formatContactPhone(profileResult.phone);$("contactInfoPhone").setAttribute("dir","ltr");$("contactInfoPhone").style.direction="ltr";$("contactInfoPhone").style.unicodeBidi="isolate";

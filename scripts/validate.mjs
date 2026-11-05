@@ -223,7 +223,7 @@ if (sources["styles.css"].includes("/* Conversation layout —") ||
 }
 
 const chatSource = sources["js/chat-menu-v5.js"];
-if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v255"') || !sources["service-worker.js"].includes('styles.css?v=20261105-matin-shared2') || !sources["service-worker.js"].includes('core.js?v=20261105-matin-shared2') || !sources["service-worker.js"].includes('spaces.js?v=20261105-matin-shared2') || !sources["service-worker.js"].includes('local-store.js?v=20261026-3') || !sources["service-worker.js"].includes('calls.js?v=20261105-matin-shared2') || !sources["service-worker.js"].includes('chat-menu-v5.js?v=20261105-matin-shared2') || !html.includes('calls.js?v=20261105-matin-shared2') || !html.includes('chat-menu-v5.js?v=20261105-matin-shared2')) {
+if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v256"') || !sources["service-worker.js"].includes('styles.css?v=20261105-matin-shared2') || !sources["service-worker.js"].includes('core.js?v=20261105-safe-update1') || !sources["service-worker.js"].includes('spaces.js?v=20261105-matin-shared2') || !sources["service-worker.js"].includes('local-store.js?v=20261026-3') || !sources["service-worker.js"].includes('calls.js?v=20261105-matin-shared2') || !sources["service-worker.js"].includes('chat-menu-v5.js?v=20261105-matin-shared2') || !html.includes('calls.js?v=20261105-matin-shared2') || !html.includes('chat-menu-v5.js?v=20261105-matin-shared2')) {
   errors.push("service-worker.js must use the current shell cache and core asset versions");
 }
 if (!chatSource.includes('quote.dataset.replyTarget=String(m.reply_to_id)') ||
@@ -231,10 +231,30 @@ if (!chatSource.includes('quote.dataset.replyTarget=String(m.reply_to_id)') ||
     !chatSource.includes('lastMessageTap=0;toggleMessageReaction(m.id,"👍")')) {
   errors.push("private-message replies must link back to the original message and support quick double-tap reactions");
 }
+const safeUpdateChecks = [
+  [coreSource.includes("function farnazHasUnsavedInteraction()") &&
+   coreSource.includes('["messageText","spaceText"]') &&
+   coreSource.includes('active.matches("input,textarea,select,[contenteditable=\'true\']")') &&
+   coreSource.includes('mediaRecorder.state==="recording"||mediaRecorder.state==="paused"') &&
+   coreSource.includes("function applyFarnazUpdateWhenSafe()"),
+    "PWA updates must wait while the user is editing, has an unsent conversation draft, selected files, or an active voice recording"],
+  [coreSource.includes('navigator.serviceWorker.addEventListener("controllerchange"') &&
+   coreSource.includes('reg.addEventListener("updatefound"') &&
+   coreSource.includes('document.addEventListener("visibilitychange"') &&
+   coreSource.includes('window.addEventListener("focus"') &&
+   coreSource.includes('window.addEventListener("online"') &&
+   coreSource.includes("5*60*1000"),
+    "PWA must detect new service-worker versions on foreground, focus, reconnect, and periodic visible checks"],
+  [coreSource.includes('if(currentUser)scheduleReconnect();') &&
+   coreSource.includes('if(farnazReloadAfterUpdate||')===false,
+    "network restoration must restart the existing authenticated reconnect flow without forcing an immediate reload"],
+];
+for (const [passed, message] of safeUpdateChecks) { if (!passed) errors.push(message); }
+
 const loaderChecks = [
   [html.includes('script.src="./js/supabase-sdk.js"') && html.includes("watchScript(script,()=>{") && html.includes("loadLocalScripts();"),
     "index.html must wait for the local Supabase SDK before loading the app core"],
-  [html.includes('core.src="./js/core.js?v=20261105-matin-shared2"') && html.includes("watchScript(core,()=>{") && html.includes("بارگذاری هستهٔ برنامه ناموفق بود یا بیش از حد طول کشید"),
+  [html.includes('core.src="./js/core.js?v=20261105-safe-update1"') && html.includes("watchScript(core,()=>{") && html.includes("بارگذاری هستهٔ برنامه ناموفق بود یا بیش از حد طول کشید"),
     "index.html must handle successful, failed, and stalled core-script loading"],
   [html.includes("watchScript(script,loadNextFeature,()=>{") && html.includes("featureScripts[featureIndex++]") && html.includes('if(typeof window.FarnazBoot==="function")window.FarnazBoot();'),
     "index.html must load feature scripts sequentially and boot only after the loader sequence"],

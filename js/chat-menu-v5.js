@@ -275,7 +275,7 @@ async function makeMessageElement(m,myId,fromCache=false){
     }
     item.appendChild(reactionBar);
   }
-  let pointerHold=null,touchHold=null,holdTriggered=false,holdX=0,holdY=0,swipeStartX=0,swipeStartY=0;
+  let pointerHold=null,touchHold=null,holdTriggered=false,holdX=0,holdY=0,lastMessageTap=0,swipeStartX=0,swipeStartY=0;
   const interactiveTarget=target=>!!target.closest("a,button,audio,video,input,textarea,select");
   const cancelPointerHold=()=>{clearTimeout(pointerHold);pointerHold=null;};
   const cancelTouchHold=()=>{clearTimeout(touchHold);touchHold=null;};

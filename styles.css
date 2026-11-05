@@ -117,11 +117,23 @@ input[type=file]{font-size:11px;padding:9px}
 .avatar.large{width:76px;height:76px;font-size:27px}
 .avatar.medium{width:45px;height:45px;font-size:17px}
 .avatar.small{width:39px;height:39px;font-size:15px}
-.profile-top{display:flex;align-items:center;gap:13px;margin-bottom:16px}
+.profile-panel{padding:16px 14px}
+.profile-top{display:flex;align-items:center;gap:13px;margin-bottom:18px;padding:2px 0 16px;border-bottom:1px solid var(--border)}
 .profile-info{min-width:0;flex:1}
 .profile-info h2{margin:0 0 5px;overflow-wrap:anywhere}
 .profile-email{font-size:11px;color:var(--muted);overflow-wrap:anywhere;direction:ltr;text-align:right}
 .profile-phone{font-size:12px;color:var(--muted);margin-top:5px}
+.profile-section{min-width:0;margin:0 0 18px;padding:0 0 16px;border-bottom:1px solid var(--border)}
+.profile-section-title{margin:0 0 10px;font-size:13px;font-weight:700;color:var(--white)}
+.profile-section select{width:100%;min-height:42px;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--white)}
+.profile-section input:not([type="checkbox"]):not([type="file"]){min-height:42px}
+.profile-privacy-section{padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--panel2)}
+.profile-privacy-section .profile-section-title{margin-bottom:5px}
+.profile-phone-visibility{display:flex;align-items:center;gap:10px;margin:8px 0 4px;cursor:pointer;line-height:1.6}
+.profile-phone-visibility input{width:20px;height:20px;flex:0 0 auto;accent-color:var(--accent,#50e3c2)}
+#showPhoneSettingHint{margin:5px 0 0;line-height:1.7}
+.profile-photo-section input[type="file"]{display:block;width:100%;padding:10px;border:1px dashed var(--border);border-radius:10px;background:var(--bg);color:var(--muted);font-size:12px}
+.profile-photo-section #avatarNote{margin:7px 0 0}
 .list{display:flex;flex-direction:column;gap:7px}
 .list-item{
   width:100%;display:flex;align-items:center;gap:10px;

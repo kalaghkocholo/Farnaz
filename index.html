@@ -113,9 +113,9 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
 <!-- صفحه پروفایل -->
 <section class="page" id="profilePage">
   <div class="page-heading"><h2 id="profileHeading">پروفایل من</h2><p id="profileIntro">اطلاعات حساب خود را مدیریت کن.</p></div>
-  <div class="panel">
-    <div class="profile-top">
-      <div class="avatar large" id="userAvatar">F</div>
+  <div class="panel profile-panel">
+    <div class="profile-top profile-identity">
+      <div class="avatar large" id="userAvatar" aria-label="عکس پروفایل">F</div>
       <div class="profile-info">
         <h2 id="userName">کاربر فرناز</h2>
         <div class="profile-email" id="userEmail"></div>
@@ -123,22 +123,30 @@ header{display:flex;align-items:center;gap:10px;min-height:48px;margin:4px 0 17p
       </div>
     </div>
     <form id="profileForm" onsubmit="saveProfile(event)">
-      <label for="profileNameInput" id="profileNameLabel">نام نمایشی</label>
-      <input id="profileNameInput" maxlength="60" required autocomplete="nickname">
-      <label for="profilePhoneInput" id="profilePhoneLabel">شماره موبایل با کد کشور</label>
-      <label for="profilePhoneCountry" id="profilePhoneCountryLabel">کد کشور شماره تلفن</label>
-      <select id="profilePhoneCountry" aria-label="Phone country code" style="width:100%;padding:10px;border:1px solid #43516a;border-radius:10px;background:var(--bg);color:var(--white)">
-        <option value="98" selected>ایران (+98)</option><option value="49">آلمان (+49)</option><option value="1">آمریکا / کانادا (+1)</option><option value="44">بریتانیا (+44)</option><option value="90">ترکیه (+90)</option>
-      </select>
-      <input id="profilePhoneInput" type="tel" dir="ltr" maxlength="25" placeholder="0912..." autocomplete="tel">
-      <label class="profile-phone-visibility" for="showPhoneSetting"><input id="showPhoneSetting" type="checkbox" checked> <span id="showPhoneSettingLabel">نمایش شماره موبایل به مخاطبان (پیش‌فرض روشن)</span></label>
-      <p class="muted-note" id="showPhoneSettingHint">اگر خاموشش کنی، شماره‌ات در اطلاعات مخاطب نمایش داده نمی‌شود.</p>
-      <label for="avatarFile" id="avatarFileLabel">تصویر پروفایل</label>
-      <input id="avatarFile" type="file" accept="image/jpeg,image/png,image/webp">
-      <p class="muted-note" id="avatarNote">فرمت JPG، PNG یا WebP؛ حداکثر ۳ مگابایت.</p>
+      <section class="profile-section" aria-labelledby="profileIdentityHeading">
+        <h3 class="profile-section-title" id="profileIdentityHeading">اطلاعات حساب</h3>
+        <label for="profileNameInput" id="profileNameLabel">نام نمایشی</label>
+        <input id="profileNameInput" maxlength="60" required autocomplete="nickname">
+        <label for="profilePhoneCountry" id="profilePhoneCountryLabel">کد کشور شماره تلفن</label>
+        <select id="profilePhoneCountry" aria-label="Phone country code">
+          <option value="98" selected>ایران (+98)</option><option value="49">آلمان (+49)</option><option value="1">آمریکا / کانادا (+1)</option><option value="44">بریتانیا (+44)</option><option value="90">ترکیه (+90)</option>
+        </select>
+        <label for="profilePhoneInput" id="profilePhoneLabel">شماره موبایل با کد کشور</label>
+        <input id="profilePhoneInput" type="tel" dir="ltr" maxlength="25" placeholder="0912..." autocomplete="tel">
+      </section>
+      <section class="profile-section profile-privacy-section" aria-labelledby="profilePrivacyHeading">
+        <h3 class="profile-section-title" id="profilePrivacyHeading">حریم خصوصی</h3>
+        <label class="profile-phone-visibility" for="showPhoneSetting"><input id="showPhoneSetting" type="checkbox"> <span id="showPhoneSettingLabel">نمایش شماره موبایل به مخاطبان</span></label>
+        <p class="muted-note" id="showPhoneSettingHint">در حالت عادی شماره موبایل فقط برای حساب خودت نگهداری می‌شود. با فعال‌کردن این گزینه، مخاطبان می‌توانند آن را ببینند.</p>
+      </section>
+      <section class="profile-section profile-photo-section" aria-labelledby="avatarFileLabel">
+        <h3 class="profile-section-title" id="avatarFileLabel">تصویر پروفایل</h3>
+        <input id="avatarFile" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="avatarNote">
+        <p class="muted-note" id="avatarNote">فرمت JPG، PNG یا WebP؛ حداکثر ۳ مگابایت.</p>
+      </section>
       <button class="action-button" id="saveProfileButton" type="submit">ذخیره تغییرات</button>
     </form>
-    <p id="profileStatus" class="status" role="status"></p>
+    <p id="profileStatus" class="status" role="status" aria-live="polite"></p>
     <button class="secondary-button" id="logoutButton" type="button" onclick="logout()">خروج از حساب</button>
   </div>
 </section>

@@ -6,6 +6,7 @@ const DEFAULT_ALLOWED_ORIGINS = [
   "https://farnaz-eight.vercel.app",
   "https://farnaz-kalaghkochak-9847.vercel.app",
   "https://farnaz-git-main-kalaghkochak-9847.vercel.app",
+  "https://farnaz-git-vercel-hosting-setup-kalaghkochak-9847.vercel.app",
   "https://farnaz-dygeaf36o-kalaghkochak-9847.vercel.app",
 ];
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;

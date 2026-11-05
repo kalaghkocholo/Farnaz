@@ -123,6 +123,11 @@ input[type=file]{font-size:11px;padding:9px}
 .profile-info h2{margin:0 0 5px;overflow-wrap:anywhere}
 .profile-email{font-size:11px;color:var(--muted);overflow-wrap:anywhere;direction:ltr;text-align:right}
 .profile-phone{font-size:12px;color:var(--muted);margin-top:5px}
+.profile-handle{margin-top:5px;color:var(--accent,#50e3c2);font-size:12px;direction:ltr;text-align:right;overflow-wrap:anywhere}
+.profile-about{margin:6px 0 0;color:var(--muted);font-size:12px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere}
+.profile-field-hint{margin:5px 0 12px;line-height:1.7}
+.profile-section textarea{display:block;width:100%;min-height:82px;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--white);font:inherit;line-height:1.7;resize:vertical}
+.profile-section textarea:focus,.profile-section input:focus{outline:2px solid color-mix(in srgb,var(--accent,#50e3c2) 48%,transparent);outline-offset:1px}
 .profile-section{min-width:0;margin:0 0 18px;padding:0 0 16px;border-bottom:1px solid var(--border)}
 .profile-section-title{margin:0 0 10px;font-size:13px;font-weight:700;color:var(--white)}
 .profile-section select{width:100%;min-height:42px;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--white)}
@@ -670,6 +675,8 @@ body[data-font-color="white"]:not([data-theme="light"])[data-theme] .bottom-nav 
 .contact-info-avatar{margin:0 auto 10px;width:82px;height:82px;font-size:26px}
 .contact-info-profile h2{font-size:20px;margin:8px 0}
 .contact-info-profile p{margin:5px 0}
+.contact-info-username{color:var(--accent,#50e3c2);font-size:12px;direction:ltr;text-align:center;overflow-wrap:anywhere}
+.contact-info-bio{max-width:100%;color:var(--muted);font-size:13px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere}
 .contact-info-phone{font-size:14px;margin-top:8px;color:var(--mint,#50e3c2);direction:ltr!important;text-align:right!important;unicode-bidi:isolate;overflow-wrap:anywhere} #userPhone,#profilePage .profile-phone{direction:ltr!important;text-align:right!important;unicode-bidi:isolate;overflow-wrap:anywhere} .phone-contact-details>span,#profilePhoneInput,#recipientValue{direction:ltr!important;text-align:left!important;unicode-bidi:isolate;overflow-wrap:anywhere} .profile-phone{display:block}
 .contact-info-actions{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
 .contact-info-action{display:flex;min-width:0;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:8px 2px;border:1px solid var(--border,#334155);border-radius:11px;background:var(--panel2,#27364b);color:inherit;font:inherit;font-size:10px;line-height:1.25;overflow-wrap:anywhere;cursor:pointer}

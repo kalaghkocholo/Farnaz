@@ -1285,6 +1285,9 @@ async function showUser(user){
   }
 }
 function showGuest(){
+  // A signed-out user must never inherit a pending live-reconnect attempt.
+  if(reconnectTimer){clearTimeout(reconnectTimer);reconnectTimer=null;}
+  reconnectAttempts=0;
   swipePageHistory=[];swipePageHistoryIndex=-1;clearSwipeTransition();
   profileCompletionRequired=false;
   const previousUserId=currentUser?.id;
@@ -1323,6 +1326,10 @@ function showGuest(){
   $("unmatchedPhoneContactsList").replaceChildren();setStatus("unmatchedPhoneContactsStatus","");
   $("messageList").replaceChildren();
   document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id==="homePage"));
+  // Returning to the guest state must reveal the actual sign-in/sign-up form,
+  // not leave the user on the hidden welcome shell after logout.
+  openSignup();
+  setConnectionBanner("",false);
 }
 
 

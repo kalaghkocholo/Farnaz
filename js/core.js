@@ -1131,7 +1131,7 @@ function toggleLanguage(){
     savedContactsStatus:["",""],
     profilePhoneCountryLabel:["کد کشور شماره تلفن","Phone country code"],
     profileUsernameLabel:["شناسه کاربری","Username"],profileUsernameHint:["شناسه یکتا: ۳ تا ۲۴ نویسه، فقط حروف انگلیسی کوچک، عدد و زیرخط؛ ابتدا و انتها حرف یا عدد باشد.","Unique handle: 3–24 characters, lowercase English letters, numbers and underscores; start and end with a letter or number."],
-    profileAboutLabel:["درباره من","About me"],profileAboutHint:["حداکثر ۱۶۰ نویسه؛ این متن برای مخاطبان مجاز نمایش داده می‌شود.","Up to 160 characters; shown to permitted contacts."],
+    profileAboutLabel:["درباره من","About me"],profileAboutHint:["حداکثر ۱۶۰ نویسه؛ برای افرادی که در فرناز با آن‌ها ارتباط داری یا گروه مشترک دارید نمایش داده می‌شود.","Up to 160 characters; visible to people you are connected with on Farnaz or share a group with."],
     showPhoneSettingLabel:["نمایش شماره موبایل به مخاطبان","Show my phone number to contacts"],
     showPhoneSettingHint:["اگر خاموشش کنی، شماره‌ات در اطلاعات مخاطب نمایش داده نمی‌شود.","Turn this off to hide your number from contact info."],
     profileHeading:["پروفایل من","My profile"],profileIntro:["اطلاعات حساب خود را مدیریت کن.","Manage your account information."],profileIdentityHeading:["اطلاعات حساب","Account information"],profilePrivacyHeading:["حریم خصوصی","Privacy"],

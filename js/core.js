@@ -1142,6 +1142,8 @@ function toggleLanguage(){
     messagePrivacyNote:["",""],homeLogin:["ورود یا ثبت‌نام","Sign in or sign up"]
   };
   Object.entries(labels).forEach(([id,pair])=>{if($(id))$(id).textContent=pair[english?1:0];});
+  if($("profileUsernameInput"))$("profileUsernameInput").placeholder=english?"username":"شناسه کاربری انگلیسی";
+  if($("profileAboutInput"))$("profileAboutInput").placeholder=english?"A few words about you...":"چند کلمه درباره خودت...";
   if($("language"))$("language").textContent=english?"فا":"EN";
   if($("welcomeLanguageButton")){$("welcomeLanguageButton").textContent=english?"فا":"EN";$("welcomeLanguageButton").setAttribute("aria-label",english?"Switch to Persian":"Switch to English");}
   if($("contactsImportToggle"))$("contactsImportToggle").textContent=$("phoneContactsImport")&&!$("phoneContactsImport").hidden?"×":"＋";
@@ -1687,7 +1689,7 @@ function ensureContactInfoDialog(){
   const modal=document.createElement("div");
   modal.id="contactInfoDialog";modal.className="contact-info-dialog";modal.hidden=true;
   modal.setAttribute("role","dialog");modal.setAttribute("aria-modal","true");modal.setAttribute("aria-labelledby","contactInfoTitle");
-  modal.innerHTML='<section class="contact-info-card"><button type="button" class="contact-info-close" id="closeContactInfo" aria-label="بستن">×</button><div class="contact-info-profile"><div class="contact-info-avatar avatar large" id="contactInfoAvatar">F</div><h2 id="contactInfoTitle"></h2><p id="contactInfoAbout" class="muted-note"></p><div id="contactInfoPhone" class="contact-info-phone" hidden></div></div><div class="contact-info-actions" id="contactInfoActions"></div><section class="contact-info-media"><h3 id="contactInfoMediaTitle">رسانه‌ها و فایل‌ها</h3><p id="contactInfoMediaStatus" class="muted-note" role="status"></p><div id="contactInfoMediaList" class="contact-info-media-list"></div></section><p id="contactInfoStatus" class="status" role="status"></p><div class="contact-info-danger-actions"><button type="button" id="contactInfoBlock" class="contact-info-danger-button"></button><button type="button" id="contactInfoDelete" class="contact-info-danger-button">حذف گفتگو</button></div></section>';
+  modal.innerHTML='<section class="contact-info-card"><button type="button" class="contact-info-close" id="closeContactInfo" aria-label="بستن">×</button><div class="contact-info-profile"><div class="contact-info-avatar avatar large" id="contactInfoAvatar">F</div><h2 id="contactInfoTitle"></h2><p id="contactInfoAbout" class="muted-note"></p><p id="contactInfoUsername" class="contact-info-username" hidden></p><p id="contactInfoBio" class="contact-info-bio" hidden></p><div id="contactInfoPhone" class="contact-info-phone" hidden></div></div><div class="contact-info-actions" id="contactInfoActions"></div><section class="contact-info-media"><h3 id="contactInfoMediaTitle">رسانه‌ها و فایل‌ها</h3><p id="contactInfoMediaStatus" class="muted-note" role="status"></p><div id="contactInfoMediaList" class="contact-info-media-list"></div></section><p id="contactInfoStatus" class="status" role="status"></p><div class="contact-info-danger-actions"><button type="button" id="contactInfoBlock" class="contact-info-danger-button"></button><button type="button" id="contactInfoDelete" class="contact-info-danger-button">حذف گفتگو</button></div></section>';
   document.body.appendChild(modal);contactInfoDialog=modal;
   $("closeContactInfo").addEventListener("click",closeContactInfo);
   modal.addEventListener("click",event=>{if(event.target===modal)closeContactInfo();});

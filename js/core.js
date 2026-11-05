@@ -1132,7 +1132,7 @@ function toggleLanguage(){
     profilePhoneCountryLabel:["کد کشور شماره تلفن","Phone country code"],
     showPhoneSettingLabel:["نمایش شماره موبایل به مخاطبان (پیش‌فرض روشن)","Show my phone number to contacts (on by default)"],
     showPhoneSettingHint:["اگر خاموشش کنی، شماره‌ات در اطلاعات مخاطب نمایش داده نمی‌شود.","Turn this off to hide your number from contact info."],
-    profileHeading:["پروفایل من","My profile"],profileIntro:["اطلاعات حساب خود را مدیریت کن.","Manage your account information."],
+    profileHeading:["پروفایل من","My profile"],profileIntro:["اطلاعات حساب خود را مدیریت کن.","Manage your account information."],profileIdentityHeading:["اطلاعات حساب","Account information"],profilePrivacyHeading:["حریم خصوصی","Privacy"],
     profileNameLabel:["نام نمایشی","Display name"],profilePhoneLabel:["شماره موبایل با کد کشور","Phone number with country code"],
     avatarFileLabel:["تصویر پروفایل","Profile picture"],avatarNote:["فرمت JPG، PNG یا WebP؛ حداکثر ۳ مگابایت.","JPG, PNG or WebP; maximum 3 MB."],
     saveProfileButton:["ذخیره تغییرات","Save changes"],logoutButton:["خروج از حساب","Sign out"],
@@ -1210,7 +1210,7 @@ async function showUser(user){
     if($("profileNameInput"))$("profileNameInput").value=currentProfileName;
     setPhoneCountry("profilePhoneCountry",currentPhone);
     if($("profilePhoneInput"))$("profilePhoneInput").value=formatContactPhone(currentPhone);
-    if($("showPhoneSetting"))$("showPhoneSetting").checked=cachedProfile.show_phone!==false;
+    if($("showPhoneSetting"))$("showPhoneSetting").checked=cachedProfile.show_phone===true;
     setStatus("profileStatus",english?"Showing saved profile while refreshing…":"نمایش پروفایل ذخیره‌شده؛ در حال همگام‌سازی…");
   }
   try{
@@ -1222,7 +1222,7 @@ async function showUser(user){
     if(!profile){
       const fallbackName=(user.user_metadata?.display_name||user.email?.split("@")[0]||"Farnaz user").trim();
       const created=await retryRead("create current user profile",()=>getClient().from("profiles")
-        .upsert({id:user.id,display_name:fallbackName,phone:user.phone||null,show_phone:true},{onConflict:"id"})
+        .upsert({id:user.id,display_name:fallbackName,phone:user.phone||null,show_phone:false},{onConflict:"id"})
         .select("id,display_name,avatar_url,phone,show_phone,presence_visibility,last_seen_visibility,show_typing,show_read_receipts,show_space_online_count").single(),2,18000);
       if(created.error)throw created.error;
       // Logout/account switching may happen while profile creation is pending.
@@ -1238,7 +1238,7 @@ async function showUser(user){
     $("profileNameInput").value=currentProfileName;
     setPhoneCountry("profilePhoneCountry",currentPhone);
     $("profilePhoneInput").value=formatContactPhone(currentPhone);
-    $("showPhoneSetting").checked=profile?.show_phone!==false;
+    $("showPhoneSetting").checked=profile?.show_phone===true;
     try{await window.FarnazLocalStore?.saveSnapshot(user.id,"profile",profile);}catch(cacheError){console.warn("Cached profile save:",cacheError);}
     // A completed cache write must not let a stale profile request update the UI after logout.
     if(request!==profileRequestNumber||currentUser?.id!==user.id)return;

@@ -207,9 +207,36 @@ async function makeMessageElement(m,myId,fromCache=false){
     const pin=document.createElement("div");pin.className="message-pin-indicator";
     pin.textContent=english?"📌 Pinned":"📌 سنجاق‌شده";item.appendChild(pin);
   }
-  if(m.reply_to_id&&!fromCache){
-    try{const {data}=await getClient().from("messages").select("body,attachment_name").eq("id",m.reply_to_id).maybeSingle();
-      if(data){const q=document.createElement("div");q.className="message-quote";q.textContent=(english?"Replying to: ":"در پاسخ به: ")+(data.body||data.attachment_name||"");item.appendChild(q);}}catch(e){console.warn(e);}
+  if(m.reply_to_id){
+    let repliedTo=null;
+    if(!fromCache){
+      try{
+        const {data,error}=await getClient().from("messages").select("id,sender_id,body,attachment_name,message_type").eq("id",m.reply_to_id).maybeSingle();
+        if(!error)repliedTo=data||null;
+      }catch(error){console.warn("Could not load replied-to message:",error);}
+    }
+    const quote=document.createElement("button");
+    quote.type="button";quote.className="message-quote";quote.dataset.replyTarget=String(m.reply_to_id);
+    Object.assign(quote.style,{display:"block",width:"100%",textAlign:"start",border:"0",borderInlineStart:"3px solid var(--accent,#22b8a5)",borderRadius:"7px",padding:"6px 9px",margin:"0 0 6px",background:"rgba(120,130,145,.12)",color:"inherit",font:"inherit",cursor:"pointer"});
+    const author=document.createElement("strong");
+    Object.assign(author.style,{display:"block",fontSize:"11px",color:"var(--accent,#159b8c)"});
+    author.textContent=repliedTo?(String(repliedTo.sender_id)===String(myId)?(english?"You":"شما"):(english?"Contact":"مخاطب")):(english?"Original message":"پیام اصلی");
+    const preview=document.createElement("span");
+    Object.assign(preview.style,{display:"block",fontSize:"12px",opacity:".82",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"});
+    preview.textContent=repliedTo?(repliedTo.body||repliedTo.attachment_name||(english?"Attachment":"پیوست")):(english?"Open original message":"نمایش پیام اصلی");
+    quote.append(author,preview);
+    quote.addEventListener("click",event=>{
+      event.stopPropagation();
+      const target=$("messageList")?.querySelector('[data-message-id="'+String(m.reply_to_id)+'"]');
+      if(target){
+        target.scrollIntoView({behavior:"smooth",block:"center"});
+        target.classList.add("contact-info-search-match");
+        setTimeout(()=>target.classList.remove("contact-info-search-match"),1800);
+      }else if(typeof openMessageFromSearch==="function"){
+        openMessageFromSearch(m.reply_to_id,m.created_at,currentChatUser?.user_id);
+      }
+    });
+    item.appendChild(quote);
   }
   if(m.body){const body=document.createElement("p");body.textContent=m.body;item.appendChild(body);}
   if(m.attachment_path&&fromCache){
@@ -256,6 +283,9 @@ async function makeMessageElement(m,myId,fromCache=false){
     if(holdTriggered){event.preventDefault();event.stopPropagation();holdTriggered=false;return;}
     if(messageSelectionMode){toggleMessageSelection(m.id,item);return;}
     if(interactiveTarget(event.target))return;
+    const now=Date.now();
+    if(now-lastMessageTap<330){lastMessageTap=0;toggleMessageReaction(m.id,"👍");}
+    else lastMessageTap=now;
   });
   item.addEventListener("contextmenu",e=>{
     e.preventDefault();e.stopPropagation();

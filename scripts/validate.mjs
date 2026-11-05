@@ -223,8 +223,13 @@ if (sources["styles.css"].includes("/* Conversation layout —") ||
 }
 
 const chatSource = sources["js/chat-menu-v5.js"];
-if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v251"') || !sources["service-worker.js"].includes('styles.css?v=20261105-shared-page1') || !sources["service-worker.js"].includes('core.js?v=20261105-shared-page1') || !sources["service-worker.js"].includes('spaces.js?v=20261105-shared-page1') || !sources["service-worker.js"].includes('local-store.js?v=20261026-3') || !sources["service-worker.js"].includes('calls.js?v=20261105-matin2') || !sources["service-worker.js"].includes('chat-menu-v5.js?v=20261105-retry1') || !html.includes('chat-menu-v5.js?v=20261105-retry1')) {
+if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v252"') || !sources["service-worker.js"].includes('styles.css?v=20261105-shared-page1') || !sources["service-worker.js"].includes('core.js?v=20261105-shared-page1') || !sources["service-worker.js"].includes('spaces.js?v=20261105-shared-page1') || !sources["service-worker.js"].includes('local-store.js?v=20261026-3') || !sources["service-worker.js"].includes('calls.js?v=20261105-matin3') || !sources["service-worker.js"].includes('chat-menu-v5.js?v=20261105-retry2') || !html.includes('calls.js?v=20261105-matin3') || !html.includes('chat-menu-v5.js?v=20261105-retry2')) {
   errors.push("service-worker.js must use the current shell cache and core asset versions");
+}
+if (!chatSource.includes('quote.dataset.replyTarget=String(m.reply_to_id)') ||
+    !chatSource.includes('openMessageFromSearch(m.reply_to_id,m.created_at,currentChatUser?.user_id)') ||
+    !chatSource.includes('lastMessageTap=0;toggleMessageReaction(m.id,"👍")')) {
+  errors.push("private-message replies must link back to the original message and support quick double-tap reactions");
 }
 const loaderChecks = [
   [html.includes('script.src="./js/supabase-sdk.js"') && html.includes("watchScript(script,()=>{") && html.includes("loadLocalScripts();"),

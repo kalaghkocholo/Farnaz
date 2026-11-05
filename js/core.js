@@ -857,7 +857,11 @@ function openAuth(){
   const signup=authMode==="signup";
   $("nameField").style.display=signup?"block":"none";
   $("authName").required=signup;
+  $("authEmail").autocomplete="username";
   $("authPassword").autocomplete=signup?"new-password":"current-password";
+  $("authPassword").type="password";
+  const passwordToggle=$("toggleAuthPassword");
+  if(passwordToggle){passwordToggle.textContent=english?"Show":"نمایش";passwordToggle.setAttribute("aria-pressed","false");}
   document.querySelector(".app")?.classList.add("auth-open");
   if($("headerFButton"))$("headerFButton").hidden=true;
   $("authBox").style.display="flex";setStatus("authStatus","");
@@ -865,6 +869,19 @@ function openAuth(){
   updateAuthTexts();
 }
 function closeAuth(){$("authBox").style.display="none";document.querySelector(".app")?.classList.remove("auth-open");}
+function getAuthRedirectUrl(){
+  // Return to the exact app origin currently in use; allow-list each origin in Supabase Auth.
+  return new URL("./",window.location.href).href;
+}
+function toggleAuthPassword(){
+  const field=$("authPassword"),button=$("toggleAuthPassword");
+  if(!field||!button)return;
+  const reveal=field.type==="password";
+  field.type=reveal?"text":"password";
+  button.textContent=english?(reveal?"Hide":"Show"):(reveal?"مخفی":"نمایش");
+  button.setAttribute("aria-pressed",String(reveal));
+  button.setAttribute("aria-label",english?(reveal?"Hide password":"Show password"):(reveal?"مخفی‌کردن رمز عبور":"نمایش رمز عبور"));
+}
 async function signInSocial(provider="google"){
   const button=$("googleAuth");
   const label=button?.querySelector("span:last-child");
@@ -874,7 +891,7 @@ async function signInSocial(provider="google"){
     const client=getClient();
     const {error}=await client.auth.signInWithOAuth({
       provider,
-      options:{redirectTo:"https://kalaghkocholo.github.io/Farnaz/"}
+      options:{redirectTo:getAuthRedirectUrl()}
     });
     if(error)throw error;
   }catch(e){
@@ -893,7 +910,11 @@ function setAuthMode(mode){
   const signup=authMode==="signup";
   $("nameField").style.display=signup?"block":"none";
   $("authName").required=signup;
+  $("authEmail").autocomplete="username";
   $("authPassword").autocomplete=signup?"new-password":"current-password";
+  $("authPassword").type="password";
+  const passwordToggle=$("toggleAuthPassword");
+  if(passwordToggle){passwordToggle.textContent=english?"Show":"نمایش";passwordToggle.setAttribute("aria-pressed","false");}
   setStatus("authStatus","");updateAuthTexts();
 }
 function switchAuthMode(){setAuthMode(authMode==="signup"?"login":"signup");}
@@ -917,6 +938,12 @@ function updateAuthTexts(){
   $("authOrLabel").textContent=v?"or continue with email":"یا با ایمیل";
   const languageButton=$("authLanguageButton");
   if(languageButton)languageButton.textContent=v?"فا":"EN";
+  const passwordToggle=$("toggleAuthPassword");
+  if(passwordToggle){
+    const visible=$("authPassword").type==="text";
+    passwordToggle.textContent=v?(visible?"Hide":"Show"):(visible?"مخفی":"نمایش");
+    passwordToggle.setAttribute("aria-label",v?(visible?"Hide password":"Show password"):(visible?"مخفی‌کردن رمز عبور":"نمایش رمز عبور"));
+  }
 }
 /* Keep one welcome language toggle globally; preserve the separate Settings language control. */
 function normalizeWelcomeLanguageButton(){
@@ -2607,7 +2634,7 @@ async function refreshConversationList(){
           result=await client.auth.signUp({
             email,password,
             options:{
-              emailRedirectTo:"https://kalaghkocholo.github.io/Farnaz/",
+              emailRedirectTo:getAuthRedirectUrl(),
               data:{display_name:name}
             }
           });

@@ -223,7 +223,7 @@ if (sources["styles.css"].includes("/* Conversation layout —") ||
 }
 
 const chatSource = sources["js/chat-menu-v5.js"];
-if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v252"') || !sources["service-worker.js"].includes('styles.css?v=20261105-shared-page1') || !sources["service-worker.js"].includes('core.js?v=20261105-shared-page1') || !sources["service-worker.js"].includes('spaces.js?v=20261105-shared-page1') || !sources["service-worker.js"].includes('local-store.js?v=20261026-3') || !sources["service-worker.js"].includes('calls.js?v=20261105-matin3') || !sources["service-worker.js"].includes('chat-menu-v5.js?v=20261105-retry2') || !html.includes('calls.js?v=20261105-matin3') || !html.includes('chat-menu-v5.js?v=20261105-retry2')) {
+if (!sources["service-worker.js"].includes('const CACHE_NAME="farnaz-shell-v253"') || !sources["service-worker.js"].includes('styles.css?v=20261105-auth1') || !sources["service-worker.js"].includes('core.js?v=20261105-auth1') || !sources["service-worker.js"].includes('spaces.js?v=20261105-shared-page1') || !sources["service-worker.js"].includes('local-store.js?v=20261026-3') || !sources["service-worker.js"].includes('calls.js?v=20261105-matin3') || !sources["service-worker.js"].includes('chat-menu-v5.js?v=20261105-retry2') || !html.includes('calls.js?v=20261105-matin3') || !html.includes('chat-menu-v5.js?v=20261105-retry2')) {
   errors.push("service-worker.js must use the current shell cache and core asset versions");
 }
 if (!chatSource.includes('quote.dataset.replyTarget=String(m.reply_to_id)') ||
@@ -234,7 +234,7 @@ if (!chatSource.includes('quote.dataset.replyTarget=String(m.reply_to_id)') ||
 const loaderChecks = [
   [html.includes('script.src="./js/supabase-sdk.js"') && html.includes("watchScript(script,()=>{") && html.includes("loadLocalScripts();"),
     "index.html must wait for the local Supabase SDK before loading the app core"],
-  [html.includes('core.src="./js/core.js?v=20261105-shared-page1"') && html.includes("watchScript(core,()=>{") && html.includes("بارگذاری هستهٔ برنامه ناموفق بود یا بیش از حد طول کشید"),
+  [html.includes('core.src="./js/core.js?v=20261105-auth1"') && html.includes("watchScript(core,()=>{") && html.includes("بارگذاری هستهٔ برنامه ناموفق بود یا بیش از حد طول کشید"),
     "index.html must handle successful, failed, and stalled core-script loading"],
   [html.includes("watchScript(script,loadNextFeature,()=>{") && html.includes("featureScripts[featureIndex++]") && html.includes('if(typeof window.FarnazBoot==="function")window.FarnazBoot();'),
     "index.html must load feature scripts sequentially and boot only after the loader sequence"],
@@ -452,6 +452,10 @@ const authLayoutChecks = [
    html.includes('<p id="authMessage" hidden>') &&
    html.indexOf('id="authSignupTab"') < html.indexOf('id="authLoginTab"'),
     "auth screen must keep signup first/default and hide redundant title and intro"],
+  [html.includes('autocomplete="username"') && html.includes('id="toggleAuthPassword"') &&
+   html.includes('viewBox="0 0 24 24"') && coreSource.includes('function getAuthRedirectUrl()') &&
+   coreSource.includes('redirectTo:getAuthRedirectUrl()') && coreSource.includes('emailRedirectTo:getAuthRedirectUrl()'),
+    "auth screen must support password-manager autofill, password visibility, Google mark, and current-origin redirects"],
 ];
 const conversationChecks = [
   [sources["js/spaces.js"].includes('spaceMessages:"messageList"') && sources["js/spaces.js"].includes('spaceComposer:"sendMessageForm"') && sources["js/spaces.js"].includes('spaceName:"conversationTitle"') && sources["js/spaces.js"].includes('detail.replaceChildren(...[description,actions].filter(Boolean))') && sources["js/spaces.js"].includes('chatPage.insertBefore(detail,anchor||chatPage.firstChild)'),

@@ -97,8 +97,6 @@ async function toggleSpeaker(){
       if(activeCall!==call)return;
       call.speakerEnabled=false;
       call.speakerDeviceId=null;
-  call.speakerEnabled=false;
-  call.defaultSinkId=byId("farnazRemoteAudio")?.sinkId||"default";
       refreshCallControls();
       setCallStatus(tr("بلندگو خاموش شد.","Speaker off."));
       return;
@@ -204,6 +202,8 @@ async function preparePeer(session,role){
   if(activeCall!==call){media.getTracks().forEach(track=>track.stop());throw new Error("Call was cancelled before media became ready.");}
   call.localStream=media;
   call.speakerDeviceId=null;
+  call.speakerEnabled=false;
+  call.defaultSinkId=byId("farnazRemoteAudio")?.sinkId||"default";
   call.pendingCandidates=call.pendingCandidates||[];
   refreshCallControls();
   const local=byId("farnazLocalVideo");local.srcObject=media;local.hidden=type!=="video";

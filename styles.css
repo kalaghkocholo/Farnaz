@@ -73,9 +73,14 @@ p{color:#b6c1d1;line-height:1.7;font-size:12px}
 .action-button{width:100%;margin-top:9px}
 .secondary-button{
   width:100%;margin-top:8px;padding:10px;
-  border:1px solid #526078;border-radius:10px;
-  background:transparent;color:var(--white);font-size:12px
+  border:1px solid #b42332;border-radius:10px;
+  background:#b42332;color:#fff;font-size:12px;font-weight:700;
+  transition:background-color .18s ease,border-color .18s ease,transform .18s ease
 }
+.secondary-button:hover{background:#981b28;border-color:#981b28}
+.secondary-button:active{transform:scale(.985)}
+.secondary-button:focus-visible{outline:3px solid #fda4af;outline-offset:3px}
+.secondary-button:disabled{opacity:.65;cursor:wait}
 .page-heading{min-width:0;margin:0 0 14px;padding:4px 2px 12px;border-bottom:1px solid color-mix(in srgb,var(--border) 82%,transparent)}
 .page-heading h2{margin:0;font-size:20px;line-height:1.45}
 .page-heading p{margin:4px 0 0;color:var(--muted);font-size:12px;line-height:1.55}
@@ -851,7 +856,6 @@ input,textarea,select,#messageSearchQuery,#messageSearchKind,#messageSearchFrom,
 .message-meta .message-read-status{color:var(--accent)!important}
 .message-reaction-chip.mine{border-color:var(--accent)!important;background:color-mix(in srgb,var(--accent) 18%,var(--panel2))!important}
 .message-pinned-banner{border-color:var(--border)!important}
-.secondary-button{border-color:var(--border)!important;color:var(--white)!important}
 .auth-card{background:var(--bg)!important;color:var(--white)!important;border:0!important;box-shadow:none!important}
 #authBox{background:var(--bg)!important}
 .social-auth[hidden],.auth-divider[hidden]{display:none!important}

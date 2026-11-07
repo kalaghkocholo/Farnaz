@@ -1253,6 +1253,8 @@ body[data-theme="light"] #spaceSettingsAccordion #saveSpaceSettings{color:#fff!i
   box-shadow:0 5px 18px #0002;transition:background .15s ease,transform .15s ease
 }
 .farnaz-livekit-control-label{display:block;max-width:92px;color:#dce2eb;font-size:12px;font-weight:500;line-height:1.25;text-align:center;overflow-wrap:anywhere}
+.farnaz-livekit-control-icon svg{display:block;width:27px;height:27px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.farnaz-livekit-dialog.is-incoming .farnaz-livekit-actions{grid-template-columns:repeat(2,minmax(0,1fr));max-width:230px}
 .farnaz-livekit-actions button.is-accept .farnaz-livekit-control-icon{background:#28b765;border-color:#28b765;color:#fff}
 .farnaz-livekit-actions button.is-danger .farnaz-livekit-control-icon{background:#e33d4f;border-color:#e33d4f;color:#fff}
 .farnaz-livekit-actions button:active .farnaz-livekit-control-icon{transform:scale(.94)}

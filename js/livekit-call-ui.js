@@ -27,23 +27,31 @@
     dialog.setAttribute("aria-labelledby", "farnazLiveKitTitle");
     dialog.innerHTML =
       '<div class="farnaz-livekit-card">' +
-        '<button type="button" class="farnaz-livekit-close" id="farnazLiveKitClose" aria-label="بستن">×</button>' +
-        '<div class="farnaz-livekit-avatar" id="farnazLiveKitAvatar" aria-hidden="true">F</div>' +
-        '<h2 id="farnazLiveKitTitle">تماس فرناز</h2>' +
-        '<p id="farnazLiveKitStatus" role="status" aria-live="polite">در حال آماده‌سازی…</p>' +
-        '<time id="farnazLiveKitTimer" hidden>00:00</time>' +
+        '<div class="farnaz-livekit-topbar">' +
+          '<span class="farnaz-livekit-brand">FARNAZ</span>' +
+          '<button type="button" class="farnaz-livekit-close" id="farnazLiveKitClose" aria-label="بستن تماس">×</button>' +
+        '</div>' +
+        '<div class="farnaz-livekit-identity">' +
+          '<div class="farnaz-livekit-avatar" id="farnazLiveKitAvatar" aria-hidden="true">' +
+            '<span class="farnaz-livekit-avatar-fallback">F</span>' +
+            '<img id="farnazLiveKitAvatarImage" alt="" hidden>' +
+          '</div>' +
+          '<h2 id="farnazLiveKitTitle">تماس فرناز</h2>' +
+          '<p id="farnazLiveKitStatus" role="status" aria-live="polite">در حال آماده‌سازی…</p>' +
+          '<time id="farnazLiveKitTimer" hidden>00:00</time>' +
+        '</div>' +
         '<div class="farnaz-livekit-media" id="farnazLiveKitMedia">' +
           '<video id="farnazLiveKitRemoteVideo" autoplay playsinline hidden></video>' +
           '<div id="farnazLiveKitRemoteAudio"></div>' +
         '</div>' +
         '<div class="farnaz-livekit-actions">' +
-          '<button type="button" id="farnazLiveKitAccept" class="is-accept" hidden>پاسخ</button>' +
-          '<button type="button" id="farnazLiveKitReject" class="is-danger" hidden>رد تماس</button>' +
-          '<button type="button" id="farnazLiveKitMute" hidden>بی‌صدا</button>' +
-          '<button type="button" id="farnazLiveKitSpeaker" hidden>فعال‌سازی صدا</button>' +
-          '<button type="button" id="farnazLiveKitAudioRoute" hidden>بلندگو</button>' +
-          '<button type="button" id="farnazLiveKitCamera" hidden>دوربین خاموش</button>' +
-          '<button type="button" id="farnazLiveKitEnd" class="is-danger" hidden>پایان تماس</button>' +
+          '<button type="button" id="farnazLiveKitMute" class="farnaz-livekit-control" aria-label="بی‌صدا" hidden><span class="farnaz-livekit-control-icon">🎙</span><span class="farnaz-livekit-control-label">بی‌صدا</span></button>' +
+          '<button type="button" id="farnazLiveKitSpeaker" class="farnaz-livekit-control" aria-label="فعال‌سازی صدا" hidden><span class="farnaz-livekit-control-icon">🔊</span><span class="farnaz-livekit-control-label">صدا</span></button>' +
+          '<button type="button" id="farnazLiveKitAudioRoute" class="farnaz-livekit-control" aria-label="بلندگو" hidden><span class="farnaz-livekit-control-icon">📢</span><span class="farnaz-livekit-control-label">بلندگو</span></button>' +
+          '<button type="button" id="farnazLiveKitCamera" class="farnaz-livekit-control" aria-label="دوربین خاموش" hidden><span class="farnaz-livekit-control-icon">▣</span><span class="farnaz-livekit-control-label">دوربین</span></button>' +
+          '<button type="button" id="farnazLiveKitReject" class="farnaz-livekit-control is-danger" aria-label="رد تماس" hidden><span class="farnaz-livekit-control-icon">✕</span><span class="farnaz-livekit-control-label">رد تماس</span></button>' +
+          '<button type="button" id="farnazLiveKitAccept" class="farnaz-livekit-control is-accept" aria-label="پاسخ به تماس" hidden><span class="farnaz-livekit-control-icon">☎</span><span class="farnaz-livekit-control-label">پاسخ</span></button>' +
+          '<button type="button" id="farnazLiveKitEnd" class="farnaz-livekit-control is-danger" aria-label="پایان تماس" hidden><span class="farnaz-livekit-control-icon">☎</span><span class="farnaz-livekit-control-label">پایان</span></button>' +
         '</div>' +
       '</div>';
     root.document.body.appendChild(dialog);
@@ -61,6 +69,41 @@
   function setStatus(message) {
     const node = byId("farnazLiveKitStatus");
     if (node) node.textContent = message;
+  }
+
+  function setAvatar(url, name) {
+    const avatar = byId("farnazLiveKitAvatar");
+    if (!avatar) return;
+    const image = byId("farnazLiveKitAvatarImage");
+    const fallback = avatar.querySelector(".farnaz-livekit-avatar-fallback");
+    const label = String(name || "F").trim();
+    if (fallback) fallback.textContent = label.charAt(0).toLocaleUpperCase() || "F";
+    if (!image) return;
+    image.hidden = true;
+    image.removeAttribute("src");
+    image.alt = label;
+    if (!url || typeof url !== "string") {
+      if (fallback) fallback.hidden = false;
+      return;
+    }
+    image.onload = function () {
+      image.hidden = false;
+      if (fallback) fallback.hidden = true;
+    };
+    image.onerror = function () {
+      image.hidden = true;
+      image.removeAttribute("src");
+      if (fallback) fallback.hidden = false;
+    };
+    image.src = url;
+  }
+
+  function setControlLabel(id, label) {
+    const button = byId(id);
+    if (!button) return;
+    const text = button.querySelector(".farnaz-livekit-control-label");
+    if (text) text.textContent = label;
+    button.setAttribute("aria-label", label);
   }
 
   function formatDuration(seconds) {
@@ -96,19 +139,25 @@
     remoteAudioTracks.clear();
     const video = byId("farnazLiveKitRemoteVideo");
     if (video) { video.pause(); video.srcObject = null; video.hidden = true; }
+    const dialog = byId("farnazLiveKitDialog");
+    if (dialog) dialog.classList.remove("has-remote-video");
     const audio = byId("farnazLiveKitRemoteAudio");
     if (audio) audio.replaceChildren();
   }
 
-  function show(title, status, incoming) {
+  function show(title, status, incoming, avatarUrl) {
     ensureDialog();
     byId("farnazLiveKitTitle").textContent = title;
-    byId("farnazLiveKitAvatar").textContent = (title || "F").trim().charAt(0).toUpperCase();
+    const contactAvatar = avatarUrl || (activeRole === "caller" && typeof currentChatUser !== "undefined" && currentChatUser ? currentChatUser.avatar_url : "");
+    setAvatar(contactAvatar, title);
+    byId("farnazLiveKitDialog").dataset.callType = callType;
+    byId("farnazLiveKitDialog").classList.toggle("is-video-call", callType === "video");
+    byId("farnazLiveKitDialog").classList.remove("has-remote-video");
     setStatus(status);
     microphoneEnabled = true;
     cameraEnabled = true;
-    byId("farnazLiveKitMute").textContent = tr("بی‌صدا", "Mute");
-    byId("farnazLiveKitCamera").textContent = tr("دوربین خاموش", "Turn camera off");
+    setControlLabel("farnazLiveKitMute", tr("بی‌صدا", "Mute"));
+    setControlLabel("farnazLiveKitCamera", tr("دوربین خاموش", "Turn camera off"));
     byId("farnazLiveKitDialog").hidden = false;
     byId("farnazLiveKitAccept").hidden = !incoming;
     byId("farnazLiveKitReject").hidden = !incoming;
@@ -142,9 +191,11 @@
       const result = await getClient().rpc("get_farnaz_user_profile", { search_user_id: session.caller_id });
       const profile = Array.isArray(result.data) ? result.data[0] : result.data;
       if (!activeSession || String(activeSession.id) !== String(session.id)) return;
-      if (profile && profile.display_name) {
-        byId("farnazLiveKitAvatar").textContent = profile.display_name.trim().charAt(0).toUpperCase();
-        setStatus(tr("تماس از طرف ", "Incoming call from ") + profile.display_name);
+      if (profile) {
+        const callerName = profile.display_name || title;
+        byId("farnazLiveKitTitle").textContent = callerName;
+        setAvatar(profile.avatar_url || "", callerName);
+        setStatus(tr("تماس ورودی از طرف ", "Incoming call from ") + callerName);
       }
     } catch (error) {
       console.warn("[Farnaz LiveKit UI] Caller profile lookup failed:", error);
@@ -170,8 +221,8 @@
       byId("farnazLiveKitAudioRoute").hidden = false;
       byId("farnazLiveKitCamera").hidden = callType !== "video";
       byId("farnazLiveKitEnd").hidden = false;
-      byId("farnazLiveKitMute").textContent = tr("بی‌صدا", "Mute");
-      byId("farnazLiveKitCamera").textContent = tr("دوربین خاموش", "Turn camera off");
+      setControlLabel("farnazLiveKitMute", tr("بی‌صدا", "Mute"));
+      setControlLabel("farnazLiveKitCamera", tr("دوربین خاموش", "Turn camera off"));
       startTimer();
     } else if (event.type === "session-finished") {
       activeSession = null;
@@ -192,6 +243,7 @@
         remoteVideoTrack = track;
         track.attach(video);
         video.hidden = false;
+        byId("farnazLiveKitDialog").classList.add("has-remote-video");
         video.play().catch(() => {});
       } else if (track.kind === "audio") {
         const audio = root.document.createElement("audio");
@@ -207,7 +259,11 @@
       if (track && typeof track.detach === "function") {
         try { track.detach(); } catch (_) {}
         remoteAudioTracks.delete(track);
-        if (remoteVideoTrack === track) remoteVideoTrack = null;
+        if (remoteVideoTrack === track) {
+          remoteVideoTrack = null;
+          const dialog = byId("farnazLiveKitDialog");
+          if (dialog) dialog.classList.remove("has-remote-video");
+        }
       }
     } else if (event.type === "error" || event.type === "media-error") {
       const error = detail.error || detail;
@@ -278,8 +334,8 @@
       byId("farnazLiveKitEnd").hidden = false;
       microphoneEnabled = true;
       cameraEnabled = true;
-      byId("farnazLiveKitMute").textContent = tr("بی‌صدا", "Mute");
-      byId("farnazLiveKitCamera").textContent = tr("دوربین خاموش", "Turn camera off");
+      setControlLabel("farnazLiveKitMute", tr("بی‌صدا", "Mute"));
+      setControlLabel("farnazLiveKitCamera", tr("دوربین خاموش", "Turn camera off"));
       setStatus(tr("در حال اتصال…", "Connecting…"));
       await controller.answer();
     } catch (error) {
@@ -311,7 +367,7 @@
     try {
       microphoneEnabled = !microphoneEnabled;
       await controller.setMicrophoneEnabled(microphoneEnabled);
-      byId("farnazLiveKitMute").textContent = microphoneEnabled ? tr("بی‌صدا", "Mute") : tr("فعال‌کردن میکروفن", "Unmute");
+      setControlLabel("farnazLiveKitMute", microphoneEnabled ? tr("بی‌صدا", "Mute") : tr("فعال‌کردن میکروفن", "Unmute"));
     } catch (error) {
       microphoneEnabled = !microphoneEnabled;
       setStatus(error.message);
@@ -323,7 +379,7 @@
     try {
       cameraEnabled = !cameraEnabled;
       await controller.setCameraEnabled(cameraEnabled);
-      byId("farnazLiveKitCamera").textContent = cameraEnabled ? tr("دوربین خاموش", "Turn camera off") : tr("روشن‌کردن دوربین", "Turn camera on");
+      setControlLabel("farnazLiveKitCamera", cameraEnabled ? tr("دوربین خاموش", "Turn camera off") : tr("روشن‌کردن دوربین", "Turn camera on"));
     } catch (error) {
       cameraEnabled = !cameraEnabled;
       setStatus(error.message);
@@ -363,7 +419,7 @@
       const next = outputs[(currentIndex + 1 + outputs.length) % outputs.length];
       await Promise.all(audioElements.map(audio => audio.setSinkId(next.deviceId)));
       const label = next.label || tr("خروجی صدا تغییر کرد", "Audio output changed");
-      byId("farnazLiveKitAudioRoute").textContent = label.length > 22 ? label.slice(0, 22) + "…" : label;
+      setControlLabel("farnazLiveKitAudioRoute", label.length > 22 ? label.slice(0, 22) + "…" : label);
       setStatus(tr("خروجی صدا: ", "Audio output: ") + label);
     } catch (error) {
       setStatus(error && error.message ? error.message : String(error));

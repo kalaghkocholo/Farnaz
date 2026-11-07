@@ -45,13 +45,13 @@
           '<div id="farnazLiveKitRemoteAudio"></div>' +
         '</div>' +
         '<div class="farnaz-livekit-actions">' +
-          '<button type="button" id="farnazLiveKitMute" class="farnaz-livekit-control" aria-label="بی‌صدا" hidden><span class="farnaz-livekit-control-icon">🎙</span><span class="farnaz-livekit-control-label">بی‌صدا</span></button>' +
-          '<button type="button" id="farnazLiveKitSpeaker" class="farnaz-livekit-control" aria-label="فعال‌سازی صدا" hidden><span class="farnaz-livekit-control-icon">🔊</span><span class="farnaz-livekit-control-label">صدا</span></button>' +
-          '<button type="button" id="farnazLiveKitAudioRoute" class="farnaz-livekit-control" aria-label="بلندگو" hidden><span class="farnaz-livekit-control-icon">📢</span><span class="farnaz-livekit-control-label">بلندگو</span></button>' +
-          '<button type="button" id="farnazLiveKitCamera" class="farnaz-livekit-control" aria-label="دوربین خاموش" hidden><span class="farnaz-livekit-control-icon">▣</span><span class="farnaz-livekit-control-label">دوربین</span></button>' +
-          '<button type="button" id="farnazLiveKitReject" class="farnaz-livekit-control is-danger" aria-label="رد تماس" hidden><span class="farnaz-livekit-control-icon">✕</span><span class="farnaz-livekit-control-label">رد تماس</span></button>' +
-          '<button type="button" id="farnazLiveKitAccept" class="farnaz-livekit-control is-accept" aria-label="پاسخ به تماس" hidden><span class="farnaz-livekit-control-icon">☎</span><span class="farnaz-livekit-control-label">پاسخ</span></button>' +
-          '<button type="button" id="farnazLiveKitEnd" class="farnaz-livekit-control is-danger" aria-label="پایان تماس" hidden><span class="farnaz-livekit-control-icon">☎</span><span class="farnaz-livekit-control-label">پایان</span></button>' +
+          '<button type="button" id="farnazLiveKitMute" class="farnaz-livekit-control" aria-label="بی‌صدا" hidden><span class="farnaz-livekit-control-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3m-4 0h8"></path></svg></span><span class="farnaz-livekit-control-label">بی‌صدا</span></button>' +
+          '<button type="button" id="farnazLiveKitSpeaker" class="farnaz-livekit-control" aria-label="فعال‌سازی صدا" hidden><span class="farnaz-livekit-control-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h4l5 4V6l-5 4H4Z"></path><path d="M17 9a5 5 0 0 1 0 6m2-9a9 9 0 0 1 0 12"></path></svg></span><span class="farnaz-livekit-control-label">صدا</span></button>' +
+          '<button type="button" id="farnazLiveKitAudioRoute" class="farnaz-livekit-control" aria-label="بلندگو" hidden><span class="farnaz-livekit-control-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h4l8 5V5l-8 5H4Z"></path><path d="M19 9a5 5 0 0 1 0 6"></path></svg></span><span class="farnaz-livekit-control-label">بلندگو</span></button>' +
+          '<button type="button" id="farnazLiveKitCamera" class="farnaz-livekit-control" aria-label="دوربین خاموش" hidden><span class="farnaz-livekit-control-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"></rect><path d="m16 10 5-3v10l-5-3"></path></svg></span><span class="farnaz-livekit-control-label">دوربین</span></button>' +
+          '<button type="button" id="farnazLiveKitReject" class="farnaz-livekit-control is-danger" aria-label="رد تماس" hidden><span class="farnaz-livekit-control-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17"></path></svg></span><span class="farnaz-livekit-control-label">رد تماس</span></button>' +
+          '<button type="button" id="farnazLiveKitAccept" class="farnaz-livekit-control is-accept" aria-label="پاسخ به تماس" hidden><span class="farnaz-livekit-control-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.7a14 14 0 0 0 4.8 4.8L15 13l5 2v4c0 1.1-.9 2-2 2C9.2 21 3 14.8 3 6c0-1.1.9-2 2-2Z"></path></svg></span><span class="farnaz-livekit-control-label">پاسخ</span></button>' +
+          '<button type="button" id="farnazLiveKitEnd" class="farnaz-livekit-control is-danger" aria-label="پایان تماس" hidden><span class="farnaz-livekit-control-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.7a14 14 0 0 0 4.8 4.8L15 13l5 2v4c0 1.1-.9 2-2 2C9.2 21 3 14.8 3 6c0-1.1.9-2 2-2Z"></path></svg></span><span class="farnaz-livekit-control-label">پایان</span></button>' +
         '</div>' +
       '</div>';
     root.document.body.appendChild(dialog);
@@ -151,6 +151,7 @@
     const contactAvatar = avatarUrl || (activeRole === "caller" && typeof currentChatUser !== "undefined" && currentChatUser ? currentChatUser.avatar_url : "");
     setAvatar(contactAvatar, title);
     byId("farnazLiveKitDialog").dataset.callType = callType;
+    byId("farnazLiveKitDialog").classList.toggle("is-incoming", Boolean(incoming));
     byId("farnazLiveKitDialog").classList.toggle("is-video-call", callType === "video");
     byId("farnazLiveKitDialog").classList.remove("has-remote-video");
     setStatus(status);
